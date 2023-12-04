@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "statsboards-backend"
+version = "0.1.0"
+description = ""
+authors = ["linroot <linroot@bk.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104.1"
+uvicorn = {extras = ["standart"], version = "^0.24.0.post1"}
+black = "^23.11.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
