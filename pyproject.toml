@@ -12,6 +12,8 @@ uvicorn = {extras = ["standart"], version = "^0.24.0.post1"}
 bs4 = "^0.0.1"
 lxml = "^4.9.3"
 pydantic-settings = "^2.1.0"
+sqlalchemy = "^2.0.23"
+asyncpg = "^0.29.0"
 
 
 [build-system]
