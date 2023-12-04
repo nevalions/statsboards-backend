@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 import re
 
-from statsboards_backend.helpers.request_services_helper import get_url
+from statsboards_backend.helpers import get_url
 from statsboards_backend.pars_eesl.pars_settings import BASE_MATCH_URL
 
 

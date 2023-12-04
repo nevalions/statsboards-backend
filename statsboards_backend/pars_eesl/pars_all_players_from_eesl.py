@@ -5,8 +5,9 @@ import re
 from datetime import datetime
 from bs4 import BeautifulSoup
 
+from statsboards_backend.helpers import get_url
 from statsboards_backend.helpers.text_helpers import ru_to_eng_datetime_month
-from statsboards_backend.helpers.request_services_helper import get_url
+
 from statsboards_backend.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
 
 
