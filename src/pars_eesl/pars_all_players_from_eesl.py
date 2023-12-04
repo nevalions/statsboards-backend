@@ -79,7 +79,7 @@ def get_player_from_eesl_participants(players_in_eesl, all_eesl_players):
                 player_first_name = player_full_name.split(' ')[1]
                 player_second_name = player_full_name.split(' ')[0]
                 img_url, extension = ppp.find(
-                    'img', class_='table__player-img').get('statsboards-backend').strip().split('_')
+                    'img', class_='table__player-img').get('src').strip().split('_')
                 player_img_url = f"{img_url}.{extension.split('.')[1]}"
                 player_dob = collect_players_dob_from_all_eesl(player_eesl_id)
                 player = {

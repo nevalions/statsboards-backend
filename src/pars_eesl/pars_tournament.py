@@ -46,7 +46,7 @@ def parse_tournament_teams_index_page_eesl(
                 "description": '',
                 "team_logo_url": t.find(
                     'img', alt=t.find(
-                        'a', class_='teams__name-link').text.strip()).get('statsboards-backend')
+                        'a', class_='teams__name-link').text.strip()).get('src')
             }
             teams_in_tournament.append(team.copy())
         except Exception as ex:

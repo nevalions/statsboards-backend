@@ -35,7 +35,7 @@ def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_URL):
                                 class_='tournaments-archive__link').get('title').strip(),
                 "description": '',
                 "tournament_logo_url": t.find('img',
-                                              class_='tournaments-archive__img').get('statsboards-backend'),
+                                              class_='tournaments-archive__img').get('src'),
                 "fk_season": 2023}
             tournaments_in_season.append(tourn.copy())
         except Exception as ex:

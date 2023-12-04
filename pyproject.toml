@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "statsboards-backend"
+name = "src"
 version = "0.1.0"
 description = ""
 authors = ["linroot <linroot@bk.ru>"]

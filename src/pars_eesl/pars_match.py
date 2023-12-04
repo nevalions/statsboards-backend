@@ -68,8 +68,8 @@ def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
 
     match_data['team_a'] = team_a.text.strip()
     match_data['team_b'] = team_b.text.strip()
-    match_data['team_logo_url_a'] = logo_urls[0].get('statsboards-backend')
-    match_data['team_logo_url_b'] = logo_urls[1].get('statsboards-backend')
+    match_data['team_logo_url_a'] = logo_urls[0].get('src')
+    match_data['team_logo_url_b'] = logo_urls[1].get('src')
     match_data['score_a'] = score.text.split(':')[0].strip()
     match_data['score_b'] = score.text.split(':')[1].strip()
 
@@ -124,7 +124,7 @@ def get_player_eesl_from_match(
             '\d+',
             soup_player_team.find('a', class_='match-protocol__member-name').get('href'))[0]),
         'player_img_url': soup_player_team.find(
-            'img', class_='match-protocol__member-img').get('statsboards-backend'),
+            'img', class_='match-protocol__member-img').get('src'),
         'player_team': team, 'player_team_logo_url': team_logo_url}
 
     return player
