@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 class SeasonRelationMixin:
     _season_id_nullable: bool = False
-    _season_id_unique: bool = True
+    _season_id_unique: bool = False
     _ondelete: str | None = None
     _season_back_populates: str | None
 
