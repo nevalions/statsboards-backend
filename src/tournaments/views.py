@@ -1,4 +1,5 @@
 from typing import List
+
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
@@ -7,8 +8,11 @@ from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaU
 
 
 # Tournament backend
-class TournamentRouter(BaseRouter[TournamentSchema, TournamentSchemaCreate,
-TournamentSchemaUpdate]):
+class TournamentRouter(BaseRouter[
+                           TournamentSchema,
+                           TournamentSchemaCreate,
+                           TournamentSchemaUpdate]
+                       ):
 
     def __init__(self, service: TournamentServiceDB):
         super().__init__("/api/tournaments", ["tournaments"], service)
