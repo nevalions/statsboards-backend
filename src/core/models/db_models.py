@@ -23,7 +23,6 @@
 #                f'registered at {self.registered_at}'
 
 
-
 # class TournamentDB(Base):
 #     __tablename__ = 'tournament'
 #     __table_args__ = {'extend_existing': True}

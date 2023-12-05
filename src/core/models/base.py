@@ -15,13 +15,9 @@ from src.core.config import settings
 
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
-        self.engine = create_async_engine(
-            url=db_url,
-            echo=echo)
+        self.engine = create_async_engine(url=db_url, echo=echo)
         self.async_session = async_sessionmaker(
-            bind=self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False
+            bind=self.engine, class_=AsyncSession, expire_on_commit=False
         )
 
 
@@ -42,12 +38,19 @@ class BaseServiceDB:
                 return item
             except Exception as ex:
                 print(ex)
-                raise HTTPException(status_code=409,
-                                    detail=f"{self.model.__name__} creation error."
-                                           f"Check input data.")
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"{self.model.__name__} creation error."
+                    f"Check input data.",
+                )
 
-    async def get_all_elements(self, skip: int = 0, limit: int = 100,
-                               order_by: str = 'id', descending: bool = False):
+    async def get_all_elements(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        order_by: str = "id",
+        descending: bool = False,
+    ):
         async with self.db.async_session() as session:
             order = getattr(self.model, order_by)
             new_order = self.is_des(descending, order)
@@ -67,16 +70,17 @@ class BaseServiceDB:
 
     async def update(self, item_id: int, item, **kwargs):
         async with self.db.async_session() as session:
-
             db_item = await self.get_by_id(item_id)
             if not db_item:
                 return None
 
             for key, value in item.dict(exclude_unset=True).items():
                 setattr(db_item, key, value)
-            await session.execute(update(self.model).
-                                  where(self.model.id == item_id).
-                                  values(item.dict(exclude_unset=True)))
+            await session.execute(
+                update(self.model)
+                .where(self.model.id == item_id)
+                .values(item.dict(exclude_unset=True))
+            )
 
             await session.commit()
             updated_item = await self.get_by_id(db_item.id)
@@ -86,12 +90,14 @@ class BaseServiceDB:
         async with self.db.async_session() as session:
             db_item = await self.get_by_id(item_id)
             if not db_item:
-                raise HTTPException(status_code=404,
-                                    detail=f"{self.model.__name__} not found")
+                raise HTTPException(
+                    status_code=404, detail=f"{self.model.__name__} not found"
+                )
             await session.delete(db_item)
             await session.commit()
-            raise HTTPException(status_code=200,
-                                detail=f"{self.model.__name__} {db_item.id} deleted")
+            raise HTTPException(
+                status_code=200, detail=f"{self.model.__name__} {db_item.id} deleted"
+            )
 
     async def get_item_by_field_value(self, value, field_name: str):
         async with self.db.async_session() as session:
@@ -99,16 +105,26 @@ class BaseServiceDB:
             result = await session.execute(stmt)
             return result.scalars().one_or_none()
 
-    async def get_items_by_attribute(self, value, field_name: str,
-                                     order_by: str = 'id', descending: bool = False,
-                                     skip=0, limit=100):
+    async def get_items_by_attribute(
+        self,
+        value,
+        field_name: str,
+        order_by: str = "id",
+        descending: bool = False,
+        skip=0,
+        limit=100,
+    ):
         async with self.db.async_session() as session:
             order = getattr(self.model, order_by)
             new_order = self.is_des(descending, order)
 
-            stmt = select(self.model).where(
-                getattr(self.model, field_name) == value
-            ).offset(skip).limit(limit).order_by(new_order)
+            stmt = (
+                select(self.model)
+                .where(getattr(self.model, field_name) == value)
+                .offset(skip)
+                .limit(limit)
+                .order_by(new_order)
+            )
 
             items = await session.execute(stmt)
             result = []
@@ -116,41 +132,49 @@ class BaseServiceDB:
                 result.append(item.__dict__)
             return result
 
-    async def update_item_by_eesl_id(self, item,
-                                     eesl_field_name: str,
-                                     eesl_value: int):
+    async def update_item_by_eesl_id(self, item, eesl_field_name: str, eesl_value: int):
         async with self.db.async_session() as session:
             is_exist = await self.get_item_by_field_value(eesl_value, eesl_field_name)
             if is_exist:
                 for key, value in item.dict(exclude_unset=True).items():
                     setattr(is_exist, key, value)
                 await session.execute(
-                    update(self.model).
-                    where(getattr(self.model, eesl_field_name) == eesl_value).
-                    values(item.dict(exclude_unset=True)))
+                    update(self.model)
+                    .where(getattr(self.model, eesl_field_name) == eesl_value)
+                    .values(item.dict(exclude_unset=True))
+                )
                 await session.commit()
                 find_updated = await self.get_by_id(is_exist.id)
                 return find_updated
             else:
                 return None
 
-    async def find_relation(self,
-                            fk_item_one: int, fk_item_two: int,
-                            field_name_one: str, field_name_two: str
-                            ):
+    async def find_relation(
+        self,
+        fk_item_one: int,
+        fk_item_two: int,
+        field_name_one: str,
+        field_name_two: str,
+    ):
         async with self.db.async_session() as session:
             stmt = select(self.model).filter(
                 getattr(self.model, field_name_one) == fk_item_one,
-                getattr(self.model, field_name_two) == fk_item_two)
+                getattr(self.model, field_name_two) == fk_item_two,
+            )
 
             existing_record = await session.execute(stmt)
             return existing_record.scalars().one_or_none()
 
-    async def is_relation_exist(self,
-                                fk_item_one: int, fk_item_two: int,
-                                field_name_one: str, field_name_two: str) -> bool:
+    async def is_relation_exist(
+        self,
+        fk_item_one: int,
+        fk_item_two: int,
+        field_name_one: str,
+        field_name_two: str,
+    ) -> bool:
         existing_record = await self.find_relation(
-            fk_item_one, fk_item_two, field_name_one, field_name_two)
+            fk_item_one, fk_item_two, field_name_one, field_name_two
+        )
         if existing_record:
             return True
         return False

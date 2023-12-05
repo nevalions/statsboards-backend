@@ -9,7 +9,6 @@ UpdateSchemaType = TypeVar("UpdateSchemaType")
 
 
 class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-
     def __init__(self, prefix: str, tags: list[str], service):
         self.prefix = prefix
         self.service = service
@@ -20,10 +19,10 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
         @router.get("/")
         async def get_all_elem(
-                skip: int = Query(0, description="Skip items"),
-                limit: int = Query(100, description="Limit items"),
-                order_by: str = Query('id', description="Order items by"),
-                des: bool = Query(False, description="Sort items in descending order")
+            skip: int = Query(0, description="Skip items"),
+            limit: int = Query(100, description="Limit items"),
+            order_by: str = Query("id", description="Order items by"),
+            des: bool = Query(False, description="Sort items in descending order"),
         ):
             return await self.service.get_all_elements(skip, limit, order_by, des)
 
@@ -32,8 +31,9 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             model = await self.service.get_by_id(model_id)
             print(f"Content of model: {model}")  # Print the content for inspection
             if model is None:
-                raise HTTPException(status_code=404,
-                                    detail=f"{ModelType.__name__} {model_id} not found")
+                raise HTTPException(
+                    status_code=404, detail=f"{ModelType.__name__} {model_id} not found"
+                )
             return model
 
         @router.delete("/id/{model_id}")

@@ -11,9 +11,7 @@ class SeasonServiceDB(BaseServiceDB):
         super().__init__(database, model=SeasonDB)
 
     async def create_season(self, s: SeasonSchemaCreate):
-        season = self.model(year=s.year,
-                            description=s.description
-                            )
+        season = self.model(year=s.year, description=s.description)
         return await super().create(season)
 
     async def update_season(self, item_id: int, item: SeasonSchemaUpdate, **kwargs):
@@ -41,5 +39,5 @@ async def async_main() -> None:
     await db.engine.dispose()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(async_main())

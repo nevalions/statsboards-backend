@@ -22,6 +22,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from src.core.models import Base
 from src.core.config import settings
+
 target_metadata = Base.metadata
 
 
@@ -29,7 +30,7 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-config.set_main_option('sqlalchemy.url', settings.db.db_url)
+config.set_main_option("sqlalchemy.url", settings.db.db_url)
 
 
 def run_migrations_offline() -> None:
