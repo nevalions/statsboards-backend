@@ -8,7 +8,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from src.pars_eesl import BASE_SEASON_URL
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
 
-
 api_pars_season_router = APIRouter()
 
 
@@ -22,7 +21,7 @@ async def get_parsed_season(eesl_season_id: int):
         raise HTTPException(status_code=404,
                             detail=f"Season {BASE_SEASON_URL}{eesl_season_id} not found")
 
-
+#
 # @api_pars_season_router.post("/api/pars/season/{eesl_season_id}",
 #                              tags=["pars"])
 # async def create_parsed_tournament(

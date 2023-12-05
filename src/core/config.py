@@ -1,33 +1,38 @@
-from pathlib import Path
-from pydantic import BaseModel
-from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
-import os
-import platform
+from pydantic import PostgresDsn
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
-os_sys = platform.system()
-
-BASE_DIR = Path(__file__).parent.parent
-
-host = str(os.getenv("HOST"))
-user = str(os.getenv("DB_USER"))
-password = str(os.getenv("PASSWORD"))
-db_name = str(os.getenv("DB_NAME"))
-port = str(os.getenv("PORT"))
 
 
-class DbSettings(BaseModel):
-    url: str = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
-    echo: bool = False
-    # echo: bool = True
+class DbSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file='.env', env_prefix='DB_')
+    host: str
+    user: str
+    password: str
+    name: str
+    port: int
+
+    @property
+    def db_url(self) -> PostgresDsn:
+        # print(self.host, self.user, self.password, self.name)
+        url = str(PostgresDsn.build(
+            scheme="postgresql+asyncpg",
+            username=self.user,
+            password=self.password,
+            host=self.host,
+            port=self.port,
+            path=self.name
+        ))
+        return url
 
 
 class Settings(BaseSettings):
-    api_v1_prefix: str = "/api/v1"
 
+    # api_v1_prefix: str = "/api/v1"
     db: DbSettings = DbSettings()
-    db_echo: bool = True
+    db_echo: bool = False
 
 
 settings = Settings()
+# print(str(settings.db.db_url))

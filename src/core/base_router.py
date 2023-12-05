@@ -1,10 +1,7 @@
-# from src.async_db.base import DATABASE_URL, Database
-
-
 from typing import List, TypeVar, Generic
 from fastapi import APIRouter, HTTPException
+from fastapi.params import Query
 
-# db = Database(DATABASE_URL)
 
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType")
@@ -21,14 +18,19 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def route(self):
         router = APIRouter(prefix=self.prefix, tags=self.tags)
 
-        @router.get("/order_by={order_by}/des={des}", response_model=List[ModelType])
-        async def get_all(skip: int = 0, limit: int = 100,
-                          order_by: str = 'id', des: bool = False):
-            return await self.service.get_all(skip, limit, order_by, des)
+        @router.get("/")
+        async def get_all_elem(
+                skip: int = Query(0, description="Skip items"),
+                limit: int = Query(100, description="Limit items"),
+                order_by: str = Query('id', description="Order items by"),
+                des: bool = Query(False, description="Sort items in descending order")
+        ):
+            return await self.service.get_all_elements(skip, limit, order_by, des)
 
-        @router.get("/id/{model_id}", response_model=ModelType)
+        @router.get("/id/{model_id}")  # Remove response_model temporarily
         async def get_by_id(model_id: int):
             model = await self.service.get_by_id(model_id)
+            print(f"Content of model: {model}")  # Print the content for inspection
             if model is None:
                 raise HTTPException(status_code=404,
                                     detail=f"{ModelType.__name__} {model_id} not found")

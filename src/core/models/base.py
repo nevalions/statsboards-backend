@@ -1,4 +1,4 @@
-from __future__ import annotations
+from sqlalchemy.orm import Mapped, mapped_column, declared_attr
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,14 +8,16 @@ from sqlalchemy.orm import DeclarativeBase
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
-from src.core.config import user, password, host, port, db_name
+from src.core.config import settings
 
-DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
+# DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
 
 
 class Database:
-    def __init__(self, db_url):
-        self.engine = create_async_engine(db_url, future=True)
+    def __init__(self, db_url: str, echo: bool = False):
+        self.engine = create_async_engine(
+            url=db_url,
+            echo=echo)
         self.async_session = async_sessionmaker(
             bind=self.engine,
             class_=AsyncSession,
@@ -23,7 +25,7 @@ class Database:
         )
 
 
-db = Database(DATABASE_URL)
+db = Database(db_url=settings.db.db_url, echo=settings.db_echo)
 
 
 class BaseServiceDB:
@@ -44,8 +46,8 @@ class BaseServiceDB:
                                     detail=f"{self.model.__name__} creation error."
                                            f"Check input data.")
 
-    async def get_all(self, skip: int = 0, limit: int = 100,
-                      order_by: str = 'id', descending: bool = False):
+    async def get_all_elements(self, skip: int = 0, limit: int = 100,
+                               order_by: str = 'id', descending: bool = False):
         async with self.db.async_session() as session:
             order = getattr(self.model, order_by)
             new_order = self.is_des(descending, order)
@@ -53,20 +55,21 @@ class BaseServiceDB:
             stmt = select(self.model).offset(skip).limit(limit).order_by(new_order)
 
             items = await session.execute(stmt)
-            result = []
-            for item in items.scalars().fetchall():
-                result.append(item.__dict__)
-            return result
+            result = items.scalars().all()
+            return list(result)
 
     async def get_by_id(self, item_id: int):
         async with self.db.async_session() as session:
-            return await session.get(self.model, item_id)
+            result = await session.execute(select(self.model).filter_by(id=item_id))
+            model = result.scalars().one_or_none()
+            print(f"Type of model: {type(model)}")  # Add this line for debugging
+            return model
 
     async def update(self, item_id: int, item, **kwargs):
         async with self.db.async_session() as session:
 
             db_item = await self.get_by_id(item_id)
-            if db_item is None:
+            if not db_item:
                 return None
 
             for key, value in item.dict(exclude_unset=True).items():
@@ -82,7 +85,7 @@ class BaseServiceDB:
     async def delete(self, item_id: int):
         async with self.db.async_session() as session:
             db_item = await self.get_by_id(item_id)
-            if db_item is None:
+            if not db_item:
                 raise HTTPException(status_code=404,
                                     detail=f"{self.model.__name__} not found")
             await session.delete(db_item)
@@ -114,7 +117,8 @@ class BaseServiceDB:
             return result
 
     async def update_item_by_eesl_id(self, item,
-                                     eesl_field_name: str, eesl_value: int):
+                                     eesl_field_name: str,
+                                     eesl_value: int):
         async with self.db.async_session() as session:
             is_exist = await self.get_item_by_field_value(eesl_value, eesl_field_name)
             if is_exist:
@@ -154,11 +158,19 @@ class BaseServiceDB:
     @staticmethod
     def is_des(descending, order):
         if descending:
+            # print(descending)
             order = order.desc()
         else:
+            # print(descending)
             order = order.asc()
         return order
 
 
 class Base(DeclarativeBase):
-    pass
+    __abstract__ = True
+
+    # @declared_attr.directive
+    # def __tablename__(cls) -> str:
+    #     return f"{cls.__name__.lower()}s"
+
+    id: Mapped[int] = mapped_column(primary_key=True)

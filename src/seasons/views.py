@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 
-from src.core import BaseRouter
-from schemas import SeasonSchemaCreate, SeasonSchema, SeasonSchemaUpdate
-from src.async_db.seasons import SeasonServiceDB, db
+from src.core import BaseRouter, db
+from .db_service import SeasonServiceDB
+from .schemas import SeasonSchemaCreate, SeasonSchema, SeasonSchemaUpdate
 
 
 class SeasonRouter(BaseRouter[SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate]):
