@@ -1,7 +1,6 @@
 import asyncio
-from fastapi import HTTPException
 
-from sqlalchemy import select
+from fastapi import HTTPException
 
 from src.core.models import db, BaseServiceDB, TournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
@@ -66,4 +65,3 @@ async def async_main() -> None:
 
 if __name__ == '__main__':
     asyncio.run(async_main())
-
