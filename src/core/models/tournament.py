@@ -1,7 +1,5 @@
-from typing import TYPE_CHECKING
-
-from sqlalchemy import String, Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Integer, Text, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.models import Base
 
@@ -25,6 +23,10 @@ class TournamentDB(Base):
                                              server_default='')
     tournament_logo_url: Mapped[str] = mapped_column(String(255),
                                                      nullable=True)
+
+    season_id: Mapped[int] = mapped_column(
+        ForeignKey("season.id")
+    )
 
     # fk_season = Column(Integer, ForeignKey('season.year', ondelete="CASCADE"),
     #                    nullable=False)
