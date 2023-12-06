@@ -49,26 +49,6 @@ class TournamentServiceDB(BaseServiceDB):
             field_name=field_name,
         )
 
-    # async def get_tournaments_by_year(
-    #         self,
-    #         year: int,
-    #         field_name: str = "season_id",
-    #         order_by: str = "season_id",
-    #         descending: bool = False,
-    #         skip: int = 0,
-    #         limit: int = 100,
-    # ):
-    #     return await self.get_items_by_attribute(
-    #         value=year,
-    #         field_name=field_name,
-    #         order_by=order_by,
-    #         descending=descending,
-    #         skip=skip,
-    #         limit=limit,
-    #     )
-    # async def get_tournaments_by_year(self, year: int) -> list[TournamentDB]:
-    #     stmt = select(TournamentDB).
-
     async def update_tournament(
         self,
         item_id: int,

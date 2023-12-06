@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
-from .db_service import SeasonServiceDB
+from .db_services import SeasonServiceDB
 from .schemas import SeasonSchemaCreate, SeasonSchema, SeasonSchemaUpdate
 
 

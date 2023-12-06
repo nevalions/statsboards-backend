@@ -114,33 +114,33 @@ class BaseServiceDB:
             # print(result)
             return result.scalars().one_or_none()
 
-    async def get_items_by_attribute(
-        self,
-        value,
-        field_name: str,
-        order_by: str = "id",
-        descending: bool = False,
-        skip=0,
-        limit=100,
-    ):
-        async with self.db.async_session() as session:
-            order = getattr(self.model, order_by)
-            new_order = self.is_des(descending, order)
-            column: Column = getattr(self.model, field_name)
-
-            stmt = (
-                select(self.model)
-                .where(column == value)
-                .offset(skip)
-                .limit(limit)
-                .order_by(new_order)
-            )
-
-            items = await session.execute(stmt)
-            result = []
-            for item in items.scalars().fetchall():
-                result.append(item.__dict__)
-            return result
+    # async def get_items_by_attribute(
+    #     self,
+    #     value,
+    #     field_name: str,
+    #     order_by: str = "id",
+    #     descending: bool = False,
+    #     skip=0,
+    #     limit=100,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         order = getattr(self.model, order_by)
+    #         new_order = self.is_des(descending, order)
+    #         column: Column = getattr(self.model, field_name)
+    #
+    #         stmt = (
+    #             select(self.model)
+    #             .where(column == value)
+    #             .offset(skip)
+    #             .limit(limit)
+    #             .order_by(new_order)
+    #         )
+    #
+    #         items = await session.execute(stmt)
+    #         result = []
+    #         for item in items.scalars().fetchall():
+    #             result.append(item.__dict__)
+    #         return result
 
     async def update_item_by_eesl_id(self, item, eesl_field_name: str, eesl_value: int):
         async with self.db.async_session() as session:

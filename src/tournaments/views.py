@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
-from .db_service import TournamentServiceDB
+from .db_services import TournamentServiceDB
 from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate
 
 
