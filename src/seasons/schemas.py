@@ -4,7 +4,13 @@ from typing import Annotated
 
 
 class SeasonSchemaBase(BaseModel):
-    year: Annotated[int, Path(ge=1900, lt=3000)]
+    year: Annotated[
+        int,
+        Path(
+            ge=1900,
+            lt=3000,
+        ),
+    ]
     description: str | None = None
 
 

@@ -2,7 +2,6 @@ from typing import List, TypeVar, Generic
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Query
 
-
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType")
 UpdateSchemaType = TypeVar("UpdateSchemaType")
@@ -32,7 +31,8 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             print(f"Content of model: {model}")  # Print the content for inspection
             if model is None:
                 raise HTTPException(
-                    status_code=404, detail=f"{ModelType.__name__} {model_id} not found"
+                    status_code=404,
+                    detail=f"{str(ModelType.__name__)} {model_id} not found",
                 )
             return model
 

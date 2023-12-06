@@ -32,33 +32,14 @@ class TournamentRouter(
             return update_.__dict__
 
         @router.get("/eesl_id/{eesl_id}", response_model=TournamentSchema)
-        async def get_tournament_by_eesl_id(
-            tournament_eesl_id: int,
-        ):
-            tournament = await self.service.get_tournament_by_eesl_id(
-                value=tournament_eesl_id
-            )
+        async def get_tournament_by_eesl_id(eesl_id: int):
+            tournament = await self.service.get_tournament_by_eesl_id(value=eesl_id)
             if tournament is None:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Tournament eesl_id({tournament_eesl_id}) " f"not found",
+                    detail=f"Tournament eesl_id({eesl_id}) " f"not found",
                 )
             return tournament.__dict__
-
-        @router.get(
-            "/year/{year}/order_by={order_by}/des={des}",
-            response_model=List[TournamentSchema],
-        )
-        async def get_tournaments_by_year(
-            year: int,
-            order_by: str = "fk_season",
-            descending: bool = False,
-            skip: int = 0,
-            limit: int = 100,
-        ):
-            return await self.service.get_tournaments_by_year(
-                year, order_by=order_by, descending=descending, skip=skip, limit=limit
-            )
 
         return router
 

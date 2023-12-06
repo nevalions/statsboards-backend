@@ -5,9 +5,19 @@ from .db_service import SeasonServiceDB
 from .schemas import SeasonSchemaCreate, SeasonSchema, SeasonSchemaUpdate
 
 
-class SeasonRouter(BaseRouter[SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate]):
+class SeasonRouter(
+    BaseRouter[
+        SeasonSchema,
+        SeasonSchemaCreate,
+        SeasonSchemaUpdate,
+    ]
+):
     def __init__(self, service: SeasonServiceDB):
-        super().__init__("/api/seasons", ["seasons"], service)
+        super().__init__(
+            "/api/seasons",
+            ["seasons"],
+            service,
+        )
 
     def route(self):
         router = super().route()
@@ -18,10 +28,19 @@ class SeasonRouter(BaseRouter[SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpda
             return new_.__dict__
 
         @router.put("/", response_model=SeasonSchema)
-        async def update_season(item_id: int, item: SeasonSchemaUpdate):
-            update_ = await self.service.update_season(item_id, item)
+        async def update_season(
+                item_id: int,
+                item: SeasonSchemaUpdate,
+        ):
+            update_ = await self.service.update_season(
+                item_id,
+                item,
+            )
             if update_ is None:
-                raise HTTPException(status_code=404, detail="Season not found")
+                raise HTTPException(
+                    status_code=404,
+                    detail="Season not found",
+                )
             return update_.__dict__
 
         @router.get("/year/{season_year}", response_model=SeasonSchema)
@@ -32,6 +51,14 @@ class SeasonRouter(BaseRouter[SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpda
                     status_code=404, detail=f"Season {season_year} not found"
                 )
             return season.__dict__
+
+        @router.get("/year/{year}/tournaments")
+        async def get_tournaments_by_year(
+                year: int,
+        ):
+            return await self.service.get_tournaments_by_year(
+                year,
+            )
 
         return router
 

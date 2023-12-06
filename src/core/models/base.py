@@ -6,9 +6,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import select, update, Result, Column
 
 from src.core.config import settings
+
 
 # DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
 
@@ -63,9 +64,13 @@ class BaseServiceDB:
 
     async def get_by_id(self, item_id: int):
         async with self.db.async_session() as session:
-            result = await session.execute(select(self.model).filter_by(id=item_id))
+            result = await session.execute(
+                select(self.model).where(self.model.id == item_id)
+            )
             model = result.scalars().one_or_none()
-            print(f"Type of model: {type(model)}")  # Add this line for debugging
+            print(
+                f"Type of model: {self.model.__name__}"
+            )  # Add this line for debugging
             return model
 
     async def update(self, item_id: int, item, **kwargs):
@@ -101,8 +106,12 @@ class BaseServiceDB:
 
     async def get_item_by_field_value(self, value, field_name: str):
         async with self.db.async_session() as session:
-            stmt = select(self.model).filter(getattr(self.model, field_name) == value)
-            result = await session.execute(stmt)
+            # Access the column directly from the model
+            column: Column = getattr(self.model, field_name)
+
+            stmt = select(self.model).where(column == value)
+            result: Result = await session.execute(stmt)
+            # print(result)
             return result.scalars().one_or_none()
 
     async def get_items_by_attribute(
@@ -117,10 +126,11 @@ class BaseServiceDB:
         async with self.db.async_session() as session:
             order = getattr(self.model, order_by)
             new_order = self.is_des(descending, order)
+            column: Column = getattr(self.model, field_name)
 
             stmt = (
                 select(self.model)
-                .where(getattr(self.model, field_name) == value)
+                .where(column == value)
                 .offset(skip)
                 .limit(limit)
                 .order_by(new_order)
@@ -182,10 +192,8 @@ class BaseServiceDB:
     @staticmethod
     def is_des(descending, order):
         if descending:
-            # print(descending)
             order = order.desc()
         else:
-            # print(descending)
             order = order.asc()
         return order
 

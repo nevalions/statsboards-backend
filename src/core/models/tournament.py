@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Text, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Integer, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.models import Base
 from . import SeasonRelationMixin
@@ -14,15 +14,29 @@ from . import SeasonRelationMixin
 class TournamentDB(SeasonRelationMixin, Base):
     __tablename__ = "tournament"
     __table_args__ = {"extend_existing": True}
+    _season_id_nullable = False
     _ondelete = "CASCADE"
     _season_back_populates = "tournaments"
 
-    tournament_eesl_id: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str] = mapped_column(
-        Text, nullable=True, default="", server_default=""
+    tournament_eesl_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        unique=True,
     )
-    tournament_logo_url: Mapped[str] = mapped_column(String(255), nullable=True)
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    description: Mapped[str] = mapped_column(
+        Text,
+        nullable=True,
+        default="",
+        server_default="",
+    )
+    tournament_logo_url: Mapped[str] = mapped_column(
+        String(255),
+        nullable=True,
+    )
 
     ## season_id: Mapped[int] = mapped_column(
     ##     ForeignKey("season.id", ondelete="CASCADE"), nullable=False

@@ -8,14 +8,14 @@ class TournamentSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=255)]
     description: str | None = None
     tournament_logo_url: str | None = None
-    # fk_season: int
+    season_id: int
 
 
 class TournamentSchemaUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     tournament_logo_url: str | None = None
-    # fk_season: Optional[int] | None = None
+    season_id: int | None = None
 
 
 class TournamentSchemaCreate(TournamentSchemaBase):

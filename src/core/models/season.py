@@ -13,14 +13,26 @@ class SeasonDB(Base):
     __tablename__ = "season"
     __table_args__ = {"extend_existing": True}
 
-    year: Mapped[int] = mapped_column(Integer, unique=True)
+    year: Mapped[int] = mapped_column(
+        Integer,
+        unique=True,
+    )
     description: Mapped[int] = mapped_column(
-        Text, nullable=True, default="", server_default=""
+        Text,
+        nullable=True,
+        default="",
+        server_default="",
     )
 
     tournaments: Mapped[list["TournamentDB"]] = relationship(
-        back_populates="season", cascade="all, delete-orphan", passive_deletes=True
+        back_populates="season",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
+
+    @property
+    def get_tournaments(self):
+        return self.tournaments
 
     # tournaments = relationship(
     #     'TournamentDB', cascade="all, delete-orphan", back_populates="seasons",
