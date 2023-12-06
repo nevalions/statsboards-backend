@@ -30,10 +30,6 @@ class SeasonDB(Base):
         passive_deletes=True,
     )
 
-    @property
-    def get_tournaments(self):
-        return self.tournaments
-
     # tournaments = relationship(
     #     'TournamentDB', cascade="all, delete-orphan", back_populates="seasons",
     #     passive_deletes=True)
