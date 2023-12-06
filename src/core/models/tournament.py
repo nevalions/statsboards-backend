@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 from . import SeasonRelationMixin
 
-
-# if TYPE_CHECKING:
-#     from .season import SeasonDB
+if TYPE_CHECKING:
+    from .season import SeasonDB
+    from .team import TeamDB
 
 
 class TournamentDB(SeasonRelationMixin, Base):
@@ -51,7 +51,7 @@ class TournamentDB(SeasonRelationMixin, Base):
 
     # matches = relationship('MatchDB', cascade="all, delete-orphan",
     #                        back_populates="tournaments", passive_deletes=True)
-    # fk_teams_id = relationship('TeamDB',
-    #                            secondary='team_tournament',
-    #                            back_populates='fk_tournaments_id')
+    teams = relationship(
+        "TeamDB", secondary="team_tournament", back_populates="tournaments"
+    )
     # lazy='subquery')
