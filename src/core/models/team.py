@@ -37,9 +37,7 @@ class TeamDB(Base):
         nullable=True,
     )
 
-    #
-    tournaments = relationship(
-        "TournamentDB",
+    tournaments: Mapped[list["TournamentDB"]] = relationship(
         secondary="team_tournament",
         back_populates="teams",
         cascade="save-update, merge",

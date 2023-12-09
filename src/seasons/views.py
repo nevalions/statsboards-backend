@@ -48,7 +48,8 @@ class SeasonRouter(
             season = await self.service.get_season_by_year(season_year)
             if season is None:
                 raise HTTPException(
-                    status_code=404, detail=f"Season {season_year} not found"
+                    status_code=404,
+                    detail=f"Season {season_year} not found",
                 )
             return season.__dict__
 

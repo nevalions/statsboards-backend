@@ -24,21 +24,34 @@ class TeamTournamentRouter(
     def route(self):
         router = super().route()
 
-        @router.post("/", response_model=TeamTournamentSchema)
-        async def create_team_tournament_relation(item: TeamTournamentSchemaCreate):
-            new_ = await self.service.create_team_tournament_relation(item)
+        @router.post("/")
+        async def create_team_tournament_relation(
+                tournament_id: int,
+                team_id: int,
+        ):
+            new_ = await self.service.create_team_tournament_relation(
+                tournament_id,
+                team_id,
+            )
+            print(new_)
             if new_:
-                return new_.__dict__
+                return new_
             else:
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Relation Team id({item.fk_team}) "
-                    f"Tournament id({item.fk_tournament}) "
-                    f"not created. Maybe already exist.",
+                    # detail=f"Relation Team id({item.fk_team}) "
+                    # f"Tournament id({item.fk_tournament}) "
+                    # f"not created. Maybe already exist.",
                 )
 
-        @router.put("/", response_model=TeamTournamentSchema)
-        async def update_tournament(item_id: int, item: TeamTournamentSchemaUpdate):
+        @router.put(
+            "/",
+            response_model=TeamTournamentSchema,
+        )
+        async def update_tournament(
+                item_id: int,
+                item: TeamTournamentSchemaUpdate,
+        ):
             update_ = await self.service.update_team_tournament(item_id, item)
             if update_ is None:
                 raise HTTPException(
@@ -46,20 +59,20 @@ class TeamTournamentRouter(
                 )
             return update_.__dict__
 
+        @router.delete("/relations/{rel_id}")
+        async def delete_team_tournament_relation(rel_id: int):
+            return await self.service.delete_team_tournament_relationship(rel_id)
+
+        @router.get("/relations/")
+        async def get_all_team_tournaments_relationships():
+            return await self.service.get_all_team_tournaments_relationships_ids()
+
         @router.get(
             "/tournament/id/{tournament_id}/teams/",
             # response_model=List[TeamSchema]
         )
-        async def get_teams_by_tournament_id(
-            tournament_id: int,
-            order_by: str = "id",
-            descending: bool = False,
-            skip: int = 0,
-            limit: int = 100,
-        ):
-            return await self.service.get_teams_by_tournament(
-                tournament_id, order_by, descending, skip, limit
-            )
+        async def get_teams_by_tournament_id(tournament_id: int):
+            return await self.service.get_teams_by_tournament(tournament_id)
 
         return router
 

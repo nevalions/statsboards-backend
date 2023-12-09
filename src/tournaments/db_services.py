@@ -14,13 +14,15 @@ class TournamentServiceDB(BaseServiceDB):
     async def create_tournament(self, t: TournamentSchemaCreate):
         try:
             # Try to query for existing item
-            tournament = await self.update_item_by_eesl_id(
-                t,
-                "tournament_eesl_id",
-                t.tournament_eesl_id,
-            )
-            if tournament:
-                return tournament
+            if t.tournament_eesl_id:
+                print(t.tournament_eesl_id)
+                tournament = await self.update_item_by_eesl_id(
+                    t,
+                    "tournament_eesl_id",
+                    t.tournament_eesl_id,
+                )
+                if tournament:
+                    return tournament
             else:
                 tournament = self.model(
                     title=t.title,

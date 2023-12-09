@@ -38,6 +38,11 @@ class TournamentDB(SeasonRelationMixin, Base):
         nullable=True,
     )
 
+    teams: Mapped[list["TeamDB"]] = relationship(
+        secondary="team_tournament",
+        back_populates="tournaments",
+    )
+
     ## season_id: Mapped[int] = mapped_column(
     ##     ForeignKey("season.id", ondelete="CASCADE"), nullable=False
     ## )
@@ -51,7 +56,5 @@ class TournamentDB(SeasonRelationMixin, Base):
 
     # matches = relationship('MatchDB', cascade="all, delete-orphan",
     #                        back_populates="tournaments", passive_deletes=True)
-    teams = relationship(
-        "TeamDB", secondary="team_tournament", back_populates="tournaments"
-    )
+
     # lazy='subquery')

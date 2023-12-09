@@ -14,13 +14,14 @@ class TeamServiceDB(BaseServiceDB):
     async def create_team(self, t: TeamSchemaCreate):
         try:
             # Try to query for existing item
-            team = await self.update_item_by_eesl_id(
-                t,
-                "team_eesl_id",
-                t.team_eesl_id,
-            )
-            if team:
-                return team
+            if t.team_eesl_id:
+                team = await self.update_item_by_eesl_id(
+                    t,
+                    "team_eesl_id",
+                    t.team_eesl_id,
+                )
+                if team:
+                    return team
             else:
                 team = self.model(
                     team_eesl_id=t.team_eesl_id,

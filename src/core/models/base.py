@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr
+from sqlalchemy.orm import Mapped, mapped_column, declared_attr, selectinload
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from fastapi import HTTPException
-from sqlalchemy import select, update, Result, Column
+from sqlalchemy import select, update, Result, Column, Table, TextClause
 
 from src.core.config import settings
 
@@ -42,15 +42,15 @@ class BaseServiceDB:
                 raise HTTPException(
                     status_code=409,
                     detail=f"{self.model.__name__} creation error."
-                    f"Check input data.",
+                           f"Check input data.",
                 )
 
     async def get_all_elements(
-        self,
-        skip: int = 0,
-        limit: int = 100,
-        order_by: str = "id",
-        descending: bool = False,
+            self,
+            skip: int = 0,
+            limit: int = 100,
+            order_by: str = "id",
+            descending: bool = False,
     ):
         async with self.db.async_session() as session:
             order = getattr(self.model, order_by)
@@ -160,34 +160,97 @@ class BaseServiceDB:
                 return None
 
     async def find_relation(
-        self,
-        fk_item_one: int,
-        fk_item_two: int,
-        field_name_one: str,
-        field_name_two: str,
+            self,
+            secondary_table: TextClause,
+            fk_item_one: int,
+            fk_item_two: int,
+            field_name_one: str,
+            field_name_two: str,
     ):
         async with self.db.async_session() as session:
-            stmt = select(self.model).filter(
-                getattr(self.model, field_name_one) == fk_item_one,
-                getattr(self.model, field_name_two) == fk_item_two,
+            # Check if the relation already exists
+            existing_relation = await session.execute(
+                select(secondary_table).filter(
+                    (getattr(self.model, field_name_one) == fk_item_one)
+                    & (getattr(self.model, field_name_two) == fk_item_two)
+                )
             )
 
-            existing_record = await session.execute(stmt)
-            return existing_record.scalars().one_or_none()
+            return existing_relation.scalar()
 
     async def is_relation_exist(
-        self,
-        fk_item_one: int,
-        fk_item_two: int,
-        field_name_one: str,
-        field_name_two: str,
+            self,
+            secondary_table,
+            fk_item_one: int,
+            fk_item_two: int,
+            field_name_one: str,
+            field_name_two: str,
     ) -> bool:
         existing_record = await self.find_relation(
-            fk_item_one, fk_item_two, field_name_one, field_name_two
+            secondary_table,
+            fk_item_one,
+            fk_item_two,
+            field_name_one,
+            field_name_two,
         )
         if existing_record:
             return True
         return False
+
+    async def create_m2m_relation(
+            self,
+            parent_model,
+            child_model,
+            secondary_table: TextClause,
+            parent_id: int,
+            child_id: int,
+            parent_id_name: str,
+            child_id_name: str,
+            child_relation,
+    ):
+        async with self.db.async_session() as session:
+            existing_relation = await self.is_relation_exist(
+                secondary_table,
+                parent_id,
+                child_id,
+                parent_id_name,
+                child_id_name,
+            )
+
+            if existing_relation:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"{parent_model.__name__}-{child_model.__name__} relation already exists",
+                )
+
+            parent = await session.scalar(
+                select(parent_model)
+                .where(parent_model.id == parent_id)
+                .options(selectinload(getattr(parent_model, child_relation))),
+            )
+            if parent:
+                child = await session.execute(
+                    select(child_model).where(child_model.id == child_id)
+                )
+                child_new = child.scalar()
+                print(child_new.id)
+                if child_new:
+                    try:
+                        getattr(parent, child_relation).append(child_new)
+                        await session.commit()
+                        return list(getattr(parent, child_relation))
+                    except Exception as ex:
+                        raise ex
+                else:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"{child_model.__name__} id:{child_id} not found",
+                    )
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"{parent_model.__name__} id:{parent_id} not found",
+                )
 
     @staticmethod
     def is_des(descending, order):
