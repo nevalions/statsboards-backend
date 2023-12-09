@@ -35,12 +35,12 @@ class TeamTournamentServiceDB(BaseServiceDB):
             tournament_id: int,
     ):
         async with self.db.async_session() as session:
-            teams = await session.scalar(
+            tournament_teams = await session.scalar(
                 select(TournamentDB)
                 .where(TournamentDB.id == tournament_id)
                 .options(selectinload(TournamentDB.teams))
             )
-            return teams
+            return tournament_teams
 
 
 async def get_team_tour_db() -> TeamTournamentServiceDB:

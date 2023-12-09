@@ -23,7 +23,6 @@ class TeamTournamentDB(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-
     tournament_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(
@@ -32,7 +31,6 @@ class TeamTournamentDB(Base):
         ),
         nullable=False,
     )
-
     team_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(
@@ -41,7 +39,6 @@ class TeamTournamentDB(Base):
         ),
         nullable=False,
     )
-
 
 # class TeamTournamentDB(Base):
 #     __tablename__ = "team_tournament"

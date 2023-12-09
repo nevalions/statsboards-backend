@@ -39,9 +39,9 @@ class TeamTournamentRouter(
             else:
                 raise HTTPException(
                     status_code=409,
-                    # detail=f"Relation Team id({item.fk_team}) "
-                    # f"Tournament id({item.fk_tournament}) "
-                    # f"not created. Maybe already exist.",
+                    detail=f"Relation Team id({team_id}) "
+                           f"Tournament id({tournament_id}) "
+                           f"not created. Maybe already exist.",
                 )
 
         @router.put(
@@ -58,14 +58,6 @@ class TeamTournamentRouter(
                     status_code=404, detail=f"Team Tournament id {item_id} not found"
                 )
             return update_.__dict__
-
-        @router.delete("/relations/{rel_id}")
-        async def delete_team_tournament_relation(rel_id: int):
-            return await self.service.delete_team_tournament_relationship(rel_id)
-
-        @router.get("/relations/")
-        async def get_all_team_tournaments_relationships():
-            return await self.service.get_all_team_tournaments_relationships_ids()
 
         @router.get(
             "/tournament/id/{tournament_id}/teams/",
