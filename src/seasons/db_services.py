@@ -1,8 +1,6 @@
 import asyncio
 
-from fastapi import HTTPException
 from sqlalchemy import select, Result
-from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate

@@ -268,8 +268,8 @@ class BaseServiceDB:
 
     async def get_related_items_level_one_by_id(
             self,
-            item_id,
-            related_property,
+            item_id: int,
+            related_property: str,
     ):
         async with self.db.async_session() as session:
             try:
@@ -288,7 +288,7 @@ class BaseServiceDB:
             self,
             filter_key: str,
             filter_value: Any,
-            related_property,
+            related_property: str,
     ):
         async with self.db.async_session() as session:
             try:
@@ -319,7 +319,6 @@ class BaseServiceDB:
                     selectinload(getattr(self.model, related_property))
                     .joinedload(getattr(second_model, second_level_property))
                 )
-                # .filter_by(**{filter_key: filter_value})
             )
 
             result = await session.execute(query)
@@ -335,7 +334,7 @@ class BaseServiceDB:
             else:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"{model.__name__} {key} not found",
+                    detail=f"{second_model} {filter_key} not found",
                 )
 
     # async def get_related_items_level_two(
