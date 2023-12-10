@@ -12,12 +12,12 @@ class TeamTournamentServiceDB(BaseServiceDB):
         super().__init__(database, TeamTournamentDB)
 
     async def create_team_tournament_relation(
-            self,
-            tournament_id: int,
-            team_id: int,
-            tournament_id_name: str = "tournament_id",
-            team_id_name: str = "team_id",
-            child_relation="teams",
+        self,
+        tournament_id: int,
+        team_id: int,
+        tournament_id_name: str = "tournament_id",
+        team_id_name: str = "team_id",
+        child_relation="teams",
     ):
         return await self.create_m2m_relation(
             parent_model=TournamentDB,

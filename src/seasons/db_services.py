@@ -23,10 +23,10 @@ class SeasonServiceDB(BaseServiceDB):
         return await super().create(season)
 
     async def update_season(
-            self,
-            item_id: int,
-            item: SeasonSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: SeasonSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,
@@ -43,9 +43,7 @@ class SeasonServiceDB(BaseServiceDB):
         async with self.db.async_session() as session:
             stmt = (
                 select(SeasonDB)
-                .options(
-                    joinedload(SeasonDB.tournaments)
-                )
+                .options(joinedload(SeasonDB.tournaments))
                 .filter_by(year=year)
             )
 
@@ -64,8 +62,7 @@ class SeasonServiceDB(BaseServiceDB):
             stmt = (
                 select(SeasonDB)
                 .options(
-                    selectinload(SeasonDB.tournaments)
-                    .joinedload(TournamentDB.teams)
+                    selectinload(SeasonDB.tournaments).joinedload(TournamentDB.teams)
                 )
                 .filter_by(year=year)
             )

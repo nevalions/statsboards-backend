@@ -35,7 +35,7 @@ class TeamRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
         @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)
         async def get_team_by_eesl_id(
-                team_eesl_id: int,
+            team_eesl_id: int,
         ):
             tournament = await self.service.get_team_by_eesl_id(value=team_eesl_id)
             if tournament is None:

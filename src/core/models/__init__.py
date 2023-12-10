@@ -7,6 +7,7 @@ __all__ = (
     "TournamentDB",
     "TeamDB",
     "TeamTournamentDB",
+    "MatchDB",
 )
 
 from .base import Base, BaseServiceDB, db
@@ -15,3 +16,4 @@ from .season import SeasonDB
 from .tournament import TournamentDB
 from .team import TeamDB
 from .team_tournament import TeamTournamentDB
+from .match import MatchDB

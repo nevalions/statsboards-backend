@@ -16,7 +16,7 @@ class TournamentServiceDB(BaseServiceDB):
         try:
             # Try to query for existing item
             if t.tournament_eesl_id:
-                print(t.tournament_eesl_id)
+                # print(t.tournament_eesl_id)
                 tournament = await self.update_item_by_eesl_id(
                     t,
                     "tournament_eesl_id",
@@ -38,14 +38,14 @@ class TournamentServiceDB(BaseServiceDB):
             raise HTTPException(
                 status_code=409,
                 detail=f"Tournament eesl "
-                       f"id({t.tournament_eesl_id}) "
-                       f"returned some error",
+                f"id({t.tournament_eesl_id}) "
+                f"returned some error",
             )
 
     async def get_tournament_by_eesl_id(
-            self,
-            value,
-            field_name="tournament_eesl_id",
+        self,
+        value,
+        field_name="tournament_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -53,10 +53,10 @@ class TournamentServiceDB(BaseServiceDB):
         )
 
     async def update_tournament(
-            self,
-            item_id: int,
-            item: TournamentSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: TournamentSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,
@@ -65,8 +65,8 @@ class TournamentServiceDB(BaseServiceDB):
         )
 
     async def get_teams_by_tournament(
-            self,
-            tournament_id: int,
+        self,
+        tournament_id: int,
     ):
         async with self.db.async_session() as session:
             tournament_teams = await session.scalar(

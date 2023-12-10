@@ -26,8 +26,8 @@ class TeamTournamentRouter(
 
         @router.post("/")
         async def create_team_tournament_relation(
-                tournament_id: int,
-                team_id: int,
+            tournament_id: int,
+            team_id: int,
         ):
             new_ = await self.service.create_team_tournament_relation(
                 tournament_id,
@@ -40,8 +40,8 @@ class TeamTournamentRouter(
                 raise HTTPException(
                     status_code=409,
                     detail=f"Relation Team id({team_id}) "
-                           f"Tournament id({tournament_id}) "
-                           f"not created. Maybe already exist.",
+                    f"Tournament id({tournament_id}) "
+                    f"not created. Maybe already exist.",
                 )
 
         @router.put(
@@ -49,8 +49,8 @@ class TeamTournamentRouter(
             response_model=TeamTournamentSchema,
         )
         async def update_tournament(
-                item_id: int,
-                item: TeamTournamentSchemaUpdate,
+            item_id: int,
+            item: TeamTournamentSchemaUpdate,
         ):
             update_ = await self.service.update_team_tournament(item_id, item)
             if update_ is None:

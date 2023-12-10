@@ -40,6 +40,7 @@ class TeamTournamentDB(Base):
         nullable=False,
     )
 
+
 # class TeamTournamentDB(Base):
 #     __tablename__ = "team_tournament"
 #     __table_args__ = {"extend_existing": True}

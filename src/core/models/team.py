@@ -11,6 +11,7 @@ from src.core.models import Base
 if TYPE_CHECKING:
     from .season import SeasonDB
     from .tournament import TournamentDB
+    from .match import MatchDB
 
 
 class TeamDB(Base):
@@ -43,10 +44,9 @@ class TeamDB(Base):
         cascade="save-update, merge",
     )
 
-
-#
-#     matches = relationship(
-#         'MatchDB',
-#         primaryjoin="or_(TeamDB.id==MatchDB.fk_team_a, TeamDB.id==MatchDB.fk_team_b)",
-#         back_populates='teams', overlaps="team_a_matches, team_b_matches")
-#
+    matches: Mapped["MatchDB"] = relationship(
+        'MatchDB',
+        primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+        back_populates='teams',
+        # overlaps="team_a_matches, team_b_matches",
+    )

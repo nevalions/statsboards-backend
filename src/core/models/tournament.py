@@ -9,6 +9,7 @@ from . import SeasonRelationMixin
 if TYPE_CHECKING:
     from .season import SeasonDB
     from .team import TeamDB
+    from .match import MatchDB
 
 
 class TournamentDB(SeasonRelationMixin, Base):
@@ -43,6 +44,12 @@ class TournamentDB(SeasonRelationMixin, Base):
         back_populates="tournaments",
     )
 
+    matches: Mapped[list["MatchDB"]] = relationship(
+        cascade="all, delete-orphan",
+        back_populates="tournaments",
+        passive_deletes=True,
+    )
+
     ## season_id: Mapped[int] = mapped_column(
     ##     ForeignKey("season.id", ondelete="CASCADE"), nullable=False
     ## )
@@ -55,6 +62,6 @@ class TournamentDB(SeasonRelationMixin, Base):
     ###                        back_populates='tournaments')
 
     # matches = relationship('MatchDB', cascade="all, delete-orphan",
-    #                        back_populates="tournaments", passive_deletes=True)
+    #                       back_populates="tournaments", passive_deletes=True)
 
     # lazy='subquery')
