@@ -329,7 +329,8 @@ class BaseServiceDB:
             if item:
                 related_items = getattr(item, related_property)
                 for related_item in related_items:
-                    items.append(related_item)
+                    for final_point in getattr(related_item, second_level_property):
+                        items.append(final_point)
                 return items
             else:
                 raise HTTPException(

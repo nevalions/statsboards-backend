@@ -49,22 +49,6 @@ class SeasonServiceDB(BaseServiceDB):
             year,
             "tournaments",
         )
-        # async with self.db.async_session() as session:
-        #     stmt = (
-        #         select(SeasonDB)
-        #         .options(joinedload(SeasonDB.tournaments))
-        #         .filter_by(year=year)
-        #     )
-        #
-        #     result = await session.execute(stmt)
-        #     season = result.unique().scalars().one_or_none()
-        #
-        #     if season:
-        #         tournaments = season.tournaments
-        #         return tournaments
-        #
-        #     else:
-        #         raise HTTPException(status_code=404, detail=f"Season {year} not found")
 
     async def get_teams_by_year(
             self,
@@ -78,31 +62,6 @@ class SeasonServiceDB(BaseServiceDB):
             related_property='tournaments',
             second_level_property='teams',
         )
-
-        # async with self.db.async_session() as session:
-        #     stmt = (
-        #         select(SeasonDB)
-        #         .options(
-        #             selectinload(SeasonDB.tournaments)
-        #             .joinedload(TournamentDB.teams)
-        #         )
-        #         .filter_by(year=year)
-        #     )
-        #
-        #     result = await session.execute(stmt)
-        #     season = result.unique().scalars().one_or_none()
-        #
-        #     teams = []
-        #     if season:
-        #         tournaments = season.tournaments
-        #         for tournament in tournaments:
-        #             for team in tournament.teams:
-        #                 teams.append(team)
-        #         # teams = [team for tournament in tournaments for team in tournament.teams]
-        #         return teams
-        #
-        #     else:
-        #         raise HTTPException(status_code=404, detail=f"Season {year} not found")
 
 
 async def get_season_db() -> SeasonServiceDB:
