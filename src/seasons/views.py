@@ -29,8 +29,8 @@ class SeasonRouter(
 
         @router.put("/", response_model=SeasonSchema)
         async def update_season(
-            item_id: int,
-            item: SeasonSchemaUpdate,
+                item_id: int,
+                item: SeasonSchemaUpdate,
         ):
             update_ = await self.service.update_season(
                 item_id,
@@ -54,12 +54,12 @@ class SeasonRouter(
             return season.__dict__
 
         @router.get("/year/{year}/tournaments")
-        async def get_tournaments_by_year(
-            year: int,
-        ):
-            return await self.service.get_tournaments_by_year(
-                year,
-            )
+        async def get_tournaments_by_year(year: int):
+            return await self.service.get_tournaments_by_year(year)
+
+        @router.get("/year/{year}/teams")
+        async def get_teams_by_year(year: int, ):
+            return await self.service.get_teams_by_year(year)
 
         return router
 

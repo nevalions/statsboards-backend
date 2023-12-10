@@ -59,13 +59,6 @@ class TeamTournamentRouter(
                 )
             return update_.__dict__
 
-        @router.get(
-            "/tournament/id/{tournament_id}/teams/",
-            # response_model=List[TeamSchema]
-        )
-        async def get_teams_by_tournament_id(tournament_id: int):
-            return await self.service.get_teams_by_tournament(tournament_id)
-
         return router
 
 

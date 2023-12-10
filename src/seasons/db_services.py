@@ -2,9 +2,9 @@ import asyncio
 
 from fastapi import HTTPException
 from sqlalchemy import select, Result
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
-from src.core.models import db, BaseServiceDB, SeasonDB
+from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 
 
@@ -23,10 +23,10 @@ class SeasonServiceDB(BaseServiceDB):
         return await super().create(season)
 
     async def update_season(
-        self,
-        item_id: int,
-        item: SeasonSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: SeasonSchemaUpdate,
+            **kwargs,
     ):
         return await super().update(
             item_id,
@@ -43,7 +43,9 @@ class SeasonServiceDB(BaseServiceDB):
         async with self.db.async_session() as session:
             stmt = (
                 select(SeasonDB)
-                .options(joinedload(SeasonDB.tournaments))
+                .options(
+                    joinedload(SeasonDB.tournaments)
+                )
                 .filter_by(year=year)
             )
 
@@ -53,6 +55,32 @@ class SeasonServiceDB(BaseServiceDB):
             if season:
                 tournaments = season.tournaments
                 return tournaments
+
+            else:
+                raise HTTPException(status_code=404, detail=f"Season {year} not found")
+
+    async def get_teams_by_year(self, year: int):
+        async with self.db.async_session() as session:
+            stmt = (
+                select(SeasonDB)
+                .options(
+                    selectinload(SeasonDB.tournaments)
+                    .joinedload(TournamentDB.teams)
+                )
+                .filter_by(year=year)
+            )
+
+            result = await session.execute(stmt)
+            season = result.unique().scalars().one_or_none()
+
+            teams = []
+            if season:
+                tournaments = season.tournaments
+                for tournament in tournaments:
+                    for team in tournament.teams:
+                        teams.append(team)
+                # teams = [team for tournament in tournaments for team in tournament.teams]
+                return teams
 
             else:
                 raise HTTPException(status_code=404, detail=f"Season {year} not found")
@@ -68,7 +96,8 @@ async def async_main() -> None:
     # try:
     # get_season = await season_service.get_by_id(1)
     # print(get_season.__dict__)
-    get_tours = await season_service.get_tournaments_by_year(2222)
+    # get_tours = await season_service.get_tournaments_by_year(2222)
+    get_tours = await season_service.get_teams_by_year(2222)
     print(get_tours)
     for tour in get_tours:
         print(tour.title)

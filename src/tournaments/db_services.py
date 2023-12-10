@@ -2,6 +2,7 @@ import asyncio
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from src.core.models import db, BaseServiceDB, TournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
@@ -37,14 +38,14 @@ class TournamentServiceDB(BaseServiceDB):
             raise HTTPException(
                 status_code=409,
                 detail=f"Tournament eesl "
-                f"id({t.tournament_eesl_id}) "
-                f"returned some error",
+                       f"id({t.tournament_eesl_id}) "
+                       f"returned some error",
             )
 
     async def get_tournament_by_eesl_id(
-        self,
-        value,
-        field_name="tournament_eesl_id",
+            self,
+            value,
+            field_name="tournament_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -52,16 +53,28 @@ class TournamentServiceDB(BaseServiceDB):
         )
 
     async def update_tournament(
-        self,
-        item_id: int,
-        item: TournamentSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: TournamentSchemaUpdate,
+            **kwargs,
     ):
         return await super().update(
             item_id,
             item,
             **kwargs,
         )
+
+    async def get_teams_by_tournament(
+            self,
+            tournament_id: int,
+    ):
+        async with self.db.async_session() as session:
+            tournament_teams = await session.scalar(
+                select(TournamentDB)
+                .where(TournamentDB.id == tournament_id)
+                .options(selectinload(TournamentDB.teams))
+            )
+            return tournament_teams
 
 
 async def get_tournament_db() -> TournamentServiceDB:

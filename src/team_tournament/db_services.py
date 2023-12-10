@@ -30,17 +30,17 @@ class TeamTournamentServiceDB(BaseServiceDB):
             child_relation=child_relation,
         )
 
-    async def get_teams_by_tournament(
-            self,
-            tournament_id: int,
-    ):
-        async with self.db.async_session() as session:
-            tournament_teams = await session.scalar(
-                select(TournamentDB)
-                .where(TournamentDB.id == tournament_id)
-                .options(selectinload(TournamentDB.teams))
-            )
-            return tournament_teams
+    # async def get_teams_by_tournament(
+    #         self,
+    #         tournament_id: int,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         tournament_teams = await session.scalar(
+    #             select(TournamentDB)
+    #             .where(TournamentDB.id == tournament_id)
+    #             .options(selectinload(TournamentDB.teams))
+    #         )
+    #         return tournament_teams
 
 
 async def get_team_tour_db() -> TeamTournamentServiceDB:
@@ -51,11 +51,11 @@ async def async_main() -> None:
     team_service = TeamTournamentServiceDB(db)
     # dict_conv = TeamTournamentSchemaCreate(**{'fk_team': 8, 'fk_tournament': 3})
     # t = await team_service.create_team_tournament_relation(dict_conv)
-    t = await team_service.get_teams_by_tournament(3)
-    if t:
-        print(t)
-    else:
-        pass
+    # t = await team_service.get_teams_by_tournament(3)
+    # if t:
+    #     print(t)
+    # else:
+    #     pass
 
 
 if __name__ == "__main__":

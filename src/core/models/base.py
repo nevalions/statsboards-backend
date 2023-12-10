@@ -220,7 +220,8 @@ class BaseServiceDB:
             if existing_relation:
                 raise HTTPException(
                     status_code=409,
-                    detail=f"{parent_model.__name__}-{child_model.__name__} relation already exists",
+                    detail=f"{parent_model.__name__}-{child_model.__name__} relation "
+                           f"already exists",
                 )
 
             parent = await session.scalar(
@@ -233,7 +234,7 @@ class BaseServiceDB:
                     select(child_model).where(child_model.id == child_id)
                 )
                 child_new = child.scalar()
-                print(child_new.id)
+                # print(child_new.id)
                 if child_new:
                     try:
                         getattr(parent, child_relation).append(child_new)
