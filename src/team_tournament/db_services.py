@@ -1,8 +1,6 @@
 import asyncio
 
-from fastapi import HTTPException
-from sqlalchemy import select, Table, text
-from sqlalchemy.orm import selectinload
+from sqlalchemy import text
 
 from src.core.models import db, BaseServiceDB, TeamTournamentDB, TournamentDB, TeamDB
 
@@ -12,12 +10,12 @@ class TeamTournamentServiceDB(BaseServiceDB):
         super().__init__(database, TeamTournamentDB)
 
     async def create_team_tournament_relation(
-        self,
-        tournament_id: int,
-        team_id: int,
-        tournament_id_name: str = "tournament_id",
-        team_id_name: str = "team_id",
-        child_relation="teams",
+            self,
+            tournament_id: int,
+            team_id: int,
+            tournament_id_name: str = "tournament_id",
+            team_id_name: str = "team_id",
+            child_relation="teams",
     ):
         return await self.create_m2m_relation(
             parent_model=TournamentDB,
@@ -29,18 +27,6 @@ class TeamTournamentServiceDB(BaseServiceDB):
             child_id_name=team_id_name,
             child_relation=child_relation,
         )
-
-    # async def get_teams_by_tournament(
-    #         self,
-    #         tournament_id: int,
-    # ):
-    #     async with self.db.async_session() as session:
-    #         tournament_teams = await session.scalar(
-    #             select(TournamentDB)
-    #             .where(TournamentDB.id == tournament_id)
-    #             .options(selectinload(TournamentDB.teams))
-    #         )
-    #         return tournament_teams
 
 
 async def get_team_tour_db() -> TeamTournamentServiceDB:

@@ -19,7 +19,7 @@ class TeamRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
         @router.post("/", response_model=TeamSchema)
         async def create_team(team: TeamSchemaCreate, tour_id: int = None):
-            new_team = await self.service.create_team(team)
+            new_team = await self.service.create_or_update_team(team)
             if new_team and tour_id:
                 dict_conv = TeamTournamentSchemaCreate(
                     **{"team_id": new_team.id, "tournament_id": tour_id}
@@ -35,7 +35,7 @@ class TeamRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
         @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)
         async def get_team_by_eesl_id(
-            team_eesl_id: int,
+                team_eesl_id: int,
         ):
             tournament = await self.service.get_team_by_eesl_id(value=team_eesl_id)
             if tournament is None:

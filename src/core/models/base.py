@@ -1,3 +1,4 @@
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Mapped, mapped_column, declared_attr, selectinload
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -262,6 +263,18 @@ class BaseServiceDB:
                     status_code=404,
                     detail=f"{parent_model.__name__} id:{parent_id} not found",
                 )
+
+    async def get_related_items(self, item_id, related_property):
+        async with self.db.async_session() as session:
+            try:
+                item = await session.execute(
+                    select(self.model)
+                    .where(self.model.id == item_id)
+                    .options(selectinload(getattr(self.model, related_property)))
+                )
+                return getattr(item.scalars().one(), related_property)
+            except NoResultFound:
+                return None
 
     @staticmethod
     def is_des(descending, order):

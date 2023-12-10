@@ -12,7 +12,7 @@ class MatchServiceDB(BaseServiceDB):
     def __init__(self, database):
         super().__init__(database, MatchDB)
 
-    async def create_match(self, m: MatchSchemaCreate):
+    async def create_or_update_match(self, m: MatchSchemaCreate):
         try:
             if m.match_eesl_id:
                 match_from_db = await self.get_match_by_eesl_id(m.match_eesl_id)
@@ -29,7 +29,7 @@ class MatchServiceDB(BaseServiceDB):
             print(ex)
             raise HTTPException(
                 status_code=409,
-                detail=f"Match " f"id({m.id}) " f"returned some error",
+                detail=f"Match " f"id({m}) " f"returned some error",
             )
 
     async def update_match_by_eesl(

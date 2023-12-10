@@ -30,7 +30,7 @@ class TournamentRouter(
             response_model=TournamentSchema,
         )
         async def create_tournament(item: TournamentSchemaCreate):
-            new_ = await self.service.create_tournament(item)
+            new_ = await self.service.create_or_update_tournament(item)
             return new_.__dict__
 
         @router.put(
@@ -38,8 +38,8 @@ class TournamentRouter(
             response_model=TournamentSchema,
         )
         async def update_tournament(
-            item_id: int,
-            item: TournamentSchemaUpdate,
+                item_id: int,
+                item: TournamentSchemaUpdate,
         ):
             update_ = await self.service.update_tournament(item_id, item)
             if update_ is None:
@@ -67,6 +67,13 @@ class TournamentRouter(
         )
         async def get_teams_by_tournament_id(tournament_id: int):
             return await self.service.get_teams_by_tournament(tournament_id)
+
+        @router.get(
+            "/id/{tournament_id}/matches/",
+            # response_model=List[TeamSchema]
+        )
+        async def get_teams_by_tournament_id(tournament_id: int):
+            return await self.service.get_matches_by_tournament(tournament_id)
 
         return router
 

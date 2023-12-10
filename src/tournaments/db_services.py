@@ -2,7 +2,7 @@ import asyncio
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from src.core.models import db, BaseServiceDB, TournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
@@ -12,7 +12,10 @@ class TournamentServiceDB(BaseServiceDB):
     def __init__(self, database):
         super().__init__(database, TournamentDB)
 
-    async def create_tournament(self, t: TournamentSchemaCreate):
+    async def create_or_update_tournament(
+            self,
+            t: TournamentSchemaCreate | TournamentSchemaUpdate,
+    ):
         try:
             # Try to query for existing item
             if t.tournament_eesl_id:
@@ -40,7 +43,7 @@ class TournamentServiceDB(BaseServiceDB):
     async def update_tournament_by_eesl(
             self,
             eesl_field_name: str,
-            t: TournamentSchemaCreate,
+            t: TournamentSchemaUpdate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -84,13 +87,27 @@ class TournamentServiceDB(BaseServiceDB):
             self,
             tournament_id: int,
     ):
-        async with self.db.async_session() as session:
-            tournament_teams = await session.scalar(
-                select(TournamentDB)
-                .where(TournamentDB.id == tournament_id)
-                .options(selectinload(TournamentDB.teams))
-            )
-            return tournament_teams
+        return await self.get_related_items(tournament_id, "teams")
+        # async with self.db.async_session() as session:
+        #     tournament_teams = await session.scalar(
+        #         select(TournamentDB)
+        #         .where(TournamentDB.id == tournament_id)
+        #         .options(selectinload(TournamentDB.teams))
+        #     )
+        #     return tournament_teams
+
+    async def get_matches_by_tournament(
+            self,
+            tournament_id: int,
+    ):
+        return await self.get_related_items(tournament_id, "matches")
+        # async with self.db.async_session() as session:
+        #     tournament_matches = await session.scalar(
+        #         select(TournamentDB)
+        #         .where(TournamentDB.id == tournament_id)
+        #         .options(selectinload(TournamentDB.matches))
+        #     )
+        #     return tournament_matches
 
 
 async def get_tournament_db() -> TournamentServiceDB:
