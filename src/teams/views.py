@@ -54,6 +54,10 @@ class TeamRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 )
             return update_.__dict__
 
+        @router.get("/id/{team_id}/matches/")
+        async def get_matches_by_team(team_id: int):
+            return await self.service.get_matches_by_team_id(team_id)
+
         return router
 
 

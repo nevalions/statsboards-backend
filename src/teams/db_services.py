@@ -65,6 +65,15 @@ class TeamServiceDB(BaseServiceDB):
             field_name=field_name,
         )
 
+    async def get_matches_by_team_id(
+            self,
+            team_id: int,
+    ):
+        return await self.get_related_items_level_one_by_id(
+            team_id,
+            "matches",
+        )
+
     async def update_team(self, item_id: int, item: TeamSchemaUpdate, **kwargs):
         return await super().update(item_id, item, **kwargs)
 

@@ -1,8 +1,6 @@
 import asyncio
 
 from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload, joinedload
 
 from src.core.models import db, BaseServiceDB, TournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
@@ -21,7 +19,6 @@ class TournamentServiceDB(BaseServiceDB):
             if t.tournament_eesl_id:
                 tournament_from_db = await self.get_tournament_by_eesl_id(
                     t.tournament_eesl_id)
-                # print(t.tournament_eesl_id)
                 if tournament_from_db:
                     return await self.update_tournament_by_eesl(
                         "tournament_eesl_id",
@@ -87,27 +84,19 @@ class TournamentServiceDB(BaseServiceDB):
             self,
             tournament_id: int,
     ):
-        return await self.get_related_items(tournament_id, "teams")
-        # async with self.db.async_session() as session:
-        #     tournament_teams = await session.scalar(
-        #         select(TournamentDB)
-        #         .where(TournamentDB.id == tournament_id)
-        #         .options(selectinload(TournamentDB.teams))
-        #     )
-        #     return tournament_teams
+        return await self.get_related_items_level_one_by_id(
+            tournament_id,
+            "teams",
+        )
 
     async def get_matches_by_tournament(
             self,
             tournament_id: int,
     ):
-        return await self.get_related_items(tournament_id, "matches")
-        # async with self.db.async_session() as session:
-        #     tournament_matches = await session.scalar(
-        #         select(TournamentDB)
-        #         .where(TournamentDB.id == tournament_id)
-        #         .options(selectinload(TournamentDB.matches))
-        #     )
-        #     return tournament_matches
+        return await self.get_related_items_level_one_by_id(
+            tournament_id,
+            "matches",
+        )
 
 
 async def get_tournament_db() -> TournamentServiceDB:

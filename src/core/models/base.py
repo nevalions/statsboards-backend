@@ -1,5 +1,7 @@
+from typing import Any
+
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr, selectinload
+from sqlalchemy.orm import Mapped, mapped_column, declared_attr, selectinload, joinedload
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -264,17 +266,115 @@ class BaseServiceDB:
                     detail=f"{parent_model.__name__} id:{parent_id} not found",
                 )
 
-    async def get_related_items(self, item_id, related_property):
+    async def get_related_items_level_one_by_id(
+            self,
+            item_id,
+            related_property,
+    ):
         async with self.db.async_session() as session:
             try:
                 item = await session.execute(
                     select(self.model)
                     .where(self.model.id == item_id)
-                    .options(selectinload(getattr(self.model, related_property)))
+                    .options(
+                        selectinload(getattr(self.model, related_property))
+                    )
                 )
                 return getattr(item.scalars().one(), related_property)
             except NoResultFound:
                 return None
+
+    async def get_related_items_level_one_by_key_and_value(
+            self,
+            filter_key: str,
+            filter_value: Any,
+            related_property,
+    ):
+        async with self.db.async_session() as session:
+            try:
+                item = await session.execute(
+                    select(self.model)
+                    .where(getattr(self.model, filter_key) == filter_value)
+                    .options(
+                        selectinload(getattr(self.model, related_property))
+                    )
+                )
+                return getattr(item.scalars().one(), related_property)
+            except NoResultFound:
+                return None
+
+    async def get_related_items_by_two(
+            self,
+            filter_key: str,
+            filter_value: Any,
+            second_model,
+            related_property: str,
+            second_level_property: str,
+    ):
+        async with self.db.async_session() as session:
+            query = (
+                select(self.model)
+                .where(getattr(self.model, filter_key) == filter_value)
+                .options(
+                    selectinload(getattr(self.model, related_property))
+                    .joinedload(getattr(second_model, second_level_property))
+                )
+                # .filter_by(**{filter_key: filter_value})
+            )
+
+            result = await session.execute(query)
+            item = result.unique().scalars().one_or_none()
+
+            items = []
+            if item:
+                related_items = getattr(item, related_property)
+                for related_item in related_items:
+                    items.append(related_item)
+                return items
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"{model.__name__} {key} not found",
+                )
+
+    # async def get_related_items_level_two(
+    #         self,
+    #         item_id,
+    #         related_property_one,
+    #         model_two,
+    #         related_property_two,
+    #         field_name: str,
+    #         value: str,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         try:
+    #             item = await session.execute(
+    #                 select(self.model)
+    #                 .where(self.model.id == item_id)
+    #                 .options(
+    #                     selectinload(getattr(self.model, related_property_one))
+    #                     .joinedload(getattr(model_two, related_property_two))
+    #                 )
+    #                 .filter_by(field_name == value)
+    #             )
+    #
+    #             print(item)
+    #
+    #             result = await session.execute(item)
+    #             items = result.unique().scalars().one_or_none()
+    #
+    #             list_of_items = []
+    #             if items:
+    #                 first = getattr(self.model, related_property_one)
+    #                 for second in first:
+    #                     for team in getattr(model_two, related_property_two):
+    #                         list_of_items.append(team)
+    #                 # teams = [team for tournament in tournaments for team in tournament.teams]
+    #                 return list_of_items
+    #
+    #             # return getattr(item.scalars().one(), related_property)
+    #         except NoResultFound:
+    #             return None
 
     @staticmethod
     def is_des(descending, order):
