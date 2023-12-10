@@ -42,15 +42,15 @@ class BaseServiceDB:
                 raise HTTPException(
                     status_code=409,
                     detail=f"{self.model.__name__} creation error."
-                    f"Check input data.",
+                           f"Check input data.",
                 )
 
     async def get_all_elements(
-        self,
-        skip: int = 0,
-        limit: int = 100,
-        order_by: str = "id",
-        descending: bool = False,
+            self,
+            skip: int = 0,
+            limit: int = 100,
+            order_by: str = "id",
+            descending: bool = False,
     ):
         async with self.db.async_session() as session:
             order = getattr(self.model, order_by)
@@ -71,15 +71,18 @@ class BaseServiceDB:
             print(
                 f"Type of model: {self.model.__name__}"
             )  # Add this line for debugging
+            # print(model)
             return model
 
     async def update(self, item_id: int, item, **kwargs):
         async with self.db.async_session() as session:
             db_item = await self.get_by_id(item_id)
+            # print(db_item)
             if not db_item:
                 return None
-
+            # print(db_item)
             for key, value in item.dict(exclude_unset=True).items():
+                # print(key, value)
                 setattr(db_item, key, value)
             await session.execute(
                 update(self.model)
@@ -142,16 +145,23 @@ class BaseServiceDB:
     #             result.append(item.__dict__)
     #         return result
 
-    async def update_item_by_eesl_id(self, item, eesl_field_name: str, eesl_value: int):
+    async def update_item_by_eesl_id(
+            self,
+            eesl_field_name: str,
+            eesl_value: int,
+            new_item,
+    ):
         async with self.db.async_session() as session:
             is_exist = await self.get_item_by_field_value(eesl_value, eesl_field_name)
             if is_exist:
-                for key, value in item.dict(exclude_unset=True).items():
-                    setattr(is_exist, key, value)
+                update_dict = {}
+                for key, value in new_item.__dict__.items():
+                    if not key.startswith("_"):
+                        update_dict[key] = value
                 await session.execute(
                     update(self.model)
                     .where(getattr(self.model, eesl_field_name) == eesl_value)
-                    .values(item.dict(exclude_unset=True))
+                    .values(update_dict)
                 )
                 await session.commit()
                 find_updated = await self.get_by_id(is_exist.id)
@@ -160,12 +170,12 @@ class BaseServiceDB:
                 return None
 
     async def find_relation(
-        self,
-        secondary_table: TextClause,
-        fk_item_one: int,
-        fk_item_two: int,
-        field_name_one: str,
-        field_name_two: str,
+            self,
+            secondary_table: TextClause,
+            fk_item_one: int,
+            fk_item_two: int,
+            field_name_one: str,
+            field_name_two: str,
     ):
         async with self.db.async_session() as session:
             # Check if the relation already exists
@@ -179,12 +189,12 @@ class BaseServiceDB:
             return existing_relation.scalar()
 
     async def is_relation_exist(
-        self,
-        secondary_table,
-        fk_item_one: int,
-        fk_item_two: int,
-        field_name_one: str,
-        field_name_two: str,
+            self,
+            secondary_table,
+            fk_item_one: int,
+            fk_item_two: int,
+            field_name_one: str,
+            field_name_two: str,
     ) -> bool:
         existing_record = await self.find_relation(
             secondary_table,
@@ -198,15 +208,15 @@ class BaseServiceDB:
         return False
 
     async def create_m2m_relation(
-        self,
-        parent_model,
-        child_model,
-        secondary_table: TextClause,
-        parent_id: int,
-        child_id: int,
-        parent_id_name: str,
-        child_id_name: str,
-        child_relation,
+            self,
+            parent_model,
+            child_model,
+            secondary_table: TextClause,
+            parent_id: int,
+            child_id: int,
+            parent_id_name: str,
+            child_id_name: str,
+            child_relation,
     ):
         async with self.db.async_session() as session:
             existing_relation = await self.is_relation_exist(
@@ -221,7 +231,7 @@ class BaseServiceDB:
                 raise HTTPException(
                     status_code=409,
                     detail=f"{parent_model.__name__}-{child_model.__name__} relation "
-                    f"already exists",
+                           f"already exists",
                 )
 
             parent = await session.scalar(

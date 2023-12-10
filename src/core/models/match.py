@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from datetime import datetime as date_type
 
-from sqlalchemy import String, Integer, Text, TIMESTAMP, ForeignKey, TIME
+from sqlalchemy import String, Integer, Text, TIMESTAMP, ForeignKey, TIME, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -20,15 +20,15 @@ class MatchDB(Base):
         nullable=True,
         unique=True,
     )
+
     field_length: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
         default=92,
     )
+
     match_date: Mapped[date_type] = mapped_column(
-        TIME,
-        nullable=True,
-        default=date_type.now,
+        TIMESTAMP(timezone=True), nullable=True, server_default=func.now()
     )
 
     team_a_id: Mapped[int] = mapped_column(
@@ -38,6 +38,7 @@ class MatchDB(Base):
         ),
         nullable=False,
     )
+
     team_b_id: Mapped[int] = mapped_column(
         ForeignKey(
             "team.id",
@@ -45,6 +46,7 @@ class MatchDB(Base):
         ),
         nullable=False,
     )
+
     tournament_id: Mapped[int] = mapped_column(
         ForeignKey(
             "tournament.id",
@@ -64,6 +66,7 @@ class MatchDB(Base):
         primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
         # overlaps="team_a_matches, team_b_matches",
     )
+
 
 #     results = relationship('MatchResultDB', cascade="all, delete-orphan",
 #                            back_populates="matches", passive_deletes=True)

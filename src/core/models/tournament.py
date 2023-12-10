@@ -50,17 +50,6 @@ class TournamentDB(SeasonRelationMixin, Base):
         passive_deletes=True,
     )
 
-    ## season_id: Mapped[int] = mapped_column(
-    ##     ForeignKey("season.id", ondelete="CASCADE"), nullable=False
-    ## )
-    ## season: Mapped["SeasonDB"] = relationship(back_populates="tournaments")
-
-    ### fk_season = Column(Integer, ForeignKey('season.year', ondelete="CASCADE"),
-    ###                    nullable=False)
-
-    ### seasons = relationship('SeasonDB',
-    ###                        back_populates='tournaments')
-
     # matches = relationship('MatchDB', cascade="all, delete-orphan",
     #                       back_populates="tournaments", passive_deletes=True)
 

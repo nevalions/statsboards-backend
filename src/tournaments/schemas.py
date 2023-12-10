@@ -12,6 +12,7 @@ class TournamentSchemaBase(BaseModel):
 
 
 class TournamentSchemaUpdate(BaseModel):
+    tournament_eesl_id: int | None = None
     title: str | None = None
     description: str | None = None
     tournament_logo_url: str | None = None

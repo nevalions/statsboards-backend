@@ -45,8 +45,8 @@ class TeamDB(Base):
     )
 
     matches: Mapped["MatchDB"] = relationship(
-        'MatchDB',
+        "MatchDB",
         primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
-        back_populates='teams',
+        back_populates="teams",
         # overlaps="team_a_matches, team_b_matches",
     )

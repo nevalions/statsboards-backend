@@ -14,35 +14,45 @@ class MatchServiceDB(BaseServiceDB):
 
     async def create_match(self, m: MatchSchemaCreate):
         try:
-            # Try to query for existing item
             if m.match_eesl_id:
-                print(m.match_eesl_id)
-                match = await self.update_item_by_eesl_id(
-                    m,
-                    "match_eesl_id",
-                    m.match_eesl_id,
-                )
-                if match:
-                    return match
-
+                match_from_db = await self.get_match_by_eesl_id(m.match_eesl_id)
+                if match_from_db:
+                    return await self.update_match_by_eesl(
+                        "match_eesl_id",
+                        m,
+                    )
+                else:
+                    return await self.create_new_match(m)
             else:
-                # Create new item if none exists with same eesl_id
-                match = MatchDB(
-                    match_eesl_id=m.match_eesl_id,
-                    field_length=m.field_length,
-                    match_date=m.match_date,
-                    team_a_id=m.team_a_id,
-                    team_b_id=m.team_b_id,
-                    tournament_id=m.tournament_id,
-                )
-
-                return await super().create(match)
+                return await self.create_new_match(m)
         except Exception as ex:
             print(ex)
             raise HTTPException(
                 status_code=409,
                 detail=f"Match " f"id({m.id}) " f"returned some error",
             )
+
+    async def update_match_by_eesl(
+            self,
+            eesl_field_name: str,
+            m: MatchSchemaCreate,
+    ):
+        return await self.update_item_by_eesl_id(
+            eesl_field_name,
+            m.match_eesl_id,
+            m,
+        )
+
+    async def create_new_match(self, m: MatchSchemaCreate):
+        match = MatchDB(
+            match_eesl_id=m.match_eesl_id,
+            field_length=m.field_length,
+            match_date=m.match_date,
+            team_a_id=m.team_a_id,
+            team_b_id=m.team_b_id,
+            tournament_id=m.tournament_id,
+        )
+        return await super().create(match)
 
     async def get_match_by_eesl_id(
             self,
@@ -77,6 +87,7 @@ async def async_main() -> None:
     # t = await team_service.find_team_tournament_relation(6, 2)
     # print(t)
     # t = await team_service.get_team_by_eesl_id(1)
+    # u = await match_service.create_match()
     # if t:
     #     print(t.__dict__)
 

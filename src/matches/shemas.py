@@ -16,6 +16,7 @@ class MatchSchemaBase(BaseModel):
 
 
 class MatchSchemaUpdate(BaseModel):
+    match_eesl_id: int | None = None
     field_length: int | None = None
     match_date: date_type | None = None
     team_a_id: int | None = None

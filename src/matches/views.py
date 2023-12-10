@@ -16,7 +16,11 @@ class MatchRouter(
     ]
 ):
     def __init__(self, service: MatchServiceDB):
-        super().__init__("/api/matches", ["matches"], service, )
+        super().__init__(
+            "/api/matches",
+            ["matches"],
+            service,
+        )
 
     def route(self):
         router = super().route()
@@ -26,7 +30,7 @@ class MatchRouter(
             response_model=MatchSchema,
         )
         async def create_match(
-                match: MatchSchemaCreate,
+            match: MatchSchemaCreate,
         ):
             new_match = await self.service.create_match(match)
             return new_match.__dict__
@@ -36,8 +40,8 @@ class MatchRouter(
             response_model=MatchSchema,
         )
         async def update_match(
-                item_id: int,
-                item: MatchSchemaUpdate,
+            item_id: int,
+            item: MatchSchemaUpdate,
         ):
             match_update = await self.service.update_match(item_id, item)
 
