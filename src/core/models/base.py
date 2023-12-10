@@ -337,45 +337,6 @@ class BaseServiceDB:
                     detail=f"{second_model} {filter_key} not found",
                 )
 
-    # async def get_related_items_level_two(
-    #         self,
-    #         item_id,
-    #         related_property_one,
-    #         model_two,
-    #         related_property_two,
-    #         field_name: str,
-    #         value: str,
-    # ):
-    #     async with self.db.async_session() as session:
-    #         try:
-    #             item = await session.execute(
-    #                 select(self.model)
-    #                 .where(self.model.id == item_id)
-    #                 .options(
-    #                     selectinload(getattr(self.model, related_property_one))
-    #                     .joinedload(getattr(model_two, related_property_two))
-    #                 )
-    #                 .filter_by(field_name == value)
-    #             )
-    #
-    #             print(item)
-    #
-    #             result = await session.execute(item)
-    #             items = result.unique().scalars().one_or_none()
-    #
-    #             list_of_items = []
-    #             if items:
-    #                 first = getattr(self.model, related_property_one)
-    #                 for second in first:
-    #                     for team in getattr(model_two, related_property_two):
-    #                         list_of_items.append(team)
-    #                 # teams = [team for tournament in tournaments for team in tournament.teams]
-    #                 return list_of_items
-    #
-    #             # return getattr(item.scalars().one(), related_property)
-    #         except NoResultFound:
-    #             return None
-
     @staticmethod
     def is_des(descending, order):
         if descending:
