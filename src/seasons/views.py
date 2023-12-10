@@ -29,8 +29,8 @@ class SeasonRouter(
 
         @router.put("/", response_model=SeasonSchema)
         async def update_season(
-            item_id: int,
-            item: SeasonSchemaUpdate,
+                item_id: int,
+                item: SeasonSchemaUpdate,
         ):
             update_ = await self.service.update_season(
                 item_id,
@@ -44,7 +44,7 @@ class SeasonRouter(
             return update_.__dict__
 
         @router.get("/year/{season_year}", response_model=SeasonSchema)
-        async def get_season_by_year(season_year: int):
+        async def season_by_year(season_year: int):
             season = await self.service.get_season_by_year(season_year)
             if season is None:
                 raise HTTPException(
@@ -54,14 +54,20 @@ class SeasonRouter(
             return season.__dict__
 
         @router.get("/year/{year}/tournaments")
-        async def get_tournaments_by_year(year: int):
+        async def tournaments_by_year(year: int):
             return await self.service.get_tournaments_by_year(year)
 
         @router.get("/year/{year}/teams")
-        async def get_teams_by_year(
-            year: int,
+        async def teams_by_year(
+                year: int,
         ):
             return await self.service.get_teams_by_year(year)
+
+        @router.get("/year/{year}/matches")
+        async def matches_by_year(
+                year: int,
+        ):
+            return await self.service.get_matches_by_year(year)
 
         return router
 

@@ -2,7 +2,7 @@ import asyncio
 
 from sqlalchemy import select, Result
 
-from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB
+from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB, MatchDB
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 
 
@@ -59,6 +59,19 @@ class SeasonServiceDB(BaseServiceDB):
             second_model=TournamentDB,
             related_property='tournaments',
             second_level_property='teams',
+        )
+
+    async def get_matches_by_year(
+            self,
+            year: int,
+            key: str = 'year',
+    ):
+        return await self.get_related_items_by_two(
+            filter_key=key,
+            filter_value=year,
+            second_model=TournamentDB,
+            related_property='tournaments',
+            second_level_property='matches',
         )
 
 
