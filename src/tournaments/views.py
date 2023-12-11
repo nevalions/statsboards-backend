@@ -38,8 +38,8 @@ class TournamentRouter(
             response_model=TournamentSchema,
         )
         async def update_tournament(
-                item_id: int,
-                item: TournamentSchemaUpdate,
+            item_id: int,
+            item: TournamentSchemaUpdate,
         ):
             update_ = await self.service.update_tournament(item_id, item)
             if update_ is None:

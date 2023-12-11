@@ -76,6 +76,15 @@ class MatchServiceDB(BaseServiceDB):
             **kwargs,
         )
 
+    async def get_matchdata_by_match(
+            self,
+            match_id: int,
+    ):
+        return await self.get_related_items_level_one_by_id(
+            match_id,
+            "match_data"
+        )
+
 
 async def get_match_db() -> MatchServiceDB:
     yield MatchServiceDB(db)

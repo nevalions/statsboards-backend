@@ -1,7 +1,13 @@
 from typing import Any
 
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr, selectinload, joinedload
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    declared_attr,
+    selectinload,
+    joinedload,
+)
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,15 +51,15 @@ class BaseServiceDB:
                 raise HTTPException(
                     status_code=409,
                     detail=f"{self.model.__name__} creation error."
-                           f"Check input data.",
+                    f"Check input data.",
                 )
 
     async def get_all_elements(
-            self,
-            skip: int = 0,
-            limit: int = 100,
-            order_by: str = "id",
-            descending: bool = False,
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        order_by: str = "id",
+        descending: bool = False,
     ):
         async with self.db.async_session() as session:
             order = getattr(self.model, order_by)
@@ -149,10 +155,10 @@ class BaseServiceDB:
     #         return result
 
     async def update_item_by_eesl_id(
-            self,
-            eesl_field_name: str,
-            eesl_value: int,
-            new_item,
+        self,
+        eesl_field_name: str,
+        eesl_value: int,
+        new_item,
     ):
         async with self.db.async_session() as session:
             is_exist = await self.get_item_by_field_value(eesl_value, eesl_field_name)
@@ -173,12 +179,12 @@ class BaseServiceDB:
                 return None
 
     async def find_relation(
-            self,
-            secondary_table: TextClause,
-            fk_item_one: int,
-            fk_item_two: int,
-            field_name_one: str,
-            field_name_two: str,
+        self,
+        secondary_table: TextClause,
+        fk_item_one: int,
+        fk_item_two: int,
+        field_name_one: str,
+        field_name_two: str,
     ):
         async with self.db.async_session() as session:
             # Check if the relation already exists
@@ -192,12 +198,12 @@ class BaseServiceDB:
             return existing_relation.scalar()
 
     async def is_relation_exist(
-            self,
-            secondary_table,
-            fk_item_one: int,
-            fk_item_two: int,
-            field_name_one: str,
-            field_name_two: str,
+        self,
+        secondary_table,
+        fk_item_one: int,
+        fk_item_two: int,
+        field_name_one: str,
+        field_name_two: str,
     ) -> bool:
         existing_record = await self.find_relation(
             secondary_table,
@@ -211,15 +217,15 @@ class BaseServiceDB:
         return False
 
     async def create_m2m_relation(
-            self,
-            parent_model,
-            child_model,
-            secondary_table: TextClause,
-            parent_id: int,
-            child_id: int,
-            parent_id_name: str,
-            child_id_name: str,
-            child_relation,
+        self,
+        parent_model,
+        child_model,
+        secondary_table: TextClause,
+        parent_id: int,
+        child_id: int,
+        parent_id_name: str,
+        child_id_name: str,
+        child_relation,
     ):
         async with self.db.async_session() as session:
             existing_relation = await self.is_relation_exist(
@@ -234,7 +240,7 @@ class BaseServiceDB:
                 raise HTTPException(
                     status_code=409,
                     detail=f"{parent_model.__name__}-{child_model.__name__} relation "
-                           f"already exists",
+                    f"already exists",
                 )
 
             parent = await session.scalar(
@@ -267,57 +273,54 @@ class BaseServiceDB:
                 )
 
     async def get_related_items_level_one_by_id(
-            self,
-            item_id: int,
-            related_property: str,
+        self,
+        item_id: int,
+        related_property: str,
     ):
         async with self.db.async_session() as session:
             try:
                 item = await session.execute(
                     select(self.model)
                     .where(self.model.id == item_id)
-                    .options(
-                        selectinload(getattr(self.model, related_property))
-                    )
+                    .options(selectinload(getattr(self.model, related_property)))
                 )
                 return getattr(item.scalars().one(), related_property)
             except NoResultFound:
                 return None
 
     async def get_related_items_level_one_by_key_and_value(
-            self,
-            filter_key: str,
-            filter_value: Any,
-            related_property: str,
+        self,
+        filter_key: str,
+        filter_value: Any,
+        related_property: str,
     ):
         async with self.db.async_session() as session:
             try:
                 item = await session.execute(
                     select(self.model)
                     .where(getattr(self.model, filter_key) == filter_value)
-                    .options(
-                        selectinload(getattr(self.model, related_property))
-                    )
+                    .options(selectinload(getattr(self.model, related_property)))
                 )
                 return getattr(item.scalars().one(), related_property)
             except NoResultFound:
                 return None
 
     async def get_related_items_by_two(
-            self,
-            filter_key: str,
-            filter_value: Any,
-            second_model,
-            related_property: str,
-            second_level_property: str,
+        self,
+        filter_key: str,
+        filter_value: Any,
+        second_model,
+        related_property: str,
+        second_level_property: str,
     ):
         async with self.db.async_session() as session:
             query = (
                 select(self.model)
                 .where(getattr(self.model, filter_key) == filter_value)
                 .options(
-                    selectinload(getattr(self.model, related_property))
-                    .joinedload(getattr(second_model, second_level_property))
+                    selectinload(getattr(self.model, related_property)).joinedload(
+                        getattr(second_model, second_level_property)
+                    )
                 )
             )
 

@@ -7,6 +7,7 @@ from src.tournaments import api_tournament_router
 from src.teams import api_team_router
 from src.team_tournament import api_team_tournament_router
 from src.matches import api_match_router
+from src.matchdata import api_matchdata_router
 
 app = FastAPI()
 
@@ -15,6 +16,7 @@ app.include_router(api_tournament_router)
 app.include_router(api_team_router)
 app.include_router(api_team_tournament_router)
 app.include_router(api_match_router)
+app.include_router(api_matchdata_router)
 
 app.include_router(api_pars_season_router)
 

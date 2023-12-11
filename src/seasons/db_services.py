@@ -21,10 +21,10 @@ class SeasonServiceDB(BaseServiceDB):
         return await super().create(season)
 
     async def update_season(
-            self,
-            item_id: int,
-            item: SeasonSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: SeasonSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,
@@ -38,9 +38,9 @@ class SeasonServiceDB(BaseServiceDB):
             return season.scalars().one_or_none()
 
     async def get_tournaments_by_year(
-            self,
-            year: int,
-            key: str = 'year',
+        self,
+        year: int,
+        key: str = "year",
     ):
         return await self.get_related_items_level_one_by_key_and_value(
             key,
@@ -49,29 +49,29 @@ class SeasonServiceDB(BaseServiceDB):
         )
 
     async def get_teams_by_year(
-            self,
-            year: int,
-            key: str = 'year',
+        self,
+        year: int,
+        key: str = "year",
     ):
         return await self.get_related_items_by_two(
             filter_key=key,
             filter_value=year,
             second_model=TournamentDB,
-            related_property='tournaments',
-            second_level_property='teams',
+            related_property="tournaments",
+            second_level_property="teams",
         )
 
     async def get_matches_by_year(
-            self,
-            year: int,
-            key: str = 'year',
+        self,
+        year: int,
+        key: str = "year",
     ):
         return await self.get_related_items_by_two(
             filter_key=key,
             filter_value=year,
             second_model=TournamentDB,
-            related_property='tournaments',
-            second_level_property='matches',
+            related_property="tournaments",
+            second_level_property="matches",
         )
 
 

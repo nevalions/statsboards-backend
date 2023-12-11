@@ -12,13 +12,12 @@ class TeamServiceDB(BaseServiceDB):
         super().__init__(database, TeamDB)
 
     async def create_or_update_team(
-            self,
-            t: TeamSchemaCreate | TeamSchemaUpdate,
+        self,
+        t: TeamSchemaCreate | TeamSchemaUpdate,
     ):
         try:
             if t.team_eesl_id:
-                team_from_db = await self.get_team_by_eesl_id(
-                    t.team_eesl_id)
+                team_from_db = await self.get_team_by_eesl_id(t.team_eesl_id)
                 if team_from_db:
                     return await self.update_team_by_eesl(
                         "team_eesl_id",
@@ -36,9 +35,9 @@ class TeamServiceDB(BaseServiceDB):
             )
 
     async def update_team_by_eesl(
-            self,
-            eesl_field_name: str,
-            t: TeamSchemaUpdate,
+        self,
+        eesl_field_name: str,
+        t: TeamSchemaUpdate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -56,9 +55,9 @@ class TeamServiceDB(BaseServiceDB):
         return await super().create(team)
 
     async def get_team_by_eesl_id(
-            self,
-            value,
-            field_name="team_eesl_id",
+        self,
+        value,
+        field_name="team_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -66,8 +65,8 @@ class TeamServiceDB(BaseServiceDB):
         )
 
     async def get_matches_by_team_id(
-            self,
-            team_id: int,
+        self,
+        team_id: int,
     ):
         return await self.get_related_items_level_one_by_id(
             team_id,

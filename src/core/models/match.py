@@ -9,6 +9,7 @@ from src.core.models import Base
 if TYPE_CHECKING:
     from .team import TeamDB
     from .tournament import TournamentDB
+    from .matchdata import MatchDataDB
 
 
 class MatchDB(Base):
@@ -67,9 +68,13 @@ class MatchDB(Base):
         # overlaps="team_a_matches, team_b_matches",
     )
 
+    match_data: Mapped["MatchDataDB"] = relationship(
+        "MatchDataDB",
+        cascade="all, delete-orphan",
+        back_populates="matches",
+        passive_deletes=True,
+    )
 
-#     results = relationship('MatchResultDB', cascade="all, delete-orphan",
-#                            back_populates="matches", passive_deletes=True)
 #
 #     fk_match_players_id = relationship('PlayerTeamTournamentDB',
 #                                        secondary='player_match',

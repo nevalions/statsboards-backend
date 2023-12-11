@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
@@ -63,6 +61,12 @@ class MatchRouter(
                     detail=f"Match eesl_id({eesl_id}) " f"not found",
                 )
             return match.__dict__
+
+        @router.get(
+            "/id/{match_id}/matchdata/",
+        )
+        async def get_match_data_by_match_id(match_id: int):
+            return await self.service.get_matchdata_by_match(match_id)
 
         return router
 
