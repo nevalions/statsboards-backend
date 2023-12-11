@@ -49,8 +49,3 @@ class TournamentDB(SeasonRelationMixin, Base):
         back_populates="tournaments",
         passive_deletes=True,
     )
-
-    # matches = relationship('MatchDB', cascade="all, delete-orphan",
-    #                       back_populates="tournaments", passive_deletes=True)
-
-    # lazy='subquery')

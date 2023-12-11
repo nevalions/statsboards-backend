@@ -22,16 +22,6 @@ class MatchDB(Base):
         unique=True,
     )
 
-    field_length: Mapped[int] = mapped_column(
-        Integer,
-        nullable=True,
-        default=92,
-    )
-
-    match_date: Mapped[date_type] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, server_default=func.now()
-    )
-
     team_a_id: Mapped[int] = mapped_column(
         ForeignKey(
             "team.id",
@@ -65,7 +55,6 @@ class MatchDB(Base):
         "TeamDB",
         back_populates="matches",
         primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
-        # overlaps="team_a_matches, team_b_matches",
     )
 
     match_data: Mapped["MatchDataDB"] = relationship(
@@ -74,6 +63,7 @@ class MatchDB(Base):
         back_populates="matches",
         passive_deletes=True,
     )
+
 
 #
 #     fk_match_players_id = relationship('PlayerTeamTournamentDB',

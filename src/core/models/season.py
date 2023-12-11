@@ -29,7 +29,3 @@ class SeasonDB(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
-
-    # tournaments = relationship(
-    #     'TournamentDB', cascade="all, delete-orphan", back_populates="seasons",
-    #     passive_deletes=True)

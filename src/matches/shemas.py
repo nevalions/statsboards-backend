@@ -8,8 +8,6 @@ from pydantic import BaseModel
 
 class MatchSchemaBase(BaseModel):
     match_eesl_id: int | None = None
-    field_length: int | None = 92
-    match_date: date_type | None = None
     team_a_id: int
     team_b_id: int
     tournament_id: int | None = None
@@ -17,8 +15,6 @@ class MatchSchemaBase(BaseModel):
 
 class MatchSchemaUpdate(BaseModel):
     match_eesl_id: int | None = None
-    field_length: int | None = None
-    match_date: date_type | None = None
     team_a_id: int | None = None
     team_b_id: int | None = None
     tournament_id: int | None = None

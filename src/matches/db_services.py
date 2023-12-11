@@ -1,8 +1,6 @@
 import asyncio
 
 from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from src.core.models import db, BaseServiceDB, MatchDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate
@@ -33,9 +31,9 @@ class MatchServiceDB(BaseServiceDB):
             )
 
     async def update_match_by_eesl(
-            self,
-            eesl_field_name: str,
-            m: MatchSchemaCreate,
+        self,
+        eesl_field_name: str,
+        m: MatchSchemaCreate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -46,8 +44,6 @@ class MatchServiceDB(BaseServiceDB):
     async def create_new_match(self, m: MatchSchemaCreate):
         match = MatchDB(
             match_eesl_id=m.match_eesl_id,
-            field_length=m.field_length,
-            match_date=m.match_date,
             team_a_id=m.team_a_id,
             team_b_id=m.team_b_id,
             tournament_id=m.tournament_id,
@@ -55,9 +51,9 @@ class MatchServiceDB(BaseServiceDB):
         return await super().create(match)
 
     async def get_match_by_eesl_id(
-            self,
-            value,
-            field_name="match_eesl_id",
+        self,
+        value,
+        field_name="match_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -65,10 +61,10 @@ class MatchServiceDB(BaseServiceDB):
         )
 
     async def update_match(
-            self,
-            item_id: int,
-            item: MatchSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: MatchSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,
@@ -77,12 +73,12 @@ class MatchServiceDB(BaseServiceDB):
         )
 
     async def get_matchdata_by_match(
-            self,
-            match_id: int,
+        self,
+        match_id: int,
     ):
         return await self.get_related_items_level_one_by_id(
             match_id,
-            "match_data"
+            "match_data",
         )
 
 

@@ -38,8 +38,8 @@ class MatchDataRouter(
             response_model=MatchDataSchema,
         )
         async def update_match_data(
-                match_data_id: int,
-                match: MatchDataSchemaUpdate,
+            match_data_id: int,
+            match: MatchDataSchemaUpdate,
         ):
             match_data_update = await self.service.update_match_data(
                 match_data_id,
@@ -47,9 +47,9 @@ class MatchDataRouter(
             )
 
             if match_data_update is None:
-                raise HTTPException(status_code=404, detail=f"Match data "
-                                                            f"id({match}) "
-                                                            f"not found")
+                raise HTTPException(
+                    status_code=404, detail=f"Match data " f"id({match}) " f"not found"
+                )
             return match_data_update.__dict__
 
         return router
