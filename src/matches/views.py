@@ -63,10 +63,22 @@ class MatchRouter(
             return match.__dict__
 
         @router.get(
-            "/id/{match_id}/matchdata/",
+            "/id/{match_id}/teams/",
+        )
+        async def get_match_data_by_match_id(match_id: int):
+            return await self.service.get_teams_by_match(match_id)
+
+        @router.get(
+            "/id/{match_id}/data/",
         )
         async def get_match_data_by_match_id(match_id: int):
             return await self.service.get_matchdata_by_match(match_id)
+
+        @router.get(
+            "/id/{match_id}/scoreboard/",
+        )
+        async def get_match_scoreboard_by_match_id(match_id: int):
+            return await self.service.get_scoreboard_by_match(match_id)
 
         return router
 

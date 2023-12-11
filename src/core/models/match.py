@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .team import TeamDB
     from .tournament import TournamentDB
     from .matchdata import MatchDataDB
+    from .scoreboard import ScoreboardDB
 
 
 class MatchDB(Base):
@@ -59,6 +60,13 @@ class MatchDB(Base):
 
     match_data: Mapped["MatchDataDB"] = relationship(
         "MatchDataDB",
+        cascade="all, delete-orphan",
+        back_populates="matches",
+        passive_deletes=True,
+    )
+
+    match_scoreboard: Mapped["ScoreboardDB"] = relationship(
+        "ScoreboardDB",
         cascade="all, delete-orphan",
         back_populates="matches",
         passive_deletes=True,

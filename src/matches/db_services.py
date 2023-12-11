@@ -1,8 +1,11 @@
 import asyncio
 
 from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import selectinload
 
-from src.core.models import db, BaseServiceDB, MatchDB
+from src.core.models import db, BaseServiceDB, MatchDB, TeamDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate
 
 
@@ -79,6 +82,41 @@ class MatchServiceDB(BaseServiceDB):
         return await self.get_related_items_level_one_by_id(
             match_id,
             "match_data",
+        )
+
+    async def get_teams_by_match(
+        self,
+        match_id: int,
+    ):
+        match = await self.get_related_items(
+            match_id,
+            "teams",
+        )
+
+        if match:
+            team_a = await self.get_by_id_and_model(
+                model=TeamDB,
+                item_id=match.team_a_id,
+            )
+            team_b = await self.get_by_id_and_model(
+                model=TeamDB,
+                item_id=match.team_b_id,
+            )
+
+            return {
+                "team_a": team_a,
+                "team_b": team_b,
+            }
+
+        return None
+
+    async def get_scoreboard_by_match(
+        self,
+        match_id: int,
+    ):
+        return await self.get_related_items_level_one_by_id(
+            match_id,
+            "match_scoreboard",
         )
 
 

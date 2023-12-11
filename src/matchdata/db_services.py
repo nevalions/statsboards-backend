@@ -18,8 +18,21 @@ class MatchDataServiceDB(BaseServiceDB):
                 match_result = MatchDataDB(
                     match_date=matchdata.match_date,
                     field_length=matchdata.field_length,
+                    game_status=matchdata.game_status,
                     score_team_a=matchdata.score_team_a,
                     score_team_b=matchdata.score_team_b,
+                    timeout_team_a=matchdata.timeout_team_a,
+                    timeout_team_b=matchdata.timeout_team_b,
+                    qtr=matchdata.qtr,
+                    gameclock=matchdata.gameclock,
+                    gameclock_status=matchdata.gameclock_status,
+                    game_clock_task=matchdata.game_clock_task,
+                    paused_time=matchdata.paused_time,
+                    playclock=matchdata.playclock,
+                    playclock_status=matchdata.playclock_status,
+                    ball_on=matchdata.ball_on,
+                    down=matchdata.down,
+                    distance=matchdata.distance,
                     match_id=matchdata.match_id,
                 )
 

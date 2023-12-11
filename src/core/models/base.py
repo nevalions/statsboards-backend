@@ -71,7 +71,10 @@ class BaseServiceDB:
             result = items.scalars().all()
             return list(result)
 
-    async def get_by_id(self, item_id: int):
+    async def get_by_id(
+        self,
+        item_id: int,
+    ):
         async with self.db.async_session() as session:
             result = await session.execute(
                 select(self.model).where(self.model.id == item_id)
@@ -82,6 +85,22 @@ class BaseServiceDB:
             )  # Add this line for debugging
             # print(model)
             return model
+
+    async def get_by_id_and_model(
+        self,
+        model,
+        item_id: int,
+    ):
+        async with self.db.async_session() as session:
+            result = await session.execute(
+                select(model).where(getattr(model, "id") == item_id)
+            )
+            item = result.scalars().one_or_none()
+            print(
+                f"Type of model: {self.model.__name__}"
+            )  # Add this line for debugging
+            # print(model)
+            return item
 
     async def update(self, item_id: int, item, **kwargs):
         async with self.db.async_session() as session:
@@ -108,12 +127,14 @@ class BaseServiceDB:
             db_item = await self.get_by_id(item_id)
             if not db_item:
                 raise HTTPException(
-                    status_code=404, detail=f"{self.model.__name__} not found"
+                    status_code=404,
+                    detail=f"{self.model.__name__} not found",
                 )
             await session.delete(db_item)
             await session.commit()
             raise HTTPException(
-                status_code=200, detail=f"{self.model.__name__} {db_item.id} deleted"
+                status_code=200,
+                detail=f"{self.model.__name__} {db_item.id} deleted",
             )
 
     async def get_item_by_field_value(self, value, field_name: str):
@@ -161,7 +182,10 @@ class BaseServiceDB:
         new_item,
     ):
         async with self.db.async_session() as session:
-            is_exist = await self.get_item_by_field_value(eesl_value, eesl_field_name)
+            is_exist = await self.get_item_by_field_value(
+                eesl_value,
+                eesl_field_name,
+            )
             if is_exist:
                 update_dict = {}
                 for key, value in new_item.__dict__.items():
@@ -271,6 +295,20 @@ class BaseServiceDB:
                     status_code=404,
                     detail=f"{parent_model.__name__} id:{parent_id} not found",
                 )
+
+    async def get_related_items(
+        self,
+        item_id: int,
+        related_property: str,
+    ):
+        async with self.db.async_session() as session:
+            try:
+                item = await session.execute(
+                    select(self.model).where(self.model.id == item_id)
+                )
+                return item.scalars().one_or_none()
+            except NoResultFound:
+                return None
 
     async def get_related_items_level_one_by_id(
         self,

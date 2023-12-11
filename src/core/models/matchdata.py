@@ -34,6 +34,83 @@ class MatchDataDB(Base):
         nullable=True,
         default=0,
     )
+
+    game_status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=True,
+        default="in-progress",
+    )
+
+    timeout_team_a: Mapped[str] = mapped_column(
+        String(4),
+        nullable=True,
+        default="●●●",
+    )
+
+    timeout_team_b: Mapped[str] = mapped_column(
+        String(4),
+        nullable=True,
+        default="●●●",
+    )
+
+    qtr: Mapped[str] = mapped_column(
+        String(10),
+        nullable=True,
+        default="1st",
+    )
+
+    gameclock: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=720,
+    )
+
+    gameclock_status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=True,
+        default="stopped",
+    )
+
+    game_clock_task: Mapped[Text] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    paused_time: Mapped[Text] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    playclock: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=40,
+    )
+
+    playclock_status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=True,
+        default="stopped",
+    )
+
+    ball_on: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=20,
+    )
+
+    down: Mapped[str] = mapped_column(
+        String(10),
+        nullable=True,
+        default="1st",
+    )
+
+    distance: Mapped[str] = mapped_column(
+        String(20),
+        nullable=True,
+        default="10",
+    )
+
     match_id = mapped_column(
         Integer,
         ForeignKey(

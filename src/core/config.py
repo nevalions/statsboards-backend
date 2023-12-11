@@ -1,8 +1,18 @@
+import os
+
 from dotenv import load_dotenv
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
+
+# Set the template and static folders
+parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+more_parent_path = os.path.dirname(parent_path)
+one_more_parent_path = os.path.dirname(more_parent_path)
+template_path = os.path.join(one_more_parent_path, "statsboards-frontend/frontend")
+static_path = os.path.join(template_path, "static")
+print(parent_path, one_more_parent_path, template_path, static_path)
 
 
 class DbSettings(BaseSettings):
