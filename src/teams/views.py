@@ -45,8 +45,14 @@ class TeamRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 )
             return tournament.__dict__
 
-        @router.put("/", response_model=TeamSchema)
-        async def update_team(item_id: int, item: TeamSchemaUpdate):
+        @router.put(
+            "/",
+            response_model=TeamSchema,
+        )
+        async def update_team(
+            item_id: int,
+            item: TeamSchemaUpdate,
+        ):
             update_ = await self.service.update_team(item_id, item)
             if update_ is None:
                 raise HTTPException(

@@ -73,8 +73,17 @@ class TeamServiceDB(BaseServiceDB):
             "matches",
         )
 
-    async def update_team(self, item_id: int, item: TeamSchemaUpdate, **kwargs):
-        return await super().update(item_id, item, **kwargs)
+    async def update_team(
+        self,
+        item_id: int,
+        item: TeamSchemaUpdate,
+        **kwargs,
+    ):
+        return await super().update(
+            item_id,
+            item,
+            **kwargs,
+        )
 
 
 async def get_team_db() -> TeamServiceDB:

@@ -10,7 +10,8 @@ class ScoreboardSchemaBase(BaseModel):
     is_downdistance: bool = True
     team_a_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     team_b_color: Annotated[str, Path(max_length=10)] = "#1c71d8"
-    match_id: int
+
+    match_id: int | None = None
 
 
 class ScoreboardSchemaUpdate(BaseModel):
@@ -20,6 +21,8 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_downdistance: bool | None = None
     team_a_color: str | None = None
     team_b_color: str | None = None
+
+    match_id: int | None = None
 
 
 class ScoreboardSchemaCreate(ScoreboardSchemaBase):

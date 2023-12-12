@@ -90,7 +90,6 @@ class MatchServiceDB(BaseServiceDB):
     ):
         match = await self.get_related_items(
             match_id,
-            "teams",
         )
 
         if match:
@@ -104,8 +103,8 @@ class MatchServiceDB(BaseServiceDB):
             )
 
             return {
-                "team_a": team_a,
-                "team_b": team_b,
+                "team_a": team_a.__dict__,
+                "team_b": team_b.__dict__,
             }
 
         return None

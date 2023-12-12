@@ -102,6 +102,30 @@ class BaseServiceDB:
             # print(model)
             return item
 
+    # async def update(self, item_id: int, item, **kwargs):
+    #     async with self.db.async_session() as session:
+    #         db_item = await self.get_by_id(item_id)
+    #         if not db_item:
+    #             return None
+    #
+    #         for key, value in item.dict(exclude_unset=True).items():
+    #             # Check if the value is a string and represents a boolean
+    #             if isinstance(value, str) and value.lower() in ['true', 'false']:
+    #                 # Convert string 'true' or 'false' to boolean
+    #                 value = value.lower() == 'true'
+    #
+    #             setattr(db_item, key, value)
+    #
+    #         await session.execute(
+    #             update(self.model)
+    #             .where(self.model.id == item_id)
+    #             .values(item.dict(exclude_unset=True))
+    #         )
+    #
+    #         await session.commit()
+    #         updated_item = await self.get_by_id(db_item.id)
+    #         return updated_item
+
     async def update(self, item_id: int, item, **kwargs):
         async with self.db.async_session() as session:
             db_item = await self.get_by_id(item_id)
@@ -110,7 +134,7 @@ class BaseServiceDB:
                 return None
             # print(db_item)
             for key, value in item.dict(exclude_unset=True).items():
-                # print(key, value)
+                print(key, value)
                 setattr(db_item, key, value)
             await session.execute(
                 update(self.model)
@@ -299,7 +323,6 @@ class BaseServiceDB:
     async def get_related_items(
         self,
         item_id: int,
-        related_property: str,
     ):
         async with self.db.async_session() as session:
             try:

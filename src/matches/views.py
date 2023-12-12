@@ -1,8 +1,17 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Request, Depends, status
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
+
+# from starlette.templating import Jinja2Templates
 
 from src.core import BaseRouter, db
 from .db_services import MatchServiceDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate, MatchSchema
+from ..core.config import scoreboard_template_path
+
+# from ..scoreboards.views import teams_data, game_data
+
+scoreboard_templates = Jinja2Templates(directory=scoreboard_template_path)
 
 
 # Match backend
@@ -28,7 +37,7 @@ class MatchRouter(
             response_model=MatchSchema,
         )
         async def create_match(
-            match: MatchSchemaCreate,
+                match: MatchSchemaCreate,
         ):
             new_match = await self.service.create_or_update_match(match)
             return new_match.__dict__
@@ -38,8 +47,8 @@ class MatchRouter(
             response_model=MatchSchema,
         )
         async def update_match(
-            item_id: int,
-            item: MatchSchemaUpdate,
+                item_id: int,
+                item: MatchSchemaUpdate,
         ):
             match_update = await self.service.update_match(item_id, item)
 
@@ -65,7 +74,7 @@ class MatchRouter(
         @router.get(
             "/id/{match_id}/teams/",
         )
-        async def get_match_data_by_match_id(match_id: int):
+        async def get_match_teams_by_match_id(match_id: int):
             return await self.service.get_teams_by_match(match_id)
 
         @router.get(
@@ -75,10 +84,47 @@ class MatchRouter(
             return await self.service.get_matchdata_by_match(match_id)
 
         @router.get(
-            "/id/{match_id}/scoreboard/",
+            "/id/{match_id}/scoreboard_data/",
         )
         async def get_match_scoreboard_by_match_id(match_id: int):
             return await self.service.get_scoreboard_by_match(match_id)
+
+        @router.get(
+            "/id/{match_id}/scoreboard/full_data/",
+            response_class=JSONResponse,
+        )
+        async def index_json(
+                request: Request,
+                match_id: int,
+                match_teams_data=Depends(get_match_teams_by_match_id),
+                match_data=Depends(get_match_data_by_match_id),
+                scoreboard_data=Depends(get_match_scoreboard_by_match_id),
+        ):
+            return (
+                {
+                    'status_code': status.HTTP_200_OK,
+                    "teams_data": match_teams_data,
+                    "match_data": match_data.__dict__,
+                    "scoreboard_data": scoreboard_data.__dict__,
+                },
+            )
+
+        @router.get(
+            "/id/{match_id}/scoreboard/",
+            response_class=JSONResponse,
+        )
+        async def index(
+                request: Request,
+                match_id: int,
+        ):
+            template = scoreboard_templates.TemplateResponse(
+                name="/display/score-main.html",
+                context={
+                    "request": request,
+                },
+                status_code=200,
+            )
+            return template
 
         return router
 

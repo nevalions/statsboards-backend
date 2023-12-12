@@ -44,8 +44,9 @@ class ScoreboardServiceDB(BaseServiceDB):
         item: ScoreboardSchemaUpdate,
         **kwargs,
     ):
-        return await super().update(
+        updated_item = await super().update(
             item_id,
             item,
             **kwargs,
         )
+        return updated_item

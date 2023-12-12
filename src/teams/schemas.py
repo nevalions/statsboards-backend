@@ -20,7 +20,7 @@ class TeamSchemaCreate(TeamSchemaBase):
     pass
 
 
-class TeamSchema(TeamSchemaBase):
+class TeamSchema(TeamSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int

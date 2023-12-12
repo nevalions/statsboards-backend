@@ -57,7 +57,7 @@ class ScoreboardDB(Base):
             "match.id",
             ondelete="CASCADE",
         ),
-        nullable=False,
+        nullable=True,
         unique=True,
     )
 

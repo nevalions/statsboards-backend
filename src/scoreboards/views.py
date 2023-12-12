@@ -5,15 +5,18 @@ import os
 
 from typing import List
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends, status
+from fastapi.templating import Jinja2Templates
 
 from src.core import BaseRouter, db
-from src.core.config import static_path, template_path
+from src.core.config import static_path_scoreboard, scoreboard_template_path
 from .db_services import ScoreboardServiceDB
 from .shemas import ScoreboardSchema, ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Response
 from fastapi.responses import JSONResponse, StreamingResponse
+
+scoreboard_templates = Jinja2Templates(directory=scoreboard_template_path)
 
 # Create an asyncio Queue
 update_queue = asyncio.Queue()
@@ -115,6 +118,81 @@ class ScoreboardRouter(
             new_scoreboard = await self.service.create_scoreboard(scoreboard)
             return new_scoreboard.__dict__
 
+        @router.put(
+            "/{item_id}/",
+            response_model=ScoreboardSchema,
+        )
+        async def update_scoreboard_(
+                item_id: int,
+                item: ScoreboardSchemaUpdate,
+        ):
+            update_ = await self.service.update_scoreboard(item_id, item)
+            if update_:
+                return update_
+
+            raise HTTPException(
+                status_code=404, detail=f"Scoreboard id:{item_id} not found"
+            )
+
+        @router.put(
+            "/id/{item_id}/",
+            response_class=JSONResponse
+        )
+        async def update_scoreboard_by_id(
+                item_id: int,
+                item=Depends(update_scoreboard_),
+        ):
+            if item:
+                return {
+                    'content': item.__dict__,
+                    'status_code': status.HTTP_200_OK,
+                    "success": True,
+                }
+
+            raise HTTPException(
+                status_code=404, detail=f"Scoreboard id:{item_id} not found"
+            )
+
+        # @router.get(
+        #     "/main",
+        #     response_class=JSONResponse,
+        # )
+        # async def index(request: Request):
+        #     return scoreboard_templates.TemplateResponse(
+        #         "/display/score-main.html",
+        #         {
+        #             "request": request,
+        #             "teams_data": teams_data,
+        #             "game_data": game_data,
+        #         },
+        #     )
+
+        # @router.get(
+        #     "/main",
+        #     response_class=JSONResponse,
+        # )
+        # async def index(request: Request):
+        #     return scoreboard_templates.TemplateResponse(
+        #         "/display/score-main.html",
+        #         {
+        #             "request": request,
+        #             "teams_data": teams_data,
+        #             "game_data": game_data,
+        #         },
+        #     )
+
+        # @router.get(
+        #     "/api/scoreboard",
+        #     response_class=JSONResponse,
+        # )
+        # async def get_scoreboard():
+        #     # Merge the two dictionaries
+        #     scoreboard_data_all = {
+        #         "teams": teams_data,
+        #         "game": game_data,
+        #     }
+        #     return scoreboard_data_all
+
         #####        # @router.get(
         #     "/id/{scoreboard_id}/settings/",
         #     response_model=ScoreboardSchema,
@@ -150,20 +228,6 @@ class ScoreboardRouter(
         #     logos_path = os.path.join(static_path, "logos")
         #     if not os.path.exists(logos_path):
         #         os.makedirs(logos_path)
-
-        # @router.get(
-        #     "/",
-        #     response_class=JSONResponse,
-        # )
-        # async def index(request: Request):
-        #     return templates.TemplateResponse(
-        #         "score-main.html",
-        #         {
-        #             "request": request,
-        #             "teams_data": teams_data,
-        #             "game_data": game_data,
-        #         },
-        #     )
 
         # async def decrement_playclock(data):
         #     if data["time"]["playclock"] > 0:
@@ -401,17 +465,7 @@ class ScoreboardRouter(
         #     print(playclock)
         #     return {"time": {"playclock": playclock}}
         #
-        # @router.get(
-        #     "/api/scoreboard",
-        #     response_class=JSONResponse,
-        # )
-        # async def get_scoreboard():
-        #     # Merge the two dictionaries
-        #     scoreboard_data_all = {
-        #         "teams": teams_data,
-        #         "game": game_data,
-        #     }
-        #     return scoreboard_data_all
+
         #
         # @router.get(
         #     "/api/change_qtr/{qtr}",
