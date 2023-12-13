@@ -123,8 +123,8 @@ class ScoreboardRouter(
             response_model=ScoreboardSchema,
         )
         async def update_scoreboard_(
-                item_id: int,
-                item: ScoreboardSchemaUpdate,
+            item_id: int,
+            item: ScoreboardSchemaUpdate,
         ):
             update_ = await self.service.update_scoreboard(item_id, item)
             if update_:
@@ -134,18 +134,15 @@ class ScoreboardRouter(
                 status_code=404, detail=f"Scoreboard id:{item_id} not found"
             )
 
-        @router.put(
-            "/id/{item_id}/",
-            response_class=JSONResponse
-        )
+        @router.put("/id/{item_id}/", response_class=JSONResponse)
         async def update_scoreboard_by_id(
-                item_id: int,
-                item=Depends(update_scoreboard_),
+            item_id: int,
+            item=Depends(update_scoreboard_),
         ):
             if item:
                 return {
-                    'content': item.__dict__,
-                    'status_code': status.HTTP_200_OK,
+                    "content": item.__dict__,
+                    "status_code": status.HTTP_200_OK,
                     "success": True,
                 }
 
