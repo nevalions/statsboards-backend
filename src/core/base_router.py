@@ -1,6 +1,7 @@
-from typing import List, TypeVar, Generic
+from typing import List, TypeVar, Generic, Optional, Any
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Query
+from starlette import status
 
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType")
@@ -12,6 +13,21 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.prefix = prefix
         self.service = service
         self.tags = tags
+
+    @staticmethod
+    def create_response(item: Optional[Any], message: str):
+        if item:
+            return {
+                "content": item.__dict__,
+                "message": message,
+                "status_code": status.HTTP_200_OK,
+                "success": True,
+            }
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"{message} not found",
+        )
 
     def route(self):
         router = APIRouter(prefix=self.prefix, tags=self.tags)

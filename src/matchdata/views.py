@@ -1,3 +1,5 @@
+from typing import Optional, Any
+
 from fastapi import HTTPException, Depends, Path, Query, status
 from fastapi.responses import JSONResponse
 
@@ -82,13 +84,10 @@ class MatchDataRouter(
         async def get_matchdata_by_id(
             item=Depends(self.service.get_by_id),
         ):
-            if item:
-                return {
-                    "content": item.__dict__,
-                    "message": f"Item ID:{item.id}",
-                    "status_code": status.HTTP_200_OK,
-                    "success": True,
-                }
+            return self.create_response(
+                item,
+                f"MatchData ID:{item.id}",
+            )
 
         @router.put(
             "/id/{item_id}/gameclock/{item_status}/",
@@ -96,25 +95,20 @@ class MatchDataRouter(
         )
         async def start_gameclock_endpoint(
             item_id: int,
-            item=Depends(self.service.get_by_id),
             item_status: str = Path(
                 ...,
-                description="Game Clock status",
                 example="running",
             ),
         ):
-            if item:
-                updated = await self.service.update(
-                    item_id,
-                    MatchDataSchemaUpdate(gameclock_status=item_status),
-                )
-                await self.service.decrement_gameclock(item_id)
-                return {
-                    "content": updated.__dict__,
-                    "message": f"Game clock {item_status}",
-                    "status_code": status.HTTP_200_OK,
-                    "success": True,
-                }
+            updated = await self.service.update(
+                item_id,
+                MatchDataSchemaUpdate(gameclock_status=item_status),
+            )
+            await self.service.decrement_gameclock(item_id)
+            return self.create_response(
+                updated,
+                f"Game clock {item_status}",
+            )
 
         @router.put(
             "/id/{item_id}/gameclock/{item_status}/{sec}/",
@@ -122,40 +116,30 @@ class MatchDataRouter(
         )
         async def reset_gameclock_endpoint(
             item_id: int,
-            item=Depends(self.service.get_by_id),
             item_status: str = Path(
                 ...,
-                description="Reset status",
                 example="stopped",
             ),
             sec: int = Path(
                 ...,
                 description="Seconds",
-                example=333,
+                example=720,
             ),
         ):
-            if item:
-                updated = await self.service.update(
-                    item_id,
-                    MatchDataSchemaUpdate(
-                        gameclock=sec,
-                        gameclock_status=item_status,
-                    ),
-                )
-                return {
-                    "content": updated.__dict__,
-                    "message": f"Game clock {item_status}",
-                    "status_code": status.HTTP_200_OK,
-                    "success": True,
-                }
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"{item} not found",
+            updated = await self.service.update(
+                item_id,
+                MatchDataSchemaUpdate(
+                    gameclock=sec,
+                    gameclock_status=item_status,
+                ),
+            )
+            return self.create_response(
+                updated,
+                f"Game clock {item_status}",
             )
 
-            # await self.service.reset_gameclock(item_id)
-            # return {"message": "Game clock reset"}
+        # await self.service.reset_gameclock(item_id)
+        # return {"message": "Game clock reset"}
 
         # @router.put("/start_gameclock/{item_id}")
         # async def decrement_gameclock_endpoint(item_id: int):
