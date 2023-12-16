@@ -61,9 +61,6 @@ scoreboard_data = {
     "team_b_color": "#1c71d8",
 }
 
-game_clock_task_info = None
-play_clock_task_info = None
-
 
 # Team backend
 class ScoreboardRouter(
@@ -79,36 +76,36 @@ class ScoreboardRouter(
     def route(self):
         router = super().route()
 
-        async def event_generator():
-            while True:
-                # Wait for an item to be put into the queue
-                data = await update_queue.get()
-
-                # Combine teams_data, game_data, and scoreboard_data
-                # in the data sent to the client
-                data["teams_data"] = teams_data
-                data["game_data"] = game_data
-                data["scoreboard_data"] = scoreboard_data
-
-                # Generate the data you want to send to the client
-                yield f"data: {json.dumps(data)}\n\n"
-
-        @router.get("/events/")
-        async def sse_endpoint(request: Request):
-            return StreamingResponse(
-                event_generator(),
-                media_type="text/event-stream",
-            )
-
-        async def trigger_update():
-            # Put the updated data into the queue
-            await update_queue.put(
-                {
-                    "teams_data": teams_data,
-                    "game_data": game_data,
-                    "scoreboard_data": scoreboard_data,
-                }
-            )
+        # async def event_generator():
+        #     while True:
+        #         # Wait for an item to be put into the queue
+        #         data = await update_queue.get()
+        #
+        #         # Combine teams_data, game_data, and scoreboard_data
+        #         # in the data sent to the client
+        #         data["teams_data"] = teams_data
+        #         data["game_data"] = game_data
+        #         data["scoreboard_data"] = scoreboard_data
+        #
+        #         # Generate the data you want to send to the client
+        #         yield f"data: {json.dumps(data)}\n\n"
+        #
+        # @router.get("/events/")
+        # async def sse_endpoint(request: Request):
+        #     return StreamingResponse(
+        #         event_generator(),
+        #         media_type="text/event-stream",
+        #     )
+        #
+        # async def trigger_update():
+        #     # Put the updated data into the queue
+        #     await update_queue.put(
+        #         {
+        #             "teams_data": teams_data,
+        #             "game_data": game_data,
+        #             "scoreboard_data": scoreboard_data,
+        #         }
+        #     )
 
         @router.post(
             "/",
@@ -126,15 +123,22 @@ class ScoreboardRouter(
             item_id: int,
             item: ScoreboardSchemaUpdate,
         ):
-            update_ = await self.service.update_scoreboard(item_id, item)
+            update_ = await self.service.update_scoreboard(
+                item_id,
+                item,
+            )
             if update_:
                 return update_
 
             raise HTTPException(
-                status_code=404, detail=f"Scoreboard id:{item_id} not found"
+                status_code=404,
+                detail=f"Scoreboard id:{item_id} not found",
             )
 
-        @router.put("/id/{item_id}/", response_class=JSONResponse)
+        @router.put(
+            "/id/{item_id}/",
+            response_class=JSONResponse,
+        )
         async def update_scoreboard_by_id(
             item_id: int,
             item=Depends(update_scoreboard_),
@@ -147,78 +151,10 @@ class ScoreboardRouter(
                 }
 
             raise HTTPException(
-                status_code=404, detail=f"Scoreboard id:{item_id} not found"
+                status_code=404,
+                detail=f"Scoreboard id:{item_id} not found",
             )
 
-        # @router.get(
-        #     "/main",
-        #     response_class=JSONResponse,
-        # )
-        # async def index(request: Request):
-        #     return scoreboard_templates.TemplateResponse(
-        #         "/display/score-main.html",
-        #         {
-        #             "request": request,
-        #             "teams_data": teams_data,
-        #             "game_data": game_data,
-        #         },
-        #     )
-
-        # @router.get(
-        #     "/main",
-        #     response_class=JSONResponse,
-        # )
-        # async def index(request: Request):
-        #     return scoreboard_templates.TemplateResponse(
-        #         "/display/score-main.html",
-        #         {
-        #             "request": request,
-        #             "teams_data": teams_data,
-        #             "game_data": game_data,
-        #         },
-        #     )
-
-        # @router.get(
-        #     "/api/scoreboard",
-        #     response_class=JSONResponse,
-        # )
-        # async def get_scoreboard():
-        #     # Merge the two dictionaries
-        #     scoreboard_data_all = {
-        #         "teams": teams_data,
-        #         "game": game_data,
-        #     }
-        #     return scoreboard_data_all
-
-        #####        # @router.get(
-        #     "/id/{scoreboard_id}/settings/",
-        #     response_model=ScoreboardSchema,
-        # )
-        # async def get_scoreboard_settings(scoreboard_id: int):
-        #     # await get_scoreboard_settings_by_match_id(scoreboard_id)
-        #     return scoreboard_data
-
-        # @router.get(
-        #     "/score-fullhd",
-        #     response_class=JSONResponse,
-        # )
-        # async def get_fullhd_scoreboard(request: Request):
-        #     return templates.TemplateResponse(
-        #         "score-fullhd.html",
-        #         {"request": request, "teams_data": teams_data, "game_data": game_data},
-        #     )
-
-        # New route for providing JSON data
-        # @router.get(
-        #     "/api/score-fullhd",
-        #     response_class=JSONResponse,
-        # )
-        # async def get_fullhd_scoreboard_json():
-        #     return {
-        #         "teams": teams_data,
-        #         "game": game_data,
-        #     }
-        #
         # def create_directories():
         #     if not os.path.exists(static_path):
         #         os.makedirs(static_path)
@@ -464,103 +400,7 @@ class ScoreboardRouter(
         #
 
         #
-        # @router.get(
-        #     "/api/change_qtr/{qtr}",
-        #     response_class=JSONResponse,
-        # )
-        # async def change_qtr(qtr: str):
-        #     game_data["qtr"] = qtr
-        #     await trigger_update()
-        #     return {"success": True}
-        #
-        # @router.post(
-        #     "/api/change_downdistance/{newdowndistance}",
-        #     response_class=JSONResponse,
-        # )
-        # async def change_downdistance(newdowndistance: str, data: dict):
-        #     try:
-        #         new_data = data.get("newdowndistance", "")
-        #     except ValueError:
-        #         raise HTTPException(
-        #             status_code=400,
-        #             detail="No json with newdowndistance",
-        #         )
-        #
-        #     try:
-        #         words_count = len(new_data.strip().split())
-        #
-        #         if words_count == 1:
-        #             game_data["downdistance"]["down"] = new_data
-        #             game_data["downdistance"]["distance"] = ""
-        #             await trigger_update()
-        #             return {"success": True}
-        #
-        #         elif words_count == 3:
-        #             new_down_and_distance = new_data.strip().split("&")
-        #             game_data["downdistance"]["down"] = new_down_and_distance[0]
-        #             game_data["downdistance"]["distance"] = new_down_and_distance[1]
-        #
-        #             await trigger_update()
-        #             return {"success": True}
-        #     except ValueError:
-        #         raise HTTPException(
-        #             status_code=400,
-        #             detail="Enter only down and distance and separate it with &",
-        #         )
-        #
-        # @router.get(
-        #     "/api/team_timeouts/{team}/{timeouts}",
-        #     response_class=JSONResponse,
-        # )
-        # async def team_timeouts(team: str, timeouts: str):
-        #     teams_data[team]["timeout"] = timeouts
-        #     await trigger_update()
-        #     return {"success": True}
-        #
-        # @router.get(
-        #     "/api/increment_score/{team}/{score}",
-        # )
-        # async def increment_score(team: str, score: int):
-        #     teams_data[team]["score"] += score
-        #     await trigger_update()
-        #     return JSONResponse(content={"success": True})
-        #
-        # @router.post(
-        #     "/api/change_score/{team}",
-        #     response_class=JSONResponse,
-        # )
-        # async def change_score(team: str, data: dict):
-        #     new_score = data.get("score", "")
-        #
-        #     if new_score:
-        #         try:
-        #             teams_data[team]["score"] = int(new_score)
-        #             await trigger_update()
-        #             return {"success": True}
-        #         except ValueError:
-        #             raise HTTPException(
-        #                 status_code=400,
-        #                 detail="Score must be a number",
-        #             )
-        #     else:
-        #         return {
-        #             "success": False,
-        #             "error": "No score provided",
-        #         }
-        #
-        # @router.post(
-        #     "/api/change_name/{team}",
-        #     response_class=JSONResponse,
-        # )
-        # async def change_name(
-        #         team: str,
-        #         data: dict,
-        # ):
-        #     new_name = data.get("name", "")
-        #     teams_data[team]["name"] = new_name
-        #     await trigger_update()
-        #     return {"success": True}
-        #
+
         # @router.post(
         #     "/api/change_logo/{team}",
         #     response_class=JSONResponse,
@@ -596,34 +436,7 @@ class ScoreboardRouter(
         #             "success": False,
         #             "error": "No logo file provided",
         #         }
-        #
-        # # Endpoint to update scoreboard settings
-        # @router.post("/api/update_scoreboard_settings")
-        # async def update_scoreboard_settings(new_settings: dict):
-        #     global scoreboard_data
-        #
-        #     for key, value in new_settings.items():
-        #         if key.startswith("color_"):
-        #             # Handle color settings separately
-        #             key = key.replace("color_", "")
-        #             scoreboard_data[key] = value
-        #         else:
-        #             # Handle regular settings
-        #             # Validate and convert string representation to boolean if applicable
-        #             if isinstance(scoreboard_data.get(key), bool):
-        #                 if value.lower() == "true":
-        #                     new_settings[key] = True
-        #                 elif value.lower() == "false":
-        #                     new_settings[key] = False
-        #                 else:
-        #                     raise HTTPException(
-        #                         status_code=400,
-        #                         detail=f"Invalid boolean value for {key}: {value}",
-        #                     )
-        #
-        #     scoreboard_data.update(new_settings)
-        #     await trigger_update()
-        #     return {"success": True}
+
         return router
 
 

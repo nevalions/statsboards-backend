@@ -1,7 +1,7 @@
 import asyncio
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from src.core.models import db, BaseServiceDB, MatchDataDB
@@ -60,6 +60,138 @@ class MatchDataServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
+
+    async def update_match_data_gameclock(
+        self,
+        item_id: int,
+        gameclock: int,
+    ):
+        async with self.db.async_session() as session:
+            # print(item_id, gameclock)
+            match_data = await self.get_by_id(item_id)
+            print(match_data.gameclock)
+            if match_data:
+                await session.execute(
+                    update(MatchDataDB)
+                    .where(MatchDataDB.id == item_id)
+                    .values(gameclock=gameclock)
+                )
+
+                await session.commit()
+                # updated_item = await self.get_by_id(item_id)
+                # return updated_item
+            else:
+                print("Error updating gameclock")
+
+    async def get_gameclock_status(
+        self,
+        item_id: int,
+    ):
+        async with (self.db.async_session() as session):
+            stmt = select(MatchDataDB.gameclock_status).where(MatchDataDB.id == item_id)
+            result = await session.execute(stmt)
+            return result.scalar()
+
+    async def update_gameclock_status(
+        self,
+        item_id: int,
+        new_status: str,
+    ):
+        async with self.db.async_session() as session:
+            stmt = (
+                update(MatchDataDB)
+                .where(MatchDataDB.id == item_id)
+                .values(gameclock_status=new_status)
+            )
+            await session.execute(stmt)
+            await session.commit()
+
+    async def pause_gameclock(
+        self,
+        item_id: int,
+    ):
+        await self.update_gameclock_status(
+            item_id,
+            "paused",
+        )
+        status = await self.get_gameclock_status(item_id)
+        print(f"Game clock status after pause: {status}")
+
+    async def reset_gameclock(
+        self,
+        item_id: int,
+    ):
+        await self.update_gameclock_status(
+            item_id,
+            "stopped",
+        )
+        await self.update_match_data(item_id, MatchDataSchemaUpdate(gameclock=720))
+
+    async def decrement_gameclock(
+        self,
+        item_id: int,
+    ):
+        gameclock_status = await self.get_gameclock_status(item_id)
+
+        while gameclock_status == "running":
+            await asyncio.sleep(1)
+            gameclock_status = await self.get_gameclock_status(item_id)
+            updated_gameclock = await asyncio.create_task(
+                self.decrement_gameclock_one_second(item_id)
+            )
+
+            async with self.db.async_session() as session:
+                stmt = (
+                    update(MatchDataDB)
+                    .where(MatchDataDB.id == item_id)
+                    .values(gameclock=updated_gameclock)
+                    .returning(MatchDataDB.gameclock)
+                )
+
+                result = await session.execute(stmt)
+                await session.commit()
+                updated_gameclock = result.scalar()
+                print(updated_gameclock)
+
+            # return updated_gameclock
+
+    async def start_gameclock(
+        self,
+        item_id: int,
+    ):
+        await self.update_gameclock_status(
+            item_id,
+            "running",
+        )
+
+    async def decrement_gameclock_one_second(
+        self,
+        item_id: int,
+    ):
+        # async with self.db.async_session() as session:
+        #     stmt = select(MatchDataDB).where(MatchDataDB.id == item_id)
+
+        # result = await session.scalar(stmt)
+        result = await super().get_by_id(item_id)
+        updated_gameclock = result.gameclock
+
+        if updated_gameclock:
+            print(updated_gameclock)
+            if updated_gameclock >= 0:
+                updated_gameclock -= 1
+                return updated_gameclock
+
+            else:
+                await self.update_gameclock_status(
+                    item_id,
+                    "stopped",
+                )
+                return updated_gameclock
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=f"MatchData id:{item_id} not found",
+            )
 
 
 async def get_match_result_db() -> MatchDataServiceDB:
