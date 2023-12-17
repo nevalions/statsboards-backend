@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.exc import NoResultFound
@@ -80,9 +81,9 @@ class BaseServiceDB:
                 select(self.model).where(self.model.id == item_id)
             )
             model = result.scalars().one_or_none()
-            print(
-                f"Type of model: {self.model.__name__}"
-            )  # Add this line for debugging
+            # print(
+            #     f"Type of model: {self.model.__name__}"
+            # )  # Add this line for debugging
             # print(model)
             return model
 
@@ -96,9 +97,9 @@ class BaseServiceDB:
                 select(model).where(getattr(model, "id") == item_id)
             )
             item = result.scalars().one_or_none()
-            print(
-                f"Type of model: {self.model.__name__}"
-            )  # Add this line for debugging
+            # print(
+            #     f"Type of model: {self.model.__name__}"
+            # )  # Add this line for debugging
             # print(model)
             return item
 
@@ -408,6 +409,22 @@ class BaseServiceDB:
         else:
             order = order.asc()
         return order
+
+    @staticmethod
+    def default_serializer(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        raise TypeError(f"Type {type(obj)} not serializable")
+
+    @staticmethod
+    def to_dict(model):
+        data = {
+            column.name: getattr(model, column.name)
+            for column in model.__table__.columns
+        }
+        # Exclude the _sa_instance_state key
+        data.pop("_sa_instance_state", None)
+        return data
 
 
 class Base(DeclarativeBase):

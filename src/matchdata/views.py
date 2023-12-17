@@ -1,7 +1,5 @@
-from typing import Optional, Any
-
-from fastapi import HTTPException, Depends, Path, Query, status
-from fastapi.responses import JSONResponse
+from fastapi import HTTPException, Depends, Path, Query, status, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.core import BaseRouter, db
 from .db_services import MatchDataServiceDB
@@ -90,25 +88,50 @@ class MatchDataRouter(
             )
 
         @router.put(
-            "/id/{item_id}/gameclock/{item_status}/",
+            "/id/{item_id}/gameclock/running/",
             response_class=JSONResponse,
         )
         async def start_gameclock_endpoint(
             item_id: int,
-            item_status: str = Path(
-                ...,
-                example="running",
-            ),
         ):
-            updated = await self.service.update(
+            item_status = "running"
+            item = await self.service.get_by_id(item_id)
+            present_gameclock_status = item.gameclock_status
+            if present_gameclock_status != "running":
+                updated = await self.service.update_match_data(
+                    item_id,
+                    MatchDataSchemaUpdate(gameclock_status=item_status),
+                )
+                await self.service.decrement_gameclock(item_id)
+
+                return self.create_response(
+                    updated,
+                    f"Game clock ID:{item_id} {item_status}",
+                )
+            else:
+                return self.create_response(
+                    item,
+                    f"Game clock ID:{item_id} already {present_gameclock_status}",
+                )
+
+        @router.put(
+            "/id/{item_id}/gameclock/paused/",
+            response_class=JSONResponse,
+        )
+        async def start_gameclock_endpoint(
+            item_id: int,
+        ):
+            item_status = "paused"
+
+            updated_ = await self.service.update_match_data(
                 item_id,
                 MatchDataSchemaUpdate(gameclock_status=item_status),
             )
-            await self.service.decrement_gameclock(item_id)
-            return self.create_response(
-                updated,
-                f"Game clock {item_status}",
-            )
+            if updated_:
+                return self.create_response(
+                    updated_,
+                    f"Game clock ID:{item_id} {item_status}",
+                )
 
         @router.put(
             "/id/{item_id}/gameclock/{item_status}/{sec}/",
@@ -126,77 +149,27 @@ class MatchDataRouter(
                 example=720,
             ),
         ):
-            updated = await self.service.update(
+            updated = await self.service.update_match_data(
                 item_id,
                 MatchDataSchemaUpdate(
                     gameclock=sec,
                     gameclock_status=item_status,
                 ),
             )
+            # await trigger_update(item_id)
             return self.create_response(
                 updated,
                 f"Game clock {item_status}",
             )
 
-        # await self.service.reset_gameclock(item_id)
-        # return {"message": "Game clock reset"}
-
-        # @router.put("/start_gameclock/{item_id}")
-        # async def decrement_gameclock_endpoint(item_id: int):
-        #     await self.service.start_gameclock(item_id)
-        #     started_gameclock = await self.service.decrement_gameclock(item_id)
-        #     return {"updated_gameclock": started_gameclock}
-
-        # if game_data.gameclock - status == "stopped" | "string" | None:
-        #     # If the game clock is not already running or paused, start it
-        #     game_data["match_data"]["gameclock-status"] = "running"
-        #
-        #     # Create a new task and store it in game_data
-        #     game_clock_task_info = asyncio.create_task(run_game_clock(game_data))
-        #
-        #     return {
-        #         "success": True,
-        #         "message": f"Game clock started with initial time "
-        #                    f"{game_data['match_data']['gameclock']} seconds",
-        #     }
-        # elif game_data["match_data"]["gameclock-status"] == "paused":
-        #     # If the game clock is paused, resume it
-        #     game_data["match_data"]["gameclock-status"] = "running"
-        #
-        #     # Create a new task and store it in game_data
-        #     game_clock_task_info = asyncio.create_task(run_game_clock(game_data))
-        #
-        #     return {"success": True, "message": "Game clock resumed."}
-        # else:
-        #     # If the game clock is already running, return a message
-        #     return {"success": False, "message": "Game clock is already running."}
-
-        # async def decrement_gameclock(match_data):
-        #     if match_data.gameclock_status == "running" and match_data.gameclock > 0:
-        #         new_gameclock = match_data.gameclock - 1
-        #         print(match_data, new_gameclock)
-        #         await self.service.update_match_data_gameclock(
-        #             match_data.id,
-        #             new_gameclock,
-        #         )
-        #
-        #     elif match_data.gameclock_status == "running":
-        #         # Stop the game clock when it reaches 0
-        #         match_data.gameclock_status = "stopped"
-        #         print("Game clock reached 0. Stopping game clock.")
-
-        # async def run_game_clock(match_data):
-        #     while match_data.gameclock_status == "running":
-        #         print(match_data.gameclock_status, match_data.gameclock)
-        #         await asyncio.sleep(1)
-        #         await decrement_gameclock(match_data)
+        @router.get("/events/")
+        async def sse_match_data_endpoint(request: Request):
+            return StreamingResponse(
+                self.service.event_generator_match_data(),
+                media_type="text/event-stream",
+            )
 
         return router
-
-        # await update_queue.put({'teams': teams_data, 'game': data})
-
-    #     await trigger_update()
-    # await trigger_update()
 
 
 api_matchdata_router = MatchDataRouter(MatchDataServiceDB(db)).route()

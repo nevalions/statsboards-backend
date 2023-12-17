@@ -26,7 +26,7 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
         raise HTTPException(
             status_code=404,
-            detail=f"{message} not found",
+            detail=f"'{message}' ELEMENT NOT FOUND",
         )
 
     def route(self):
