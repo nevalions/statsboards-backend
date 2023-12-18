@@ -76,15 +76,10 @@ class MatchDataDB(Base):
         nullable=True,
     )
 
-    paused_time: Mapped[Text] = mapped_column(
-        Text,
-        nullable=True,
-    )
-
     playclock: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
-        default=40,
+        default=None,
     )
 
     playclock_status: Mapped[str] = mapped_column(

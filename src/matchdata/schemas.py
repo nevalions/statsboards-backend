@@ -18,7 +18,7 @@ class MatchDataSchemaBase(BaseModel):
     gameclock_status: Annotated[str, Path(max_length=50)] = "stopped"
     game_clock_task: Any
     paused_time: Any
-    playclock: Annotated[int, Path(max=10000)] = 40
+    playclock: Annotated[int, Path(max=10000)] | None = None
     playclock_status: Annotated[str, Path(max_length=50)] = "stopped"
     ball_on: Annotated[int, Path(max=200)] = 20
     down: Annotated[str, Path(max_length=10)] = "1st"

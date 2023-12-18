@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import HTTPException, Depends, Path, Query, status, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -5,8 +7,8 @@ from src.core import BaseRouter, db
 from .db_services import MatchDataServiceDB
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate, MatchDataSchema
 
-game_clock_task_info = None
-play_clock_task_info = None
+# game_clock_task_info = None
+# play_clock_task_info = None
 
 
 class MatchDataRouter(
@@ -98,7 +100,7 @@ class MatchDataRouter(
             item = await self.service.get_by_id(item_id)
             present_gameclock_status = item.gameclock_status
             if present_gameclock_status != "running":
-                updated = await self.service.update_match_data(
+                updated = await self.service.update(
                     item_id,
                     MatchDataSchemaUpdate(gameclock_status=item_status),
                 )
@@ -123,7 +125,7 @@ class MatchDataRouter(
         ):
             item_status = "paused"
 
-            updated_ = await self.service.update_match_data(
+            updated_ = await self.service.update(
                 item_id,
                 MatchDataSchemaUpdate(gameclock_status=item_status),
             )
@@ -149,23 +151,99 @@ class MatchDataRouter(
                 example=720,
             ),
         ):
-            updated = await self.service.update_match_data(
+            updated = await self.service.update(
                 item_id,
                 MatchDataSchemaUpdate(
                     gameclock=sec,
                     gameclock_status=item_status,
                 ),
             )
-            # await trigger_update(item_id)
+            await self.service.trigger_update_match_data_gameclock(item_id)
             return self.create_response(
                 updated,
                 f"Game clock {item_status}",
+            )
+
+        @router.put(
+            "/id/{item_id}/playclock/running/{sec}/",
+            response_class=JSONResponse,
+        )
+        async def start_playclock_endpoint(
+            item_id: int,
+            sec: int,
+        ):
+            # await self.service.update_match_data(
+            #     item_id,
+            #     MatchDataSchemaUpdate(
+            #         playclock=None,
+            #         playclock_status="stopped",
+            #     ),
+            # )
+            # await asyncio.sleep(0.5)
+
+            item_status = "running"
+            item = await self.service.get_by_id(item_id)
+            present_playclock_status = item.playclock_status
+            if present_playclock_status != "running":
+                await self.service.update(
+                    item_id,
+                    MatchDataSchemaUpdate(
+                        playclock=sec,
+                        playclock_status=item_status,
+                    ),
+                )
+                finished = await self.service.decrement_playclock(item_id)
+                # await self.service.trigger_update_match_data_playclock(item_id)
+
+                return self.create_response(
+                    finished,
+                    f"Play clock ID:{item_id} {item_status}",
+                )
+            else:
+                return self.create_response(
+                    item,
+                    f"Play clock ID:{item_id} already {present_playclock_status}",
+                )
+
+        @router.put(
+            "/id/{item_id}/playclock/stopped/",
+            response_class=JSONResponse,
+        )
+        async def reset_playclock_endpoint(
+            item_id: int,
+        ):
+            item_status = "stopped"
+            updated = await self.service.update(
+                item_id,
+                MatchDataSchemaUpdate(
+                    playclock=None,
+                    playclock_status=item_status,
+                ),
+            )
+            await self.service.trigger_update_match_data_playclock(item_id)
+            return self.create_response(
+                updated,
+                f"Play clock {item_status}",
             )
 
         @router.get("/events/")
         async def sse_match_data_endpoint(request: Request):
             return StreamingResponse(
                 self.service.event_generator_match_data(),
+                media_type="text/event-stream",
+            )
+
+        @router.get("/events/playclock/")
+        async def sse_match_data_playclock_endpoint(request: Request):
+            return StreamingResponse(
+                self.service.event_generator_update_match_data_playclock(),
+                media_type="text/event-stream",
+            )
+
+        @router.get("/events/gameclock/")
+        async def sse_match_data_gameclock_endpoint(request: Request):
+            return StreamingResponse(
+                self.service.event_generator_update_match_data_gameclock(),
                 media_type="text/event-stream",
             )
 
