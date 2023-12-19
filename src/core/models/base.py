@@ -135,7 +135,7 @@ class BaseServiceDB:
                 return None
             # print(db_item)
             for key, value in item.dict(exclude_unset=True).items():
-                print(key, value)
+                # print(key, value)
                 setattr(db_item, key, value)
             await session.execute(
                 update(self.model)

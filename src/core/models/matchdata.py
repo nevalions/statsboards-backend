@@ -71,11 +71,6 @@ class MatchDataDB(Base):
         default="stopped",
     )
 
-    game_clock_task: Mapped[Text] = mapped_column(
-        Text,
-        nullable=True,
-    )
-
     playclock: Mapped[int] = mapped_column(
         Integer,
         nullable=True,

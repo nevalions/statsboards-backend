@@ -39,7 +39,7 @@ class MatchRouter(
             response_model=MatchSchema,
         )
         async def create_match(
-                match: MatchSchemaCreate,
+            match: MatchSchemaCreate,
         ):
             new_match = await self.service.create_or_update_match(match)
             return new_match.__dict__
@@ -49,8 +49,8 @@ class MatchRouter(
             response_model=MatchSchema,
         )
         async def update_match(
-                item_id: int,
-                item: MatchSchemaUpdate,
+            item_id: int,
+            item: MatchSchemaUpdate,
         ):
             match_update = await self.service.update_match(item_id, item)
 
@@ -80,7 +80,7 @@ class MatchRouter(
             return await self.service.get_teams_by_match(match_id)
 
         @router.get(
-            "/id/{match_id}/data/",
+            "/id/{match_id}/match_data/",
         )
         async def get_match_data_by_match_id(match_id: int):
             return await self.service.get_matchdata_by_match(match_id)
@@ -96,11 +96,11 @@ class MatchRouter(
             response_class=JSONResponse,
         )
         async def index_json(
-                request: Request,
-                match_id: int,
-                match_teams_data=Depends(get_match_teams_by_match_id),
-                match_data=Depends(get_match_data_by_match_id),
-                scoreboard_data=Depends(get_match_scoreboard_by_match_id),
+            request: Request,
+            match_id: int,
+            match_teams_data=Depends(get_match_teams_by_match_id),
+            match_data=Depends(get_match_data_by_match_id),
+            scoreboard_data=Depends(get_match_scoreboard_by_match_id),
         ):
             return (
                 {
@@ -116,8 +116,8 @@ class MatchRouter(
             response_class=JSONResponse,
         )
         async def index(
-                request: Request,
-                match_id: int,
+            request: Request,
+            match_id: int,
         ):
             template = scoreboard_templates.TemplateResponse(
                 name="/display/score-main.html",

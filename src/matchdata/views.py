@@ -96,6 +96,8 @@ class MatchDataRouter(
         async def start_gameclock_endpoint(
             item_id: int,
         ):
+            await self.service.enable_match_data_events_queues(item_id)
+
             item_status = "running"
             item = await self.service.get_by_id(item_id)
             present_gameclock_status = item.gameclock_status
@@ -120,7 +122,7 @@ class MatchDataRouter(
             "/id/{item_id}/gameclock/paused/",
             response_class=JSONResponse,
         )
-        async def start_gameclock_endpoint(
+        async def pause_gameclock_endpoint(
             item_id: int,
         ):
             item_status = "paused"
@@ -158,7 +160,7 @@ class MatchDataRouter(
                     gameclock_status=item_status,
                 ),
             )
-            await self.service.trigger_update_match_data_gameclock(item_id)
+            await self.service.trigger_update_match_data_gameclock_sse(item_id)
             return self.create_response(
                 updated,
                 f"Game clock {item_status}",
@@ -240,12 +242,23 @@ class MatchDataRouter(
                 media_type="text/event-stream",
             )
 
-        @router.get("/events/gameclock/")
-        async def sse_match_data_gameclock_endpoint(request: Request):
+        @router.get("/id/{item_id}/events/gameclock/")
+        async def sse_match_data_gameclock_endpoint(
+            request: Request,
+            item_id: int,
+        ):
+            await self.service.enable_match_data_events_queues(item_id)
             return StreamingResponse(
-                self.service.event_generator_update_match_data_gameclock(),
+                self.service.event_generator_get_match_data_gameclock(item_id),
                 media_type="text/event-stream",
             )
+
+        @router.get(
+            "/queue/",
+            response_class=JSONResponse,
+        )
+        async def queue():
+            return self.service.get_active_match_ids()
 
         return router
 
