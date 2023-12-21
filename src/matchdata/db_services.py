@@ -104,29 +104,37 @@ class MatchDataServiceDB(BaseServiceDB):
                     f"returned some error",
                 )
 
-    async def get_match_data_by_id(self, match_id: int):
-        return await self.get_by_id(match_id)
+    # async def get_match_data_by_id(self, match_id: int):
+    #     return await self.get_by_id(match_id)
 
-    async def enable_match_data_events_queues(self, item_id):
+    async def enable_match_data_events_queues(self, item_id: int):
+        print(item_id)
         match_data = await self.get_by_id(item_id)
+        print(match_data)
 
-        # Check if the game_status has changed to "in-progress"
-        if match_data.game_status == "in-progress":
-            match_data_id = match_data.id
+        if match_data:
+            # Check if the game_status has changed to "in-progress"
+            if match_data.game_status == "in-progress":
+                match_data_id = match_data.id
+                print(match_data.game_status)
 
-            # Check if the queue already exists for this match
-            if match_data_id not in self.match_event_queues:
-                matchdata_gameclock_queue = await self.create_match_event_queue()
-                # Store the queue for this match
-                self.match_event_queues[match_data_id] = matchdata_gameclock_queue
+                # Check if the queue already exists for this match
+                if match_data_id not in self.match_event_queues:
+                    matchdata_gameclock_queue = await self.create_match_event_queue()
+                    # Store the queue for this match
+                    self.match_event_queues[match_data_id] = matchdata_gameclock_queue
+                    print(self.match_event_queues)
 
-        match_queue = self.match_event_queues.get(match_data.id)
+            match_queue = self.match_event_queues.get(match_data.id)
 
-        # Check if the queue exists before putting the data
-        if match_queue:
-            await match_queue.put({"match_data": self.to_dict(match_data)})
+            # Check if the queue exists before putting the data
+            if match_queue:
+                await match_queue.put({"match_data": self.to_dict(match_data)})
+                print(match_queue)
+            else:
+                print("Match not started")
         else:
-            print("Match not started")
+            print(f"Match data {item_id} not found")
 
     async def update_match_data(
         self,
@@ -162,6 +170,17 @@ class MatchDataServiceDB(BaseServiceDB):
         else:
             return None
 
+    async def get_match_data_id_by_match_id(self, match_id: int):
+        async with self.db.async_session() as session:
+            result = await session.scalars(
+                select(MatchDataDB).where(MatchDataDB.match_id == match_id)
+            )
+            if result:
+                print(result.__dict__)
+                match_data = result.one_or_none()
+                if match_data:
+                    return match_data
+
     # async def update_gameclock_status(
     #     self,
     #     item_id: int,
@@ -185,6 +204,7 @@ class MatchDataServiceDB(BaseServiceDB):
         while gameclock_status == "running":
             await asyncio.sleep(1)
             updated_gameclock = await self.decrement_gameclock_one_second(item_id)
+            # print(updated_gameclock)
             gameclock = await self.update(
                 item_id,
                 MatchDataSchemaUpdate(gameclock=updated_gameclock),
@@ -305,7 +325,7 @@ class MatchDataServiceDB(BaseServiceDB):
             )
             yield f"data: {json_data}\n\n"
 
-    async def event_generator_get_match_data_gameclock(self, item_id):
+    async def event_generator_get_match_data_gameclock(self, match_id):
         # match_result = await self.get_match_data_by_id(item_id)
         # if match_result:
         #     if match_result.game_status == "in-progress":
@@ -322,8 +342,7 @@ class MatchDataServiceDB(BaseServiceDB):
         #         # Check if the queue exists before putting the data
         #         if match_queue:
         #             await match_queue.put({"match_data": self.to_dict(match_result)})
-
-        matchdata_gameclock_queue = await self.get_match_event_queue(item_id)
+        matchdata_gameclock_queue = await self.get_match_event_queue(match_id)
 
         while True:
             if matchdata_gameclock_queue:
@@ -338,7 +357,7 @@ class MatchDataServiceDB(BaseServiceDB):
                     await asyncio.sleep(0.1)
             else:
                 # Log the error or take appropriate action
-                print(f"Queue not found for item_id: {item_id}")
+                print(f"Queue not found for MatchData ID:{match_id}")
                 await asyncio.sleep(0.5)
 
     # async def event_generator_get_match_data_gameclock(self, item_id):

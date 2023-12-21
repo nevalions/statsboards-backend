@@ -89,33 +89,46 @@ class MatchDataRouter(
                 f"MatchData ID:{item.id}",
             )
 
+        @router.get(
+            "/match/id/{item_id}/",
+            response_model=MatchDataSchema,
+        )
+        async def get_match_data_id_by_match_id_endpoint(item_id: int):
+            match_data = await self.service.get_match_data_id_by_match_id(item_id)
+            if match_data is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Match data " f"id({item_id}) " f"not found",
+                )
+            return match_data
+
         @router.put(
-            "/id/{item_id}/gameclock/running/",
+            "/id/{match_data_id}/gameclock/running/",
             response_class=JSONResponse,
         )
         async def start_gameclock_endpoint(
-            item_id: int,
+            match_data_id: int,
         ):
-            await self.service.enable_match_data_events_queues(item_id)
+            await self.service.enable_match_data_events_queues(match_data_id)
 
             item_status = "running"
-            item = await self.service.get_by_id(item_id)
-            present_gameclock_status = item.gameclock_status
+            match_data = await self.service.get_by_id(match_data_id)
+            present_gameclock_status = match_data.gameclock_status
             if present_gameclock_status != "running":
                 updated = await self.service.update(
-                    item_id,
+                    match_data_id,
                     MatchDataSchemaUpdate(gameclock_status=item_status),
                 )
-                await self.service.decrement_gameclock(item_id)
+                await self.service.decrement_gameclock(match_data_id)
 
                 return self.create_response(
                     updated,
-                    f"Game clock ID:{item_id} {item_status}",
+                    f"Game clock Match Data ID:{match_data_id} {item_status}",
                 )
             else:
                 return self.create_response(
-                    item,
-                    f"Game clock ID:{item_id} already {present_gameclock_status}",
+                    match_data,
+                    f"Game clock Match Data ID:{match_data_id} already {present_gameclock_status}",
                 )
 
         @router.put(
@@ -242,14 +255,15 @@ class MatchDataRouter(
                 media_type="text/event-stream",
             )
 
-        @router.get("/id/{item_id}/events/gameclock/")
+        @router.get("/id/{match_data_id}/events/gameclock/")
         async def sse_match_data_gameclock_endpoint(
             request: Request,
-            item_id: int,
+            match_data_id: int,
         ):
-            await self.service.enable_match_data_events_queues(item_id)
+            await self.service.enable_match_data_events_queues(match_data_id)
+
             return StreamingResponse(
-                self.service.event_generator_get_match_data_gameclock(item_id),
+                self.service.event_generator_get_match_data_gameclock(match_data_id),
                 media_type="text/event-stream",
             )
 
