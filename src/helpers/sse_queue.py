@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 
+from src.core.models import MatchDataDB
+
 
 class MatchEventQueue:
     def __init__(self, model, redis, match_data_id):
@@ -9,14 +11,14 @@ class MatchEventQueue:
         self.model = model
         self.match_data_id = match_data_id
 
-    async def put(self, data):
+    async def put_redis(self, data):
         serialized_data = json.dumps(data, default=self.default_serializer)
         await self.redis.lpush(
             f"match_event_queue:{self.match_data_id}",
             serialized_data,
         )
 
-    async def get(self):
+    async def get_redis(self):
         data = await self.redis.lpop(f"match_event_queue:{self.match_data_id}")
         if data:
             return json.loads(data)
@@ -26,6 +28,8 @@ class MatchEventQueue:
     def default_serializer(obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
+        elif isinstance(obj, MatchDataDB):  # Check if obj is an instance of MatchDataDB
+            return MatchEventQueue.to_dict(obj)
         raise TypeError(f"Type {type(obj)} not serializable")
 
     @staticmethod
