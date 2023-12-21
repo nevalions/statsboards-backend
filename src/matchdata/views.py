@@ -272,7 +272,7 @@ class MatchDataRouter(
             response_class=JSONResponse,
         )
         async def queue():
-            return self.service.get_active_match_ids()
+            return await self.service.get_active_match_ids()
 
         return router
 
