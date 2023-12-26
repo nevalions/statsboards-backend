@@ -14,19 +14,11 @@ class MatchEventQueue:
         self.pubsub_gameclock_channel = f"match_event_queue_channel:{match_data_id}"
         self.pubsub_gameclock = None
 
-    # async def fetch_and_print_keys(self):
-    #     keys = await self.redis.keys("match_event_queue:*")
-    #     return list(keys)
-
     async def put_redis(self, data):
         serialized_data = json.dumps(data, default=self.default_serializer)
         list_key = f"match_event_queue:{self.match_data_id}"
 
         await self.redis.set(list_key, serialized_data)
-        # print(f"Pushed data into Redis list {list_key}")
-        #
-        # keys = await self.redis.keys("match_event_queue:*")
-        # print("Keys in Redis:", keys)
 
     async def get_redis(self):
         key = f"match_event_queue:{self.match_data_id}"
@@ -43,10 +35,6 @@ class MatchEventQueue:
     async def close(self):
         # Close the Redis connection
         await self.redis.close()
-
-    # async def close(self):
-    #     # Close the connection when the instance is no longer needed
-    #     await self.close_connection()
 
     async def is_connection_open(self):
         try:

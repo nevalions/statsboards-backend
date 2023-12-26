@@ -187,15 +187,6 @@ class MatchDataRouter(
             item_id: int,
             sec: int,
         ):
-            # await self.service.update_match_data(
-            #     item_id,
-            #     MatchDataSchemaUpdate(
-            #         playclock=None,
-            #         playclock_status="stopped",
-            #     ),
-            # )
-            # await asyncio.sleep(0.5)
-
             item_status = "running"
             item = await self.service.get_by_id(item_id)
             present_playclock_status = item.playclock_status
