@@ -277,4 +277,6 @@ class MatchDataRouter(
         return router
 
 
-api_matchdata_router = MatchDataRouter(MatchDataServiceDB(db)).route()
+api_matchdata_router = MatchDataRouter(
+    MatchDataServiceDB(db, "redis://127.0.0.1:6379")
+).route()
