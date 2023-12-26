@@ -256,10 +256,7 @@ class MatchDataRouter(
             )
 
         @router.get("/id/{match_data_id}/events/gameclock/")
-        async def sse_match_data_gameclock_endpoint(
-            request: Request,
-            match_data_id: int,
-        ):
+        async def sse_match_data_gameclock_endpoint(match_data_id: int):
             await self.service.enable_match_data_events_queues(match_data_id)
 
             return StreamingResponse(

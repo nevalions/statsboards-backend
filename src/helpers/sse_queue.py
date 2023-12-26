@@ -11,8 +11,8 @@ class MatchEventQueue:
         self.redis = redis
         self.model = model
         self.match_data_id = match_data_id
-        self.pubsub_channel = f"match_event_queue_channel:{match_data_id}"
-        self.pubsub = None
+        self.pubsub_gameclock_channel = f"match_event_queue_channel:{match_data_id}"
+        self.pubsub_gameclock = None
 
     # async def fetch_and_print_keys(self):
     #     keys = await self.redis.keys("match_event_queue:*")
@@ -40,13 +40,13 @@ class MatchEventQueue:
                 return json.loads(data)
         return None
 
-    async def close_connection(self):
+    async def close(self):
         # Close the Redis connection
         await self.redis.close()
 
-    async def close(self):
-        # Close the connection when the instance is no longer needed
-        await self.close_connection()
+    # async def close(self):
+    #     # Close the connection when the instance is no longer needed
+    #     await self.close_connection()
 
     async def is_connection_open(self):
         try:
@@ -56,13 +56,14 @@ class MatchEventQueue:
         except aioredis.RedisError:
             return False
 
-    async def setup_pubsub(self):
-        self.pubsub = self.redis.pubsub()
-        await self.pubsub.subscribe(self.pubsub_channel)
+    async def setup_pubsub_gameclock(self):
+        self.pubsub_gameclock = self.redis.pubsub()
+        await self.pubsub_gameclock.subscribe(self.pubsub_gameclock_channel)
 
     async def publish_event(self, data):
         await self.redis.publish(
-            self.pubsub_channel, json.dumps(data, default=self.default_serializer)
+            self.pubsub_gameclock_channel,
+            json.dumps(data, default=self.default_serializer),
         )
 
     @staticmethod
