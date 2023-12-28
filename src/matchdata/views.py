@@ -111,7 +111,10 @@ class MatchDataRouter(
                 ),
             )
             tasks = [
-                self.service.enable_match_data_gameclock_queues(match_data_id),
+                self.service.enable_match_data_clock_queues(
+                    match_data_id,
+                    "game",
+                ),
                 self.service.clock_manager.start_clock(
                     match_data_id,
                     "game",
@@ -222,7 +225,10 @@ class MatchDataRouter(
             item = await self.service.get_by_id(item_id)
             present_playclock_status = item.playclock_status
             print(present_playclock_status)
-            await self.service.enable_match_data_playclock_queues(item_id)
+            await self.service.enable_match_data_clock_queues(
+                item_id,
+                "play",
+            )
             # await self.service.clock_manager.start_clock(item_id, "play")
             if present_playclock_status != "running":
                 await self.service.update(
