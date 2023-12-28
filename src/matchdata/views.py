@@ -291,14 +291,20 @@ class MatchDataRouter(
         @router.get("/id/{match_data_id}/events/playclock/")
         async def sse_match_data_playclock_endpoint(match_data_id: int):
             return StreamingResponse(
-                self.service.event_generator_get_match_data_playclock(match_data_id),
+                self.service.event_generator_get_match_clock(
+                    match_data_id,
+                    "play",
+                ),
                 media_type="text/event-stream",
             )
 
         @router.get("/id/{match_data_id}/events/gameclock/")
         async def sse_match_data_gameclock_endpoint(match_data_id: int):
             return StreamingResponse(
-                self.service.event_generator_get_match_data_gameclock(match_data_id),
+                self.service.event_generator_get_match_clock(
+                    match_data_id,
+                    "game",
+                ),
                 media_type="text/event-stream",
             )
 

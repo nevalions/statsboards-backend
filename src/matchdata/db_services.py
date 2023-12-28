@@ -322,76 +322,42 @@ class MatchDataServiceDB(BaseServiceDB):
             )
             yield f"data: {json_data}\n\n"
 
-    async def event_generator_get_match_data_playclock(self, match_id: int):
-        await self.enable_match_data_clock_queues(
-            match_id,
-            "play",
+    async def event_generator_get_match_clock(self, match_id: int, clock_type: str):
+        active_clock_matches = (
+            self.clock_manager.active_gameclock_matches
+            if clock_type == "game"
+            else self.clock_manager.active_playclock_matches
         )
-        try:
-            while match_id in self.clock_manager.active_playclock_matches:
-                print(f"Match {match_id} Play Clock is active")
-                message = await self.clock_manager.active_playclock_matches[
-                    match_id
-                ].get()
 
-                message_dict = self.to_dict(message)
-                selected_fields_dict = {
-                    field: message_dict[field]
-                    for field in [
-                        "playclock",
-                        "playclock_status",
-                    ]
-                }
-
-                json_data = json.dumps(
-                    selected_fields_dict, default=self.default_serializer
-                )
-
-                yield f"data: {json_data}\n\n"
-
-            print(f"Match {match_id} Play Clock stopped")
-        except asyncio.CancelledError:
-            pass
-
-    async def event_generator_get_match_data_gameclock(self, match_id: int):
-        if match_id not in self.clock_manager.active_gameclock_matches:
+        if clock_type == "game" and match_id not in active_clock_matches:
             print(f"Queue not found for MatchData ID:{match_id}")
             start_game = "in-progress"
-            await self.update(
-                match_id,
-                MatchDataSchemaUpdate(
-                    game_status=start_game,
-                ),
-            )
-            await self.enable_match_data_clock_queues(
-                match_id,
-                "game",
-            )
+            await self.update(match_id, MatchDataSchemaUpdate(game_status=start_game))
+            await self.enable_match_data_clock_queues(match_id, clock_type)
 
             return
 
-        try:
-            while match_id in self.clock_manager.active_gameclock_matches:
-                print(f"Match {match_id} is active")
-                message = await self.clock_manager.active_gameclock_matches[
-                    match_id
-                ].get()
+        else:
+            await self.enable_match_data_clock_queues(match_id, clock_type)
 
+        try:
+            while match_id in active_clock_matches:
+                print(f"Match {match_id} {clock_type} clock is active")
+                message = await active_clock_matches[match_id].get()
                 message_dict = self.to_dict(message)
+
                 selected_fields_dict = {
                     field: message_dict[field]
-                    for field in [
-                        "gameclock",
-                        "gameclock_status",
-                    ]
+                    for field in [f"{clock_type}clock", f"{clock_type}clock_status"]
                 }
 
                 json_data = json.dumps(
                     selected_fields_dict, default=self.default_serializer
                 )
-
-                # Check game_status from message_dict dictionary.
-                if message_dict.get("game_status") == "stopped":
+                if (
+                    clock_type == "game"
+                    and message_dict.get("game_status") == "stopped"
+                ):
                     await self.clock_manager.end_clock(
                         match_id,
                         "game",
@@ -400,10 +366,91 @@ class MatchDataServiceDB(BaseServiceDB):
 
                 yield f"data: {json_data}\n\n"
 
-                # await asyncio.sleep(0.5)
-            print(f"Match {match_id} stopped")
+            print(f"Match {match_id} {clock_type.capitalize()} Clock stopped")
         except asyncio.CancelledError:
             pass
+
+    # async def event_generator_get_match_data_playclock(self, match_id: int):
+    #     await self.enable_match_data_clock_queues(
+    #         match_id,
+    #         "play",
+    #     )
+    #     try:
+    #         while match_id in self.clock_manager.active_playclock_matches:
+    #             print(f"Match {match_id} Play Clock is active")
+    #             message = await self.clock_manager.active_playclock_matches[
+    #                 match_id
+    #             ].get()
+    #
+    #             message_dict = self.to_dict(message)
+    #             selected_fields_dict = {
+    #                 field: message_dict[field]
+    #                 for field in [
+    #                     "playclock",
+    #                     "playclock_status",
+    #                 ]
+    #             }
+    #
+    #             json_data = json.dumps(
+    #                 selected_fields_dict, default=self.default_serializer
+    #             )
+    #
+    #             yield f"data: {json_data}\n\n"
+    #
+    #         print(f"Match {match_id} Play Clock stopped")
+    #     except asyncio.CancelledError:
+    #         pass
+    #
+    # async def event_generator_get_match_data_gameclock(self, match_id: int):
+    #     if match_id not in self.clock_manager.active_gameclock_matches:
+    #         print(f"Queue not found for MatchData ID:{match_id}")
+    #         start_game = "in-progress"
+    #         await self.update(
+    #             match_id,
+    #             MatchDataSchemaUpdate(
+    #                 game_status=start_game,
+    #             ),
+    #         )
+    #         await self.enable_match_data_clock_queues(
+    #             match_id,
+    #             "game",
+    #         )
+    #
+    #         return
+    #
+    #     try:
+    #         while match_id in self.clock_manager.active_gameclock_matches:
+    #             print(f"Match {match_id} Game clock is active")
+    #             message = await self.clock_manager.active_gameclock_matches[
+    #                 match_id
+    #             ].get()
+    #
+    #             message_dict = self.to_dict(message)
+    #             selected_fields_dict = {
+    #                 field: message_dict[field]
+    #                 for field in [
+    #                     "gameclock",
+    #                     "gameclock_status",
+    #                 ]
+    #             }
+    #
+    #             json_data = json.dumps(
+    #                 selected_fields_dict, default=self.default_serializer
+    #             )
+    #
+    #             # Check game_status from message_dict dictionary.
+    #             if message_dict.get("game_status") == "stopped":
+    #                 await self.clock_manager.end_clock(
+    #                     match_id,
+    #                     "game",
+    #                 )
+    #                 break
+    #
+    #             yield f"data: {json_data}\n\n"
+    #
+    #         print(f"Match  {match_id} Game Clock stopped")
+    #     except asyncio.CancelledError:
+    #         pass
 
     async def trigger_update_match_data(
         self,
