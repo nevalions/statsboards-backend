@@ -8,10 +8,7 @@ from sqlalchemy import select
 from src.core.models import BaseServiceDB, MatchDataDB
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 
-
 update_queue_match_data = asyncio.Queue()
-# update_queue_match_data_gameclock = asyncio.Queue()
-# update_queue_match_data_playclock = asyncio.Queue()
 
 
 class ClockManager:
@@ -51,67 +48,6 @@ class MatchDataServiceDB(BaseServiceDB):
         super().__init__(database, MatchDataDB)
         self.clock_manager = ClockManager()
 
-    async def enable_match_data_clock_queues(
-        self,
-        item_id: int,
-        clock_type: str,
-    ):
-        if clock_type not in ["game", "play"]:
-            raise ValueError("Invalid clock type. Must be 'game' or 'play'")
-
-        match_data = await self.get_by_id(item_id)
-
-        if not match_data:
-            raise ValueError(f"Match data {item_id} not found")
-
-        # if clock_type == "game" and match_data.game_status != "in-progress":
-        #     print(match_data.game_status)
-        #     raise ValueError("Match not in progress")
-
-        active_clock_matches = (
-            self.clock_manager.active_gameclock_matches
-            if clock_type == "game"
-            else self.clock_manager.active_playclock_matches
-        )
-        if item_id not in active_clock_matches:
-            await self.clock_manager.start_clock(item_id, clock_type)
-        match_queue = active_clock_matches[item_id]
-        await match_queue.put(match_data)
-
-        return match_queue
-
-    # async def enable_match_data_gameclock_queues(self, item_id: int):
-    #     match_data = await self.get_by_id(item_id)
-    #
-    #     if not match_data:
-    #         raise ValueError(f"Match data {item_id} not found")
-    #
-    #     # if match_data.game_status != "in-progress":
-    #     #     print(match_data.game_status)
-    #     #     raise ValueError("Match not in progress")
-    #
-    #     # Check if a queue for this match_id already exists, if not, raise an error
-    #     if item_id not in self.clock_manager.active_gameclock_matches:
-    #         await self.clock_manager.start_clock(item_id, "game")
-    #     match_queue = self.clock_manager.active_gameclock_matches[item_id]
-    #     await match_queue.put(match_data)
-    #
-    #     return match_queue
-    #
-    # async def enable_match_data_playclock_queues(self, item_id: int):
-    #     match_data = await self.get_by_id(item_id)
-    #     # print(match_data)
-    #
-    #     if not match_data:
-    #         raise ValueError(f"Match data {item_id} not found")
-    #
-    #     if item_id not in self.clock_manager.active_playclock_matches:
-    #         await self.clock_manager.start_clock(item_id, "play")
-    #     match_queue = self.clock_manager.active_playclock_matches[item_id]
-    #     await match_queue.put(match_data)
-    #     # print(match_queue)
-    #     return match_queue
-
     async def create_match_data(self, matchdata: MatchDataSchemaCreate):
         async with self.db.async_session() as session:
             try:
@@ -147,6 +83,35 @@ class MatchDataServiceDB(BaseServiceDB):
                     f"for match id({matchdata.id})"
                     f"returned some error",
                 )
+
+    async def enable_match_data_clock_queues(
+        self,
+        item_id: int,
+        clock_type: str,
+    ):
+        if clock_type not in ["game", "play"]:
+            raise ValueError("Invalid clock type. Must be 'game' or 'play'")
+
+        match_data = await self.get_by_id(item_id)
+
+        if not match_data:
+            raise ValueError(f"Match data {item_id} not found")
+
+        # if clock_type == "game" and match_data.game_status != "in-progress":
+        #     print(match_data.game_status)
+        #     raise ValueError("Match not in progress")
+
+        active_clock_matches = (
+            self.clock_manager.active_gameclock_matches
+            if clock_type == "game"
+            else self.clock_manager.active_playclock_matches
+        )
+        if item_id not in active_clock_matches:
+            await self.clock_manager.start_clock(item_id, clock_type)
+        match_queue = active_clock_matches[item_id]
+        await match_queue.put(match_data)
+
+        return match_queue
 
     async def update_match_data(
         self,
@@ -292,7 +257,7 @@ class MatchDataServiceDB(BaseServiceDB):
                     ),
                 )
 
-                await self.trigger_update_match_data_playclock(match_data_id)
+                await self.trigger_update_match_clock(match_data_id, "play")
                 await asyncio.sleep(2)
 
                 playclock = await self.update(
@@ -345,32 +310,6 @@ class MatchDataServiceDB(BaseServiceDB):
                 status_code=404,
                 detail=f"MatchData id:{item_id} not found",
             )
-
-    # async def decrement_playclock(
-    #     self,
-    #     item_id: int,
-    # ):
-    #     playclock_status = await self.get_playclock_status(item_id)
-    #     print(playclock_status)
-    #
-    #     while playclock_status == "running":
-    #         await asyncio.sleep(1)
-    #         updated_playclock = await asyncio.create_task(
-    #             self.decrement_playclock_one_second(item_id)
-    #         )
-    #
-    #         playclock = await self.update(
-    #             item_id,
-    #             MatchDataSchemaUpdate(playclock=updated_playclock),
-    #         )
-    #         await self.trigger_update_match_data_playclock(item_id)
-    #
-    #         print(playclock)
-    #         playclock_status = await self.get_playclock_status(item_id)
-    #
-    #     await self.trigger_update_match_data_playclock(item_id)
-    #     return await self.get_by_id(item_id)
-    #
 
     async def event_generator_match_data(self):
         while True:
@@ -480,33 +419,52 @@ class MatchDataServiceDB(BaseServiceDB):
             }
         )
 
-    async def trigger_update_match_data_gameclock_sse(
+    async def trigger_update_match_clock(
         self,
         match_data_id: int,
+        clock_type: str,
     ):
         match_data = await self.get_by_id(match_data_id)
 
-        # Access the appropriate match queue from your active_matches dictionary:
-        if match_data_id in self.clock_manager.active_gameclock_matches:
-            matchdata_gameclock_queue = self.clock_manager.active_gameclock_matches[
-                match_data_id
-            ]
-            await matchdata_gameclock_queue.put(match_data)
+        active_clock_matches = (
+            self.clock_manager.active_gameclock_matches
+            if clock_type == "game"
+            else self.clock_manager.active_playclock_matches
+        )
 
+        if match_data_id in active_clock_matches:
+            matchdata_clock_queue = active_clock_matches[match_data_id]
+            await matchdata_clock_queue.put(match_data)
         else:
-            print(f"No active match found with id: {match_data_id}")
+            print(f"No active {clock_type}clock match found with id: {match_data_id}")
 
-    async def trigger_update_match_data_playclock(
-        self,
-        match_data_id: int,
-    ):
-        # Put the updated data into the queue
-        match_data = await self.get_by_id(match_data_id)
-
-        if match_data_id in self.clock_manager.active_playclock_matches:
-            matchdata_playclock_queue = self.clock_manager.active_playclock_matches[
-                match_data_id
-            ]
-            await matchdata_playclock_queue.put(match_data)
-        else:
-            print(f"No active playclock match found with id: {match_data_id}")
+    # async def trigger_update_match_data_gameclock_sse(
+    #     self,
+    #     match_data_id: int,
+    # ):
+    #     match_data = await self.get_by_id(match_data_id)
+    #
+    #     # Access the appropriate match queue from your active_matches dictionary:
+    #     if match_data_id in self.clock_manager.active_gameclock_matches:
+    #         matchdata_gameclock_queue = self.clock_manager.active_gameclock_matches[
+    #             match_data_id
+    #         ]
+    #         await matchdata_gameclock_queue.put(match_data)
+    #
+    #     else:
+    #         print(f"No active match found with id: {match_data_id}")
+    #
+    # async def trigger_update_match_data_playclock(
+    #     self,
+    #     match_data_id: int,
+    # ):
+    #     # Put the updated data into the queue
+    #     match_data = await self.get_by_id(match_data_id)
+    #
+    #     if match_data_id in self.clock_manager.active_playclock_matches:
+    #         matchdata_playclock_queue = self.clock_manager.active_playclock_matches[
+    #             match_data_id
+    #         ]
+    #         await matchdata_playclock_queue.put(match_data)
+    #     else:
+    #         print(f"No active playclock match found with id: {match_data_id}")

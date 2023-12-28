@@ -1,16 +1,14 @@
 import asyncio
 
-import fastapi.routing
 from fastapi import (
     HTTPException,
     Depends,
     Path,
-    Query,
     status,
     Request,
     BackgroundTasks,
 )
-from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.core import BaseRouter, db
 from .db_services import MatchDataServiceDB
@@ -194,7 +192,7 @@ class MatchDataRouter(
                 ),
             )
 
-            await self.service.trigger_update_match_data_gameclock_sse(item_id)
+            await self.service.trigger_update_match_clock(item_id, "game")
 
             updated = await self.service.update(
                 item_id,
@@ -205,7 +203,7 @@ class MatchDataRouter(
                 ),
             )
 
-            await self.service.trigger_update_match_data_gameclock_sse(item_id)
+            await self.service.trigger_update_match_clock(item_id, "game")
 
             return self.create_response(
                 updated,
@@ -269,7 +267,7 @@ class MatchDataRouter(
                 ),
             )
 
-            await self.service.trigger_update_match_data_playclock(item_id)
+            await self.service.trigger_update_match_clock(item_id, "play")
 
             updated = await self.service.update(
                 item_id,
