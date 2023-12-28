@@ -255,13 +255,25 @@ class MatchDataServiceDB(BaseServiceDB):
             # print(updated_playclock)
 
             if updated_playclock == 0:
-                playclock = await self.update(
+                await self.update(
                     match_data_id,
                     MatchDataSchemaUpdate(
-                        playclock_status="stopped",
+                        playclock_status="stopping",
                         playclock=0,
                     ),
                 )
+
+                await self.trigger_update_match_data_playclock(match_data_id)
+                await asyncio.sleep(2)
+
+                playclock = await self.update(
+                    match_data_id,
+                    MatchDataSchemaUpdate(
+                        playclock=None,
+                        playclock_status="stopped",
+                    ),
+                )
+
             else:
                 playclock = await self.update(
                     match_data_id, MatchDataSchemaUpdate(playclock=updated_playclock)

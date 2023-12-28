@@ -236,7 +236,6 @@ class MatchDataRouter(
                     background_tasks,
                     item_id,
                 )
-                # await self.service.trigger_update_match_data_playclock(item_id)
 
                 return self.create_response(
                     item,
@@ -256,14 +255,24 @@ class MatchDataRouter(
             item_id: int,
         ):
             item_status = "stopped"
-            updated = await self.service.update(
+
+            await self.service.update(
                 item_id,
                 MatchDataSchemaUpdate(
                     playclock=None,
-                    playclock_status=item_status,
+                    playclock_status="stopping",
                 ),
             )
+
             await self.service.trigger_update_match_data_playclock(item_id)
+
+            updated = await self.service.update(
+                item_id,
+                MatchDataSchemaUpdate(
+                    playclock_status="stopped",
+                ),
+            )
+
             return self.create_response(
                 updated,
                 f"Play clock {item_status}",
