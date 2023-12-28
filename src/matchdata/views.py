@@ -94,19 +94,6 @@ class MatchDataRouter(
                 f"MatchData ID:{item.id}",
             )
 
-        @router.get(
-            "/match/id/{item_id}/",
-            response_model=MatchDataSchema,
-        )
-        async def get_match_data_id_by_match_id_endpoint(item_id: int):
-            match_data = await self.service.get_match_data_id_by_match_id(item_id)
-            if match_data is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Match data " f"id({item_id}) " f"not found",
-                )
-            return match_data
-
         @router.put(
             "/id/{match_data_id}/gameclock/running/",
             response_class=JSONResponse,
@@ -116,22 +103,23 @@ class MatchDataRouter(
             match_data_id: int,
         ):
             start_game = "in-progress"
-
             await self.service.update(
                 match_data_id,
                 MatchDataSchemaUpdate(
                     game_status=start_game,
                 ),
             )
+            tasks = [
+                self.service.enable_match_data_events_queues(match_data_id),
+                self.service.start_match_gameclock(match_data_id),
+            ]
 
-            await self.service.enable_match_data_events_queues(match_data_id)
-
-            # Start the match
-            self.service.start_match(match_data_id)
+            await asyncio.gather(*tasks)
 
             item_status = "running"
             match_data = await self.service.get_by_id(match_data_id)
             present_gameclock_status = match_data.gameclock_status
+
             if present_gameclock_status != "running":
                 updated = await self.service.update(
                     match_data_id,
@@ -313,6 +301,4 @@ class MatchDataRouter(
         return router
 
 
-api_matchdata_router = MatchDataRouter(
-    MatchDataServiceDB(db, "redis://127.0.0.1:6379")
-).route()
+api_matchdata_router = MatchDataRouter(MatchDataServiceDB(db)).route()
