@@ -1,3 +1,42 @@
+from redis import asyncio as aioredis
+from src.helpers.sse_queue import MatchEventQueue
+from src.core.models import MatchDataDB
+
+
+class RedisService:
+    def __init__(self, redis_url="redis://localhost:6379"):
+        self.redis_url: str = redis_url
+
+    async def create_redis_connection(self):
+        try:
+            redis_connection = await aioredis.from_url(
+                self.redis_url, decode_responses=True
+            )
+            print("Successfully connected to Redis")
+            return redis_connection
+        except Exception as e:
+            print(f"Error connecting to Redis: {e}")
+            raise
+
+    async def create_match_event_queue(self, match_data_id) -> MatchEventQueue:
+        # Create a new MatchEventQueue instance each time
+        redis = await self.create_redis_connection()
+        return MatchEventQueue(
+            redis=redis, model=MatchDataDB, match_data_id=match_data_id
+        )
+
+    async def get_match_event_queue(self, match_data_id, match_data=None):
+        # Create a new MatchEventQueue instance
+        match_queue = await self.create_match_event_queue(match_data_id)
+        # Check if the queue already exists in Redis
+        if await match_queue.get_redis():
+            print("Queue exists, reusing the existing queue.")
+        else:
+            print("Queue does not exist. Creating a new Queue")
+            await match_queue.put_redis(match_data)
+        return match_queue
+
+
 # import json
 #
 # import aioredis

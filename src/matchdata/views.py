@@ -1,14 +1,19 @@
 import asyncio
 
-from fastapi import HTTPException, Depends, Path, Query, status, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import (
+    HTTPException,
+    Depends,
+    Path,
+    Query,
+    status,
+    Request,
+    BackgroundTasks,
+)
+from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse
 
 from src.core import BaseRouter, db
 from .db_services import MatchDataServiceDB
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate, MatchDataSchema
-
-# game_clock_task_info = None
-# play_clock_task_info = None
 
 
 class MatchDataRouter(
@@ -107,9 +112,22 @@ class MatchDataRouter(
             response_class=JSONResponse,
         )
         async def start_gameclock_endpoint(
+            background_tasks: BackgroundTasks,
             match_data_id: int,
         ):
+            start_game = "in-progress"
+
+            await self.service.update(
+                match_data_id,
+                MatchDataSchemaUpdate(
+                    game_status=start_game,
+                ),
+            )
+
             await self.service.enable_match_data_events_queues(match_data_id)
+
+            # Start the match
+            self.service.start_match(match_data_id)
 
             item_status = "running"
             match_data = await self.service.get_by_id(match_data_id)
@@ -117,9 +135,15 @@ class MatchDataRouter(
             if present_gameclock_status != "running":
                 updated = await self.service.update(
                     match_data_id,
-                    MatchDataSchemaUpdate(gameclock_status=item_status),
+                    MatchDataSchemaUpdate(
+                        gameclock_status=item_status,
+                    ),
                 )
-                await self.service.decrement_gameclock(match_data_id)
+
+                await self.service.decrement_gameclock(
+                    background_tasks,
+                    match_data_id,
+                )
 
                 return self.create_response(
                     updated,
@@ -166,14 +190,28 @@ class MatchDataRouter(
                 example=720,
             ),
         ):
+            await self.service.update(
+                item_id,
+                MatchDataSchemaUpdate(
+                    gameclock=sec,
+                    gameclock_status=item_status,
+                    game_status="stopping",
+                ),
+            )
+
+            await self.service.trigger_update_match_data_gameclock_sse(item_id)
+
             updated = await self.service.update(
                 item_id,
                 MatchDataSchemaUpdate(
                     gameclock=sec,
                     gameclock_status=item_status,
+                    game_status="stopped",
                 ),
             )
+
             await self.service.trigger_update_match_data_gameclock_sse(item_id)
+
             return self.create_response(
                 updated,
                 f"Game clock {item_status}",
@@ -248,19 +286,29 @@ class MatchDataRouter(
 
         @router.get("/id/{match_data_id}/events/gameclock/")
         async def sse_match_data_gameclock_endpoint(match_data_id: int):
-            await self.service.enable_match_data_events_queues(match_data_id)
-
             return StreamingResponse(
                 self.service.event_generator_get_match_data_gameclock(match_data_id),
                 media_type="text/event-stream",
             )
 
-        @router.get(
-            "/queue/",
-            response_class=JSONResponse,
-        )
-        async def queue():
-            return await self.service.get_active_match_ids()
+        # @router.get("/id/{match_data_id}/events/gameclock/")
+        # async def sse_match_data_gameclock_endpoint(match_data_id: int):
+        #
+        #     await self.service.enable_match_data_events_queues(match_data_id)
+        #
+        #     return StreamingResponse(
+        #         self.service.event_generator_get_match_data_gameclock(
+        #             match_data_id
+        #         ),
+        #         media_type="text/event-stream",
+        #     )
+
+        # @router.get(
+        #     "/queue/",
+        #     response_class=JSONResponse,
+        # )
+        # async def queue():
+        #     return await self.service.get_active_match_ids()
 
         return router
 

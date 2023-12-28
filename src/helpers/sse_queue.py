@@ -1,7 +1,6 @@
 import json
-from redis import asyncio as aioredis
-from datetime import datetime
 
+from datetime import datetime
 from src.core.models import MatchDataDB
 
 
@@ -32,23 +31,11 @@ class MatchEventQueue:
                 return json.loads(data)
         return None
 
-    async def close(self):
-        # Close the Redis connection
-        await self.redis.close()
-
-    async def is_connection_open(self):
-        try:
-            # Use a simple command to check the connection status
-            result = await self.redis.ping()
-            return result
-        except aioredis.RedisError:
-            return False
-
-    async def setup_pubsub_gameclock(self):
+    async def redis_setup_pubsub_gameclock(self):
         self.pubsub_gameclock = self.redis.pubsub()
         await self.pubsub_gameclock.subscribe(self.pubsub_gameclock_channel)
 
-    async def publish_event(self, data):
+    async def redis_publish_event(self, data):
         await self.redis.publish(
             self.pubsub_gameclock_channel,
             json.dumps(data, default=self.default_serializer),
