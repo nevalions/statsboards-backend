@@ -115,10 +115,10 @@ class MatchDataRouter(
                     match_data_id,
                     "game",
                 ),
-                self.service.clock_manager.start_clock(
-                    match_data_id,
-                    "game",
-                ),
+                # self.service.clock_manager.start_clock(
+                #     match_data_id,
+                #     "game",
+                # ),
             ]
 
             await asyncio.gather(*tasks)
@@ -224,12 +224,10 @@ class MatchDataRouter(
             item_status = "running"
             item = await self.service.get_by_id(item_id)
             present_playclock_status = item.playclock_status
-            print(present_playclock_status)
             await self.service.enable_match_data_clock_queues(
                 item_id,
                 "play",
             )
-            # await self.service.clock_manager.start_clock(item_id, "play")
             if present_playclock_status != "running":
                 await self.service.update(
                     item_id,
