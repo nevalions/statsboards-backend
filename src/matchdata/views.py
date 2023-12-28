@@ -111,7 +111,7 @@ class MatchDataRouter(
             )
             tasks = [
                 self.service.enable_match_data_events_queues(match_data_id),
-                self.service.start_match_gameclock(match_data_id),
+                self.service.game_clock_manager.start_clock(match_data_id),
             ]
 
             await asyncio.gather(*tasks)
