@@ -1,5 +1,6 @@
 import asyncio
 
+import fastapi.routing
 from fastapi import (
     HTTPException,
     Depends,
@@ -110,8 +111,11 @@ class MatchDataRouter(
                 ),
             )
             tasks = [
-                self.service.enable_match_data_events_queues(match_data_id),
-                self.service.game_clock_manager.start_clock(match_data_id),
+                self.service.enable_match_data_gameclock_queues(match_data_id),
+                self.service.clock_manager.start_clock(
+                    match_data_id,
+                    "game",
+                ),
             ]
 
             await asyncio.gather(*tasks)
@@ -210,12 +214,16 @@ class MatchDataRouter(
             response_class=JSONResponse,
         )
         async def start_playclock_endpoint(
+            background_tasks: BackgroundTasks,
             item_id: int,
             sec: int,
         ):
             item_status = "running"
             item = await self.service.get_by_id(item_id)
             present_playclock_status = item.playclock_status
+            print(present_playclock_status)
+            await self.service.enable_match_data_playclock_queues(item_id)
+            # await self.service.clock_manager.start_clock(item_id, "play")
             if present_playclock_status != "running":
                 await self.service.update(
                     item_id,
@@ -224,11 +232,14 @@ class MatchDataRouter(
                         playclock_status=item_status,
                     ),
                 )
-                finished = await self.service.decrement_playclock(item_id)
+                await self.service.decrement_playclock(
+                    background_tasks,
+                    item_id,
+                )
                 # await self.service.trigger_update_match_data_playclock(item_id)
 
                 return self.create_response(
-                    finished,
+                    item,
                     f"Play clock ID:{item_id} {item_status}",
                 )
             else:
@@ -265,10 +276,10 @@ class MatchDataRouter(
                 media_type="text/event-stream",
             )
 
-        @router.get("/events/playclock/")
-        async def sse_match_data_playclock_endpoint(request: Request):
+        @router.get("/id/{match_data_id}/events/playclock/")
+        async def sse_match_data_playclock_endpoint(match_data_id: int):
             return StreamingResponse(
-                self.service.event_generator_update_match_data_playclock(),
+                self.service.event_generator_get_match_data_playclock(match_data_id),
                 media_type="text/event-stream",
             )
 
