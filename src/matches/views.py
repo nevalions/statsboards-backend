@@ -108,6 +108,10 @@ class MatchRouter(
                     "teams_data": match_teams_data,
                     "match_data": match_data.__dict__,
                     "scoreboard_data": scoreboard_data.__dict__,
+                    # "data": {
+                    #     "match_data": match_data.__dict__,
+                    #     "type": "matchData",
+                    # },
                 },
             )
 
@@ -121,6 +125,23 @@ class MatchRouter(
         ):
             template = scoreboard_templates.TemplateResponse(
                 name="/display/score-main.html",
+                context={
+                    "request": request,
+                },
+                status_code=200,
+            )
+            return template
+
+        @router.get(
+            "/id/{match_id}/scoreboard/hd/",
+            response_class=JSONResponse,
+        )
+        async def index(
+            request: Request,
+            match_id: int,
+        ):
+            template = scoreboard_templates.TemplateResponse(
+                name="/display/score-fullhd.html",
                 context={
                     "request": request,
                 },

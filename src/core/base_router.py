@@ -15,10 +15,11 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.tags = tags
 
     @staticmethod
-    def create_response(item: Optional[Any], message: str):
+    def create_response(item: Optional[Any], message: str, _type: str = "text"):
         if item:
             return {
                 "content": item.__dict__,
+                "type": _type,
                 "message": message,
                 "status_code": status.HTTP_200_OK,
                 "success": True,

@@ -5,7 +5,6 @@ from fastapi import (
     Depends,
     Path,
     status,
-    Request,
     BackgroundTasks,
 )
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -91,6 +90,7 @@ class MatchDataRouter(
             return self.create_response(
                 item,
                 f"MatchData ID:{item.id}",
+                "matchData",
             )
 
         @router.put(
@@ -281,10 +281,10 @@ class MatchDataRouter(
                 f"Play clock {item_status}",
             )
 
-        @router.get("/events/")
-        async def sse_match_data_endpoint(request: Request):
+        @router.get("/id/{match_data_id}/events/gamedata/")
+        async def sse_match_data_endpoint(match_data_id: int):
             return StreamingResponse(
-                self.service.event_generator_match_data(),
+                self.service.event_generator_get_match_data(match_data_id),
                 media_type="text/event-stream",
             )
 

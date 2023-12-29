@@ -418,13 +418,17 @@ class BaseServiceDB:
 
     @staticmethod
     def to_dict(model):
-        data = {
-            column.name: getattr(model, column.name)
-            for column in model.__table__.columns
-        }
-        # Exclude the _sa_instance_state key
-        data.pop("_sa_instance_state", None)
-        return data
+        if isinstance(model, dict):
+            return model
+        elif isinstance(model, Base):  # replace with your model's superclass if needed
+            data = {
+                column.name: getattr(model, column.name)
+                for column in model.__table__.columns
+            }
+            data.pop("_sa_instance_state", None)
+            return data
+        else:
+            raise TypeError("Unsupported type")
 
 
 class Base(DeclarativeBase):
