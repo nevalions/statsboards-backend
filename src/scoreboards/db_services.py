@@ -127,7 +127,10 @@ class ScoreboardServiceDB(BaseServiceDB):
 
                 update_data = self.to_dict(update)
 
-                data = {"type": "scoreboardUpdate", "data": update_data}
+                data = {
+                    "type": "scoreboardData",
+                    "scoreboard_data": update_data,
+                }
 
                 json_data = json.dumps(
                     data,

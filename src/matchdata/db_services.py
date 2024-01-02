@@ -20,9 +20,12 @@ class MatchDataManager:
             self.active_matchdata_updates[match_data_id] = asyncio.Queue()
 
     async def update_queue_match_data(self, match_data_id, updated_match_data):
+        print(f"Updating {match_data_id} in set")
         if match_data_id in self.active_matchdata_updates:
             matchdata_update_queue = self.active_matchdata_updates[match_data_id]
             await matchdata_update_queue.put(updated_match_data)
+            print(f"Updated {match_data_id} in set")
+        print(f"Finished Updating")
 
 
 class ClockManager:
@@ -141,6 +144,7 @@ class MatchDataServiceDB(BaseServiceDB):
             **kwargs,
         )
         await self.trigger_update_match_data(item_id)
+        print(updated_.__dict__)
         return updated_
 
     async def get_playclock_status(
@@ -351,6 +355,8 @@ class MatchDataServiceDB(BaseServiceDB):
 
                 yield f"data: {json_data}\n\n"
 
+                print(f"Yielded data: {json_data}")
+
                 if (
                     clock_type == "game"
                     and message_dict.get("game_status") == "stopped"
@@ -393,6 +399,7 @@ class MatchDataServiceDB(BaseServiceDB):
                     data,
                     default=self.default_serializer,
                 )
+                print(f"Match data {json_data} sent")
                 yield f"data: {json_data}\n\n"
 
             print(f"Match {match_id} stopped updates")
