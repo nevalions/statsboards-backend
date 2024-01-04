@@ -103,11 +103,11 @@ class ScoreboardRouter(
         @router.get("/matchdata/id/{match_data_id}/events/scoreboard_data/")
         async def sse_scoreboard_data_endpoint(match_data_id: int):
             print("SSE Scoreboard Starts")
-            # scoreboard = await self.service.get_scoreboard_by_matchdata_id(
-            #     match_data_id
-            # )
-            # print(scoreboard)
-            scoreboard = await self.service.get_scoreboard_by_match_id(5)
+            scoreboard = await self.service.get_scoreboard_by_matchdata_id(
+                match_data_id
+            )
+            print(scoreboard)
+            # scoreboard = await self.service.get_scoreboard_by_match_id(5)
             print(scoreboard)
             if scoreboard:
                 print(scoreboard)
