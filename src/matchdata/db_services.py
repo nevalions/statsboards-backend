@@ -373,19 +373,20 @@ class MatchDataServiceDB(BaseServiceDB):
 
     async def trigger_update_match_data(self, match_data_id):
         match_data = await self.get_by_id(match_data_id)
+        print(match_data)
         if match_data_id not in self.match_manager.active_matchdata_updates:
             print(f"Queue not found for MatchData ID:{match_data_id}")
             await self.match_manager.enable_match_data_update_queue(match_data_id)
 
         await self.match_manager.update_queue_match_data(match_data_id, match_data)
 
-    async def event_generator_get_match_data(self, match_id: int):
-        await self.match_manager.enable_match_data_update_queue(match_id)
+    async def event_generator_get_match_data(self, match_data_id: int):
+        await self.match_manager.enable_match_data_update_queue(match_data_id)
         try:
-            while match_id in self.match_manager.active_matchdata_updates:
-                print(f"Match {match_id} is active for updates")
+            while match_data_id in self.match_manager.active_matchdata_updates:
+                print(f"Match {match_data_id} is active for updates")
                 message = await self.match_manager.active_matchdata_updates[
-                    match_id
+                    match_data_id
                 ].get()
                 message_dict = self.to_dict(message)
 
@@ -402,8 +403,9 @@ class MatchDataServiceDB(BaseServiceDB):
                 print(f"Match data {json_data} sent")
                 yield f"data: {json_data}\n\n"
 
-            print(f"Match {match_id} stopped updates")
+            print(f"Match data {match_data_id} stopped updates")
         except asyncio.CancelledError:
+            print("Cancelled")
             pass
 
     async def trigger_update_match_clock(
