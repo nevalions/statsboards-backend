@@ -95,7 +95,7 @@ class MatchRouter(
             "/id/{match_id}/scoreboard/full_data/",
             response_class=JSONResponse,
         )
-        async def index_json(
+        async def full_match_data_endpoint(
             request: Request,
             match_id: int,
             match_teams_data=Depends(get_match_teams_by_match_id),
@@ -119,7 +119,7 @@ class MatchRouter(
             "/id/{match_id}/scoreboard/",
             response_class=JSONResponse,
         )
-        async def index(
+        async def edit_match_data_endpoint(
             request: Request,
             match_id: int,
         ):
@@ -136,7 +136,7 @@ class MatchRouter(
             "/id/{match_id}/scoreboard/hd/",
             response_class=JSONResponse,
         )
-        async def index(
+        async def display_fullhd_match_data_endpoint(
             request: Request,
             match_id: int,
         ):
