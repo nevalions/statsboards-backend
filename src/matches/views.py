@@ -6,10 +6,16 @@ from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
 from .db_services import MatchServiceDB
-from .shemas import MatchSchemaCreate, MatchSchemaUpdate, MatchSchema
+from .shemas import (
+    MatchSchemaCreate,
+    MatchSchemaUpdate,
+    MatchSchema,
+    MatchDataScoreboardSchemaCreate,
+)
 from src.core.config import scoreboard_template_path, match_template_path
 from ..matchdata.db_services import MatchDataServiceDB
 from ..matchdata.schemas import MatchDataSchemaCreate
+from ..scoreboards.db_services import ScoreboardServiceDB
 
 scoreboard_templates = Jinja2Templates(directory=scoreboard_template_path)
 match_templates = Jinja2Templates(directory=match_template_path)
@@ -42,6 +48,32 @@ class MatchRouter(
         ):
             new_match = await self.service.create_or_update_match(match)
             return new_match.__dict__
+
+        @router.post(
+            "/create_with_full_data",
+            response_model=MatchDataScoreboardSchemaCreate,
+        )
+        async def create_match_with_full_data_endpoint(
+            data: MatchDataScoreboardSchemaCreate,
+        ):
+            match_db_service = MatchDataServiceDB(db)
+            scoreboard_db_service = ScoreboardServiceDB(db)
+
+            # Create all
+            new_match = await self.service.create_or_update_match(data.match)
+
+            data.match_data.match_id = data.scoreboard.match_id = new_match.id
+            new_match_data = await match_db_service.create_match_data(data.match_data)
+            new_scoreboard = await scoreboard_db_service.create_scoreboard(
+                data.scoreboard
+            )
+
+            # Return the created objects
+            return {
+                "match": new_match,
+                "match_data": new_match_data,
+                "scoreboard": new_scoreboard,
+            }
 
         @router.put(
             "/",

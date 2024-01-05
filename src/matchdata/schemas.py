@@ -22,7 +22,7 @@ class MatchDataSchemaBase(BaseModel):
     down: Annotated[str, Path(max_length=10)] = "1st"
     distance: Annotated[str, Path(max_length=20)] = "10"
 
-    match_id: int
+    match_id: int | None = None
 
 
 class MatchDataSchemaUpdate(BaseModel):
@@ -41,6 +41,8 @@ class MatchDataSchemaUpdate(BaseModel):
     ball_on: int | None = None
     down: str | None = None
     distance: str | None = None
+
+    match_id: int | None = None
 
 
 class MatchDataSchemaCreate(MatchDataSchemaBase):

@@ -5,6 +5,9 @@ from typing import Annotated
 from datetime import datetime as date_type
 from pydantic import BaseModel
 
+from src.matchdata.schemas import MatchDataSchemaCreate
+from src.scoreboards.shemas import ScoreboardSchemaCreate
+
 
 class MatchSchemaBase(BaseModel):
     match_eesl_id: int | None = None
@@ -28,3 +31,9 @@ class MatchSchema(MatchSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class MatchDataScoreboardSchemaCreate(BaseModel):
+    match: MatchSchemaCreate
+    match_data: MatchDataSchemaCreate
+    scoreboard: ScoreboardSchemaCreate

@@ -84,6 +84,20 @@ class TournamentRouter(
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_matches_by_tournament(tournament_id)
 
+        @router.get("/id/{tournament_id}/matches/create/")
+        async def create_match_in_tournament(
+            tournament_id,
+            request: Request,
+        ):
+            return match_templates.TemplateResponse(
+                "match_form.html",
+                {
+                    "request": request,
+                    "tournament_id": tournament_id,
+                },
+                status_code=200,
+            )
+
         @router.get(
             "/id/{tournament_id}/matches/all/data/",
             response_class=JSONResponse,
