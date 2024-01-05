@@ -90,7 +90,7 @@ class TournamentRouter(
             request: Request,
         ):
             return match_templates.TemplateResponse(
-                "match_form.html",
+                "/display/create-match.html",
                 {
                     "request": request,
                     "tournament_id": tournament_id,
