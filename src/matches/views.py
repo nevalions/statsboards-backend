@@ -1,19 +1,18 @@
-import asyncio
+from typing import List
 
 from fastapi import HTTPException, Request, Depends, status
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
 
-# from starlette.templating import Jinja2Templates
-
 from src.core import BaseRouter, db
 from .db_services import MatchServiceDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate, MatchSchema
-from ..core.config import scoreboard_template_path
-
-# from ..scoreboards.views import teams_data, game_data
+from src.core.config import scoreboard_template_path, match_template_path
+from ..matchdata.db_services import MatchDataServiceDB
+from ..matchdata.schemas import MatchDataSchemaCreate
 
 scoreboard_templates = Jinja2Templates(directory=scoreboard_template_path)
+match_templates = Jinja2Templates(directory=match_template_path)
 
 
 # Match backend
@@ -91,6 +90,56 @@ class MatchRouter(
         async def get_match_scoreboard_by_match_id(match_id: int):
             return await self.service.get_scoreboard_by_match(match_id)
 
+        @router.get("/all/data/", response_class=JSONResponse)
+        async def all_matches_data_endpoint(
+            all_matches: List = Depends(
+                self.service.get_all_elements
+            ),  # Fetch all matches
+        ):
+            match_data_service_db = MatchDataServiceDB(db)
+            # print(all_matches)
+            all_match_data = []
+            for match in all_matches:
+                match_id = match.id
+                match_teams_data = await get_match_teams_by_match_id(match_id)
+                match_data = await get_match_data_by_match_id(match_id)
+
+                if match_data is None:
+                    match_data_schema = MatchDataSchemaCreate(
+                        match_id=match_id,
+                    )  # replace the arguments with real values
+                    match_data = await match_data_service_db.create_match_data(
+                        match_data_schema
+                    )
+
+                all_match_data.append(
+                    {
+                        "match_id": match_id,
+                        "status_code": status.HTTP_200_OK,
+                        "teams_data": match_teams_data,
+                        "match_data": match_data.__dict__,
+                    },
+                )
+            return all_match_data
+
+        @router.get(
+            "/id/{match_id}/data/",
+            response_class=JSONResponse,
+        )
+        async def match_data_endpoint(
+            request: Request,
+            match_id: int,
+            match_teams_data=Depends(get_match_teams_by_match_id),
+            match_data=Depends(get_match_data_by_match_id),
+        ):
+            return (
+                {
+                    "status_code": status.HTTP_200_OK,
+                    "teams_data": match_teams_data,
+                    "match_data": match_data.__dict__,
+                },
+            )
+
         @router.get(
             "/id/{match_id}/scoreboard/full_data/",
             response_class=JSONResponse,
@@ -108,12 +157,22 @@ class MatchRouter(
                     "teams_data": match_teams_data,
                     "match_data": match_data.__dict__,
                     "scoreboard_data": scoreboard_data.__dict__,
-                    # "data": {
-                    #     "match_data": match_data.__dict__,
-                    #     "type": "matchData",
-                    # },
                 },
             )
+
+        @router.get(
+            "/all/",
+            response_class=JSONResponse,
+        )
+        async def get_all_matches(request: Request):
+            template = match_templates.TemplateResponse(
+                name="/display/all-matches.html",
+                context={
+                    "request": request,
+                },
+                status_code=200,
+            )
+            return template
 
         @router.get(
             "/id/{match_id}/scoreboard/",

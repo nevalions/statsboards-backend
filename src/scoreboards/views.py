@@ -2,7 +2,7 @@ from fastapi import HTTPException, Depends, status
 from fastapi.templating import Jinja2Templates
 
 from src.core import BaseRouter, db
-from src.core.config import static_path_scoreboard, scoreboard_template_path
+from src.core.config import scoreboard_template_path
 from .db_services import ScoreboardServiceDB
 from .shemas import ScoreboardSchema, ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 

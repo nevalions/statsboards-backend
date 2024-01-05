@@ -12,8 +12,9 @@ more_parent_path = os.path.dirname(parent_path)
 one_more_parent_path = os.path.dirname(more_parent_path)
 template_path = os.path.join(one_more_parent_path, "statsboards-frontend/frontend")
 scoreboard_template_path = os.path.join(template_path, "scoreboards")
+match_template_path = os.path.join(template_path, "matches")
 static_path = os.path.join(template_path, "static")
-static_path_scoreboard = os.path.join(static_path, "scoreboards")
+# static_path_scoreboard = os.path.join(static_path, "scoreboards")
 print(parent_path, one_more_parent_path, template_path, static_path)
 
 
