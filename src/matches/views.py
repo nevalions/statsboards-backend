@@ -57,6 +57,7 @@ class MatchRouter(
         async def create_match_with_full_data_endpoint(
             data: MatchDataScoreboardSchemaCreate,
         ):
+            # print(data)
             match_db_service = MatchDataServiceDB(db)
             scoreboard_db_service = ScoreboardServiceDB(db)
 
