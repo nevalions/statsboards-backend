@@ -1,4 +1,5 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
+from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
 from .db_services import SeasonServiceDB
@@ -42,6 +43,19 @@ class SeasonRouter(
                     detail="Season not found",
                 )
             return update_.__dict__
+
+        @router.get(
+            "/id/{item_id}/",
+            response_class=JSONResponse,
+        )
+        async def get_matchdata_by_id(
+            item=Depends(self.service.get_by_id),
+        ):
+            return self.create_response(
+                item,
+                f"Season ID:{item.id}",
+                "Season",
+            )
 
         @router.get("/year/{season_year}", response_model=SeasonSchema)
         async def season_by_year(season_year: int):

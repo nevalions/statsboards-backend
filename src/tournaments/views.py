@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from fastapi import HTTPException, Request, Depends, status
@@ -12,6 +13,7 @@ from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaU
 from ..matchdata.db_services import MatchDataServiceDB
 from ..matchdata.schemas import MatchDataSchemaCreate
 from ..matches.db_services import MatchServiceDB
+from ..seasons.db_services import SeasonServiceDB
 
 match_templates = Jinja2Templates(directory=match_template_path)
 
@@ -86,14 +88,23 @@ class TournamentRouter(
 
         @router.get("/id/{tournament_id}/matches/create/")
         async def create_match_in_tournament(
-            tournament_id,
+            tournament_id: int,
             request: Request,
         ):
+            tournament = await self.service.get_by_id(tournament_id)
+            season_service_db = SeasonServiceDB(db)
+            season = await season_service_db.get_by_id(tournament.season_id)
+            tournament_dict = self.service.to_dict(tournament)
+            season_dict = season_service_db.to_dict(season)
+
             return match_templates.TemplateResponse(
                 "/display/create-match.html",
                 {
                     "request": request,
+                    "tournament": json.dumps(tournament_dict),
+                    "season": json.dumps(season_dict),
                     "tournament_id": tournament_id,
+                    "season_id": season.id,
                 },
                 status_code=200,
             )
