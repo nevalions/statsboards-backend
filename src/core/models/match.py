@@ -17,6 +17,10 @@ class MatchDB(Base):
     __tablename__ = "match"
     __table_args__ = {"extend_existing": True}
 
+    match_date: Mapped[date_type] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, server_default=func.now()
+    )
+
     match_eesl_id: Mapped[int] = mapped_column(
         Integer,
         nullable=True,

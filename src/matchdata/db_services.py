@@ -71,7 +71,6 @@ class MatchDataServiceDB(BaseServiceDB):
         async with self.db.async_session() as session:
             try:
                 match_result = MatchDataDB(
-                    match_date=matchdata.match_date,
                     field_length=matchdata.field_length,
                     game_status=matchdata.game_status,
                     score_team_a=matchdata.score_team_a,

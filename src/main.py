@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
-from src.core.config import template_path, static_path
+from src.core.config import static_path
 
 from src.seasons import api_pars_season_router, api_season_router
 from src.tournaments import api_tournament_router

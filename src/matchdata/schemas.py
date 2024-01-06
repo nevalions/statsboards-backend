@@ -6,7 +6,6 @@ from datetime import datetime as date_type
 
 
 class MatchDataSchemaBase(BaseModel):
-    match_date: date_type | None = None
     field_length: int | None = 92
     game_status: Annotated[str, Path(max_length=50)] = "in-progress"
     score_team_a: int | None = 0
@@ -26,7 +25,6 @@ class MatchDataSchemaBase(BaseModel):
 
 
 class MatchDataSchemaUpdate(BaseModel):
-    match_date: date_type | None = None
     field_length: int | None = None
     game_status: str | None = None
     score_team_a: int | None = None
