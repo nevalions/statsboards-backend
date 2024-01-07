@@ -8,7 +8,7 @@ CreateSchemaType = TypeVar("CreateSchemaType")
 UpdateSchemaType = TypeVar("UpdateSchemaType")
 
 
-class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, prefix: str, tags: list[str], service):
         self.prefix = prefix
         self.service = service
@@ -32,6 +32,12 @@ class BaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def route(self):
         router = APIRouter(prefix=self.prefix, tags=self.tags)
+        return router
+
+
+class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType]):
+    def route(self):
+        router = super().route()
 
         @router.get("/")
         async def get_all_elem(
