@@ -2,20 +2,15 @@ import json
 from typing import List
 
 from fastapi import HTTPException, Request, Depends, status
-from fastapi.templating import Jinja2Templates
+
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
-from src.core.config import match_template_path
-
+from src.core.config import templates
 from .db_services import TournamentServiceDB
 from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate
-from ..matchdata.db_services import MatchDataServiceDB
-from ..matchdata.schemas import MatchDataSchemaCreate
-from ..matches.db_services import MatchServiceDB
-from ..seasons.db_services import SeasonServiceDB
-
-match_templates = Jinja2Templates(directory=match_template_path)
+from src.helpers.fetch_helpers import fetch_match_data
+from src.seasons.db_services import SeasonServiceDB
 
 
 # Tournament backend
@@ -97,65 +92,31 @@ class TournamentRouter(
             tournament_dict = self.service.to_dict(tournament)
             season_dict = season_service_db.to_dict(season)
 
-            return match_templates.TemplateResponse(
-                "/display/create-match.html",
+            return templates.TemplateResponse(
+                "/matches/display/create-match.html",
                 {
                     "request": request,
                     "tournament": json.dumps(tournament_dict),
                     "season": json.dumps(season_dict),
                     "tournament_id": tournament_id,
                     "season_id": season.id,
+                    "tournament_title": tournament.title,
                 },
                 status_code=200,
             )
 
         @router.get(
-            "/id/{tournament_id}/matches/all/data/",
-            response_class=JSONResponse,
+            "/id/{tournament_id}/matches/all/data/", response_class=JSONResponse
         )
         async def all_tournament_matches_data_endpoint(
             tournament_id: int,
-            all_matches: List = Depends(
-                self.service.get_matches_by_tournament
-            ),  # Fetch all tournament matches
+            all_matches: List = Depends(self.service.get_matches_by_tournament),
         ):
-            if all_matches is None:
+            if not all_matches:
                 raise HTTPException(
-                    status_code=404,
-                    detail="No matches found for the tournament",
+                    status_code=404, detail="No matches found for the tournament"
                 )
-            match_service_db = MatchServiceDB(db)
-            match_data_service_db = MatchDataServiceDB(db)
-
-            # print(all_matches)
-            all_match_data = []
-            for match in all_matches:
-                if match is None:
-                    raise HTTPException(
-                        404,
-                        "Match not found",
-                    )
-                match_id = match.id
-                match_teams_data = await match_service_db.get_teams_by_match(match_id)
-                match_data = await match_service_db.get_matchdata_by_match(match_id)
-
-                if match_data is None:
-                    match_data_schema = MatchDataSchemaCreate(
-                        match_id=match_id,
-                    )  # replace the arguments with real values
-                    match_data = await match_data_service_db.create_match_data(
-                        match_data_schema
-                    )
-
-                all_match_data.append(
-                    {
-                        "match_id": match_id,
-                        "status_code": status.HTTP_200_OK,
-                        "teams_data": match_teams_data,
-                        "match_data": match_data.__dict__,
-                    },
-                )
-            return all_match_data
+            return await fetch_match_data(all_matches)
 
         @router.get(
             "/id/{tournament_id}/matches/all/",
@@ -165,11 +126,18 @@ class TournamentRouter(
             tournament_id: int,
             request: Request,
         ):
-            template = match_templates.TemplateResponse(
-                name="/display/all-tournament-matches.html",
+            tournament = await self.service.get_by_id(tournament_id)
+            if tournament is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Tournament id: {tournament_id} not found",
+                )
+            template = templates.TemplateResponse(
+                name="/matches/display/all-tournament-matches.html",
                 context={
                     "request": request,
                     "tournament_id": tournament_id,
+                    "tournament_title": tournament.title,
                 },
                 status_code=200,
             )

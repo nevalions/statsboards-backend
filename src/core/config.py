@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from fastapi.templating import Jinja2Templates
 
 load_dotenv()
 
@@ -11,11 +12,21 @@ parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 more_parent_path = os.path.dirname(parent_path)
 one_more_parent_path = os.path.dirname(more_parent_path)
 template_path = os.path.join(one_more_parent_path, "statsboards-frontend/frontend")
-scoreboard_template_path = os.path.join(template_path, "scoreboards")
-match_template_path = os.path.join(template_path, "matches")
+# scoreboard_template_path = os.path.join(template_path, "scoreboards")
+# match_template_path = os.path.join(template_path, "matches")
 static_path = os.path.join(template_path, "static")
 # static_path_scoreboard = os.path.join(static_path, "scoreboards")
-print(parent_path, one_more_parent_path, template_path, static_path)
+
+templates = Jinja2Templates(directory=template_path)
+
+print(
+    parent_path,
+    one_more_parent_path,
+    template_path,
+    static_path,
+    # scoreboard_template_path,
+    # match_template_path,
+)
 
 
 class DbSettings(BaseSettings):

@@ -12,14 +12,16 @@ from .shemas import (
     MatchSchema,
     MatchDataScoreboardSchemaCreate,
 )
-from src.core.config import scoreboard_template_path, match_template_path
+from src.core.config import templates
+
 from ..matchdata.db_services import MatchDataServiceDB
-from ..matchdata.schemas import MatchDataSchemaCreate
+
+# from ..matchdata.schemas import MatchDataSchemaCreate
 from ..scoreboards.db_services import ScoreboardServiceDB
 from ..scoreboards.shemas import ScoreboardSchemaCreate
 
-scoreboard_templates = Jinja2Templates(directory=scoreboard_template_path)
-match_templates = Jinja2Templates(directory=match_template_path)
+# scoreboard_templates = Jinja2Templates(directory=scoreboard_template_path)
+# match_templates = Jinja2Templates(directory=match_template_path)
 
 
 # Match backend
@@ -77,19 +79,19 @@ class MatchRouter(
                 "scoreboard": new_scoreboard,
             }
 
-        @router.get("/get_match_full_data_schemas/")
-        async def get_match_full_data_schemas_endpoint():
-            match_schema = MatchSchemaCreate.model_json_schema()
-            match_data_schema = MatchDataSchemaCreate.model_json_schema()
-            scoreboard_schema = ScoreboardSchemaCreate.model_json_schema()
-
-            # print(list(match_schema["properties"].keys()))
-
-            return {
-                "match": list(match_schema["properties"].keys()),
-                "match_data": list(match_data_schema["properties"].keys()),
-                "scoreboard": list(scoreboard_schema["properties"].keys()),
-            }
+        # @router.get("/get_match_full_data_schemas/")
+        # async def get_match_full_data_schemas_endpoint():
+        #     match_schema = MatchSchemaCreate.model_json_schema()
+        #     match_data_schema = MatchDataSchemaCreate.model_json_schema()
+        #     scoreboard_schema = ScoreboardSchemaCreate.model_json_schema()
+        #
+        #     # print(list(match_schema["properties"].keys()))
+        #
+        #     return {
+        #         "match": list(match_schema["properties"].keys()),
+        #         "match_data": list(match_data_schema["properties"].keys()),
+        #         "scoreboard": list(scoreboard_schema["properties"].keys()),
+        #     }
 
         @router.put(
             "/",
@@ -140,35 +142,11 @@ class MatchRouter(
 
         @router.get("/all/data/", response_class=JSONResponse)
         async def all_matches_data_endpoint_endpoint(
-            all_matches: List = Depends(
-                self.service.get_all_elements
-            ),  # Fetch all matches
+            all_matches: List = Depends(self.service.get_all_elements),
         ):
-            match_data_service_db = MatchDataServiceDB(db)
-            # print(all_matches)
-            all_match_data = []
-            for match in all_matches:
-                match_id = match.id
-                match_teams_data = await get_match_teams_by_match_id_endpoint(match_id)
-                match_data = await get_match_data_by_match_id_endpoint(match_id)
+            from ..helpers.fetch_helpers import fetch_match_data
 
-                if match_data is None:
-                    match_data_schema = MatchDataSchemaCreate(
-                        match_id=match_id,
-                    )  # replace the arguments with real values
-                    match_data = await match_data_service_db.create_match_data(
-                        match_data_schema
-                    )
-
-                all_match_data.append(
-                    {
-                        "match_id": match_id,
-                        "status_code": status.HTTP_200_OK,
-                        "teams_data": match_teams_data,
-                        "match_data": match_data.__dict__,
-                    },
-                )
-            return all_match_data
+            return await fetch_match_data(all_matches)
 
         @router.get(
             "/id/{match_id}/data/",
@@ -213,8 +191,8 @@ class MatchRouter(
             response_class=JSONResponse,
         )
         async def get_all_matches_endpoint(request: Request):
-            template = match_templates.TemplateResponse(
-                name="/display/all-matches.html",
+            template = templates.TemplateResponse(
+                name="/matches/display/all-matches.html",
                 context={
                     "request": request,
                 },
@@ -230,8 +208,8 @@ class MatchRouter(
             request: Request,
             match_id: int,
         ):
-            template = scoreboard_templates.TemplateResponse(
-                name="/display/score-main.html",
+            template = templates.TemplateResponse(
+                name="/scoreboards/display/score-main.html",
                 context={
                     "request": request,
                 },
@@ -247,8 +225,8 @@ class MatchRouter(
             request: Request,
             match_id: int,
         ):
-            template = scoreboard_templates.TemplateResponse(
-                name="/display/score-fullhd.html",
+            template = templates.TemplateResponse(
+                name="/scoreboards/display/score-fullhd.html",
                 context={
                     "request": request,
                 },
