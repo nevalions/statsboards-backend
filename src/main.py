@@ -8,7 +8,7 @@ from src.seasons import api_pars_season_router, api_season_router
 from src.tournaments import api_tournament_router, template_tournament_router
 from src.teams import api_team_router
 from src.team_tournament import api_team_tournament_router
-from src.matches import api_match_router
+from src.matches import api_match_router, template_match_router
 from src.matchdata import api_matchdata_router
 from src.scoreboards import api_scoreboards_router
 
@@ -20,6 +20,7 @@ app.include_router(template_tournament_router)
 app.include_router(api_team_router)
 app.include_router(api_team_tournament_router)
 app.include_router(api_match_router)
+app.include_router(template_match_router)
 app.include_router(api_matchdata_router)
 
 app.include_router(api_scoreboards_router)

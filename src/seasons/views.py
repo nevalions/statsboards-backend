@@ -6,7 +6,7 @@ from .db_services import SeasonServiceDB
 from .schemas import SeasonSchemaCreate, SeasonSchema, SeasonSchemaUpdate
 
 
-class SeasonRouter(
+class SeasonAPIRouter(
     BaseRouter[
         SeasonSchema,
         SeasonSchemaCreate,
@@ -86,4 +86,4 @@ class SeasonRouter(
         return router
 
 
-api_season_router = SeasonRouter(SeasonServiceDB(db)).route()
+api_season_router = SeasonAPIRouter(SeasonServiceDB(db)).route()

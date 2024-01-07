@@ -10,7 +10,7 @@ from ..team_tournament.schemas import TeamTournamentSchemaCreate
 
 
 # Team backend
-class TeamRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
+class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
     def __init__(self, service: TeamServiceDB):
         super().__init__("/api/teams", ["teams"], service)
 
@@ -67,4 +67,4 @@ class TeamRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         return router
 
 
-api_team_router = TeamRouter(TeamServiceDB(db)).route()
+api_team_router = TeamAPIRouter(TeamServiceDB(db)).route()

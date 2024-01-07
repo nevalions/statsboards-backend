@@ -1,10 +1,9 @@
 from typing import List
 
 from fastapi import HTTPException, Request, Depends, status
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 
-from src.core import BaseRouter, db
+from src.core import BaseRouter, db, MinimalBaseRouter
 from .db_services import MatchServiceDB
 from .shemas import (
     MatchSchemaCreate,
@@ -14,18 +13,12 @@ from .shemas import (
 )
 from src.core.config import templates
 
-from ..matchdata.db_services import MatchDataServiceDB
-
-# from ..matchdata.schemas import MatchDataSchemaCreate
-from ..scoreboards.db_services import ScoreboardServiceDB
-from ..scoreboards.shemas import ScoreboardSchemaCreate
-
-# scoreboard_templates = Jinja2Templates(directory=scoreboard_template_path)
-# match_templates = Jinja2Templates(directory=match_template_path)
+from src.matchdata.db_services import MatchDataServiceDB
+from src.scoreboards.db_services import ScoreboardServiceDB
 
 
 # Match backend
-class MatchRouter(
+class MatchAPIRouter(
     BaseRouter[
         MatchSchema,
         MatchSchemaCreate,
@@ -35,7 +28,7 @@ class MatchRouter(
     def __init__(self, service: MatchServiceDB):
         super().__init__(
             "/api/matches",
-            ["matches"],
+            ["matches-api"],
             service,
         )
 
@@ -78,20 +71,6 @@ class MatchRouter(
                 "match_data": new_match_data,
                 "scoreboard": new_scoreboard,
             }
-
-        # @router.get("/get_match_full_data_schemas/")
-        # async def get_match_full_data_schemas_endpoint():
-        #     match_schema = MatchSchemaCreate.model_json_schema()
-        #     match_data_schema = MatchDataSchemaCreate.model_json_schema()
-        #     scoreboard_schema = ScoreboardSchemaCreate.model_json_schema()
-        #
-        #     # print(list(match_schema["properties"].keys()))
-        #
-        #     return {
-        #         "match": list(match_schema["properties"].keys()),
-        #         "match_data": list(match_data_schema["properties"].keys()),
-        #         "scoreboard": list(scoreboard_schema["properties"].keys()),
-        #     }
 
         @router.put(
             "/",
@@ -144,7 +123,7 @@ class MatchRouter(
         async def all_matches_data_endpoint_endpoint(
             all_matches: List = Depends(self.service.get_all_elements),
         ):
-            from ..helpers.fetch_helpers import fetch_match_data
+            from src.helpers.fetch_helpers import fetch_match_data
 
             return await fetch_match_data(all_matches)
 
@@ -186,9 +165,29 @@ class MatchRouter(
                 },
             )
 
+        return router
+
+
+class MatchTemplateRouter(
+    MinimalBaseRouter[
+        MatchSchema,
+        MatchSchemaCreate,
+        MatchSchemaUpdate,
+    ]
+):
+    def __init__(self, service: MatchServiceDB):
+        super().__init__(
+            "/matches",
+            ["matches"],
+            service,
+        )
+
+    def route(self):
+        router = super().route()
+
         @router.get(
             "/all/",
-            response_class=JSONResponse,
+            response_class=HTMLResponse,
         )
         async def get_all_matches_endpoint(request: Request):
             template = templates.TemplateResponse(
@@ -202,7 +201,7 @@ class MatchRouter(
 
         @router.get(
             "/id/{match_id}/scoreboard/",
-            response_class=JSONResponse,
+            response_class=HTMLResponse,
         )
         async def edit_match_data_endpoint(
             request: Request,
@@ -219,7 +218,7 @@ class MatchRouter(
 
         @router.get(
             "/id/{match_id}/scoreboard/hd/",
-            response_class=JSONResponse,
+            response_class=HTMLResponse,
         )
         async def display_fullhd_match_data_endpoint(
             request: Request,
@@ -237,4 +236,5 @@ class MatchRouter(
         return router
 
 
-api_match_router = MatchRouter(MatchServiceDB(db)).route()
+api_match_router = MatchAPIRouter(MatchServiceDB(db)).route()
+template_match_router = MatchTemplateRouter(MatchServiceDB(db)).route()

@@ -1,17 +1,16 @@
 import json
 from typing import List
 
-from fastapi import HTTPException, Request, Depends, status
+from fastapi import HTTPException, Request, Depends
 
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 
-from src.core import BaseRouter, db
+from src.core import BaseRouter, MinimalBaseRouter, db
 from src.core.config import templates
 from .db_services import TournamentServiceDB
 from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate
 from src.helpers.fetch_helpers import fetch_match_data
 from src.seasons.db_services import SeasonServiceDB
-from ..core.base_router import MinimalBaseRouter
 
 
 class TournamentAPIRouter(
@@ -63,22 +62,17 @@ class TournamentAPIRouter(
                 )
             return tournament.__dict__
 
-        @router.get(
-            "/id/{tournament_id}/teams/",
-            # response_model=List[TeamSchema]
-        )
+        @router.get("/id/{tournament_id}/teams/")
         async def get_teams_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_teams_by_tournament(tournament_id)
 
-        @router.get(
-            "/id/{tournament_id}/matches/",
-            # response_model=List[TeamSchema]
-        )
+        @router.get("/id/{tournament_id}/matches/")
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_matches_by_tournament(tournament_id)
 
         @router.get(
-            "/id/{tournament_id}/matches/all/data/", response_class=JSONResponse
+            "/id/{tournament_id}/matches/all/data/",
+            response_class=JSONResponse,
         )
         async def all_tournament_matches_data_endpoint(
             tournament_id: int,
@@ -86,7 +80,8 @@ class TournamentAPIRouter(
         ):
             if not all_matches:
                 raise HTTPException(
-                    status_code=404, detail="No matches found for the tournament"
+                    status_code=404,
+                    detail=f"No matches found for the tournament id:{tournament_id}",
                 )
             return await fetch_match_data(all_matches)
 
@@ -106,7 +101,10 @@ class TournamentTemplateRouter(
     def route(self):
         router = super().route()
 
-        @router.get("/id/{tournament_id}/matches/create/")
+        @router.get(
+            "/id/{tournament_id}/matches/create/",
+            response_class=HTMLResponse,
+        )
         async def create_match_in_tournament(
             tournament_id: int,
             request: Request,
@@ -132,7 +130,7 @@ class TournamentTemplateRouter(
 
         @router.get(
             "/id/{tournament_id}/matches/all/",
-            response_class=JSONResponse,
+            response_class=HTMLResponse,
         )
         async def get_all_tournament_matches_endpoint(
             tournament_id: int,

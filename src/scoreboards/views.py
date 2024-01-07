@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Depends, status
+from fastapi import Depends, status
 
 from src.core import BaseRouter, db
 from .db_services import ScoreboardServiceDB
