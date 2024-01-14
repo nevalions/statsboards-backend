@@ -4,20 +4,21 @@ from sqlalchemy import String, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
-from . import SeasonRelationMixin
+from . import SeasonSportRelationMixin
 
 if TYPE_CHECKING:
-    from .season import SeasonDB
     from .team import TeamDB
     from .match import MatchDB
 
 
-class TournamentDB(SeasonRelationMixin, Base):
+class TournamentDB(SeasonSportRelationMixin, Base):
     __tablename__ = "tournament"
     __table_args__ = {"extend_existing": True}
     _season_id_nullable = False
+    _sport_id_nullable = True
     _ondelete = "CASCADE"
     _season_back_populates = "tournaments"
+    _sport_back_populates = "tournaments"
 
     tournament_eesl_id: Mapped[int] = mapped_column(
         Integer,

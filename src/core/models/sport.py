@@ -9,13 +9,13 @@ if TYPE_CHECKING:
     from .tournament import TournamentDB
 
 
-class SeasonDB(Base):
-    __tablename__ = "season"
+class SportDB(Base):
+    __tablename__ = "sport"
     __table_args__ = {"extend_existing": True}
 
-    year: Mapped[int] = mapped_column(
-        Integer,
-        unique=True,
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
     )
     description: Mapped[str] = mapped_column(
         Text,
@@ -25,7 +25,7 @@ class SeasonDB(Base):
     )
 
     tournaments: Mapped[list["TournamentDB"]] = relationship(
-        back_populates="season",
+        back_populates="sport",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )

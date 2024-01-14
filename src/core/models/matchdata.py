@@ -25,7 +25,7 @@ class MatchDataDB(Base):
         nullable=True,
         default=0,
     )
-    score_team_b = mapped_column(
+    score_team_b: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
         default=0,

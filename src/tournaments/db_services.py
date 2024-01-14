@@ -53,6 +53,7 @@ class TournamentServiceDB(BaseServiceDB):
             description=t.description,
             tournament_logo_url=t.tournament_logo_url,
             season_id=t.season_id,
+            sport_id=t.sport_id,
             tournament_eesl_id=t.tournament_eesl_id,
         )
         return await super().create(tournament)
@@ -98,16 +99,17 @@ class TournamentServiceDB(BaseServiceDB):
         )
 
 
-async def get_tournament_db() -> TournamentServiceDB:
-    yield TournamentServiceDB(db)
-
-
-async def async_main() -> None:
-    tournament_service = TournamentServiceDB(db)
-    # t = await tournament_service.get_tournaments_by_year(2222)
-    # print(t)
-    # print(t.__dict__)
-
-
-if __name__ == "__main__":
-    asyncio.run(async_main())
+#
+# async def get_tournament_db() -> TournamentServiceDB:
+#     yield TournamentServiceDB(db)
+#
+#
+# async def async_main() -> None:
+#     tournament_service = TournamentServiceDB(db)
+#     # t = await tournament_service.get_tournaments_by_year(2222)
+#     # print(t)
+#     # print(t.__dict__)
+#
+#
+# if __name__ == "__main__":
+#     asyncio.run(async_main())

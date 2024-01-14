@@ -2,8 +2,9 @@ __all__ = (
     "db",
     "Base",
     "BaseServiceDB",
+    "SportDB",
     "SeasonDB",
-    "SeasonRelationMixin",
+    "SeasonSportRelationMixin",
     "TournamentDB",
     "TeamDB",
     "TeamTournamentDB",
@@ -13,7 +14,8 @@ __all__ = (
 )
 
 from .base import Base, BaseServiceDB, db
-from .mixins import SeasonRelationMixin
+from .mixins import SeasonSportRelationMixin
+from .sport import SportDB
 from .season import SeasonDB
 from .tournament import TournamentDB
 from .team import TeamDB
