@@ -8,7 +8,10 @@ from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 
 class TournamentServiceDB(BaseServiceDB):
     def __init__(self, database):
-        super().__init__(database, TournamentDB)
+        super().__init__(
+            database,
+            TournamentDB,
+        )
 
     async def create_or_update_tournament(
         self,
@@ -33,7 +36,7 @@ class TournamentServiceDB(BaseServiceDB):
             print(ex)
             raise HTTPException(
                 status_code=409,
-                detail=f"Tournament eesl " f"id({t}) " f"returned some error",
+                detail=f"Tournament eesl id:({t}) returned some error",
             )
 
     async def update_tournament_by_eesl(
@@ -47,7 +50,10 @@ class TournamentServiceDB(BaseServiceDB):
             t,
         )
 
-    async def create_new_tournament(self, t: TournamentSchemaCreate):
+    async def create_new_tournament(
+        self,
+        t: TournamentSchemaCreate,
+    ):
         tournament = self.model(
             title=t.title,
             description=t.description,

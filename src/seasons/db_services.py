@@ -1,8 +1,8 @@
 import asyncio
 
-from sqlalchemy import select, Result
+from sqlalchemy import select, and_
 
-from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB, MatchDB
+from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB, SportDB
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 
 
@@ -47,6 +47,22 @@ class SeasonServiceDB(BaseServiceDB):
             year,
             "tournaments",
         )
+
+    async def get_tournaments_by_year_and_sport(
+        self,
+        year: int,
+        sport_id: int,
+    ):
+        async with self.db.async_session() as session:
+            stmt = (
+                select(TournamentDB)
+                .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
+                .join(SportDB, TournamentDB.sport_id == SportDB.id)
+                .where(and_(SeasonDB.year == year, SportDB.id == sport_id))
+            )
+            results = await session.execute(stmt)
+            tournaments = results.scalars().all()
+            return tournaments
 
     async def get_teams_by_year(
         self,

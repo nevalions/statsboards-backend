@@ -105,7 +105,7 @@ class TournamentTemplateRouter(
             "/id/{tournament_id}/matches/create/",
             response_class=HTMLResponse,
         )
-        async def create_match_in_tournament(
+        async def create_match_in_tournament_endpoint(
             tournament_id: int,
             request: Request,
         ):

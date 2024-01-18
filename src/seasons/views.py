@@ -24,12 +24,12 @@ class SeasonAPIRouter(
         router = super().route()
 
         @router.post("/", response_model=SeasonSchema)
-        async def create_season(item: SeasonSchemaCreate):
+        async def create_season_endpoint(item: SeasonSchemaCreate):
             new_ = await self.service.create_season(item)
             return new_.__dict__
 
         @router.put("/", response_model=SeasonSchema)
-        async def update_season(
+        async def update_season_endpoint(
             item_id: int,
             item: SeasonSchemaUpdate,
         ):
@@ -48,7 +48,7 @@ class SeasonAPIRouter(
             "/id/{item_id}/",
             response_class=JSONResponse,
         )
-        async def get_matchdata_by_id(
+        async def get_matchdata_by_id_endpoint(
             item=Depends(self.service.get_by_id),
         ):
             return self.create_response(
@@ -58,7 +58,7 @@ class SeasonAPIRouter(
             )
 
         @router.get("/year/{season_year}", response_model=SeasonSchema)
-        async def season_by_year(season_year: int):
+        async def season_by_year_endpoint(season_year: int):
             season = await self.service.get_season_by_year(season_year)
             if season is None:
                 raise HTTPException(
@@ -68,17 +68,21 @@ class SeasonAPIRouter(
             return season.__dict__
 
         @router.get("/year/{year}/tournaments")
-        async def tournaments_by_year(year: int):
+        async def tournaments_by_year_endpoint(year: int):
             return await self.service.get_tournaments_by_year(year)
 
+        @router.get("/year/{year}/sports/id/{sport_id}/tournaments")
+        async def tournaments_by_year_and_sport_endpoint(year: int, sport_id: int):
+            return await self.service.get_tournaments_by_year_and_sport(year, sport_id)
+
         @router.get("/year/{year}/teams")
-        async def teams_by_year(
+        async def teams_by_year_endpoint(
             year: int,
         ):
             return await self.service.get_teams_by_year(year)
 
         @router.get("/year/{year}/matches")
-        async def matches_by_year(
+        async def matches_by_year_endpoint(
             year: int,
         ):
             return await self.service.get_matches_by_year(year)
