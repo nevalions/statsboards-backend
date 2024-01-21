@@ -47,6 +47,7 @@ class MatchServiceDB(BaseServiceDB):
     async def create_new_match(self, m: MatchSchemaCreate):
         match = MatchDB(
             match_date=m.match_date,
+            week=m.week,
             match_eesl_id=m.match_eesl_id,
             team_a_id=m.team_a_id,
             team_b_id=m.team_b_id,

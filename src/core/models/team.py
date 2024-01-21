@@ -1,17 +1,15 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Text
+from sqlalchemy import String, Integer, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
-# from . import SeasonRelationMixin
-
 
 if TYPE_CHECKING:
-    from .season import SeasonDB
     from .tournament import TournamentDB
     from .match import MatchDB
+    from .sport import SportDB
 
 
 class TeamDB(Base):
@@ -36,6 +34,20 @@ class TeamDB(Base):
     team_logo_url: Mapped[str] = mapped_column(
         String(255),
         nullable=True,
+    )
+
+    sport_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(
+            "sport.id",
+            ondelete="CASCADE",
+        ),
+        nullable=True,
+    )
+
+    sport: Mapped["SportDB"] = relationship(
+        "SportDB",
+        back_populates="teams",
     )
 
     tournaments: Mapped[list["TournamentDB"]] = relationship(

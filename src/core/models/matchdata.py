@@ -97,7 +97,7 @@ class MatchDataDB(Base):
         default="10",
     )
 
-    match_id = mapped_column(
+    match_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(
             "match.id",

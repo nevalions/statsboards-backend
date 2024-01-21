@@ -2,7 +2,7 @@ import asyncio
 
 from sqlalchemy import select, and_
 
-from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB, SportDB
+from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB, SportDB, TeamDB
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 
 

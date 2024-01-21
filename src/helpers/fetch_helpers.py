@@ -26,6 +26,7 @@ async def fetch_match_data(matches: List):
         all_match_data.append(
             {
                 "match_id": match_id,
+                "id": match_id,
                 "status_code": status.HTTP_200_OK,
                 "match": match,
                 "teams_data": match_teams_data,

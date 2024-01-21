@@ -70,9 +70,13 @@ class SportAPIRouter(
                     detail=f"Sport id:{item_id} not found",
                 )
 
-        @router.get("/year/{year}/tournaments")
+        @router.get("/id/{sport_id}/tournaments")
         async def tournaments_by_sport_endpoint(sport_id: int):
             return await self.service.get_tournaments_by_sport(sport_id)
+
+        @router.get("/id/{sport_id}/teams")
+        async def teams_by_sport_endpoint(sport_id: int):
+            return await self.service.get_teams_by_sport(sport_id)
 
         return router
 

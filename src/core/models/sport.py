@@ -7,6 +7,7 @@ from src.core.models import Base
 
 if TYPE_CHECKING:
     from .tournament import TournamentDB
+    from .team import TeamDB
 
 
 class SportDB(Base):
@@ -25,6 +26,12 @@ class SportDB(Base):
     )
 
     tournaments: Mapped[list["TournamentDB"]] = relationship(
+        back_populates="sport",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    teams: Mapped[list["TeamDB"]] = relationship(
         back_populates="sport",
         cascade="all, delete-orphan",
         passive_deletes=True,

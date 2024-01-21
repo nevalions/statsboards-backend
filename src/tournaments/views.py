@@ -79,10 +79,11 @@ class TournamentAPIRouter(
             all_matches: List = Depends(self.service.get_matches_by_tournament),
         ):
             if not all_matches:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"No matches found for the tournament id:{tournament_id}",
-                )
+                return []
+                # raise HTTPException(
+                #     status_code=404,
+                #     detail=f"No matches found for the tournament id:{tournament_id}",
+                # )
             return await fetch_match_data(all_matches)
 
         return router

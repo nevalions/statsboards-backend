@@ -21,6 +21,12 @@ class MatchDB(Base):
         TIMESTAMP(timezone=True), nullable=True, server_default=func.now()
     )
 
+    week: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=1,
+    )
+
     match_eesl_id: Mapped[int] = mapped_column(
         Integer,
         nullable=True,

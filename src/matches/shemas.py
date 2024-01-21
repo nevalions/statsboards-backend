@@ -11,6 +11,7 @@ from src.scoreboards.shemas import ScoreboardSchemaCreate
 
 class MatchSchemaBase(BaseModel):
     match_date: date_type | None = None
+    week: int = 1
     match_eesl_id: int | None = None
     team_a_id: int
     team_b_id: int
@@ -19,6 +20,7 @@ class MatchSchemaBase(BaseModel):
 
 class MatchSchemaUpdate(BaseModel):
     match_date: date_type | None = None
+    week: int | None = None
     match_eesl_id: int | None = None
     team_a_id: int | None = None
     team_b_id: int | None = None

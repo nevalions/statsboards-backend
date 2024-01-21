@@ -47,6 +47,7 @@ class TeamServiceDB(BaseServiceDB):
 
     async def create_new_team(self, t: TeamSchemaCreate):
         team = self.model(
+            sport_id=t.sport_id,
             team_eesl_id=t.team_eesl_id,
             title=t.title,
             description=t.description,
