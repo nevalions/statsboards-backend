@@ -39,8 +39,8 @@ class TournamentAPIRouter(
             response_model=TournamentSchema,
         )
         async def update_tournament_endpoint(
-                item_id: int,
-                item: TournamentSchemaUpdate,
+            item_id: int,
+            item: TournamentSchemaUpdate,
         ):
             update_ = await self.service.update_tournament(item_id, item)
             if update_ is None:
@@ -75,8 +75,8 @@ class TournamentAPIRouter(
             response_class=JSONResponse,
         )
         async def all_tournament_matches_data_endpoint(
-                tournament_id: int,
-                all_matches: List = Depends(self.service.get_matches_by_tournament),
+            tournament_id: int,
+            all_matches: List = Depends(self.service.get_matches_by_tournament),
         ):
             if not all_matches:
                 return []
@@ -107,8 +107,8 @@ class TournamentTemplateRouter(
             response_class=HTMLResponse,
         )
         async def create_match_in_tournament_endpoint(
-                tournament_id: int,
-                request: Request,
+            tournament_id: int,
+            request: Request,
         ):
             tournament = await self.service.get_by_id(tournament_id)
             season_service_db = SeasonServiceDB(db)
@@ -134,8 +134,8 @@ class TournamentTemplateRouter(
             response_class=HTMLResponse,
         )
         async def get_all_tournament_matches_endpoint(
-                tournament_id: int,
-                request: Request,
+            tournament_id: int,
+            request: Request,
         ):
             tournament = await self.service.get_by_id(tournament_id)
             if tournament is None:
