@@ -7,7 +7,7 @@ from src.matchdata.schemas import MatchDataSchemaCreate
 from src.matches.db_services import MatchServiceDB
 
 
-async def fetch_match_data(matches: List):
+async def fetch_list_of_matches_data(matches: List):
     match_data_service_db = MatchDataServiceDB(db)
     match_service_db = MatchServiceDB(db)
     all_match_data = []
@@ -35,3 +35,32 @@ async def fetch_match_data(matches: List):
         )
 
     return all_match_data
+
+
+async def fetch_match_data(match_id: int):
+    match_data_service_db = MatchDataServiceDB(db)
+    match_service_db = MatchServiceDB(db)
+
+    match = await match_service_db.get_by_id(match_id)
+    match_teams_data = await match_service_db.get_teams_by_match(match_id)
+    match_data = await match_service_db.get_matchdata_by_match(match_id)
+
+    if match:
+        if match_data is None:
+            match_data_schema = MatchDataSchemaCreate(match_id=match_id)
+            match_data = await match_data_service_db.create_match_data(
+                match_data_schema
+            )
+
+        return {
+            "match_id": match_id,
+            "id": match_id,
+            "status_code": status.HTTP_200_OK,
+            "match": match,
+            "teams_data": match_teams_data,
+            "match_data": match_data.__dict__,
+        }
+    else:
+        return {
+            "status_code": status.HTTP_404_NOT_FOUND,
+        }

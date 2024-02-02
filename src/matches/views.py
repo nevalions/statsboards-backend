@@ -40,7 +40,7 @@ class MatchAPIRouter(
             response_model=MatchSchema,
         )
         async def create_match_endpoint(
-            match: MatchSchemaCreate,
+                match: MatchSchemaCreate,
         ):
             new_match = await self.service.create_or_update_match(match)
             return new_match.__dict__
@@ -50,7 +50,7 @@ class MatchAPIRouter(
             response_model=MatchDataScoreboardSchemaCreate,
         )
         async def create_match_with_full_data_endpoint(
-            data: MatchDataScoreboardSchemaCreate,
+                data: MatchDataScoreboardSchemaCreate,
         ):
             # print(data)
             match_db_service = MatchDataServiceDB(db)
@@ -77,8 +77,8 @@ class MatchAPIRouter(
             response_model=MatchSchema,
         )
         async def update_match_endpoint(
-            item_id: int,
-            item: MatchSchemaUpdate,
+                item_id: int,
+                item: MatchSchemaUpdate,
         ):
             match_update = await self.service.update_match(item_id, item)
 
@@ -121,21 +121,21 @@ class MatchAPIRouter(
 
         @router.get("/all/data/", response_class=JSONResponse)
         async def all_matches_data_endpoint_endpoint(
-            all_matches: List = Depends(self.service.get_all_elements),
+                all_matches: List = Depends(self.service.get_all_elements),
         ):
-            from src.helpers.fetch_helpers import fetch_match_data
+            from src.helpers.fetch_helpers import fetch_list_of_matches_data
 
-            return await fetch_match_data(all_matches)
+            return await fetch_list_of_matches_data(all_matches)
 
         @router.get(
             "/id/{match_id}/data/",
             response_class=JSONResponse,
         )
         async def match_data_endpoint(
-            request: Request,
-            match_id: int,
-            match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
-            match_data=Depends(get_match_data_by_match_id_endpoint),
+                request: Request,
+                match_id: int,
+                match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
+                match_data=Depends(get_match_data_by_match_id_endpoint),
         ):
             return (
                 {
@@ -150,20 +150,25 @@ class MatchAPIRouter(
             response_class=JSONResponse,
         )
         async def full_match_data_endpoint(
-            request: Request,
-            match_id: int,
-            match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
-            match_data=Depends(get_match_data_by_match_id_endpoint),
-            scoreboard_data=Depends(get_match_scoreboard_by_match_id_endpoint),
+                request: Request,
+                match_id: int,
+                # match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
+                # match_data=Depends(get_match_data_by_match_id_endpoint),
+                # scoreboard_data=Depends(get_match_scoreboard_by_match_id_endpoint),
         ):
-            return (
-                {
-                    "status_code": status.HTTP_200_OK,
-                    "teams_data": match_teams_data,
-                    "match_data": match_data.__dict__,
-                    "scoreboard_data": scoreboard_data.__dict__,
-                },
-            )
+            from src.helpers.fetch_helpers import fetch_match_data
+
+            return await fetch_match_data(match_id)
+            # match = self.service.get_by_id(match_id)
+            # return (
+            #     {
+            #         "status_code": status.HTTP_200_OK,
+            #         "teams_data": match_teams_data,
+            #         "match": match,
+            #         "match_data": match_data.__dict__,
+            #         "scoreboard_data": scoreboard_data.__dict__,
+            #     },
+            # )
 
         return router
 
@@ -204,8 +209,8 @@ class MatchTemplateRouter(
             response_class=HTMLResponse,
         )
         async def edit_match_data_endpoint(
-            request: Request,
-            match_id: int,
+                request: Request,
+                match_id: int,
         ):
             template = templates.TemplateResponse(
                 name="/scoreboards/display/score-main.html",
@@ -221,8 +226,8 @@ class MatchTemplateRouter(
             response_class=HTMLResponse,
         )
         async def display_fullhd_match_data_endpoint(
-            request: Request,
-            match_id: int,
+                request: Request,
+                match_id: int,
         ):
             template = templates.TemplateResponse(
                 name="/scoreboards/display/score-fullhd.html",
