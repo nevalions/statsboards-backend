@@ -15,6 +15,9 @@ from src.core.config import templates
 
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
+from ..matchdata.schemas import MatchDataSchemaCreate
+from ..scoreboards.shemas import ScoreboardSchemaCreate
+from ..teams.db_services import TeamServiceDB
 
 
 # Match backend
@@ -47,28 +50,50 @@ class MatchAPIRouter(
 
         @router.post(
             "/create_with_full_data/",
-            response_model=MatchDataScoreboardSchemaCreate,
         )
         async def create_match_with_full_data_endpoint(
-                data: MatchDataScoreboardSchemaCreate,
+                data: MatchSchemaCreate,
         ):
             # print(data)
             match_db_service = MatchDataServiceDB(db)
             scoreboard_db_service = ScoreboardServiceDB(db)
 
             # Create all
-            new_match = await self.service.create_or_update_match(data.match)
+            new_match = await self.service.create_or_update_match(data)
 
-            data.match_data.match_id = data.scoreboard.match_id = new_match.id
-            new_match_data = await match_db_service.create_match_data(data.match_data)
+            default_match_data = MatchDataSchemaCreate(match_id=new_match.id)
+            default_scoreboard = ScoreboardSchemaCreate(match_id=new_match.id)
+            #
+            # {
+            #     "field_length": 92,
+            #     "game_status": "in-progress",
+            #     "score_team_a": 0,
+            #     "score_team_b": 0,
+            #     "timeout_team_a": "●●●",
+            #     "timeout_team_b": "●●●",
+            #     "qtr": "1st",
+            #     "gameclock": 720,
+            #     "gameclock_status": "stopped",
+            #     "playclock": 0,
+            #     "playclock_status": "stopped",
+            #     "ball_on": 20,
+            #     "down": "1st",
+            #     "distance": "10",
+            #     "match_id": 0
+            # }
+
+            new_match_data = await match_db_service.create_match_data(default_match_data)
+            teams_data = await self.service.get_teams_by_match(new_match_data.match_id)
             new_scoreboard = await scoreboard_db_service.create_scoreboard(
-                data.scoreboard
+                default_scoreboard
             )
 
             # Return the created objects
             return {
+                "status_code": status.HTTP_200_OK,
                 "match": new_match,
                 "match_data": new_match_data,
+                "teams_data": teams_data,
                 "scoreboard": new_scoreboard,
             }
 
