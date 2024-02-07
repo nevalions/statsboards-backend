@@ -5,7 +5,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
-
 if TYPE_CHECKING:
     from .tournament import TournamentDB
     from .match import MatchDB
@@ -24,6 +23,10 @@ class TeamDB(Base):
     title: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
+    )
+    city: Mapped[str] = mapped_column(
+        String(50),
+        nullable=True,
     )
     description: Mapped[str] = mapped_column(
         Text,
