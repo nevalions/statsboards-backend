@@ -1,32 +1,66 @@
 import asyncio
 
-from sqlalchemy import text
+from sqlalchemy import text, select
 
 from src.core.models import db, BaseServiceDB, TeamTournamentDB, TournamentDB, TeamDB
+from src.team_tournament.schemas import TeamTournamentSchemaCreate
 
 
 class TeamTournamentServiceDB(BaseServiceDB):
     def __init__(self, database):
         super().__init__(database, TeamTournamentDB)
 
+    # async def create_team_tournament_relation(
+    #         self,
+    #         tournament_id: int,
+    #         team_id: int,
+    #         tournament_id_name: str = "tournament_id",
+    #         team_id_name: str = "team_id",
+    #         child_relation="teams",
+    # ):
+    #     return await self.create_m2m_relation(
+    #         parent_model=TournamentDB,
+    #         child_model=TeamDB,
+    #         secondary_table=text("team_tournament"),
+    #         parent_id=tournament_id,
+    #         child_id=team_id,
+    #         parent_id_name=tournament_id_name,
+    #         child_id_name=team_id_name,
+    #         child_relation=child_relation,
+    #     )
+
     async def create_team_tournament_relation(
-        self,
-        tournament_id: int,
-        team_id: int,
-        tournament_id_name: str = "tournament_id",
-        team_id_name: str = "team_id",
-        child_relation="teams",
+            self,
+            team_tournament: TeamTournamentSchemaCreate,
     ):
-        return await self.create_m2m_relation(
-            parent_model=TournamentDB,
-            child_model=TeamDB,
-            secondary_table=text("team_tournament"),
-            parent_id=tournament_id,
-            child_id=team_id,
-            parent_id_name=tournament_id_name,
-            child_id_name=team_id_name,
-            child_relation=child_relation,
+        new_team_tournament = self.model(
+            team_id=team_tournament.team_id,
+            tournament_id=team_tournament.tournament_id,
         )
+        return await super().create(new_team_tournament)
+
+    async def get_team_tournament_relation(self, team_id: int, tournament_id: int):
+        async with self.db.async_session() as session:
+            result = await session.execute(
+                select(TeamTournamentDB).where(
+                    (TeamTournamentDB.team_id == team_id) &
+                    (TeamTournamentDB.tournament_id == tournament_id)
+                )
+            )
+            team_tournament = result.scalars().first()
+            await session.commit()
+        return team_tournament
+
+    async def get_related_teams(self, tournament_id: int):
+        async with self.db.async_session() as session:
+            result = await session.execute(
+                select(TeamDB).join(TeamTournamentDB).where(
+                    TeamTournamentDB.tournament_id == tournament_id
+                )
+            )
+            teams = result.scalars().all()
+            await session.commit()
+            return teams
 
 
 async def get_team_tour_db() -> TeamTournamentServiceDB:
