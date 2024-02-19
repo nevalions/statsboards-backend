@@ -30,8 +30,8 @@ class SeasonAPIRouter(
 
         @router.put("/", response_model=SeasonSchema)
         async def update_season_endpoint(
-            item_id: int,
-            item: SeasonSchemaUpdate,
+                item_id: int,
+                item: SeasonSchemaUpdate,
         ):
             update_ = await self.service.update_season(
                 item_id,
@@ -49,13 +49,17 @@ class SeasonAPIRouter(
             response_class=JSONResponse,
         )
         async def get_matchdata_by_id_endpoint(
-            item=Depends(self.service.get_by_id),
+                item=Depends(self.service.get_by_id),
         ):
             return self.create_response(
                 item,
                 f"Season ID:{item.id}",
                 "Season",
             )
+
+        @router.get("/id/{item_id}/sports/id/{sport_id}/tournaments")
+        async def tournaments_by_year_and_sport_endpoint(item_id: int, sport_id: int):
+            return await (self.service.get_tournaments_by_season_and_sport_ids(item_id, sport_id))
 
         @router.get("/year/{season_year}", response_model=SeasonSchema)
         async def season_by_year_endpoint(season_year: int):
@@ -77,13 +81,13 @@ class SeasonAPIRouter(
 
         @router.get("/year/{year}/teams")
         async def teams_by_year_endpoint(
-            year: int,
+                year: int,
         ):
             return await self.service.get_teams_by_year(year)
 
         @router.get("/year/{year}/matches")
         async def matches_by_year_endpoint(
-            year: int,
+                year: int,
         ):
             return await self.service.get_matches_by_year(year)
 

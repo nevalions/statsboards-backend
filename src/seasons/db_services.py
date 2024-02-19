@@ -21,10 +21,10 @@ class SeasonServiceDB(BaseServiceDB):
         return await super().create(season)
 
     async def update_season(
-        self,
-        item_id: int,
-        item: SeasonSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: SeasonSchemaUpdate,
+            **kwargs,
     ):
         return await super().update(
             item_id,
@@ -38,9 +38,9 @@ class SeasonServiceDB(BaseServiceDB):
             return season.scalars().one_or_none()
 
     async def get_tournaments_by_year(
-        self,
-        year: int,
-        key: str = "year",
+            self,
+            year: int,
+            key: str = "year",
     ):
         return await self.get_related_items_level_one_by_key_and_value(
             key,
@@ -49,9 +49,9 @@ class SeasonServiceDB(BaseServiceDB):
         )
 
     async def get_tournaments_by_year_and_sport(
-        self,
-        year: int,
-        sport_id: int,
+            self,
+            year: int,
+            sport_id: int,
     ):
         async with self.db.async_session() as session:
             stmt = (
@@ -64,10 +64,26 @@ class SeasonServiceDB(BaseServiceDB):
             tournaments = results.scalars().all()
             return tournaments
 
+    async def get_tournaments_by_season_and_sport_ids(
+            self,
+            season_id: int,
+            sport_id: int,
+    ):
+        async with self.db.async_session() as session:
+            stmt = (
+                select(TournamentDB)
+                .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
+                .join(SportDB, TournamentDB.sport_id == SportDB.id)
+                .where(and_(SeasonDB.id == season_id, SportDB.id == sport_id))
+            )
+            results = await session.execute(stmt)
+            tournaments = results.scalars().all()
+            return tournaments
+
     async def get_teams_by_year(
-        self,
-        year: int,
-        key: str = "year",
+            self,
+            year: int,
+            key: str = "year",
     ):
         return await self.get_related_items_by_two(
             filter_key=key,
@@ -78,9 +94,9 @@ class SeasonServiceDB(BaseServiceDB):
         )
 
     async def get_matches_by_year(
-        self,
-        year: int,
-        key: str = "year",
+            self,
+            year: int,
+            key: str = "year",
     ):
         return await self.get_related_items_by_two(
             filter_key=key,
