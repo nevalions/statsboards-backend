@@ -52,15 +52,15 @@ class ScoreboardServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating result "
-                    f"for match id({scoreboard})"
-                    f"returned some error",
+                           f"for match id({scoreboard})"
+                           f"returned some error",
                 )
 
     async def update_scoreboard(
-        self,
-        item_id: int,
-        item: ScoreboardSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: ScoreboardSchemaUpdate,
+            **kwargs,
     ):
         updated_item = await super().update(
             item_id,
@@ -72,9 +72,9 @@ class ScoreboardServiceDB(BaseServiceDB):
         return updated_item
 
     async def get_scoreboard_by_match_id(
-        self,
-        value,
-        field_name="match_id",
+            self,
+            value,
+            field_name="match_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -82,8 +82,8 @@ class ScoreboardServiceDB(BaseServiceDB):
         )
 
     async def get_scoreboard_by_matchdata_id(
-        self,
-        matchdata_id,
+            self,
+            matchdata_id,
     ):
         async with self.db.async_session() as session:
             query = select(MatchDataDB).where(MatchDataDB.id == matchdata_id)
@@ -116,8 +116,8 @@ class ScoreboardServiceDB(BaseServiceDB):
         )
         try:
             while (
-                scoreboard_id
-                in self.scoreboard_update_manager.active_scoreboard_updates
+                    scoreboard_id
+                    in self.scoreboard_update_manager.active_scoreboard_updates
             ):
                 print(f"Scoreboard {scoreboard_id} is active for updates")
 
@@ -143,20 +143,20 @@ class ScoreboardServiceDB(BaseServiceDB):
             pass
 
     async def trigger_update_scoreboard(self, scoreboard_id):
-        # Fetch the latest state of the scoreboard
+        # Fetch the latest store of the scoreboard
         scoreboard = await self.get_by_id(scoreboard_id)
 
         # Ensure that the queue for this scoreboard is available
         if (
-            scoreboard_id
-            not in self.scoreboard_update_manager.active_scoreboard_updates
+                scoreboard_id
+                not in self.scoreboard_update_manager.active_scoreboard_updates
         ):
             print(f"Queue not found for Scoreboard ID:{scoreboard_id}")
             await self.scoreboard_update_manager.enable_scoreboard_update_queue(
                 scoreboard_id
             )
         print("scoreboard triggered")
-        # Trigger an update by adding the current scoreboard state to the queue
+        # Trigger an update by adding the current scoreboard store to the queue
         await self.scoreboard_update_manager.update_queue_scoreboard(
             scoreboard_id,
             scoreboard,
