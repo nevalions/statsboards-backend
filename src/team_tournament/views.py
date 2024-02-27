@@ -75,6 +75,10 @@ class TeamTournamentRouter(
             teams = await self.service.get_related_teams(tournament_id)
             return teams
 
+        @router.delete("/{team_id}in{tournament_id}")
+        async def delete_relation_by_team_id_tournament_id_endpoint(team_id: int, tournament_id: int):
+            await self.service.delete_relation_by_team_and_tournament_id(team_id, tournament_id)
+
         return router
 
 

@@ -1,6 +1,7 @@
 import asyncio
 
-from sqlalchemy import text, select
+from fastapi import HTTPException
+from sqlalchemy import text, select, delete
 
 from src.core.models import db, BaseServiceDB, TeamTournamentDB, TournamentDB, TeamDB
 from src.team_tournament.schemas import TeamTournamentSchemaCreate
@@ -61,6 +62,30 @@ class TeamTournamentServiceDB(BaseServiceDB):
             teams = result.scalars().all()
             await session.commit()
             return teams
+
+    async def delete_relation_by_team_and_tournament_id(self, team_id: int, tournament_id: int):
+        async with self.db.async_session() as session:
+            result = await session.execute(
+                select(TeamTournamentDB).where(
+                    (TeamTournamentDB.team_id == team_id) &
+                    (TeamTournamentDB.tournament_id == tournament_id)
+                )
+            )
+
+            item = result.scalars().first()
+
+            if not item:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Connection team id: {team_id} and tournament id {tournament_id} not foutnd"
+                )
+
+            await session.delete(item)
+            await session.commit()
+            raise HTTPException(
+                status_code=200,
+                detail=f"Connection team id: {team_id} and tournament id {tournament_id} deleted",
+            )
 
 
 async def get_team_tour_db() -> TeamTournamentServiceDB:
