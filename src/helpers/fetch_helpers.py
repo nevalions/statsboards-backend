@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 from fastapi import HTTPException, Request, Depends, status
 
@@ -86,12 +87,30 @@ async def fetch_with_scoreboard_data(match_id: int):
             "match_id": match_id,
             "id": match_id,
             "status_code": status.HTTP_200_OK,
-            "match": match,
+            "match": deep_dict(match.__dict__),
             "scoreboard_data": scoreboard_data,
-            "teams_data": match_teams_data,
-            "match_data": match_data.__dict__,
+            "teams_data": deep_dict(match_teams_data),
+            "match_data": instance_to_dict(match_data.__dict__),
         }
     else:
         return {
             "status_code": status.HTTP_404_NOT_FOUND,
         }
+
+
+def instance_to_dict(instance):
+    result_dict = {key: value for key, value in instance.items() if not key.startswith('_')}
+    return result_dict
+
+
+def deep_dict(obj):
+    result_dict = {}
+    for key, value in obj.items():
+        if not key.startswith('_'):
+            if isinstance(value, datetime.datetime):  # check against datetime.datetime
+                result_dict[key] = value.isoformat()
+            elif isinstance(value, dict):
+                result_dict[key] = deep_dict(value)
+            else:
+                result_dict[key] = value
+    return result_dict

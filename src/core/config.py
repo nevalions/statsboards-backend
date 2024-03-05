@@ -52,6 +52,20 @@ class DbSettings(BaseSettings):
         )
         return url
 
+    def db_url_websocket(self) -> PostgresDsn:
+        # print(self.host, self.user, self.password, self.name)
+        url = str(
+            PostgresDsn.build(
+                scheme="postgresql",
+                username=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port,
+                path=self.name,
+            )
+        )
+        return url
+
 
 class Settings(BaseSettings):
     # api_v1_prefix: str = "/api/v1"

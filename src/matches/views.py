@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import List
 
 from fastapi import HTTPException, Request, Depends, status, WebSocket
@@ -17,8 +18,36 @@ from src.core.config import templates
 
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
+from ..core.models.base import ws_manager
 from ..matchdata.schemas import MatchDataSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate
+
+queue = asyncio.Queue()
+
+
+# async def setup_db():
+#     pool = await asyncpg.create_pool(dsn=settings.db.db_url)
+#     conn = await pool.acquire()
+#     try:
+#         await conn.add_listener('matchdata_change', listener)
+#         await conn.add_listener('match_change', listener)
+#     finally:
+#         await pool.release(conn)
+#
+#
+# def get_db():
+#     with db.async_session() as session:  # assuming 'db' is your Database instance
+#         yield session
+#
+#
+# def get_notify_connection():
+#     # you should replace the URL with your actual database url
+#     # and make sure this is reused and properly closed when you're done
+#     return asyncpg.connect(dsn=settings.db.db_url)
+#
+#
+# async def listener(connection: AsyncpgConn, pid, channel, payload):
+#     queue.put_nowait(payload)
 
 
 # Match backend
@@ -221,30 +250,56 @@ class MatchAPIRouter(
         #     from src.helpers.fetch_helpers import fetch_with_scoreboard_data
         #
         #     return await fetch_with_scoreboard_data(match_id)
+
         @router.websocket("/ws/id/{match_id}")
-        async def match_websocket_endpoint(websocket: WebSocket, match_id: int):
+        async def websocket_endpoint(websocket: WebSocket, match_id: int):
+            logger = logging.getLogger('websocket_endpoint')
             await websocket.accept()
 
-            full_route = f"ws://[YOUR_HOST]:[YOUR_PORT]{websocket.url.path}"
-            print("Full route of the websocket:", full_route)
+            from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+            initial_data = await fetch_with_scoreboard_data(match_id)
+            logger.debug(f'Full match data sent on load: {initial_data}')
+
+            await websocket.send_json(initial_data)
 
             while True:
                 try:
-                    from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+                    data_from_client = await websocket.receive_json()
+                    logger.info(f'Received data from client: {data_from_client}')
+
+                    notification = await asyncio.wait_for(ws_manager.queue.get(), timeout=600)
                     full_match_data = await fetch_with_scoreboard_data(match_id)
-
-                    # Send the updated data to the client
+                    logger.debug(f'Notification: {notification}, Full match data: {full_match_data}')
                     await websocket.send_json(full_match_data)
-
-                    # Sleep for some time (say 1 sec) before fetching the updated data
-                    await asyncio.sleep(0.5)
-
+                except asyncio.TimeoutError:
+                    logger.error('Timeout error')
+                    await websocket.close()
                 except WebSocketDisconnect:
-                    break
-                except Exception as e:
-                    # Close the connection if an error occurs and send the reason to the client
-                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-                    break
+                    logger.error('WebSocket disconnect')
+                    await websocket.close()
+
+        # @router.websocket("/ws/id/{match_id}")
+        # async def match_websocket_endpoint(websocket: WebSocket, match_id: int):
+        #     await websocket.accept()
+        #
+        #     while True:
+        #         try:
+        #             from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+        #             full_match_data = await fetch_with_scoreboard_data(match_id)
+        #             print(full_match_data)
+        #
+        #             # Send the updated data to the client
+        #             await websocket.send_json(full_match_data)
+        #
+        #             # Sleep for some time (say 1 sec) before fetching the updated data
+        #             await asyncio.sleep(0.5)
+        #
+        #         except WebSocketDisconnect:
+        #             break
+        #         except Exception as e:
+        #             print(f"An error occurred: {e}")
+        #             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        #             break
 
         return router
 
