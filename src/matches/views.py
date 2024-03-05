@@ -1,7 +1,9 @@
+import asyncio
 from typing import List
 
-from fastapi import HTTPException, Request, Depends, status
+from fastapi import HTTPException, Request, Depends, status, WebSocket
 from fastapi.responses import JSONResponse, HTMLResponse
+from starlette.websockets import WebSocketDisconnect
 
 from src.core import BaseRouter, db, MinimalBaseRouter
 from .db_services import MatchServiceDB
@@ -9,7 +11,7 @@ from .shemas import (
     MatchSchemaCreate,
     MatchSchemaUpdate,
     MatchSchema,
-    MatchDataScoreboardSchemaCreate,
+
 )
 from src.core.config import templates
 
@@ -17,7 +19,6 @@ from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
 from ..matchdata.schemas import MatchDataSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate
-from ..teams.db_services import TeamServiceDB
 
 
 # Match backend
@@ -220,6 +221,30 @@ class MatchAPIRouter(
         #     from src.helpers.fetch_helpers import fetch_with_scoreboard_data
         #
         #     return await fetch_with_scoreboard_data(match_id)
+        @router.websocket("/ws/id/{match_id}")
+        async def match_websocket_endpoint(websocket: WebSocket, match_id: int):
+            await websocket.accept()
+
+            full_route = f"ws://[YOUR_HOST]:[YOUR_PORT]{websocket.url.path}"
+            print("Full route of the websocket:", full_route)
+
+            while True:
+                try:
+                    from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+                    full_match_data = await fetch_with_scoreboard_data(match_id)
+
+                    # Send the updated data to the client
+                    await websocket.send_json(full_match_data)
+
+                    # Sleep for some time (say 1 sec) before fetching the updated data
+                    await asyncio.sleep(0.5)
+
+                except WebSocketDisconnect:
+                    break
+                except Exception as e:
+                    # Close the connection if an error occurs and send the reason to the client
+                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                    break
 
         return router
 
