@@ -264,10 +264,7 @@ class MatchAPIRouter(
 
             while True:
                 try:
-                    data_from_client = await websocket.receive_json()
-                    logger.info(f'Received data from client: {data_from_client}')
-
-                    notification = await asyncio.wait_for(ws_manager.queue.get(), timeout=600)
+                    notification = await asyncio.wait_for(ws_manager.queue.get(), timeout=6000)
                     full_match_data = await fetch_with_scoreboard_data(match_id)
                     logger.debug(f'Notification: {notification}, Full match data: {full_match_data}')
                     await websocket.send_json(full_match_data)
