@@ -419,8 +419,8 @@ class BaseServiceDB:
                 item = await session.execute(
                     select(self.model)
                     .where(self.model.id == item_id)
-                    # .options(selectinload(getattr(self.model, related_property)))
-                    .options(joinedload(getattr(self.model, related_property)))
+                    .options(selectinload(getattr(self.model, related_property)))
+                    # .options(joinedload(getattr(self.model, related_property)))
 
                 )
                 return getattr(item.scalars().one(), related_property)

@@ -6,6 +6,8 @@ from src.core import db
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.matches.db_services import MatchServiceDB
+from src.scoreboards.db_services import ScoreboardServiceDB
+from src.scoreboards.shemas import ScoreboardSchemaCreate
 
 
 async def fetch_list_of_matches_data(matches: List):
@@ -68,6 +70,7 @@ async def fetch_match_data(match_id: int):
 
 
 async def fetch_with_scoreboard_data(match_id: int):
+    scoreboard_data_service = ScoreboardServiceDB(db)
     match_data_service_db = MatchDataServiceDB(db)
     match_service_db = MatchServiceDB(db)
 
@@ -93,13 +96,18 @@ async def fetch_with_scoreboard_data(match_id: int):
             match_data = await match_data_service_db.create_match_data(
                 match_data_schema
             )
+        if scoreboard_data is None:
+            scoreboard_data_schema = ScoreboardSchemaCreate(match_id=match_id)
+            scoreboard_data = await scoreboard_data_service.create_scoreboard(
+                scoreboard_data_schema
+            )
 
         return {
             "match_id": match_id,
             "id": match_id,
             "status_code": status.HTTP_200_OK,
             "match": deep_dict(match.__dict__),
-            "scoreboard_data": scoreboard_data,
+            "scoreboard_data": instance_to_dict(scoreboard_data.__dict__),
             "teams_data": deep_dict(match_teams_data),
             "match_data": instance_to_dict(match_data.__dict__),
         }
