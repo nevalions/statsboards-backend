@@ -57,6 +57,7 @@ class WebSocketManager:
         self.connection = await asyncpg.connect(self.db_url)
         await self.connection.add_listener('matchdata_change', self.listener)
         await self.connection.add_listener('match_change', self.listener)
+        await self.connection.add_listener('scoreboard_change', self.listener)
 
     async def listener(self, connection, pid, channel, payload):
         print("[Listener] Start")  # Debug Statement
