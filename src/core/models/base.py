@@ -4,6 +4,9 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from typing import Dict
+from starlette.websockets import WebSocket
+
 import asyncpg
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import (
@@ -56,6 +59,7 @@ class WebSocketManager:
         await self.connection.add_listener('match_change', self.listener)
 
     async def listener(self, connection, pid, channel, payload):
+        print("[Listener] Start")  # Debug Statement
         if not payload or not payload.strip():
             self.logger.warning('No payload received')
             return
@@ -66,8 +70,10 @@ class WebSocketManager:
                               f'pid: {pid}'
                               f'channel: {channel}')
             await self.queue.put(data)
+            await connection_manager.send_to_all(data)  # add this line here
+            print("[Listener] Received payload:", payload)  # Debug statement
         except Exception as e:
-            (self.logger.error(f'Error parsing payload: {str(e)}'))
+            self.logger.error("Error parsing payload: ", str(e))
 
     async def shutdown(self):
         if self.connection:
@@ -75,6 +81,33 @@ class WebSocketManager:
 
 
 ws_manager = WebSocketManager(db_url=settings.db.db_url_websocket())
+
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+        self.queues: Dict[str, asyncio.Queue] = {}
+
+    async def connect(self, websocket: WebSocket, client_id: str):
+        if client_id in self.active_connections:
+            await self.active_connections[client_id].close()
+
+        self.active_connections[client_id] = websocket
+        self.queues[client_id] = asyncio.Queue()
+
+    async def disconnect(self, client_id: str):
+        if client_id in self.active_connections:
+            await self.active_connections[client_id].close()
+            del self.active_connections[client_id]
+            del self.queues[client_id]
+
+    async def send_to_all(self, data: str):
+        for queue in self.queues.values():
+            await queue.put(data)
+        print("[send_to_all] Data sent to all client queues:", data)
+
+
+connection_manager = ConnectionManager()
 
 
 class BaseServiceDB:

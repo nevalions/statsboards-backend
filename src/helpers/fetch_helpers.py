@@ -71,10 +71,21 @@ async def fetch_with_scoreboard_data(match_id: int):
     match_data_service_db = MatchDataServiceDB(db)
     match_service_db = MatchServiceDB(db)
 
+    # print("Before getting scoreboard_data")
     scoreboard_data = await match_service_db.get_scoreboard_by_match(match_id)
+    # print("Scoreboard Data:", scoreboard_data)
+
+    # print("Before getting match")
     match = await match_service_db.get_by_id(match_id)
+    # print("Scoreboard Data:", match)
+
+    # print("Before getting match_teams_data")
     match_teams_data = await match_service_db.get_teams_by_match(match_id)
+    #     print("Scoreboard Data:", match_teams_data)
+
+    #     print("Before getting match_data")
     match_data = await match_service_db.get_matchdata_by_match(match_id)
+    #     print("Scoreboard Data:", match_data)
 
     if match:
         if match_data is None:

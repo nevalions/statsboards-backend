@@ -5,6 +5,7 @@ from typing import List
 from fastapi import HTTPException, Request, Depends, status, WebSocket
 from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.websockets import WebSocketDisconnect
+from websockets import ConnectionClosedOK
 
 from src.core import BaseRouter, db, MinimalBaseRouter
 from .db_services import MatchServiceDB
@@ -18,36 +19,12 @@ from src.core.config import templates
 
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
-from ..core.models.base import ws_manager
+from ..core.models.base import ws_manager, ConnectionManager, connection_manager
 from ..matchdata.schemas import MatchDataSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate
 
-queue = asyncio.Queue()
 
-
-# async def setup_db():
-#     pool = await asyncpg.create_pool(dsn=settings.db.db_url)
-#     conn = await pool.acquire()
-#     try:
-#         await conn.add_listener('matchdata_change', listener)
-#         await conn.add_listener('match_change', listener)
-#     finally:
-#         await pool.release(conn)
-#
-#
-# def get_db():
-#     with db.async_session() as session:  # assuming 'db' is your Database instance
-#         yield session
-#
-#
-# def get_notify_connection():
-#     # you should replace the URL with your actual database url
-#     # and make sure this is reused and properly closed when you're done
-#     return asyncpg.connect(dsn=settings.db.db_url)
-#
-#
-# async def listener(connection: AsyncpgConn, pid, channel, payload):
-#     queue.put_nowait(payload)
+# queue = asyncio.Queue()
 
 
 # Match backend
@@ -251,29 +228,43 @@ class MatchAPIRouter(
         #
         #     return await fetch_with_scoreboard_data(match_id)
 
-        @router.websocket("/ws/id/{match_id}")
-        async def websocket_endpoint(websocket: WebSocket, match_id: int):
+        @router.websocket("/ws/id/{match_id}/{client_id}/")
+        async def websocket_endpoint(websocket: WebSocket, client_id: str, match_id: int):
+            await connection_manager.connect(websocket, client_id)
             logger = logging.getLogger('websocket_endpoint')
             await websocket.accept()
 
-            from src.helpers.fetch_helpers import fetch_with_scoreboard_data
-            initial_data = await fetch_with_scoreboard_data(match_id)
-            logger.debug(f'Full match data sent on load: {initial_data}')
+            try:
+                from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+                initial_data = await fetch_with_scoreboard_data(match_id)
+                logger.debug(f'Full match data sent on load: {initial_data}')
 
-            await websocket.send_json(initial_data)
+                await websocket.send_json(initial_data)
+                await process_websocket(websocket, client_id, match_id)
+            except WebSocketDisconnect:
+                logger.error('WebSocket disconnect:', exc_info=True)
+            except ConnectionClosedOK:
+                logger.error('ConnectionClosedOK:', exc_info=True)
+            except asyncio.TimeoutError:
+                logger.error('TimeoutError:', exc_info=True)
+            except RuntimeError:
+                logger.error('RuntimeError:', exc_info=True)
+            except Exception as e:
+                logger.error(f'Unexpected error:{str(e)}', exc_info=True)
+            finally:
+                await connection_manager.disconnect(client_id)
 
+        async def process_websocket(websocket: WebSocket, client_id: str, match_id: int):
+            connection_queue = connection_manager.queues[client_id]
             while True:
                 try:
-                    notification = await asyncio.wait_for(ws_manager.queue.get(), timeout=6000)
+                    from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+                    notification = await asyncio.wait_for(connection_queue.get(), timeout=60000)
+                    print("[process_websocket] Notification from queue:", notification)  # Debug statement
                     full_match_data = await fetch_with_scoreboard_data(match_id)
-                    logger.debug(f'Notification: {notification}, Full match data: {full_match_data}')
                     await websocket.send_json(full_match_data)
-                except asyncio.TimeoutError:
-                    logger.error('Timeout error')
-                    await websocket.close()
-                except WebSocketDisconnect:
-                    logger.error('WebSocket disconnect')
-                    await websocket.close()
+                except RuntimeError:
+                    break
 
         # @router.websocket("/ws/id/{match_id}")
         # async def match_websocket_endpoint(websocket: WebSocket, match_id: int):
