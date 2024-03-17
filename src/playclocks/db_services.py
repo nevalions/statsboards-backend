@@ -8,23 +8,6 @@ from src.core.models import BaseServiceDB, PlayClockDB
 from .schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
 
 
-# class PlayClockManager:
-#     def __init__(self):
-#         self.active_matchdata_updates = {}
-#
-#     async def enable_match_data_update_queue(self, match_data_id):
-#         if match_data_id not in self.active_matchdata_updates:
-#             self.active_matchdata_updates[match_data_id] = asyncio.Queue()
-#
-#     async def update_queue_match_data(self, match_data_id, updated_match_data):
-#         print(f"Updating {match_data_id} in set")
-#         if match_data_id in self.active_matchdata_updates:
-#             matchdata_update_queue = self.active_matchdata_updates[match_data_id]
-#             await matchdata_update_queue.put(updated_match_data)
-#             print(f"Updated {match_data_id} in set")
-#         print(f"Finished Updating")
-
-
 class ClockManager:
     def __init__(self):
         self.active_playclock_matches = {}

@@ -24,9 +24,6 @@ from ..matchdata.schemas import MatchDataSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate
 
 
-# queue = asyncio.Queue()
-
-
 # Match backend
 class MatchAPIRouter(
     BaseRouter[
@@ -70,24 +67,6 @@ class MatchAPIRouter(
 
             default_match_data = MatchDataSchemaCreate(match_id=new_match.id)
             default_scoreboard = ScoreboardSchemaCreate(match_id=new_match.id)
-            #
-            # {
-            #     "field_length": 92,
-            #     "game_status": "in-progress",
-            #     "score_team_a": 0,
-            #     "score_team_b": 0,
-            #     "timeout_team_a": "●●●",
-            #     "timeout_team_b": "●●●",
-            #     "qtr": "1st",
-            #     "gameclock": 720,
-            #     "gameclock_status": "stopped",
-            #     "playclock": 0,
-            #     "playclock_status": "stopped",
-            #     "ball_on": 20,
-            #     "down": "1st",
-            #     "distance": "10",
-            #     "match_id": 0
-            # }
 
             new_match_data = await match_db_service.create_match_data(default_match_data)
             teams_data = await self.service.get_teams_by_match(new_match_data.match_id)
@@ -176,8 +155,8 @@ class MatchAPIRouter(
             response_class=JSONResponse,
         )
         async def match_data_endpoint(
-                request: Request,
-                match_id: int,
+                # request: Request,
+                # match_id: int,
                 match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
                 match_data=Depends(get_match_data_by_match_id_endpoint),
         ):

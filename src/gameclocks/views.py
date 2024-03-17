@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import (
     HTTPException,
     Depends,
