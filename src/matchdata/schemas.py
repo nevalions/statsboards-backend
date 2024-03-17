@@ -15,8 +15,8 @@ class MatchDataSchemaBase(BaseModel):
     qtr: Annotated[str, Path(max_length=10)] = "1st"
     gameclock: Annotated[int, Path(max=10000)] = 720
     gameclock_status: Annotated[str, Path(max_length=50)] = "stopped"
-    playclock: Annotated[int, Path(max=10000)] | None = None
-    playclock_status: Annotated[str, Path(max_length=50)] = "stopped"
+    # playclock: Annotated[int, Path(max=10000)] | None = None
+    # playclock_status: Annotated[str, Path(max_length=50)] = "stopped"
     ball_on: Annotated[int, Path(max=200)] = 20
     down: Annotated[str, Path(max_length=10)] = "1st"
     distance: Annotated[str, Path(max_length=20)] = "10"
@@ -34,8 +34,8 @@ class MatchDataSchemaUpdate(BaseModel):
     qtr: str | None = None
     gameclock: int | None = None
     gameclock_status: str | None = None
-    playclock: int | None = None
-    playclock_status: str | None = None
+    # playclock: int | None = None
+    # playclock_status: str | None = None
     ball_on: int | None = None
     down: str | None = None
     distance: str | None = None

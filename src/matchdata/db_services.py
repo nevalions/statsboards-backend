@@ -8,6 +8,7 @@ from sqlalchemy import select
 from src.core.models import BaseServiceDB, MatchDataDB
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 
+
 # update_queue_match_data = asyncio.Queue()
 
 
@@ -80,8 +81,8 @@ class MatchDataServiceDB(BaseServiceDB):
                     qtr=matchdata.qtr,
                     gameclock=matchdata.gameclock,
                     gameclock_status=matchdata.gameclock_status,
-                    playclock=matchdata.playclock,
-                    playclock_status=matchdata.playclock_status,
+                    # playclock=matchdata.playclock,
+                    # playclock_status=matchdata.playclock_status,
                     ball_on=matchdata.ball_on,
                     down=matchdata.down,
                     distance=matchdata.distance,
@@ -98,14 +99,14 @@ class MatchDataServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating result "
-                    f"for match id({matchdata.id})"
-                    f"returned some error",
+                           f"for match id({matchdata.id})"
+                           f"returned some error",
                 )
 
     async def enable_match_data_clock_queues(
-        self,
-        item_id: int,
-        clock_type: str,
+            self,
+            item_id: int,
+            clock_type: str,
     ):
         if clock_type not in ["game", "play"]:
             raise ValueError("Invalid clock type. Must be 'game' or 'play'")
@@ -132,10 +133,10 @@ class MatchDataServiceDB(BaseServiceDB):
         return match_queue
 
     async def update_match_data(
-        self,
-        item_id: int,
-        item: MatchDataSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: MatchDataSchemaUpdate,
+            **kwargs,
     ):
         updated_ = await super().update(
             item_id,
@@ -147,8 +148,8 @@ class MatchDataServiceDB(BaseServiceDB):
         return updated_
 
     async def get_playclock_status(
-        self,
-        item_id: int,
+            self,
+            item_id: int,
     ):
         gameclock = await self.get_by_id(item_id)
         if gameclock:
@@ -157,8 +158,8 @@ class MatchDataServiceDB(BaseServiceDB):
             return None
 
     async def get_gameclock_status(
-        self,
-        item_id: int,
+            self,
+            item_id: int,
     ):
         gameclock = await self.get_by_id(item_id)
         if gameclock:
@@ -214,9 +215,9 @@ class MatchDataServiceDB(BaseServiceDB):
         return await self.get_by_id(match_data_id)
 
     async def decrement_gameclock(
-        self,
-        background_tasks: BackgroundTasks,
-        match_data_id: int,
+            self,
+            background_tasks: BackgroundTasks,
+            match_data_id: int,
     ):
         # Access the queue for the specific match directly
         if match_data_id in self.clock_manager.active_gameclock_matches:
@@ -228,9 +229,9 @@ class MatchDataServiceDB(BaseServiceDB):
             print(f"No active match found with id: {match_data_id}")
 
     async def decrement_playclock(
-        self,
-        background_tasks: BackgroundTasks,
-        match_data_id: int,
+            self,
+            background_tasks: BackgroundTasks,
+            match_data_id: int,
     ):
         # Access the queue for the specific match directly
         if match_data_id in self.clock_manager.active_playclock_matches:
@@ -290,8 +291,8 @@ class MatchDataServiceDB(BaseServiceDB):
         return await self.get_by_id(match_data_id)
 
     async def decrement_playclock_one_second(
-        self,
-        item_id: int,
+            self,
+            item_id: int,
     ):
         print(f"Decrementing playclock for {item_id}")
         result = await self.get_by_id(item_id)
@@ -317,9 +318,9 @@ class MatchDataServiceDB(BaseServiceDB):
             )
 
     async def event_generator_get_match_clock(
-        self,
-        match_id: int,
-        clock_type: str,
+            self,
+            match_id: int,
+            clock_type: str,
     ):
         active_clock_matches = (
             self.clock_manager.active_gameclock_matches
@@ -357,8 +358,8 @@ class MatchDataServiceDB(BaseServiceDB):
                 print(f"Yielded data: {json_data}")
 
                 if (
-                    clock_type == "game"
-                    and message_dict.get("game_status") == "stopped"
+                        clock_type == "game"
+                        and message_dict.get("game_status") == "stopped"
                 ):
                     await self.clock_manager.end_clock(
                         match_id,
@@ -408,9 +409,9 @@ class MatchDataServiceDB(BaseServiceDB):
             pass
 
     async def trigger_update_match_clock(
-        self,
-        match_data_id: int,
-        clock_type: str,
+            self,
+            match_data_id: int,
+            clock_type: str,
     ):
         match_data = await self.get_by_id(match_data_id)
 

@@ -146,6 +146,12 @@ class MatchAPIRouter(
             return await self.service.get_matchdata_by_match(match_id)
 
         @router.get(
+            "/id/{match_id}/playclock/",
+        )
+        async def get_playclock_by_match_id_endpoint(match_id: int):
+            return await self.service.get_playclock_by_match(match_id)
+
+        @router.get(
             "/id/{match_id}/scoreboard_data/",
         )
         async def get_match_scoreboard_by_match_id_endpoint(match_id: int):
@@ -181,66 +187,42 @@ class MatchAPIRouter(
             "/id/{match_id}/scoreboard/full_data/",
             response_class=JSONResponse,
         )
-        async def full_match_data_endpoint(
-                match_id: int,
-                # match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
-                # match_data=Depends(get_match_data_by_match_id_endpoint),
-        ):
+        async def full_match_data_endpoint(match_id: int):
             from src.helpers.fetch_helpers import fetch_match_data
 
             return await fetch_match_data(match_id)
-            # match = await self.service.get_by_id(match_id)
-            #
-            # return {
-            #     "status_code": status.HTTP_200_OK,
-            #     "teams_data": match_teams_data,
-            #     "match": match,
-            #     "match_data": match_data.__dict__,
-            # }
 
         @router.get(
             "/id/{match_id}/scoreboard/full_data/scoreboard_settings/",
             response_class=JSONResponse,
         )
-        async def full_match_data_with_scoreboard_endpoint(
-                match_id: int,
-                # match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
-                # match_data=Depends(get_match_data_by_match_id_endpoint),
-                # scoreboard_data=Depends(get_match_scoreboard_by_match_id_endpoint),
-        ):
+        async def full_match_data_with_scoreboard_endpoint(match_id: int):
             from src.helpers.fetch_helpers import fetch_with_scoreboard_data
 
             return await fetch_with_scoreboard_data(match_id)
-            # match = await self.service.get_by_id(match_id)
-            #
-            # return {
-            #     "status_code": status.HTTP_200_OK,
-            #     "teams_data": match_teams_data,
-            #     "match": match,
-            #     "match_data": match_data.__dict__,
-            #     "scoreboard_data": scoreboard_data.__dict__,
-            # }
-
-        # async def full_match_data_endpoint(
-        #     match_id: int,
-        # ):
-        #     from src.helpers.fetch_helpers import fetch_with_scoreboard_data
-        #
-        #     return await fetch_with_scoreboard_data(match_id)
 
         @router.websocket("/ws/id/{match_id}/{client_id}/")
         async def websocket_endpoint(websocket: WebSocket, client_id: str, match_id: int):
-            await connection_manager.connect(websocket, client_id)
+            await connection_manager.connect(websocket, client_id, match_id)
+            await ws_manager.connect(client_id)
             logger = logging.getLogger('websocket_endpoint')
             await websocket.accept()
 
             try:
-                from src.helpers.fetch_helpers import fetch_with_scoreboard_data
-                initial_data = await fetch_with_scoreboard_data(match_id)
-                logger.debug(f'Full match data sent on load: {initial_data}')
+                from src.helpers.fetch_helpers import fetch_with_scoreboard_data, fetch_playclock
 
+                initial_data = await fetch_with_scoreboard_data(match_id)
+                initial_data['type'] = 'message-update'
                 await websocket.send_json(initial_data)
-                await process_websocket(websocket, client_id, match_id)
+
+                initial_playclock_data = await fetch_playclock(match_id)
+                initial_playclock_data['type'] = 'playclock-update'
+                await websocket.send_json(initial_playclock_data)
+
+                await asyncio.gather(
+                    process_match_data_websocket(websocket, client_id, match_id),
+                    process_playclock_data(websocket, client_id, match_id)
+                )
             except WebSocketDisconnect:
                 logger.error('WebSocket disconnect:', exc_info=True)
             except ConnectionClosedOK:
@@ -253,41 +235,32 @@ class MatchAPIRouter(
                 logger.error(f'Unexpected error:{str(e)}', exc_info=True)
             finally:
                 await connection_manager.disconnect(client_id)
+                await ws_manager.disconnect(client_id)
 
-        async def process_websocket(websocket: WebSocket, client_id: str, match_id: int):
-            connection_queue = connection_manager.queues[client_id]
+        async def process_playclock_data(websocket: WebSocket, client_id: str, match_id: int):
+            connection_queue = ws_manager.playclock_queues[client_id]
+            while True:
+                try:
+                    from src.helpers.fetch_helpers import fetch_playclock
+                    notification = await asyncio.wait_for(connection_queue.get(), timeout=60000)
+                    print("[process_playclock_data] Notification from queue:", notification)
+                    playclock_data = await fetch_playclock(match_id)
+                    print(playclock_data)
+                    await websocket.send_json(playclock_data)
+                except RuntimeError:
+                    break
+
+        async def process_match_data_websocket(websocket: WebSocket, client_id: str, match_id: int):
+            connection_queue = ws_manager.queues[client_id]
             while True:
                 try:
                     from src.helpers.fetch_helpers import fetch_with_scoreboard_data
                     notification = await asyncio.wait_for(connection_queue.get(), timeout=60000)
-                    print("[process_websocket] Notification from queue:", notification)  # Debug statement
+                    print("[process_websocket] Notification from queue:", notification)
                     full_match_data = await fetch_with_scoreboard_data(match_id)
                     await websocket.send_json(full_match_data)
                 except RuntimeError:
                     break
-
-        # @router.websocket("/ws/id/{match_id}")
-        # async def match_websocket_endpoint(websocket: WebSocket, match_id: int):
-        #     await websocket.accept()
-        #
-        #     while True:
-        #         try:
-        #             from src.helpers.fetch_helpers import fetch_with_scoreboard_data
-        #             full_match_data = await fetch_with_scoreboard_data(match_id)
-        #             print(full_match_data)
-        #
-        #             # Send the updated data to the client
-        #             await websocket.send_json(full_match_data)
-        #
-        #             # Sleep for some time (say 1 sec) before fetching the updated data
-        #             await asyncio.sleep(0.5)
-        #
-        #         except WebSocketDisconnect:
-        #             break
-        #         except Exception as e:
-        #             print(f"An error occurred: {e}")
-        #             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        #             break
 
         return router
 

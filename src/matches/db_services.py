@@ -34,9 +34,9 @@ class MatchServiceDB(BaseServiceDB):
             )
 
     async def update_match_by_eesl(
-        self,
-        eesl_field_name: str,
-        m: MatchSchemaCreate,
+            self,
+            eesl_field_name: str,
+            m: MatchSchemaCreate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -56,9 +56,9 @@ class MatchServiceDB(BaseServiceDB):
         return await super().create(match)
 
     async def get_match_by_eesl_id(
-        self,
-        value,
-        field_name="match_eesl_id",
+            self,
+            value,
+            field_name="match_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -66,10 +66,10 @@ class MatchServiceDB(BaseServiceDB):
         )
 
     async def update_match(
-        self,
-        item_id: int,
-        item: MatchSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: MatchSchemaUpdate,
+            **kwargs,
     ):
         return await super().update(
             item_id,
@@ -78,17 +78,26 @@ class MatchServiceDB(BaseServiceDB):
         )
 
     async def get_matchdata_by_match(
-        self,
-        match_id: int,
+            self,
+            match_id: int,
     ):
         return await self.get_related_items_level_one_by_id(
             match_id,
             "match_data",
         )
 
+    async def get_playclock_by_match(
+            self,
+            match_id: int,
+    ):
+        return await self.get_related_items_level_one_by_id(
+            match_id,
+            "match_playclock",
+        )
+
     async def get_teams_by_match(
-        self,
-        match_id: int,
+            self,
+            match_id: int,
     ):
         match = await self.get_related_items(
             match_id,
@@ -112,8 +121,8 @@ class MatchServiceDB(BaseServiceDB):
         return None
 
     async def get_scoreboard_by_match(
-        self,
-        match_id: int,
+            self,
+            match_id: int,
     ):
         return await self.get_related_items_level_one_by_id(
             match_id,

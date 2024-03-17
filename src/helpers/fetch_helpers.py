@@ -6,6 +6,8 @@ from src.core import db
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.matches.db_services import MatchServiceDB
+from src.playclocks.db_services import PlayClockServiceDB
+from src.playclocks.schemas import PlayClockSchemaCreate
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.shemas import ScoreboardSchemaCreate
 
@@ -102,14 +104,44 @@ async def fetch_with_scoreboard_data(match_id: int):
                 scoreboard_data_schema
             )
 
-        return {
+        return {'data': {
             "match_id": match_id,
             "id": match_id,
             "status_code": status.HTTP_200_OK,
             "match": deep_dict(match.__dict__),
             "scoreboard_data": instance_to_dict(scoreboard_data.__dict__),
             "teams_data": deep_dict(match_teams_data),
-            "match_data": instance_to_dict(match_data.__dict__),
+            "match_data": instance_to_dict(match_data.__dict__), }
+        }
+    else:
+        return {
+            "status_code": status.HTTP_404_NOT_FOUND,
+        }
+
+
+async def fetch_playclock(match_id: int):
+    playclock_service = PlayClockServiceDB(db)
+    match_service_db = MatchServiceDB(db)
+
+    print("Before getting match")
+    match = await match_service_db.get_by_id(match_id)
+    print("Scoreboard Data:", match)
+
+    print("Before getting playclock")
+    playclock = await playclock_service.get_playclock_by_match_id(match_id)
+    print("Playclock:", playclock)
+
+    if match:
+        if playclock is None:
+            match_data_schema = PlayClockSchemaCreate(match_id=match_id)
+            playclock = await playclock_service.create_playclock(
+                match_data_schema
+            )
+        return {
+            "match_id": match_id,
+            "id": match_id,
+            "status_code": status.HTTP_200_OK,
+            "playclock": instance_to_dict(playclock.__dict__),
         }
     else:
         return {

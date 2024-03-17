@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.core.config import static_path, settings
-from src.core.models.base import WebSocketManager, ws_manager
+from src.core.config import static_path
+from src.core.models.base import ws_manager
+from src.playclocks import api_playclock_router
 
 from src.sports import api_sport_router
 from src.seasons import api_pars_season_router, api_season_router
@@ -25,7 +26,7 @@ app.include_router(api_team_tournament_router)
 app.include_router(api_match_router)
 app.include_router(template_match_router)
 app.include_router(api_matchdata_router)
-
+app.include_router(api_playclock_router)
 app.include_router(api_scoreboards_router)
 
 app.include_router(api_pars_season_router)

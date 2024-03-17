@@ -2,19 +2,14 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Any
-
-from typing import Dict
+from typing import Any, List, Dict
 from starlette.websockets import WebSocket
-
 import asyncpg
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
-    declared_attr,
     selectinload,
-    joinedload,
 )
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -45,56 +40,90 @@ class Database:
 db = Database(db_url=settings.db.db_url, echo=settings.db_echo)
 
 
-class WebSocketManager:
+class MatchDataWebSocketManager:
     def __init__(self, db_url):
         self.db_url = db_url
         self.connection = None
-        self.queue = asyncio.Queue()
+        self.queues = {}
+        self.playclock_queues = {}
         self.logger = logging.getLogger('WebSocketManager')
         self.logger.info('WebSocketManager initialized')
+
+    async def connect(self, client_id: str):
+        self.queues[client_id] = asyncio.Queue()
+        self.playclock_queues[client_id] = asyncio.Queue()
+
+    async def disconnect(self, client_id: str):
+        del self.queues[client_id]
+        del self.playclock_queues[client_id]
 
     async def startup(self):
         self.connection = await asyncpg.connect(self.db_url)
         await self.connection.add_listener('matchdata_change', self.listener)
         await self.connection.add_listener('match_change', self.listener)
         await self.connection.add_listener('scoreboard_change', self.listener)
+        await self.connection.add_listener('playclock_change', self.playclock_listener)
 
-    async def listener(self, connection, pid, channel, payload):
-        print("[Listener] Start")  # Debug Statement
+    async def playclock_listener(self, connection, pid, channel, payload):
+        print("[Playclock listener] Start")
         if not payload or not payload.strip():
             self.logger.warning('No payload received')
             return
-        try:
-            data = json.loads(payload.strip())
-            self.logger.debug(f'Received payload: {payload}'
-                              f'connection: {connection}'
-                              f'pid: {pid}'
-                              f'channel: {channel}')
-            await self.queue.put(data)
-            await connection_manager.send_to_all(data)  # add this line here
-            print("[Listener] Received payload:", payload)  # Debug statement
-        except Exception as e:
-            self.logger.error("Error parsing payload: ", str(e))
+
+        data = json.loads(payload.strip())
+        data['type'] = 'playclock-update'
+        self.logger.debug(f'Received playclock payload: {payload}'
+                          f'connection: {connection}'
+                          f'pid: {pid}'
+                          f'channel: {channel}'
+                          f'data: {data}')
+
+        for queue in self.playclock_queues.values():
+            await queue.put(data)
+
+        await connection_manager.send_to_all(data)
+
+    async def listener(self, connection, pid, channel, payload):
+        print("[Listener] Start")
+        data = json.loads(payload.strip())
+        data['type'] = 'match-update'
+        self.logger.debug(f'Received matchdata payload: {payload}'
+                          f'connection: {connection}'
+                          f'pid: {pid}'
+                          f'channel: {channel}')
+        for queue in self.queues.values():
+            await queue.put(data)
+
+        await connection_manager.send_to_all(data)
+
+        print("[Listener] Received payload:", payload)
 
     async def shutdown(self):
         if self.connection:
             await self.connection.close()
 
 
-ws_manager = WebSocketManager(db_url=settings.db.db_url_websocket())
+ws_manager = MatchDataWebSocketManager(db_url=settings.db.db_url_websocket())
 
 
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.queues: Dict[str, asyncio.Queue] = {}
+        self.match_subscriptions: Dict[str, List[str]] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str):
+    async def connect(self, websocket: WebSocket, client_id: str, match_id: str = None):
         if client_id in self.active_connections:
             await self.active_connections[client_id].close()
 
         self.active_connections[client_id] = websocket
         self.queues[client_id] = asyncio.Queue()
+
+        if match_id:  # if match_id is not None, add the client to the match's subscriber list
+            if match_id in self.match_subscriptions:
+                self.match_subscriptions[match_id].append(client_id)
+            else:
+                self.match_subscriptions[match_id] = [client_id]
 
     async def disconnect(self, client_id: str):
         if client_id in self.active_connections:
@@ -102,10 +131,24 @@ class ConnectionManager:
             del self.active_connections[client_id]
             del self.queues[client_id]
 
-    async def send_to_all(self, data: str):
-        for queue in self.queues.values():
-            await queue.put(data)
+            for match_id in self.match_subscriptions:
+                if client_id in self.match_subscriptions[match_id]:
+                    self.match_subscriptions[match_id].remove(client_id)
+
+    async def send_to_all(self, data: str, match_id: str = None):
+        if match_id and match_id in self.match_subscriptions:
+            for client_id in self.match_subscriptions[match_id]:
+                if client_id in self.queues:
+                    await self.queues[client_id].put(data)
+        else:
+            for queue in self.queues.values():
+                await queue.put(data)
+
         print("[send_to_all] Data sent to all client queues:", data)
+
+    async def send_to_playclock_channels(self, data):
+        match_id = data['match_id']
+        await connection_manager.send_to_all(data, match_id=match_id)
 
 
 connection_manager = ConnectionManager()

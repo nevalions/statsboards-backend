@@ -11,6 +11,7 @@ __all__ = (
     "MatchDB",
     "MatchDataDB",
     "ScoreboardDB",
+    "PlayClockDB"
 )
 
 from .base import Base, BaseServiceDB, db
@@ -23,3 +24,4 @@ from .team_tournament import TeamTournamentDB
 from .match import MatchDB
 from .matchdata import MatchDataDB
 from .scoreboard import ScoreboardDB
+from .playclock import PlayClockDB

@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
-from datetime import datetime as date_type
 
-from sqlalchemy import String, Integer, Text, TIMESTAMP, ForeignKey, TIME, func
+from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -67,17 +66,17 @@ class MatchDataDB(Base):
         default="stopped",
     )
 
-    playclock: Mapped[int] = mapped_column(
-        Integer,
-        nullable=True,
-        default=None,
-    )
-
-    playclock_status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=True,
-        default="stopped",
-    )
+    # playclock: Mapped[int] = mapped_column(
+    #     Integer,
+    #     nullable=True,
+    #     default=None,
+    # )
+    #
+    # playclock_status: Mapped[str] = mapped_column(
+    #     String(50),
+    #     nullable=True,
+    #     default="stopped",
+    # )
 
     ball_on: Mapped[int] = mapped_column(
         Integer,
