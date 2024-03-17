@@ -125,54 +125,66 @@ class GameClockServiceDB(BaseServiceDB):
                 if gameclock:
                     return gameclock
 
-    async def loop_decrement_gameclock(self, match_data_id: int):
-        # Initialize the game clock from the database
-        gameclock = (await self.get_by_id(match_data_id)).gameclock
-
+    async def loop_decrement_gameclock(self, gameclock_id: int):
         while True:
             start_time = time.time()
-            gameclock_status = await self.get_gameclock_status(match_data_id)
-            if gameclock_status != "running":
-                await self.update(
-                    match_data_id,
-                    GameClockSchemaUpdate(gameclock=gameclock),
-                )
+            gameclock_status = await self.get_gameclock_status(gameclock_id)
+            if gameclock_status != 'running':
                 break
 
-            # Decrement gameclock in memory
-            gameclock = max(gameclock - 1, 0)
+            gameclock_obj = await self.get_by_id(gameclock_id)
+            updated_gameclock = max(0, gameclock_obj.gameclock - 1)
 
-            # if gameclock % 60 == 0:  # Update database every 60 seconds
             await self.update(
-                match_data_id,
-                GameClockSchemaUpdate(gameclock=gameclock),
-            )
-
-            # Send updated gameclock to SSE
-            await self.clock_manager.update_queue_clock(
-                match_data_id,
-                {"gameclock": gameclock, "gameclock_status": "running"}
+                gameclock_id,
+                GameClockSchemaUpdate(gameclock=updated_gameclock),
             )
 
             exec_time = time.time() - start_time
             sleep_time = max(1 - exec_time, 0)
             await asyncio.sleep(sleep_time)
 
-        return await self.get_by_id(match_data_id)
+        return await self.get_by_id(gameclock_id)
 
     async def decrement_gameclock(
             self,
             background_tasks: BackgroundTasks,
-            match_data_id: int,
+            gameclock_id: int,
     ):
-        # Access the queue for the specific match directly
-        if match_data_id in self.clock_manager.active_gameclock_matches:
+        if gameclock_id in self.clock_manager.active_gameclock_matches:
             background_tasks.add_task(
                 self.loop_decrement_gameclock,
-                match_data_id,
+                gameclock_id,
             )
         else:
-            print(f"No active match found with id: {match_data_id}")
+            print(f"No active match gameclock found with id: {gameclock_id}")
+
+    async def decrement_gameclock_one_second(
+            self,
+            item_id: int,
+    ):
+        print(f"Decrementing gameclock for {item_id}")
+        result = await self.get_by_id(item_id)
+        if result:
+            updated_gameclock = result.gameclock
+
+            if updated_gameclock and updated_gameclock > 0:
+                updated_gameclock -= 1
+                return updated_gameclock
+
+            else:
+                await self.update(
+                    item_id,
+                    GameClockSchemaUpdate(
+                        playclock_status="stopped",
+                    ),
+                )
+                return 0
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Playclock id:{item_id} not found",
+            )
 
     async def trigger_update_gameclock(
             self,

@@ -78,66 +78,28 @@ class GameClockRouter(
                 detail=f"Gameclock id:{item_id} not found",
             )
 
-        @router.get(
-            "/id/{item_id}/",
-            response_class=JSONResponse,
-        )
-        async def get_gameclock_by_id(
-                item=Depends(self.service.get_by_id),
-        ):
-            return self.create_response(
-                item,
-                f"Gameclock ID:{item.id}",
-                "gameclock",
-            )
-
-        @router.put(
-            "/id/{gameclock_id}/running/",
-            response_class=JSONResponse,
-        )
-        async def start_gameclock_endpoint(
-                background_tasks: BackgroundTasks,
-                gameclock_id: int,
-        ):
-            # start_game = "in-progress"
-            # await self.service.update(
-            #     gameclock_id,
-            #     MatchDataSchemaUpdate(
-            #         game_status=start_game,
-            #     ),
-            # )
-            tasks = [
-                self.service.enable_match_data_gameclock_queues(
-                    gameclock_id,
-                ),
-                # self.service.clock_manager.start_clock(
-                #     match_data_id,
-                #     "game",
-                # ),
-            ]
-
-            await asyncio.gather(*tasks)
-
-            item_status = "running"
+        @router.put("/id/{gameclock_id}/running/", response_class=JSONResponse)
+        async def start_gameclock_endpoint(background_tasks: BackgroundTasks, gameclock_id: int):
             gameclock = await self.service.get_by_id(gameclock_id)
             present_gameclock_status = gameclock.gameclock_status
 
+            # If the gameclock was not running, then start it
             if present_gameclock_status != "running":
+                # Update the gameclock status to running
                 updated = await self.service.update(
                     gameclock_id,
                     GameClockSchemaUpdate(
-                        gameclock_status=item_status,
+                        gameclock_status="running",
+                        gameclock_time_remaining=gameclock.gameclock,  # Initialize remaining time with game clock value
                     ),
                 )
 
-                await self.service.decrement_gameclock(
-                    background_tasks,
-                    gameclock_id,
-                )
+                # Start background task for decrementing the game clock
+                background_tasks.add_task(self.service.loop_decrement_gameclock, gameclock_id)
 
                 return self.create_response(
                     updated,
-                    f"Game clock ID:{gameclock_id} {item_status}",
+                    f"Game clock ID:{gameclock_id} {updated.gameclock_status}",
                 )
             else:
                 return self.create_response(
@@ -156,8 +118,11 @@ class GameClockRouter(
 
             updated_ = await self.service.update(
                 item_id,
-                GameClockSchemaUpdate(gameclock_status=item_status),
+                GameClockSchemaUpdate(
+                    gameclock_status=item_status
+                ),
             )
+            print('updated updated')
             if updated_:
                 return self.create_response(
                     updated_,
@@ -180,16 +145,6 @@ class GameClockRouter(
                     example=720,
                 ),
         ):
-            await self.service.update(
-                item_id,
-                GameClockSchemaUpdate(
-                    gameclock=sec,
-                    gameclock_status=item_status
-                ),
-            )
-
-            await self.service.trigger_update_gameclock(item_id)
-
             updated = await self.service.update(
                 item_id,
                 GameClockSchemaUpdate(
@@ -198,12 +153,22 @@ class GameClockRouter(
                 ),
             )
 
-            await self.service.trigger_update_gameclock(item_id)
-
             return self.create_response(
                 updated,
                 f"Game clock {item_status}",
             )
+
+            # await self.service.trigger_update_gameclock(item_id)
+
+            # updated = await self.service.update(
+            #     item_id,
+            #     GameClockSchemaUpdate(
+            #         gameclock=sec,
+            #         gameclock_status=item_status
+            #     ),
+            # )
+
+            # await self.service.trigger_update_gameclock(item_id)
 
         # @router.put(
         #     "/id/{item_id}/running/{sec}/",

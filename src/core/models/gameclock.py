@@ -13,6 +13,12 @@ class GameClockDB(Base):
     __tablename__ = "gameclock"
     __table_args__ = {"extend_existing": True}
 
+    gameclock_time_remaining: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+    )
+
     gameclock: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
