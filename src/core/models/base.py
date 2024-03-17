@@ -46,16 +46,19 @@ class MatchDataWebSocketManager:
         self.connection = None
         self.queues = {}
         self.playclock_queues = {}
+        self.gameclock_queues = {}
         self.logger = logging.getLogger('WebSocketManager')
         self.logger.info('WebSocketManager initialized')
 
     async def connect(self, client_id: str):
         self.queues[client_id] = asyncio.Queue()
         self.playclock_queues[client_id] = asyncio.Queue()
+        self.gameclock_queues[client_id] = asyncio.Queue()
 
     async def disconnect(self, client_id: str):
         del self.queues[client_id]
         del self.playclock_queues[client_id]
+        del self.gameclock_queues[client_id]
 
     async def startup(self):
         self.connection = await asyncpg.connect(self.db_url)
@@ -63,6 +66,7 @@ class MatchDataWebSocketManager:
         await self.connection.add_listener('match_change', self.listener)
         await self.connection.add_listener('scoreboard_change', self.listener)
         await self.connection.add_listener('playclock_change', self.playclock_listener)
+        await self.connection.add_listener('gameclock_change', self.gameclock_listener)
 
     async def playclock_listener(self, connection, pid, channel, payload):
         print("[Playclock listener] Start")
@@ -79,6 +83,25 @@ class MatchDataWebSocketManager:
                           f'data: {data}')
 
         for queue in self.playclock_queues.values():
+            await queue.put(data)
+
+        await connection_manager.send_to_all(data)
+
+    async def gameclock_listener(self, connection, pid, channel, payload):
+        print("[Gameclock listener] Start")
+        if not payload or not payload.strip():
+            self.logger.warning('No payload received')
+            return
+
+        data = json.loads(payload.strip())
+        data['type'] = 'gameclock-update'
+        self.logger.debug(f'Received gameclock payload: {payload}'
+                          f'connection: {connection}'
+                          f'pid: {pid}'
+                          f'channel: {channel}'
+                          f'data: {data}')
+
+        for queue in self.gameclock_queues.values():
             await queue.put(data)
 
         await connection_manager.send_to_all(data)

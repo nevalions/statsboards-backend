@@ -3,6 +3,8 @@ from typing import List
 from fastapi import HTTPException, Request, Depends, status
 
 from src.core import db
+from src.gameclocks.db_services import GameClockServiceDB
+from src.gameclocks.schemas import GameClockSchemaCreate
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.matches.db_services import MatchServiceDB
@@ -119,13 +121,43 @@ async def fetch_with_scoreboard_data(match_id: int):
         }
 
 
+async def fetch_gameclock(match_id: int):
+    gameclock_service = GameClockServiceDB(db)
+    match_service_db = MatchServiceDB(db)
+
+    print("Before getting match")
+    match = await match_service_db.get_by_id(match_id)
+    print("Match Data:", match)
+
+    print("Before getting gameclock")
+    gameclock = await gameclock_service.get_gameclock_by_match_id(match_id)
+    print("Gameclock:", gameclock)
+
+    if match:
+        if gameclock is None:
+            gameclock_schema = GameClockSchemaCreate(match_id=match_id)
+            gameclock = await gameclock_service.create_gameclock(
+                gameclock_schema
+            )
+        return {
+            "match_id": match_id,
+            "id": match_id,
+            "status_code": status.HTTP_200_OK,
+            "gameclock": instance_to_dict(gameclock.__dict__),
+        }
+    else:
+        return {
+            "status_code": status.HTTP_404_NOT_FOUND,
+        }
+
+
 async def fetch_playclock(match_id: int):
     playclock_service = PlayClockServiceDB(db)
     match_service_db = MatchServiceDB(db)
 
     print("Before getting match")
     match = await match_service_db.get_by_id(match_id)
-    print("Scoreboard Data:", match)
+    print("Match Data:", match)
 
     print("Before getting playclock")
     playclock = await playclock_service.get_playclock_by_match_id(match_id)
@@ -133,9 +165,9 @@ async def fetch_playclock(match_id: int):
 
     if match:
         if playclock is None:
-            match_data_schema = PlayClockSchemaCreate(match_id=match_id)
+            playclock_schema = PlayClockSchemaCreate(match_id=match_id)
             playclock = await playclock_service.create_playclock(
-                match_data_schema
+                playclock_schema
             )
         return {
             "match_id": match_id,

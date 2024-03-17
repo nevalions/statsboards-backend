@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from .matchdata import MatchDataDB
     from .scoreboard import ScoreboardDB
     from .playclock import PlayClockDB
+    from .gameclock import GameClockDB
 
 
 class MatchDB(Base):
@@ -78,6 +79,13 @@ class MatchDB(Base):
 
     match_playclock: Mapped["PlayClockDB"] = relationship(
         "PlayClockDB",
+        cascade="all, delete-orphan",
+        back_populates="matches",
+        passive_deletes=True,
+    )
+
+    match_gameclock: Mapped["GameClockDB"] = relationship(
+        "GameClockDB",
         cascade="all, delete-orphan",
         back_populates="matches",
         passive_deletes=True,

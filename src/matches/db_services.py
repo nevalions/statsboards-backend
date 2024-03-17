@@ -95,6 +95,15 @@ class MatchServiceDB(BaseServiceDB):
             "match_playclock",
         )
 
+    async def get_gameclock_by_match(
+            self,
+            match_id: int,
+    ):
+        return await self.get_related_items_level_one_by_id(
+            match_id,
+            "match_gameclock",
+        )
+
     async def get_teams_by_match(
             self,
             match_id: int,

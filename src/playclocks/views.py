@@ -1,13 +1,10 @@
-import asyncio
-
 from fastapi import (
     HTTPException,
     Depends,
-    Path,
     status,
     BackgroundTasks,
 )
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
 from .db_services import PlayClockServiceDB
@@ -34,8 +31,8 @@ class PlayClockRouter(
             "/",
             response_model=PlayClockSchema,
         )
-        async def create_match_data(playclock: PlayClockSchemaCreate):
-            new_playclock = await self.service.create_match_data(playclock)
+        async def create_playclock_endpoint(playclock: PlayClockSchemaCreate):
+            new_playclock = await self.service.create_playclock(playclock)
             return new_playclock.__dict__
 
         @router.put(

@@ -152,6 +152,12 @@ class MatchAPIRouter(
             return await self.service.get_playclock_by_match(match_id)
 
         @router.get(
+            "/id/{match_id}/gameclock/",
+        )
+        async def get_gameclock_by_match_id_endpoint(match_id: int):
+            return await self.service.get_gameclock_by_match(match_id)
+
+        @router.get(
             "/id/{match_id}/scoreboard_data/",
         )
         async def get_match_scoreboard_by_match_id_endpoint(match_id: int):
@@ -209,7 +215,7 @@ class MatchAPIRouter(
             await websocket.accept()
 
             try:
-                from src.helpers.fetch_helpers import fetch_with_scoreboard_data, fetch_playclock
+                from src.helpers.fetch_helpers import fetch_with_scoreboard_data, fetch_playclock, fetch_gameclock
 
                 initial_data = await fetch_with_scoreboard_data(match_id)
                 initial_data['type'] = 'message-update'
@@ -219,9 +225,14 @@ class MatchAPIRouter(
                 initial_playclock_data['type'] = 'playclock-update'
                 await websocket.send_json(initial_playclock_data)
 
+                initial_gameclock_data = await fetch_gameclock(match_id)
+                initial_gameclock_data['type'] = 'gameclock-update'
+                await websocket.send_json(initial_gameclock_data)
+
                 await asyncio.gather(
                     process_match_data_websocket(websocket, client_id, match_id),
-                    process_playclock_data(websocket, client_id, match_id)
+                    process_gameclock_data(websocket, client_id, match_id),
+                    process_playclock_data(websocket, client_id, match_id),
                 )
             except WebSocketDisconnect:
                 logger.error('WebSocket disconnect:', exc_info=True)
@@ -236,6 +247,19 @@ class MatchAPIRouter(
             finally:
                 await connection_manager.disconnect(client_id)
                 await ws_manager.disconnect(client_id)
+
+        async def process_gameclock_data(websocket: WebSocket, client_id: str, match_id: int):
+            connection_queue = ws_manager.gameclock_queues[client_id]
+            while True:
+                try:
+                    from src.helpers.fetch_helpers import fetch_gameclock
+                    notification = await asyncio.wait_for(connection_queue.get(), timeout=60000)
+                    print("[process_gameclock_data] Notification from queue:", notification)
+                    gameclock_data = await fetch_gameclock(match_id)
+                    print(gameclock_data)
+                    await websocket.send_json(gameclock_data)
+                except RuntimeError:
+                    break
 
         async def process_playclock_data(websocket: WebSocket, client_id: str, match_id: int):
             connection_queue = ws_manager.playclock_queues[client_id]
