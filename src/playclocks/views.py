@@ -251,19 +251,20 @@ class PlayClockRouter(
         ):
             item_status = "stopped"
 
-            await self.service.update(
-                item_id,
-                PlayClockSchemaUpdate(
-                    playclock=None,
-                    playclock_status="stopping",
-                ),
-            )
-
-            await self.service.trigger_update_playclock(item_id)
+            # await self.service.update(
+            #     item_id,
+            #     PlayClockSchemaUpdate(
+            #         playclock=None,
+            #         playclock_status="stopping",
+            #     ),
+            # )
+            #
+            # await self.service.trigger_update_playclock(item_id)
 
             updated = await self.service.update(
                 item_id,
                 PlayClockSchemaUpdate(
+                    playclock=None,
                     playclock_status="stopped",
                 ),
             )

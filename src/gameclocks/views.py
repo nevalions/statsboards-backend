@@ -90,7 +90,7 @@ class GameClockRouter(
                     gameclock_id,
                     GameClockSchemaUpdate(
                         gameclock_status="running",
-                        gameclock_time_remaining=gameclock.gameclock,  # Initialize remaining time with game clock value
+                        gameclock_time_remaining=gameclock.gameclock,
                     ),
                 )
 

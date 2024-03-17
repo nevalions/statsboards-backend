@@ -128,11 +128,16 @@ class GameClockServiceDB(BaseServiceDB):
     async def loop_decrement_gameclock(self, gameclock_id: int):
         while True:
             start_time = time.time()
+            exec_time = time.time() - start_time
+            await asyncio.sleep(max(1 - exec_time, 0))
+            # await asyncio.sleep(1)
+            # start_time = time.time()
             gameclock_status = await self.get_gameclock_status(gameclock_id)
-            if gameclock_status != 'running':
+
+            if gameclock_status != 'running':  # If game clock is not running, stop the loop
                 break
 
-            gameclock_obj = await self.get_by_id(gameclock_id)
+            gameclock_obj = await self.get_by_id(gameclock_id)  # Get current game clock object
             updated_gameclock = max(0, gameclock_obj.gameclock - 1)
 
             await self.update(
@@ -140,9 +145,9 @@ class GameClockServiceDB(BaseServiceDB):
                 GameClockSchemaUpdate(gameclock=updated_gameclock),
             )
 
-            exec_time = time.time() - start_time
-            sleep_time = max(1 - exec_time, 0)
-            await asyncio.sleep(sleep_time)
+            # exec_time = time.time() - start_time
+            # sleep_time = max(1 - exec_time, 0)
+            # await asyncio.sleep(sleep_time)
 
         return await self.get_by_id(gameclock_id)
 
