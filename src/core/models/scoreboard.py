@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Text, Boolean, ForeignKey
+from sqlalchemy import String, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -37,18 +37,74 @@ class ScoreboardDB(Base):
         default=True,
     )
 
-    team_a_color: Mapped[str] = mapped_column(
+    team_a_game_color: Mapped[str] = mapped_column(
         String(10),
         nullable=False,
         default="#c01c28",
         server_default="#c01c28",
     )
 
-    team_b_color: Mapped[str] = mapped_column(
+    use_team_a_game_color: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    team_b_game_color: Mapped[str] = mapped_column(
         String(10),
         nullable=False,
         default="#1c71d8",
         server_default="#1c71d8",
+    )
+
+    use_team_b_game_color: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    team_a_game_title: Mapped[str] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    use_team_a_game_title: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    team_b_game_title: Mapped[str] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    use_team_b_game_title: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    team_a_game_logo: Mapped[str] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    use_team_a_game_logo: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    team_b_game_logo: Mapped[str] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    use_team_b_game_logo: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
     )
 
     match_id = mapped_column(

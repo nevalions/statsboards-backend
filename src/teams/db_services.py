@@ -1,14 +1,17 @@
 import asyncio
 
-from fastapi import HTTPException
-from sqlalchemy import select
+from fastapi import HTTPException, UploadFile
 
 from src.core.models import db, BaseServiceDB, TeamDB
+
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
 
 
 class TeamServiceDB(BaseServiceDB):
-    def __init__(self, database):
+    def __init__(
+            self,
+            database,
+    ):
         super().__init__(database, TeamDB)
 
     async def create_or_update_team(
@@ -24,9 +27,15 @@ class TeamServiceDB(BaseServiceDB):
                         t,
                     )
                 else:
-                    return await self.create_new_team(t)
+                    return await self.create_new_team(
+                        t,
+                        # team_logo
+                    )
             else:
-                return await self.create_new_team(t)
+                return await self.create_new_team(
+                    t,
+                    # team_logo,
+                )
         except Exception as ex:
             print(ex)
             raise HTTPException(
@@ -45,7 +54,11 @@ class TeamServiceDB(BaseServiceDB):
             t,
         )
 
-    async def create_new_team(self, t: TeamSchemaCreate):
+    async def create_new_team(
+            self,
+            t: TeamSchemaCreate,
+    ):
+
         team = self.model(
             sport_id=t.sport_id,
             city=t.city,
@@ -53,7 +66,10 @@ class TeamServiceDB(BaseServiceDB):
             title=t.title,
             description=t.description,
             team_logo_url=t.team_logo_url,
+            team_color=t.team_color,
         )
+
+        print('team', team)
         return await super().create(team)
 
     async def get_team_by_eesl_id(
@@ -87,20 +103,19 @@ class TeamServiceDB(BaseServiceDB):
             **kwargs,
         )
 
-
-async def get_team_db() -> TeamServiceDB:
-    yield TeamServiceDB(db)
-
-
-async def async_main() -> None:
-    team_service = TeamServiceDB(db)
-    # t = await team_service.get_team_by_id(1)
-    # t = await team_service.find_team_tournament_relation(6, 2)
-    # print(t)
-    t = await team_service.get_team_by_eesl_id(1)
-    if t:
-        print(t.__dict__)
-
-
-if __name__ == "__main__":
-    asyncio.run(async_main())
+# async def get_team_db() -> TeamServiceDB:
+#     yield TeamServiceDB(db)
+#
+#
+# async def async_main() -> None:
+#     team_service = TeamServiceDB(db)
+#     # t = await team_service.get_team_by_id(1)
+#     # t = await team_service.find_team_tournament_relation(6, 2)
+#     # print(t)
+#     t = await team_service.get_team_by_eesl_id(1)
+#     if t:
+#         print(t.__dict__)
+#
+#
+# if __name__ == "__main__":
+#     asyncio.run(async_main())

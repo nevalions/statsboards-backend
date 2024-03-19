@@ -1,7 +1,10 @@
+import os
 import asyncio
 import json
 import logging
+import shutil
 from datetime import datetime
+from pathlib import Path
 from typing import Any, List, Dict
 from starlette.websockets import WebSocket
 import asyncpg
@@ -17,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from sqlalchemy import select, update, Result, Column, Table, TextClause
 
 from src.core.config import settings
@@ -573,6 +576,38 @@ class BaseServiceDB:
             return data
         else:
             raise TypeError("Unsupported type")
+
+    async def upload_file(self, upload_file: UploadFile):
+        print(f"Current Working Directory: {os.getcwd()}")
+
+        # Use an absolute path for the upload directory
+        upload_dir = Path("/home/linroot/code/statsboards/statsboards-backend/src/static/uploads")
+
+        print(f"Upload Directory: {upload_dir.resolve()}")
+
+        try:
+            # Ensure the upload directory exists
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Does the upload directory exist after mkdir: {upload_dir.exists()}")
+
+            # Define the destination path
+            dest = upload_dir / upload_file.filename
+            print(f"Destination path: {dest}")
+
+            # Write upload_file content into destination file
+            with dest.open("wb") as buffer:
+                shutil.copyfileobj(upload_file.file, buffer)
+
+            # Check if the file exists after writing
+            print(f"Does the file exist after writing: {dest.exists()}")
+
+            # Provide upload_file information
+            print(f"File saved to {dest}")
+            return {"filename": upload_file.filename, "url": str(dest)}
+        except Exception as e:
+            print(f"Error type: {type(e)}")
+            print(f"Error args: {e.args}")
+            return {"error": str(e)}
 
 
 class Base(DeclarativeBase):

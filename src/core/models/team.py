@@ -39,6 +39,13 @@ class TeamDB(Base):
         nullable=True,
     )
 
+    team_color: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+        default="#c01c28",
+        server_default="#c01c28",
+    )
+
     sport_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(

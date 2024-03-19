@@ -3,7 +3,6 @@ import json
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload, joinedload
 
 from src.core.models import BaseServiceDB, ScoreboardDB, MatchDataDB, MatchDB
 from .shemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
@@ -38,8 +37,18 @@ class ScoreboardServiceDB(BaseServiceDB):
                     is_time=scoreboard.is_time,
                     is_playclock=scoreboard.is_playclock,
                     is_downdistance=scoreboard.is_downdistance,
-                    team_a_color=scoreboard.team_a_color,
-                    team_b_color=scoreboard.team_b_color,
+                    team_a_game_color=scoreboard.team_a_game_color,
+                    team_b_game_color=scoreboard.team_b_game_color,
+                    team_a_game_title=scoreboard.team_a_game_title,
+                    team_b_game_title=scoreboard.team_b_game_title,
+                    team_a_game_logo=scoreboard.team_a_game_logo,
+                    team_b_game_logo=scoreboard.team_b_game_logo,
+                    use_team_a_game_color=scoreboard.use_team_a_game_color,
+                    use_team_b_game_color=scoreboard.use_team_b_game_color,
+                    use_team_a_game_title=scoreboard.use_team_a_game_title,
+                    use_team_b_game_title=scoreboard.use_team_b_game_title,
+                    use_team_a_game_logo=scoreboard.use_team_a_game_logo,
+                    use_team_b_game_logo=scoreboard.use_team_b_game_logo,
                     match_id=scoreboard.match_id,
                 )
 
