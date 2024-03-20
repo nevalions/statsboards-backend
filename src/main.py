@@ -47,4 +47,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory=static_path), name="static")
+app.mount(
+    "/static/uploads",
+    StaticFiles(directory='/home/linroot/code/statsboards/statsboards-backend/static/uploads'),
+    name="uploads",
+)
+# app.mount("../static/", StaticFiles(directory=static_path), name="static")

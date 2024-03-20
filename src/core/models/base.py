@@ -581,7 +581,7 @@ class BaseServiceDB:
         print(f"Current Working Directory: {os.getcwd()}")
 
         # Use an absolute path for the upload directory
-        upload_dir = Path("/home/linroot/code/statsboards/statsboards-backend/src/static/uploads")
+        upload_dir = Path("/static/uploads")
 
         print(f"Upload Directory: {upload_dir.resolve()}")
 
