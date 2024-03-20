@@ -9,7 +9,7 @@ class FileService:
 
     def __init__(
             self,
-            upload_dir: Path = Path('/home/linroot/code/statsboards/statsboards-backend/static/uploads'),
+            upload_dir: Path = Path(__file__).resolve().parent.parent.parent / 'static/uploads',
     ):
         self.base_upload_dir = upload_dir
         self.base_upload_dir.mkdir(parents=True, exist_ok=True)
@@ -19,6 +19,7 @@ class FileService:
 
         upload_dir = self.base_upload_dir / sub_folder
         upload_dir.mkdir(parents=True, exist_ok=True)
+        print(upload_dir)
 
         # Get the current timestamp and add it to the filename
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')

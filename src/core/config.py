@@ -14,6 +14,9 @@ one_more_parent_path = os.path.dirname(more_parent_path)
 template_path = os.path.join(one_more_parent_path, "statsboards-frontend/frontend")
 # scoreboard_template_path = os.path.join(template_path, "scoreboards")
 # match_template_path = os.path.join(template_path, "matches")
+static_main_path = os.path.join(more_parent_path, "static")
+uploads_path = os.path.join(static_main_path, "uploads")
+
 static_path = os.path.join(template_path, "static")
 # static_path_scoreboard = os.path.join(static_path, "scoreboards")
 
@@ -24,6 +27,8 @@ print(
     one_more_parent_path,
     template_path,
     static_path,
+    static_main_path,
+    uploads_path,
     # scoreboard_template_path,
     # match_template_path,
 )
