@@ -71,6 +71,7 @@ class ScoreboardServiceDB(BaseServiceDB):
             item: ScoreboardSchemaUpdate,
             **kwargs,
     ):
+        # print(item)
         updated_item = await super().update(
             item_id,
             item,

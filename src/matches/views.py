@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import List
 
-from fastapi import HTTPException, Request, Depends, status, WebSocket
+from fastapi import HTTPException, Request, Depends, status, WebSocket, UploadFile, File
 from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.websockets import WebSocketDisconnect
 from websockets import ConnectionClosedOK
@@ -20,8 +20,10 @@ from src.core.config import templates
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
 from ..core.models.base import ws_manager, ConnectionManager, connection_manager
+from ..helpers.file_service import file_service
 from ..matchdata.schemas import MatchDataSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate
+from ..teams.schemas import UploadTeamLogoResponse
 
 
 # Match backend
@@ -185,6 +187,11 @@ class MatchAPIRouter(
             from src.helpers.fetch_helpers import fetch_with_scoreboard_data
 
             return await fetch_with_scoreboard_data(match_id)
+
+        @router.post("/id/{match_id}/upload_team_logo", response_model=UploadTeamLogoResponse)
+        async def upload_team_logo(match_id: int, file: UploadFile = File(...)):
+            file_location = await file_service.save_upload_image(file, sub_folder=f'match/{match_id}/teams_logos')
+            return {"logoUrl": file_location}
 
         @router.websocket("/ws/id/{match_id}/{client_id}/")
         async def websocket_endpoint(websocket: WebSocket, client_id: str, match_id: int):

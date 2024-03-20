@@ -38,10 +38,10 @@ class ScoreboardSchemaUpdate(BaseModel):
     use_team_a_game_color: bool | None = None
     use_team_b_game_color: bool | None = None
 
-    team_a_game_logo_url: str | None = None
-    team_b_game_logo_url: str | None = None
-    use_team_a_game_logo_url: str | None = None
-    use_team_b_game_logo_url: str | None = None
+    team_a_game_logo: str | None = None
+    team_b_game_logo: str | None = None
+    use_team_a_game_logo: bool | None = None
+    use_team_b_game_logo: bool | None = None
 
     team_a_game_title: str | None = None
     team_b_game_title: str | None = None
