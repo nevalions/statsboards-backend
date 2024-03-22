@@ -205,15 +205,18 @@ class MatchAPIRouter(
 
                 initial_data = await fetch_with_scoreboard_data(match_id)
                 initial_data['type'] = 'message-update'
+                print(['WebSocket Connection', initial_data])
                 await websocket.send_json(initial_data)
 
                 initial_playclock_data = await fetch_playclock(match_id)
                 initial_playclock_data['type'] = 'playclock-update'
                 await websocket.send_json(initial_playclock_data)
+                print(['WebSocket Connection', initial_playclock_data])
 
                 initial_gameclock_data = await fetch_gameclock(match_id)
                 initial_gameclock_data['type'] = 'gameclock-update'
                 await websocket.send_json(initial_gameclock_data)
+                print(['WebSocket Connection', initial_gameclock_data])
 
                 await asyncio.gather(
                     process_match_data_websocket(websocket, client_id, match_id),
@@ -261,7 +264,7 @@ class MatchAPIRouter(
                     break
 
         async def process_match_data_websocket(websocket: WebSocket, client_id: str, match_id: int):
-            connection_queue = ws_manager.queues[client_id]
+            connection_queue = ws_manager.match_data_queues[client_id]
             while True:
                 try:
                     from src.helpers.fetch_helpers import fetch_with_scoreboard_data

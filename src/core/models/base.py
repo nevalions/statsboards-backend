@@ -47,27 +47,27 @@ class MatchDataWebSocketManager:
     def __init__(self, db_url):
         self.db_url = db_url
         self.connection = None
-        self.queues = {}
+        self.match_data_queues = {}
         self.playclock_queues = {}
         self.gameclock_queues = {}
         self.logger = logging.getLogger('WebSocketManager')
         self.logger.info('WebSocketManager initialized')
 
     async def connect(self, client_id: str):
-        self.queues[client_id] = asyncio.Queue()
+        self.match_data_queues[client_id] = asyncio.Queue()
         self.playclock_queues[client_id] = asyncio.Queue()
         self.gameclock_queues[client_id] = asyncio.Queue()
 
     async def disconnect(self, client_id: str):
-        del self.queues[client_id]
+        del self.match_data_queues[client_id]
         del self.playclock_queues[client_id]
         del self.gameclock_queues[client_id]
 
     async def startup(self):
         self.connection = await asyncpg.connect(self.db_url)
-        await self.connection.add_listener('matchdata_change', self.listener)
-        await self.connection.add_listener('match_change', self.listener)
-        await self.connection.add_listener('scoreboard_change', self.listener)
+        await self.connection.add_listener('matchdata_change', self.match_data_listener)
+        await self.connection.add_listener('match_change', self.match_data_listener)
+        await self.connection.add_listener('scoreboard_change', self.match_data_listener)
         await self.connection.add_listener('playclock_change', self.playclock_listener)
         await self.connection.add_listener('gameclock_change', self.gameclock_listener)
 
@@ -78,20 +78,24 @@ class MatchDataWebSocketManager:
             return
 
         data = json.loads(payload.strip())
+        match_id = data['match_id']
         data['type'] = 'playclock-update'
-        self.logger.debug(f'Received playclock payload: {payload}'
-                          f'connection: {connection}'
-                          f'pid: {pid}'
-                          f'channel: {channel}'
-                          f'data: {data}')
+        self.logger.debug(
+            f'''Match ID: {match_id}
+            Received playclock payload: {payload}
+            connection: {connection}
+            pid: {pid}
+            channel: {channel}
+            data: {data}
+            ''')
 
         for queue in self.playclock_queues.values():
             await queue.put(data)
 
-        await connection_manager.send_to_all(data)
+        await connection_manager.send_to_all(data, match_id=match_id)
 
     async def gameclock_listener(self, connection, pid, channel, payload):
-        print("[Gameclock listener] Start")
+        print(f"[Gameclock listener] Start, match_id: ")
         if not payload or not payload.strip():
             self.logger.warning('No payload received')
             return
@@ -109,20 +113,20 @@ class MatchDataWebSocketManager:
 
         await connection_manager.send_to_all(data)
 
-    async def listener(self, connection, pid, channel, payload):
-        print("[Listener] Start")
+    async def match_data_listener(self, connection, pid, channel, payload):
+        print("[Match Data Listener] Start")
         data = json.loads(payload.strip())
         data['type'] = 'match-update'
         self.logger.debug(f'Received matchdata payload: {payload}'
                           f'connection: {connection}'
                           f'pid: {pid}'
                           f'channel: {channel}')
-        for queue in self.queues.values():
+        for queue in self.match_data_queues.values():
             await queue.put(data)
 
         await connection_manager.send_to_all(data)
 
-        print("[Listener] Received payload:", payload)
+        print("[Match Data Listener] Received payload:", payload)
 
     async def shutdown(self):
         if self.connection:
@@ -166,13 +170,16 @@ class ConnectionManager:
             for client_id in self.match_subscriptions[match_id]:
                 if client_id in self.queues:
                     await self.queues[client_id].put(data)
+                    print(f"[send_to_all_{match_id}] Data sent to all client queues with match id:{match_id}", data)
+        elif match_id:
+            print(f"No subscriptions found for match_id: {match_id}")
         else:
+            print("Match_id was not provided in data payload")
             for queue in self.queues.values():
                 await queue.put(data)
+                # print("[send_to_all] Data sent to all client queues:", data)
 
-        print("[send_to_all] Data sent to all client queues:", data)
-
-    async def send_to_playclock_channels(self, data):
+    async def send_to_match_id_channels(self, data):
         match_id = data['match_id']
         await connection_manager.send_to_all(data, match_id=match_id)
 
