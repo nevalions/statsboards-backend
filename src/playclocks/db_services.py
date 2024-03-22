@@ -135,7 +135,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 break
 
             updated_playclock = await self.decrement_playclock_one_second(playclock_id)
-            # print(updated_playclock)
+            print(updated_playclock)
 
             if updated_playclock == 0:
                 await self.update(
@@ -167,8 +167,9 @@ class PlayClockServiceDB(BaseServiceDB):
                 playclock,
             )
 
-            exec_time = time.time() - start_time
-            await asyncio.sleep(max(1 - exec_time, 0))
+            await asyncio.sleep(1)
+            # exec_time = time.time() - start_time
+            # await asyncio.sleep(max(1 - exec_time, 0))
 
         return await self.get_by_id(playclock_id)
 
