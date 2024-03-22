@@ -89,44 +89,57 @@ class MatchDataWebSocketManager:
             data: {data}
             ''')
 
-        for queue in self.playclock_queues.values():
-            await queue.put(data)
+        # for queue in self.playclock_queues.values():
+        #     await queue.put(data)
 
         await connection_manager.send_to_all(data, match_id=match_id)
 
     async def gameclock_listener(self, connection, pid, channel, payload):
-        print(f"[Gameclock listener] Start, match_id: ")
+        print(f"[Gameclock listener] Start")
         if not payload or not payload.strip():
             self.logger.warning('No payload received')
             return
 
         data = json.loads(payload.strip())
+        match_id = data['match_id']
         data['type'] = 'gameclock-update'
-        self.logger.debug(f'Received gameclock payload: {payload}'
-                          f'connection: {connection}'
-                          f'pid: {pid}'
-                          f'channel: {channel}'
-                          f'data: {data}')
+        self.logger.debug(
+            f'''Match ID: {match_id}
+            Received gameclock payload: {payload}        
+            connection: {connection}
+            pid: {pid}
+            channel: {channel}
+            data: {data}
+            ''')
 
-        for queue in self.gameclock_queues.values():
-            await queue.put(data)
+        # for queue in self.gameclock_queues.values():
+        #     await queue.put(data)
 
-        await connection_manager.send_to_all(data)
+        await connection_manager.send_to_all(data, match_id=match_id)
 
     async def match_data_listener(self, connection, pid, channel, payload):
         print("[Match Data Listener] Start")
+        if not payload or not payload.strip():
+            self.logger.warning('No payload received')
+            return
+
         data = json.loads(payload.strip())
+        match_id = data['match_id']
         data['type'] = 'match-update'
-        self.logger.debug(f'Received matchdata payload: {payload}'
-                          f'connection: {connection}'
-                          f'pid: {pid}'
-                          f'channel: {channel}')
-        for queue in self.match_data_queues.values():
-            await queue.put(data)
+        self.logger.debug(
+            f'''Match ID: {match_id}
+            Received match data payload: {payload}        
+            connection: {connection}
+            pid: {pid}
+            channel: {channel}
+            data: {data}
+            ''')
+        # for queue in self.match_data_queues.values():
+        #     await queue.put(data)
 
-        await connection_manager.send_to_all(data)
+        # await connection_manager.send_to_all(data)
 
-        print("[Match Data Listener] Received payload:", payload)
+        await connection_manager.send_to_all(data, match_id=match_id)
 
     async def shutdown(self):
         if self.connection:
@@ -143,17 +156,21 @@ class ConnectionManager:
         self.match_subscriptions: Dict[str, List[str]] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str, match_id: str = None):
+        print(f'Active Connections: {len(self.active_connections)}')
+
         if client_id in self.active_connections:
             await self.active_connections[client_id].close()
 
         self.active_connections[client_id] = websocket
         self.queues[client_id] = asyncio.Queue()
 
-        if match_id:  # if match_id is not None, add the client to the match's subscriber list
+        if match_id:
             if match_id in self.match_subscriptions:
                 self.match_subscriptions[match_id].append(client_id)
+                print(f'match subscription match id:{match_id}', self.match_subscriptions)
             else:
                 self.match_subscriptions[match_id] = [client_id]
+                print(f'match subscription client_id{client_id}', self.match_subscriptions)
 
     async def disconnect(self, client_id: str):
         if client_id in self.active_connections:
@@ -166,17 +183,15 @@ class ConnectionManager:
                     self.match_subscriptions[match_id].remove(client_id)
 
     async def send_to_all(self, data: str, match_id: str = None):
-        if match_id and match_id in self.match_subscriptions:
-            for client_id in self.match_subscriptions[match_id]:
+        print(f"[Debug][send_to_all] Entered method with data: {data}, match_id: {match_id}")
+        print(f"[Debug][send_to_all] Current match_subscriptions: {self.match_subscriptions}")
+        if match_id:
+            for client_id in self.match_subscriptions.get(match_id, []):
+                print(f"[Debug][send_to_all] Checking client_id: {client_id}")
                 if client_id in self.queues:
+                    print(f"[Debug][send_to_all] Adding data to queue of client_id: {client_id}")
                     await self.queues[client_id].put(data)
                     print(f"[send_to_all_{match_id}] Data sent to all client queues with match id:{match_id}", data)
-        elif match_id:
-            print(f"No subscriptions found for match_id: {match_id}")
-        else:
-            print("Match_id was not provided in data payload")
-            for queue in self.queues.values():
-                await queue.put(data)
                 # print("[send_to_all] Data sent to all client queues:", data)
 
     async def send_to_match_id_channels(self, data):

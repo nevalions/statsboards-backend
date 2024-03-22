@@ -4,7 +4,7 @@ from typing import List
 
 from fastapi import HTTPException, Request, Depends, status, WebSocket, UploadFile, File
 from fastapi.responses import JSONResponse, HTMLResponse
-from starlette.websockets import WebSocketDisconnect
+from starlette.websockets import WebSocketDisconnect, WebSocketState
 from websockets import ConnectionClosedOK
 
 from src.core import BaseRouter, db, MinimalBaseRouter
@@ -245,23 +245,34 @@ class MatchAPIRouter(
                     notification = await asyncio.wait_for(connection_queue.get(), timeout=60000)
                     print("[process_gameclock_data] Notification from queue:", notification)
                     gameclock_data = await fetch_gameclock(match_id)
-                    print(gameclock_data)
+                    # print(gameclock_data)
                     await websocket.send_json(gameclock_data)
                 except RuntimeError:
                     break
 
-        async def process_playclock_data(websocket: WebSocket, client_id: str, match_id: int):
-            connection_queue = ws_manager.playclock_queues[client_id]
-            while True:
-                try:
-                    from src.helpers.fetch_helpers import fetch_playclock
-                    notification = await asyncio.wait_for(connection_queue.get(), timeout=60000)
-                    print("[process_playclock_data] Notification from queue:", notification)
-                    playclock_data = await fetch_playclock(match_id)
-                    print(playclock_data)
-                    await websocket.send_json(playclock_data)
-                except RuntimeError:
-                    break
+        async def process_playclock_data(websocket, client_id: str, match_id: int):
+            while websocket.application_state == WebSocketState.CONNECTED:
+                data = await connection_manager.queues[client_id].get()
+                print(f'[Debug][process_playclock_data] client {client_id}: {data}')
+
+                from src.helpers.fetch_helpers import fetch_playclock
+                playclock_data = await fetch_playclock(match_id)
+                playclock_data['type'] = 'playclock-update'
+                print('[WebSocket Connection] Playclock data fetched: ', playclock_data)
+                await websocket.send_json(playclock_data)
+
+        # async def process_playclock_data(websocket: WebSocket, client_id: str, match_id: int):
+        #     connection_queue = ws_manager.playclock_queues[client_id]
+        #     while True:
+        #         try:
+        #             from src.helpers.fetch_helpers import fetch_playclock
+        #             notification = await asyncio.wait_for(connection_queue.get(), timeout=60000)
+        #             print("[process_playclock_data] Notification from queue:", notification)
+        #             playclock_data = await fetch_playclock(match_id)
+        #             # print(playclock_data)
+        #             await websocket.send_json(playclock_data)
+        #         except RuntimeError:
+        #             break
 
         async def process_match_data_websocket(websocket: WebSocket, client_id: str, match_id: int):
             connection_queue = ws_manager.match_data_queues[client_id]
