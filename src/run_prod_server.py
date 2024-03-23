@@ -21,5 +21,5 @@ class Application(BaseApplication):
 if __name__ == "__main__":
     import main
 
-    options = {"bind": "127.0.0.1:9000", "workers": 4, "worker_class": "uvicorn.workers.UvicornWorker"}
+    options = {"bind": "0.0.0.0:9000", "workers": 4, "worker_class": "uvicorn.workers.UvicornWorker"}
     Application(main.app, options).run()
