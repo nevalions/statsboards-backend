@@ -41,7 +41,7 @@ app.add_event_handler("shutdown", ws_manager.shutdown)
 
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
 origins = [allowed_origins] if allowed_origins == "*" else allowed_origins.split(",")
-print(f"allowed_origins: {allowed_origins}")
+print(f"allowed_origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
