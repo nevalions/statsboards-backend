@@ -37,6 +37,8 @@ class TeamDB(Base):
     team_logo_url: Mapped[str] = mapped_column(
         String(255),
         nullable=True,
+        default="",
+        server_default="",
     )
 
     team_color: Mapped[str] = mapped_column(

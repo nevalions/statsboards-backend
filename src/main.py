@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -37,19 +39,29 @@ app.include_router(api_pars_season_router)
 app.add_event_handler("startup", ws_manager.startup)
 app.add_event_handler("shutdown", ws_manager.shutdown)
 
-origins = ["*"]
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
+origins = [allowed_origins] if allowed_origins == "*" else allowed_origins.split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Set this to a specific origin or origins
+    allow_origins=origins,  # allowed_origins will be a list of the origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# origins = ["*"]
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 app.mount(
     "/static/uploads",
     StaticFiles(directory=uploads_path),
     name="uploads",
 )
-# app.mount("../static/", StaticFiles(directory=static_path), name="static")

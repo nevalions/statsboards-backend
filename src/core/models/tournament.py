@@ -38,6 +38,8 @@ class TournamentDB(SeasonSportRelationMixin, Base):
     tournament_logo_url: Mapped[str] = mapped_column(
         String(255),
         nullable=True,
+        default="",
+        server_default="",
     )
 
     teams: Mapped[list["TeamDB"]] = relationship(

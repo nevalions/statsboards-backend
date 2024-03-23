@@ -6,9 +6,9 @@ from typing import Annotated
 class TeamSchemaBase(BaseModel):
     team_eesl_id: int | None = None
     title: Annotated[str, Path(max_length=50)]
-    city: Annotated[str, Path(max_length=50)] | None = None
-    description: str | None = None
-    team_logo_url: str | None = None
+    city: Annotated[str, Path(max_length=50)] | None = ''
+    description: str | None = ''
+    team_logo_url: str | None = ''
     team_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     sport_id: int
 

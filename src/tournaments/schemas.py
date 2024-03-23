@@ -6,8 +6,8 @@ from typing import Annotated
 class TournamentSchemaBase(BaseModel):
     tournament_eesl_id: int | None = None
     title: Annotated[str, Path(max_length=255)]
-    description: str | None = None
-    tournament_logo_url: str | None = None
+    description: str | None = ''
+    tournament_logo_url: str | None = ''
     season_id: int
     sport_id: int
 
