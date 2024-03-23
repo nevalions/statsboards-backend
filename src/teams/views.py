@@ -1,11 +1,9 @@
-from pathlib import Path
-from typing import List
-
 from fastapi import HTTPException, UploadFile, File, Form
 
 from src.core import BaseRouter, db
 from .db_services import TeamServiceDB
 from .schemas import TeamSchema, TeamSchemaCreate, TeamSchemaUpdate, UploadTeamLogoResponse
+from ..core.config import uploads_path
 from ..helpers.file_service import file_service
 
 from ..team_tournament.db_services import TeamTournamentServiceDB
@@ -73,6 +71,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo(file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder='teams/logos')
+            print(uploads_path)
             return {"logoUrl": file_location}
 
         return router
