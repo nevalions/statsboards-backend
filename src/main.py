@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.core.config import static_path, static_main_path, uploads_path
+from src.core.config import uploads_path
 from src.core.models.base import ws_manager
 from src.playclocks import api_playclock_router
 from src.gameclocks import api_gameclock_router
