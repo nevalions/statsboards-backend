@@ -19,7 +19,7 @@ from src.matchdata import api_matchdata_router
 from src.scoreboards import api_scoreboards_router
 
 app = FastAPI()
-print('FASTAPI STATSBOARD STARTED!')
+
 app.include_router(api_sport_router)
 app.include_router(api_season_router)
 app.include_router(api_tournament_router)
@@ -39,6 +39,7 @@ app.include_router(api_pars_season_router)
 app.add_event_handler("startup", ws_manager.startup)
 app.add_event_handler("shutdown", ws_manager.shutdown)
 
+print('FASTAPI STATSBOARD STARTED')
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
 origins = [allowed_origins] if allowed_origins == "*" else allowed_origins.split(",")
 print(f"allowed_origins: {origins}")
