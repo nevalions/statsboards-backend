@@ -19,7 +19,7 @@ from src.matchdata import api_matchdata_router
 from src.scoreboards import api_scoreboards_router
 
 app = FastAPI()
-
+print('FASTAPI STARTED')
 app.include_router(api_sport_router)
 app.include_router(api_season_router)
 app.include_router(api_tournament_router)
