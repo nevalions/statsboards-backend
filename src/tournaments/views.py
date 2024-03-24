@@ -11,6 +11,8 @@ from .db_services import TournamentServiceDB
 from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate
 from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
+from src.pars_eesl import BASE_SEASON_URL
+from src.pars_eesl.pars_season import parse_season_and_create_jsons
 
 
 class TournamentAPIRouter(
@@ -39,8 +41,8 @@ class TournamentAPIRouter(
             response_model=TournamentSchema,
         )
         async def update_tournament_endpoint(
-            item_id: int,
-            item: TournamentSchemaUpdate,
+                item_id: int,
+                item: TournamentSchemaUpdate,
         ):
             update_ = await self.service.update_tournament(item_id, item)
             if update_ is None:
@@ -75,8 +77,8 @@ class TournamentAPIRouter(
             response_class=JSONResponse,
         )
         async def all_tournament_matches_data_endpoint(
-            tournament_id: int,
-            all_matches: List = Depends(self.service.get_matches_by_tournament),
+                tournament_id: int,
+                all_matches: List = Depends(self.service.get_matches_by_tournament),
         ):
             if not all_matches:
                 return []
@@ -85,6 +87,29 @@ class TournamentAPIRouter(
                 #     detail=f"No matches found for the tournament id:{tournament_id}",
                 # )
             return await fetch_list_of_matches_data(all_matches)
+
+        @router.get(
+            "/api/pars/season/{eesl_season_id}",
+            response_model=List[TournamentSchemaCreate],
+        )
+        async def get_parsed_season_tournaments_endpoint(eesl_season_id: int):
+            return parse_season_and_create_jsons(eesl_season_id)
+
+        @router.post("/api/pars_and_create/season/{eesl_season_id}")
+        async def create_parsed_tournament_endpoint(
+                eesl_season_id: int,
+        ):
+            tournaments_list = parse_season_and_create_jsons(eesl_season_id)
+
+            created_tournaments = []
+            if tournaments_list:
+                for t in tournaments_list:
+                    tournament = TournamentSchemaCreate(**t)
+                    created_tournament = await self.service.create_or_update_tournament(tournament)
+                    created_tournaments.append(created_tournament)
+                return created_tournaments
+            else:
+                return []
 
         return router
 
@@ -107,8 +132,8 @@ class TournamentTemplateRouter(
             response_class=HTMLResponse,
         )
         async def create_match_in_tournament_endpoint(
-            tournament_id: int,
-            request: Request,
+                tournament_id: int,
+                request: Request,
         ):
             tournament = await self.service.get_by_id(tournament_id)
             season_service_db = SeasonServiceDB(db)
@@ -134,8 +159,8 @@ class TournamentTemplateRouter(
             response_class=HTMLResponse,
         )
         async def get_all_tournament_matches_endpoint(
-            tournament_id: int,
-            request: Request,
+                tournament_id: int,
+                request: Request,
         ):
             tournament = await self.service.get_by_id(tournament_id)
             if tournament is None:

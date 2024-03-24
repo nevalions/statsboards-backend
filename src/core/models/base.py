@@ -40,6 +40,12 @@ class Database:
         )
 
 
+async def get_db_session():
+    async with db.async_session() as session:
+        async with session.begin():
+            yield session
+
+
 db = Database(db_url=settings.db.db_url, echo=settings.db_echo)
 
 
@@ -333,10 +339,11 @@ class BaseServiceDB:
         async with self.db.async_session() as session:
             # Access the column directly from the model
             column: Column = getattr(self.model, field_name)
+            print('Column: ', column)
 
             stmt = select(self.model).where(column == value)
             result: Result = await session.execute(stmt)
-            # print(result)
+            print(result)
             return result.scalars().one_or_none()
 
     # async def get_items_by_attribute(

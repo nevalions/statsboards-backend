@@ -1,15 +1,13 @@
-from pprint import pprint
-
 from bs4 import BeautifulSoup
 import re
 
 from src.helpers import get_url
-from src.pars_eesl.pars_settings import BASE_SEASON_URL
+from src.pars_eesl.pars_settings import BASE_SEASON_URL, SEASON_ID
 
 
 def parse_season_and_create_jsons(s_id: int):
     try:
-        s_id = 7  # 2023
+        s_id = 8  # 2024
         data = parse_season_index_page_eesl(s_id)
         return data
     except Exception as ex:
@@ -40,7 +38,8 @@ def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_URL):
                 "tournament_logo_url": t.find(
                     "img", class_="tournaments-archive__img"
                 ).get("src"),
-                "fk_season": 2023,
+                "season_id": SEASON_ID,
+                "sport_id": 1,
             }
             tournaments_in_season.append(tourn.copy())
         except Exception as ex:
@@ -49,5 +48,5 @@ def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_URL):
 
 
 if __name__ == "__main__":
-    m = parse_season_and_create_jsons(7)
+    m = parse_season_and_create_jsons(8)
     print(m)

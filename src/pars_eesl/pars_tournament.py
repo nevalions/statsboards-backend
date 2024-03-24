@@ -26,7 +26,7 @@ def parse_tournament_teams_and_create_jsons(t_id: int):
 
 
 def parse_tournament_teams_index_page_eesl(
-    t_id: int, base_url: str = BASE_TOURNAMENT_URL
+        t_id: int, base_url: str = BASE_TOURNAMENT_URL
 ):
     teams_in_tournament = []
     url = f"{base_url}{str(t_id)}/teams"
@@ -56,7 +56,7 @@ def parse_tournament_teams_index_page_eesl(
 
 
 def parse_tournament_matches_index_page_eesl(
-    t_id: int, base_url: str = BASE_TOURNAMENT_URL
+        t_id: int, base_url: str = BASE_TOURNAMENT_URL
 ):
     matches_in_tournament = []
     url = f"{base_url}{str(t_id)}/calendar"
@@ -93,6 +93,6 @@ def parse_tournament_matches_index_page_eesl(
 
 
 if __name__ == "__main__":
-    # parse_tournament_teams_and_create_jsons(19)
-    m = parse_tournament_matches_and_create_jsons(19)
+    m = parse_tournament_teams_and_create_jsons(19)
+    # m = parse_tournament_matches_and_create_jsons(19)
     pprint(m)
