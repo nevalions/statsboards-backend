@@ -1,8 +1,10 @@
-from datetime import datetime
+import os
 
+import requests
+import shutil
+from datetime import datetime
 from fastapi import UploadFile, HTTPException
 from pathlib import Path
-import shutil
 
 
 class FileService:
@@ -42,6 +44,16 @@ class FileService:
         # Construct the relative path
         rel_dest = Path('/static/uploads') / sub_folder / filename
         return str(rel_dest)
+
+    async def download_image(self, img_url: str, image_path: str):
+        response = requests.get(img_url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        # Ensure the destination directory exists
+        os.makedirs(os.path.dirname(image_path), exist_ok=True)
+
+        with open(image_path, 'wb') as fp:
+            fp.write(response.content)
 
 
 file_service = FileService()

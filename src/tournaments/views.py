@@ -93,13 +93,13 @@ class TournamentAPIRouter(
             response_model=List[TournamentSchemaCreate],
         )
         async def get_parsed_season_tournaments_endpoint(eesl_season_id: int):
-            return parse_season_and_create_jsons(eesl_season_id)
+            return await parse_season_and_create_jsons(eesl_season_id)
 
         @router.post("/api/pars_and_create/season/{eesl_season_id}")
         async def create_parsed_tournament_endpoint(
                 eesl_season_id: int,
         ):
-            tournaments_list = parse_season_and_create_jsons(eesl_season_id)
+            tournaments_list = await parse_season_and_create_jsons(eesl_season_id)
 
             created_tournaments = []
             if tournaments_list:

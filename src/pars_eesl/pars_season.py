@@ -15,7 +15,7 @@ def parse_season_and_create_jsons(s_id: int):
         print(f"Something goes wrong, maybe no data in season id({s_id})")
 
 
-def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_URL):
+async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_URL):
     tournaments_in_season = []
 
     req = get_url(base_url + str(s_id))

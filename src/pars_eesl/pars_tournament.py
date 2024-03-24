@@ -1,9 +1,14 @@
+import os
+from pathlib import Path
 from pprint import pprint
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 import re
 
+from src.core.config import uploads_path
 from src.helpers import get_url
+from src.helpers.file_service import file_service
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
 
 
@@ -25,7 +30,7 @@ def parse_tournament_teams_and_create_jsons(t_id: int):
         print(f"Something goes wrong, maybe no data in tournament id({t_id})")
 
 
-def parse_tournament_teams_index_page_eesl(
+async def parse_tournament_teams_index_page_eesl(
         t_id: int, base_url: str = BASE_TOURNAMENT_URL
 ):
     teams_in_tournament = []
@@ -37,17 +42,31 @@ def parse_tournament_teams_index_page_eesl(
 
     for t in all_tournament_teams:
         try:
+            team_eesl_id = int(
+                re.findall(
+                    "team_id=(\d+)", t.find("a", class_="teams__logo").get("href")
+                )[0])
+            team_title = t.find("a", class_="teams__name-link").text.strip().lower()
+            team_logo_url = t.find(
+                "img", alt=t.find("a", class_="teams__name-link").text.strip()
+            ).get("src")
+            path = urlparse(team_logo_url).path
+            ext = Path(path).suffix
+
+            image_path = os.path.join(uploads_path, f"logos/{team_title}{ext}")
+            relative_image_path = os.path.join("/static/uploads/logos", f"{team_title}{ext}")
+            print(image_path)
+
+            await file_service.download_image(team_logo_url, image_path)
+
             team = {
-                "team_eesl_id": int(
-                    re.findall(
-                        "team_id=(\d+)", t.find("a", class_="teams__logo").get("href")
-                    )[0]
-                ),
-                "title": t.find("a", class_="teams__name-link").text.strip().lower(),
+                "team_eesl_id": team_eesl_id,
+                "title": team_title,
                 "description": "",
-                "team_logo_url": t.find(
-                    "img", alt=t.find("a", class_="teams__name-link").text.strip()
-                ).get("src"),
+                "team_logo_url": relative_image_path,
+                "city": '',
+                "team_color": '#c01c28',
+                "sport_id": 1,
             }
             teams_in_tournament.append(team.copy())
         except Exception as ex:

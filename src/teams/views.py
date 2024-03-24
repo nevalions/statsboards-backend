@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException, UploadFile, File, Form
 
 from src.core import BaseRouter, db
@@ -5,9 +7,11 @@ from .db_services import TeamServiceDB
 from .schemas import TeamSchema, TeamSchemaCreate, TeamSchemaUpdate, UploadTeamLogoResponse
 from ..core.config import uploads_path
 from ..helpers.file_service import file_service
+from ..pars_eesl.pars_tournament import parse_tournament_teams_index_page_eesl
 
 from ..team_tournament.db_services import TeamTournamentServiceDB
 from ..team_tournament.schemas import TeamTournamentSchemaCreate
+from ..tournaments.db_services import TournamentServiceDB
 
 
 # Team backend
@@ -73,6 +77,44 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             file_location = await file_service.save_upload_image(file, sub_folder='teams/logos')
             print(uploads_path)
             return {"logoUrl": file_location}
+
+        @router.get(
+            "/api/pars/tournament/{eesl_tournament_id}",
+            response_model=List[TeamSchemaCreate],
+        )
+        async def get_parse_tournament_teams(eesl_tournament_id: int):
+            return await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
+
+        @router.post("/api/pars_and_create/tournament/{eesl_tournament_id}")
+        async def create_parsed_teams_endpoint(
+                eesl_tournament_id: int,
+        ):
+            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
+            teams_list = await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
+
+            created_teams = []
+            created_team_tournament_ids = []
+            if teams_list:
+                for t in teams_list:
+                    team = TeamSchemaCreate(**t)
+                    created_team = await self.service.create_or_update_team(team)
+                    created_teams.append(created_team)
+                    if created_team and tournament:
+                        dict_conv = TeamTournamentSchemaCreate(
+                            **{"team_id": created_team.id, "tournament_id": tournament.id}
+                        )
+                        try:
+                            team_tournament_connection = await TeamTournamentServiceDB(
+                                db).create_team_tournament_relation(
+                                dict_conv
+                            )
+                            created_team_tournament_ids.append(team_tournament_connection)
+                        except Exception as ex:
+                            print(ex)
+
+                return created_teams, created_team_tournament_ids
+            else:
+                return []
 
         return router
 
