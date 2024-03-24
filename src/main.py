@@ -51,16 +51,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# origins = ["*"]
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
 app.mount(
     "/static/uploads",
     StaticFiles(directory=uploads_path),
