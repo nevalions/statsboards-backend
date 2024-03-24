@@ -53,9 +53,9 @@ async def parse_tournament_teams_index_page_eesl(
             path = urlparse(team_logo_url).path
             ext = Path(path).suffix
 
-            image_path = os.path.join(uploads_path, f"logos/{team_title}{ext}")
-            relative_image_path = os.path.join("/static/uploads/logos", f"{team_title}{ext}")
-            print(image_path)
+            image_path = os.path.join(uploads_path, f"teams/logos/{team_title}{ext}")
+            relative_image_path = os.path.join("/static/uploads/teams/logos", f"{team_title}{ext}")
+            # print(image_path)
 
             await file_service.download_image(team_logo_url, image_path)
 

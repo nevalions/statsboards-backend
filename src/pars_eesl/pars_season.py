@@ -1,7 +1,13 @@
+import os
+from pathlib import Path
+from urllib.parse import urlparse
+
 from bs4 import BeautifulSoup
 import re
 
+from src.core.config import uploads_path
 from src.helpers import get_url
+from src.helpers.file_service import file_service
 from src.pars_eesl.pars_settings import BASE_SEASON_URL, SEASON_ID
 
 
@@ -24,6 +30,17 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
     all_season_tournaments = soup.find_all("li", class_="tournaments-archive__item")
     for t in all_season_tournaments:
         try:
+            tournament_title = t.find("a", class_="tournaments-archive__link").get("title").strip()
+            tournament_logo_url = t.find("img", class_="tournaments-archive__img").get("src")
+            path = urlparse(tournament_logo_url).path
+            ext = Path(path).suffix
+
+            image_path = os.path.join(uploads_path, f"tournaments/logos/{tournament_title}{ext}")
+            relative_image_path = os.path.join("/static/uploads/tournaments/logos", f"{tournament_title}{ext}")
+            # print(image_path)
+
+            await file_service.download_image(tournament_logo_url, image_path)
+
             tourn = {
                 "tournament_eesl_id": int(
                     re.findall(
@@ -31,13 +48,9 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
                         t.find("a", class_="tournaments-archive__link").get("href"),
                     )[0]
                 ),
-                "title": t.find("a", class_="tournaments-archive__link")
-                .get("title")
-                .strip(),
+                "title": tournament_title,
                 "description": "",
-                "tournament_logo_url": t.find(
-                    "img", class_="tournaments-archive__img"
-                ).get("src"),
+                "tournament_logo_url": relative_image_path,
                 "season_id": SEASON_ID,
                 "sport_id": 1,
             }
