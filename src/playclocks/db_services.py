@@ -52,7 +52,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating playclock "
-                           f"for match id({playclock.id})"
+                           f"for match id({playclock.match_id})"
                            f"returned some error",
                 )
 

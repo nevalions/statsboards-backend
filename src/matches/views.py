@@ -20,10 +20,17 @@ from src.core.config import templates
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
 from ..core.models.base import ws_manager, ConnectionManager, connection_manager
+from ..gameclocks.db_services import GameClockServiceDB
+from ..gameclocks.schemas import GameClockSchemaCreate
 from ..helpers.file_service import file_service
 from ..matchdata.schemas import MatchDataSchemaCreate
+from ..pars_eesl.pars_tournament import parse_tournament_matches_index_page_eesl
+from ..playclocks.db_services import PlayClockServiceDB
+from ..playclocks.schemas import PlayClockSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate
+from ..teams.db_services import TeamServiceDB
 from ..teams.schemas import UploadTeamLogoResponse
+from ..tournaments.db_services import TournamentServiceDB
 
 
 # Match backend
@@ -322,6 +329,54 @@ class MatchAPIRouter(
         #             await websocket.send_json(playclock_data)
         #         except RuntimeError:
         #             break
+        @router.get(
+            "/api/pars/tournament/{eesl_tournament_id}",
+            # response_model=List[MatchSchemaCreate],
+        )
+        async def get_parse_tournament_matches(eesl_tournament_id: int):
+            return await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
+
+        @router.post("/api/pars_and_create/tournament/{eesl_tournament_id}")
+        async def create_parsed_matches_endpoint(
+                eesl_tournament_id: int,
+        ):
+            teams_service = TeamServiceDB(db)
+            playclock_service = PlayClockServiceDB(db)
+            gameclock_service = GameClockServiceDB(db)
+            scoreboard_service = ScoreboardServiceDB(db)
+            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
+            matches_list = await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
+
+            created_matches = []
+            if matches_list:
+                for m in matches_list:
+                    print(m)
+                    team_a = await teams_service.get_team_by_eesl_id(m["team_a_id"])
+                    team_b = await teams_service.get_team_by_eesl_id(m["team_b_id"])
+                    match = {
+                        "week": m["week"],
+                        "match_eesl_id": m["match_eesl_id"],
+                        "team_a_id": team_a.id,
+                        "team_b_id": team_b.id,
+                        "match_date": m["match_date"],
+                        "tournament_id": tournament.id,
+                    }
+                    match_schema = MatchSchemaCreate(**match)
+                    created_match = await self.service.create_or_update_match(match_schema)
+
+                    playclock_schema = PlayClockSchemaCreate(match_id=created_match.id)
+                    await playclock_service.create_playclock(playclock_schema)
+
+                    gameclock_schema = GameClockSchemaCreate(match_id=created_match.id)
+                    await gameclock_service.create_gameclock(gameclock_schema)
+
+                    scoreboard_schema = ScoreboardSchemaCreate(match_id=created_match.id)
+                    await scoreboard_service.create_scoreboard(scoreboard_schema)
+
+                    created_matches.append(created_match)
+                return created_matches
+            else:
+                return []
 
         return router
 

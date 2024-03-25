@@ -1,4 +1,6 @@
+import asyncio
 import os
+from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 from urllib.parse import urlparse
@@ -9,21 +11,22 @@ import re
 from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
+from src.helpers.text_helpers import months, days
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
 
 
-def parse_tournament_matches_and_create_jsons(t_id: int):
+async def parse_tournament_matches_and_create_jsons(t_id: int):
     try:
-        matches = parse_tournament_matches_index_page_eesl(t_id)
+        matches = await parse_tournament_matches_index_page_eesl(t_id)
         return matches
     except Exception as ex:
         print(ex)
         print(f"Something goes wrong, maybe no data in tournament id({t_id})")
 
 
-def parse_tournament_teams_and_create_jsons(t_id: int):
+async def parse_tournament_teams_and_create_jsons(t_id: int):
     try:
-        teams = parse_tournament_teams_index_page_eesl(t_id)
+        teams = await parse_tournament_teams_index_page_eesl(t_id)
         return teams
     except Exception as ex:
         print(ex)
@@ -74,44 +77,136 @@ async def parse_tournament_teams_index_page_eesl(
     return teams_in_tournament
 
 
-def parse_tournament_matches_index_page_eesl(
-        t_id: int, base_url: str = BASE_TOURNAMENT_URL
+async def parse_tournament_matches_index_page_eesl(
+        t_id: int, base_url: str = BASE_TOURNAMENT_URL, year: int = 2024
 ):
+    first_week_num = None
     matches_in_tournament = []
     url = f"{base_url}{str(t_id)}/calendar"
     req = get_url(url)
     soup = BeautifulSoup(req.content, "lxml")
     all_tournament_matches = soup.select(".schedule__matches-item")
+    all_schedule_matches = soup.select(".js-schedule")
+    all_headers_matches = soup.select(".js-calendar-matches-header")
+    # print(all_headers_matches)
 
-    for mp in all_tournament_matches:
+    for week in all_schedule_matches:
         try:
-            match = {
-                "match_eesl_id": int(
-                    re.findall(
-                        "\d+", mp.find("a", class_="schedule__score").get("href")
-                    )[0]
-                ),
-                "eesl_id_team_a": int(
-                    mp.find("a", class_="schedule__team-1")
-                    .get("href")
-                    .strip()
-                    .split("=")[1]
-                ),
-                "eesl_id_team_b": int(
-                    mp.find("a", class_="schedule__team-2")
-                    .get("href")
-                    .strip()
-                    .split("=")[1]
-                ),
-                "tournament_eesl_id": t_id,
-            }
-            matches_in_tournament.append(match.copy())
+            all_weeks_in_schedule = week.find_all("div", class_="js-calendar-matches-header")
+            for week_in_schedule in all_weeks_in_schedule:
+                if week_in_schedule:
+                    all_matches_in_week = week_in_schedule.find_all("ul", class_="schedule__matches-list")
+                    date_texts = week_in_schedule.find("span", class_="schedule__head-text")
+                    # for match_date in date_texts:
+                    print('DATE', date_texts.text.strip())
+
+                    for mp in all_matches_in_week:
+                        match = mp.find_all("li", class_="js-calendar-match")
+                        for item in match:
+                            match_eesl_id = int(
+                                re.findall("\d+", item.find("a", class_="schedule__score").get("href"))[0])
+                            team_a_id = int(mp.find("a", class_="schedule__team-1").get("href").strip().split("=")[1])
+                            team_b_id = int(mp.find("a", class_="schedule__team-2").get("href").strip().split("=")[1])
+                            game_time = mp.find("span", class_="schedule__time").text.strip()
+                            match_date = date_texts.text.strip()
+                            date_formatted = match_date.replace(',', '') + " " + str(year) + " " + game_time
+
+                            date, month, day, year, time = date_formatted.split()
+                            month = months[month]
+                            date_ = datetime.strptime(f"{date} {month} {year} {time}", "%d %B %Y %H:%M")
+                            formatted_date = date_.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+                            iso_year, iso_week_num, iso_weekday = date_.isocalendar()
+
+                            if first_week_num is None:
+                                first_week_num = iso_week_num
+                            match_week = iso_week_num - first_week_num + 1
+
+                            # pprint([formatted_date, match_eesl_id, team_a_id, team_b_id, t_id])
+
+                            match = {
+                                "week": match_week,
+                                "match_eesl_id": match_eesl_id,
+                                "team_a_id": team_a_id,
+                                "team_b_id": team_b_id,
+                                "match_date": formatted_date,
+                                "tournament_eesl_id": t_id,
+                            }
+                            pprint(match)
+                            matches_in_tournament.append(match.copy())
+
         except Exception as ex:
             print(ex)
-    return matches_in_tournament
+        return matches_in_tournament
+
+        # print(mp)
+        # match_date = mp.find("span", class_="schedule__head-text").text
+        # print('DATE', match_date)
+
+        # try:
+        #     for mp in all_matches_in_week:
+        #         match_date = mp.find("span", class_="schedule__head-text").text
+        #         print('DATE', match_date)
+        #
+        #         match = {
+        #             "match_eesl_id": int(
+        #                 re.findall(
+        #                     "\d+", mp.find("a", class_="schedule__score").get("href")
+        #                 )[0]
+        #             ),
+        #             "eesl_id_team_a": int(
+        #                 mp.find("a", class_="schedule__team-1")
+        #                 .get("href")
+        #                 .strip()
+        #                 .split("=")[1]
+        #             ),
+        #             "eesl_id_team_b": int(
+        #                 mp.find("a", class_="schedule__team-2")
+        #                 .get("href")
+        #                 .strip()
+        #                 .split("=")[1]
+        #             ),
+        #             "tournament_eesl_id": t_id,
+        #         }
+        #             print(match)
+        #             matches_in_tournament.append(match.copy())
+        #     except Exception as ex:
+        #         print(ex)
+        # return matches_in_tournament
+
+    # for mp in all_tournament_matches:
+    #     try:
+    #         match = {
+    #             "match_eesl_id": int(
+    #                 re.findall(
+    #                     "\d+", mp.find("a", class_="schedule__score").get("href")
+    #                 )[0]
+    #             ),
+    #             "eesl_id_team_a": int(
+    #                 mp.find("a", class_="schedule__team-1")
+    #                 .get("href")
+    #                 .strip()
+    #                 .split("=")[1]
+    #             ),
+    #             "eesl_id_team_b": int(
+    #                 mp.find("a", class_="schedule__team-2")
+    #                 .get("href")
+    #                 .strip()
+    #                 .split("=")[1]
+    #             ),
+    #             "tournament_eesl_id": t_id,
+    #         }
+    #         matches_in_tournament.append(match.copy())
+    #     except Exception as ex:
+    #         print(ex)
+    # return matches_in_tournament
+
+
+async def main():
+    m = await parse_tournament_matches_and_create_jsons(26)
+    # m = parse_tournament_matches_and_create_jsons(19)
+    pprint(m)
 
 
 if __name__ == "__main__":
-    m = parse_tournament_teams_and_create_jsons(19)
-    # m = parse_tournament_matches_and_create_jsons(19)
-    pprint(m)
+    asyncio.run(main())
