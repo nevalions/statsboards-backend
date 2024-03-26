@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Boolean, ForeignKey
+from sqlalchemy import String, Integer, Boolean, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -105,6 +105,18 @@ class ScoreboardDB(Base):
         Boolean,
         nullable=True,
         default=False,
+    )
+
+    scale_logo_a: Mapped[int] = mapped_column(
+        Float,
+        nullable=True,
+        default=2.0,
+    )
+
+    scale_logo_b: Mapped[int] = mapped_column(
+        Float,
+        nullable=True,
+        default=2.0,
     )
 
     match_id = mapped_column(
