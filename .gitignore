@@ -6,6 +6,7 @@ venv/
 /static/uploads/
 /localhost.crt
 /localhost.key
+*.log
 activate.sh
 restart.log
 restart.log.1.gz
