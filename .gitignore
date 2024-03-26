@@ -6,3 +6,10 @@ venv/
 /static/uploads/
 /localhost.crt
 /localhost.key
+activate.sh
+restart.log
+restart.log.1.gz
+sysd0.log
+sysd0.log.1.gz
+sysd1.log
+sysd1.log.1.gz
