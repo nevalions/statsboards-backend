@@ -113,8 +113,7 @@ class GameClockServiceDB(BaseServiceDB):
             start_time = time.time()
             exec_time = time.time() - start_time
             await asyncio.sleep(max(1 - exec_time, 0))
-            # await asyncio.sleep(1)
-            # start_time = time.time()
+
             gameclock_status = await self.get_gameclock_status(gameclock_id)
 
             if gameclock_status != 'running':  # If game clock is not running, stop the loop
@@ -123,10 +122,17 @@ class GameClockServiceDB(BaseServiceDB):
             gameclock_obj = await self.get_by_id(gameclock_id)  # Get current game clock object
             updated_gameclock = max(0, gameclock_obj.gameclock - 1)
 
-            await self.update(
-                gameclock_id,
-                GameClockSchemaUpdate(gameclock=updated_gameclock),
-            )
+            if updated_gameclock != 0:
+                await self.update(
+                    gameclock_id,
+                    GameClockSchemaUpdate(gameclock=updated_gameclock),
+                )
+            else:
+                await self.update(gameclock_id,
+                                  GameClockSchemaUpdate(
+                                      gameclock=0,
+                                      gameclock_status='stopped',
+                                  ))
 
             # exec_time = time.time() - start_time
             # sleep_time = max(1 - exec_time, 0)
@@ -147,32 +153,33 @@ class GameClockServiceDB(BaseServiceDB):
         else:
             print(f"No active match gameclock found with id: {gameclock_id}")
 
-    async def decrement_gameclock_one_second(
-            self,
-            item_id: int,
-    ):
-        print(f"Decrementing gameclock for {item_id}")
-        result = await self.get_by_id(item_id)
-        if result:
-            updated_gameclock = result.gameclock
-
-            if updated_gameclock and updated_gameclock > 0:
-                updated_gameclock -= 1
-                return updated_gameclock
-
-            else:
-                await self.update(
-                    item_id,
-                    GameClockSchemaUpdate(
-                        playclock_status="stopped",
-                    ),
-                )
-                return 0
-        else:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Playclock id:{item_id} not found",
-            )
+    # async def decrement_gameclock_one_second(
+    #         self,
+    #         item_id: int,
+    # ):
+    #     print(f"Decrementing gameclock for {item_id}")
+    #     result = await self.get_by_id(item_id)
+    #     if result:
+    #         updated_gameclock = result.gameclock
+    #
+    #         if updated_gameclock and updated_gameclock > 0:
+    #             updated_gameclock -= 1
+    #             return updated_gameclock
+    #
+    #
+    #         else:
+    #             await self.update(
+    #                 item_id,
+    #                 GameClockSchemaUpdate(
+    #                     playclock_status="stopped",
+    #                 ),
+    #             )
+    #             return 0
+    #     else:
+    #         raise HTTPException(
+    #             status_code=404,
+    #             detail=f"Playclock id:{item_id} not found",
+    #         )
 
     async def trigger_update_gameclock(
             self,
