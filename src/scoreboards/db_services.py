@@ -51,6 +51,9 @@ class ScoreboardServiceDB(BaseServiceDB):
                     use_team_b_game_logo=scoreboard.use_team_b_game_logo,
                     scale_logo_a=scoreboard.scale_logo_a,
                     scale_logo_b=scoreboard.scale_logo_b,
+                    is_flag=scoreboard.is_flag,
+                    is_goal_team_a=scoreboard.is_goal_team_a,
+                    is_goal_team_b=scoreboard.is_goal_team_b,
                     match_id=scoreboard.match_id,
                 )
 

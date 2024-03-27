@@ -27,6 +27,10 @@ class ScoreboardSchemaBase(BaseModel):
     scale_logo_a: float | None = 2.0
     scale_logo_b: float | None = 2.0
 
+    is_flag: bool | None = False
+    is_goal_team_a: bool | None = False
+    is_goal_team_b: bool | None = False
+
     match_id: int | None = None
 
 
@@ -53,6 +57,10 @@ class ScoreboardSchemaUpdate(BaseModel):
     team_b_game_title: str | None = None
     use_team_a_game_title: bool | None = None
     use_team_b_game_title: bool | None = None
+
+    is_flag: bool | None = None
+    is_goal_team_a: bool | None = None
+    is_goal_team_b: bool | None = None
 
     match_id: int | None = None
 

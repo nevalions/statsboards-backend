@@ -119,6 +119,24 @@ class ScoreboardDB(Base):
         default=2.0,
     )
 
+    is_flag: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    is_goal_team_a: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    is_goal_team_b: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
     match_id = mapped_column(
         Integer,
         ForeignKey(
