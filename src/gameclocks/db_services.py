@@ -109,10 +109,16 @@ class GameClockServiceDB(BaseServiceDB):
                     return gameclock
 
     async def loop_decrement_gameclock(self, gameclock_id: int):
+        next_time = time.monotonic()
         while True:
-            start_time = time.time()
-            exec_time = time.time() - start_time
-            await asyncio.sleep(max(1 - exec_time, 0))
+            # start_time = time.time()
+            # exec_time = time.time() - start_time
+            # await asyncio.sleep(max(1 - exec_time, 0))
+            # await asyncio.sleep(1)
+            next_time += 1
+            sleep_time = next_time - time.monotonic()
+            if sleep_time > 0:
+                await asyncio.sleep(sleep_time)
 
             gameclock_status = await self.get_gameclock_status(gameclock_id)
 

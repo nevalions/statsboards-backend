@@ -127,8 +127,14 @@ class PlayClockServiceDB(BaseServiceDB):
             print(f"No active match playclock found with id: {match_data_id}")
 
     async def loop_decrement_playclock(self, playclock_id):
+        next_time = time.monotonic()
         while True:
-            start_time = time.time()
+            next_time += 1
+            sleep_time = next_time - time.monotonic()
+            if sleep_time > 0:
+                await asyncio.sleep(sleep_time)
+
+            # start_time = time.time()
             playclock_status = await self.get_playclock_status(playclock_id)
             print(playclock_status)
             if playclock_status != "running":
@@ -167,7 +173,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 playclock,
             )
 
-            await asyncio.sleep(1)
+            # await asyncio.sleep(1)
             # exec_time = time.time() - start_time
             # await asyncio.sleep(max(1 - exec_time, 0))
 
