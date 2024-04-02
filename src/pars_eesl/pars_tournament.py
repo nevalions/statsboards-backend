@@ -62,7 +62,7 @@ async def parse_tournament_teams_index_page_eesl(
 
             await file_service.download_image(team_logo_url, image_path)
 
-            team_color = '#c01c28'  # default color
+            team_color = '#c01c28'
             try:
                 team_color = await file_service.get_most_common_color(image_path) or team_color
             except Exception as err:
@@ -79,16 +79,6 @@ async def parse_tournament_teams_index_page_eesl(
             }
             teams_in_tournament.append(team.copy())
 
-            # team = {
-            #     "team_eesl_id": team_eesl_id,
-            #     "title": team_title,
-            #     "description": "",
-            #     "team_logo_url": relative_image_path,
-            #     "city": '',
-            #     "team_color": '#c01c28',
-            #     "sport_id": 1,
-            # }
-            # teams_in_tournament.append(team.copy())
         except Exception as ex:
             print(ex)
     return teams_in_tournament
@@ -98,16 +88,13 @@ async def parse_tournament_matches_index_page_eesl(
         t_id: int, base_url: str = BASE_TOURNAMENT_URL, year: int = 2024
 ):
     week_counter = 0
-    first_week_num = None
+    # first_week_num = None
     last_week_num = None
     matches_in_tournament = []
     url = f"{base_url}{str(t_id)}/calendar"
     req = get_url(url)
     soup = BeautifulSoup(req.content, "lxml")
-    all_tournament_matches = soup.select(".schedule__matches-item")
     all_schedule_matches = soup.select(".js-schedule")
-    all_headers_matches = soup.select(".js-calendar-matches-header")
-    # print(all_headers_matches)
 
     for week in all_schedule_matches:
         try:
@@ -116,8 +103,7 @@ async def parse_tournament_matches_index_page_eesl(
                 if week_in_schedule:
                     all_matches_in_week = week_in_schedule.find_all("ul", class_="schedule__matches-list")
                     date_texts = week_in_schedule.find("span", class_="schedule__head-text")
-                    # for match_date in date_texts:
-                    print('DATE', date_texts.text.strip())
+                    # print('DATE', date_texts.text.strip())
 
                     for mp in all_matches_in_week:
                         match = mp.find_all("li", class_="js-calendar-match")
@@ -159,68 +145,6 @@ async def parse_tournament_matches_index_page_eesl(
         except Exception as ex:
             print(ex)
         return matches_in_tournament
-
-        # print(mp)
-        # match_date = mp.find("span", class_="schedule__head-text").text
-        # print('DATE', match_date)
-
-        # try:
-        #     for mp in all_matches_in_week:
-        #         match_date = mp.find("span", class_="schedule__head-text").text
-        #         print('DATE', match_date)
-        #
-        #         match = {
-        #             "match_eesl_id": int(
-        #                 re.findall(
-        #                     "\d+", mp.find("a", class_="schedule__score").get("href")
-        #                 )[0]
-        #             ),
-        #             "eesl_id_team_a": int(
-        #                 mp.find("a", class_="schedule__team-1")
-        #                 .get("href")
-        #                 .strip()
-        #                 .split("=")[1]
-        #             ),
-        #             "eesl_id_team_b": int(
-        #                 mp.find("a", class_="schedule__team-2")
-        #                 .get("href")
-        #                 .strip()
-        #                 .split("=")[1]
-        #             ),
-        #             "tournament_eesl_id": t_id,
-        #         }
-        #             print(match)
-        #             matches_in_tournament.append(match.copy())
-        #     except Exception as ex:
-        #         print(ex)
-        # return matches_in_tournament
-
-    # for mp in all_tournament_matches:
-    #     try:
-    #         match = {
-    #             "match_eesl_id": int(
-    #                 re.findall(
-    #                     "\d+", mp.find("a", class_="schedule__score").get("href")
-    #                 )[0]
-    #             ),
-    #             "eesl_id_team_a": int(
-    #                 mp.find("a", class_="schedule__team-1")
-    #                 .get("href")
-    #                 .strip()
-    #                 .split("=")[1]
-    #             ),
-    #             "eesl_id_team_b": int(
-    #                 mp.find("a", class_="schedule__team-2")
-    #                 .get("href")
-    #                 .strip()
-    #                 .split("=")[1]
-    #             ),
-    #             "tournament_eesl_id": t_id,
-    #         }
-    #         matches_in_tournament.append(match.copy())
-    #     except Exception as ex:
-    #         print(ex)
-    # return matches_in_tournament
 
 
 async def main():

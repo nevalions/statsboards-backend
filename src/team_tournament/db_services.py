@@ -1,9 +1,9 @@
 import asyncio
 
 from fastapi import HTTPException
-from sqlalchemy import text, select, delete
+from sqlalchemy import select
 
-from src.core.models import db, BaseServiceDB, TeamTournamentDB, TournamentDB, TeamDB
+from src.core.models import db, BaseServiceDB, TeamTournamentDB, TeamDB
 from src.team_tournament.schemas import TeamTournamentSchemaCreate
 
 

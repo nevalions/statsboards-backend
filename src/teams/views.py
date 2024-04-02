@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import HTTPException, UploadFile, File, Form
+from fastapi import HTTPException, UploadFile, File
 
 from src.core import BaseRouter, db
 from .db_services import TeamServiceDB
@@ -119,5 +119,4 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         return router
 
 
-# file_service = FileService()
 api_team_router = TeamAPIRouter(TeamServiceDB(db)).route()

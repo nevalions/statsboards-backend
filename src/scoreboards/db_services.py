@@ -5,7 +5,7 @@ from typing import Union
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import BaseServiceDB, ScoreboardDB, MatchDataDB, MatchDB
+from src.core.models import BaseServiceDB, ScoreboardDB, MatchDataDB
 from .shemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 
 
@@ -97,10 +97,12 @@ class ScoreboardServiceDB(BaseServiceDB):
             field_name=field_name,
         )
 
-    async def create_or_update_scoreboard(self, scoreboard: Union[ScoreboardSchemaCreate, ScoreboardSchemaUpdate]):
+    async def create_or_update_scoreboard(
+            self,
+            scoreboard: Union[ScoreboardSchemaCreate, ScoreboardSchemaUpdate],
+    ):
         existing_scoreboard = await self.get_scoreboard_by_match_id(scoreboard.match_id)
 
-        # If a scoreboard with the match_id exists, update it
         if existing_scoreboard:
             if isinstance(scoreboard, ScoreboardSchemaUpdate):
                 updated_scoreboard = await self.update_scoreboard(existing_scoreboard.id, scoreboard)
@@ -108,7 +110,6 @@ class ScoreboardServiceDB(BaseServiceDB):
                 raise ValueError("Must use ScoreboardSchemaUpdate for updating.")
             return updated_scoreboard
 
-        # If it does not exist, create a new one
         else:
             if isinstance(scoreboard, ScoreboardSchemaCreate):
                 new_scoreboard = await self.create_scoreboard(scoreboard)

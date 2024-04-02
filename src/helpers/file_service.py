@@ -1,12 +1,7 @@
 import os
-
-import requests
-
+import shutil
 from PIL import Image
 from aiohttp import ClientSession
-from collections import Counter
-import io
-import shutil
 from datetime import datetime
 from fastapi import UploadFile, HTTPException
 from pathlib import Path
@@ -28,7 +23,6 @@ class FileService:
         upload_dir.mkdir(parents=True, exist_ok=True)
         print(upload_dir)
 
-        # Get the current timestamp and add it to the filename
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         filename = f"{timestamp}_{upload_file.filename}"
 
@@ -81,8 +75,8 @@ class FileService:
         async with ClientSession() as session:
             async with session.get(img_url) as response:
                 if response.status != 200:
-                    response.raise_for_status()  # Raises exception for non-200 status
-                image_data = await response.read()  # Read image data
+                    response.raise_for_status()
+                image_data = await response.read()
 
                 # Ensure the destination directory exists
                 os.makedirs(os.path.dirname(image_path), exist_ok=True)
@@ -92,7 +86,6 @@ class FileService:
                     fp.write(image_data)
 
     def hex_to_rgb(self, hex_color: str):
-        # Remove the '#' if it exists at the start of the hex_color string.
         hex_color = hex_color.lstrip('#')
         # Convert the hex color to a tuple of integers and return it.
         return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
