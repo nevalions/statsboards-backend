@@ -19,7 +19,7 @@ from src.core.config import templates
 
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
-from ..core.models.base import ws_manager, ConnectionManager, connection_manager
+from ..core.models.base import ws_manager, connection_manager
 from ..gameclocks.db_services import GameClockServiceDB
 from ..gameclocks.schemas import GameClockSchemaCreate
 from ..helpers.file_service import file_service
@@ -27,7 +27,7 @@ from ..matchdata.schemas import MatchDataSchemaCreate
 from ..pars_eesl.pars_tournament import parse_tournament_matches_index_page_eesl
 from ..playclocks.db_services import PlayClockServiceDB
 from ..playclocks.schemas import PlayClockSchemaCreate
-from ..scoreboards.shemas import ScoreboardSchemaCreate
+from ..scoreboards.shemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from ..teams.db_services import TeamServiceDB
 from ..teams.schemas import UploadTeamLogoResponse
 from ..tournaments.db_services import TournamentServiceDB
@@ -350,7 +350,6 @@ class MatchAPIRouter(
             created_matches = []
             if matches_list:
                 for m in matches_list:
-                    print(m)
                     team_a = await teams_service.get_team_by_eesl_id(m["team_a_id"])
                     team_b = await teams_service.get_team_by_eesl_id(m["team_b_id"])
                     match = {
@@ -370,8 +369,29 @@ class MatchAPIRouter(
                     gameclock_schema = GameClockSchemaCreate(match_id=created_match.id)
                     await gameclock_service.create_gameclock(gameclock_schema)
 
-                    scoreboard_schema = ScoreboardSchemaCreate(match_id=created_match.id)
-                    await scoreboard_service.create_scoreboard(scoreboard_schema)
+                    existing_scoreboard = await scoreboard_service.get_scoreboard_by_match_id(created_match.id)
+
+                    if existing_scoreboard is None:
+                        scoreboard_schema = ScoreboardSchemaCreate(
+                            match_id=created_match.id,
+                            scale_logo_a=2,
+                            scale_logo_b=2,
+                            team_a_game_color=team_a.team_color,
+                            team_b_game_color=team_b.team_color,
+                            team_a_game_title=team_a.title,
+                            team_b_game_title=team_b.title,
+                        )
+                    else:
+                        scoreboard_schema = ScoreboardSchemaUpdate(
+                            match_id=created_match.id,
+                            scale_logo_a=2,
+                            scale_logo_b=2,
+                            team_a_game_color=team_a.team_color,
+                            team_b_game_color=team_b.team_color,
+                            team_a_game_title=team_a.title,
+                            team_b_game_title=team_b.title,
+                        )
+                    await scoreboard_service.create_or_update_scoreboard(scoreboard_schema)
 
                     created_matches.append(created_match)
                 return created_matches

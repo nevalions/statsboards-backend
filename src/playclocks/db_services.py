@@ -42,6 +42,10 @@ class PlayClockServiceDB(BaseServiceDB):
                     match_id=playclock.match_id,
                 )
 
+                is_exist = await self.get_playclock_by_match_id(playclock.match_id)
+                if is_exist:
+                    return playclock_result
+
                 session.add(playclock_result)
                 await session.commit()
                 await session.refresh(playclock_result)

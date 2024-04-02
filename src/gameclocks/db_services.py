@@ -40,6 +40,10 @@ class GameClockServiceDB(BaseServiceDB):
                     match_id=gameclock.match_id,
                 )
 
+                is_exist = await self.get_gameclock_by_match_id(gameclock.match_id)
+                if is_exist:
+                    return gameclock_result
+
                 session.add(gameclock_result)
                 await session.commit()
                 await session.refresh(gameclock_result)
@@ -50,7 +54,7 @@ class GameClockServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating gameclock "
-                           f"for match id({gameclock.id})"
+                           f"for match)"
                            f"returned some error",
                 )
 

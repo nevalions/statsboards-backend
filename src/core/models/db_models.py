@@ -167,6 +167,7 @@
 #                             nullable=True)
 #     player_dob = Column('player_dob', TIMESTAMP,
 #                         nullable=True)
+# sport_id
 #
 #     fk_team_tournaments_id = relationship('TeamTournamentDB',
 #                                           secondary='player_team_tournament',

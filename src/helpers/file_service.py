@@ -1,6 +1,11 @@
 import os
 
 import requests
+
+from PIL import Image
+from aiohttp import ClientSession
+from collections import Counter
+import io
 import shutil
 from datetime import datetime
 from fastapi import UploadFile, HTTPException
@@ -45,15 +50,62 @@ class FileService:
         rel_dest = Path('/static/uploads') / sub_folder / filename
         return str(rel_dest)
 
+    async def get_most_common_color(self, image_path: str):
+        img = Image.open(image_path)
+
+        # If the image has an alpha (transparency) channel, convert it to RGB
+        if img.mode == 'RGBA':
+            temp_img = Image.new("RGB", img.size)
+            temp_img.paste(img, mask=img.split()[3])  # 3 is the alpha channel
+            img = temp_img
+
+        colors = img.convert('RGB').getcolors(img.size[0] * img.size[1])  # Ensures RGB data
+        if colors:
+            colors.sort(key=lambda tup: tup[0], reverse=True)  # Sort by count
+            # Exclude black, white, and certain specified colors
+            excluded_colors = [
+                {0},
+                {255},
+                {254, 254, 254},
+                set(self.hex_to_rgb("#000105")),
+                set(self.hex_to_rgb("#fdfdfd")),
+                set(self.hex_to_rgb("#dfdfdf")),
+                set(self.hex_to_rgb("#fcfcfc")),
+            ]
+            most_common_color = next((color for count, color in colors if set(color) not in excluded_colors), None)
+            return '#{:02x}{:02x}{:02x}'.format(*most_common_color) if most_common_color else None
+        else:
+            return None
+
     async def download_image(self, img_url: str, image_path: str):
-        response = requests.get(img_url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
+        async with ClientSession() as session:
+            async with session.get(img_url) as response:
+                if response.status != 200:
+                    response.raise_for_status()  # Raises exception for non-200 status
+                image_data = await response.read()  # Read image data
 
-        # Ensure the destination directory exists
-        os.makedirs(os.path.dirname(image_path), exist_ok=True)
+                # Ensure the destination directory exists
+                os.makedirs(os.path.dirname(image_path), exist_ok=True)
 
-        with open(image_path, 'wb') as fp:
-            fp.write(response.content)
+                # Write image data to file
+                with open(image_path, 'wb') as fp:
+                    fp.write(image_data)
+
+    def hex_to_rgb(self, hex_color: str):
+        # Remove the '#' if it exists at the start of the hex_color string.
+        hex_color = hex_color.lstrip('#')
+        # Convert the hex color to a tuple of integers and return it.
+        return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+
+    # async def download_image(self, img_url: str, image_path: str):
+    #     response = requests.get(img_url)
+    #     response.raise_for_status()  # Raise an exception for HTTP errors
+    #
+    #     # Ensure the destination directory exists
+    #     os.makedirs(os.path.dirname(image_path), exist_ok=True)
+    #
+    #     with open(image_path, 'wb') as fp:
+    #         fp.write(response.content)
 
 
 file_service = FileService()

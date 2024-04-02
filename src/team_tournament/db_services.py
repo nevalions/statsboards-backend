@@ -34,6 +34,10 @@ class TeamTournamentServiceDB(BaseServiceDB):
             self,
             team_tournament: TeamTournamentSchemaCreate,
     ):
+        is_relation_exist = await self.get_team_tournament_relation(team_tournament.team_id,
+                                                                    team_tournament.tournament_id)
+        if is_relation_exist:
+            return is_relation_exist
         new_team_tournament = self.model(
             team_id=team_tournament.team_id,
             tournament_id=team_tournament.tournament_id,
