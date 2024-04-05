@@ -14,6 +14,8 @@ class SeasonSportRelationMixin:
     _season_id_unique: bool = False
     _sport_id_nullable: bool = False
     _sport_id_unique: bool = False
+    # _main_sponsor_id_nullable: bool = True
+    # _main_sponsor_id_unique: bool = False
     _ondelete: str | None = None  # "CASCADE"
     _season_back_populates: str | None
     _sport_back_populates: str | None

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Text
+from sqlalchemy import String, Integer, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -9,6 +9,7 @@ from . import SeasonSportRelationMixin
 if TYPE_CHECKING:
     from .team import TeamDB
     from .match import MatchDB
+    from .sponsor import SponsorDB
 
 
 class TournamentDB(SeasonSportRelationMixin, Base):
@@ -42,6 +43,11 @@ class TournamentDB(SeasonSportRelationMixin, Base):
         server_default="",
     )
 
+    main_sponsor_id: Mapped[int] = mapped_column(
+        ForeignKey("sponsor.id"),
+        nullable=True,
+    )
+
     teams: Mapped[list["TeamDB"]] = relationship(
         secondary="team_tournament",
         back_populates="tournaments",
@@ -51,4 +57,9 @@ class TournamentDB(SeasonSportRelationMixin, Base):
         cascade="all, delete-orphan",
         back_populates="tournaments",
         passive_deletes=True,
+    )
+
+    main_sponsor: Mapped["SponsorDB"] = relationship(
+        "SponsorDB",
+        back_populates="tournaments",
     )

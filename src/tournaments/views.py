@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Optional
 
 from fastapi import HTTPException, Request, Depends
 
@@ -13,6 +13,7 @@ from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
 from src.pars_eesl import BASE_SEASON_URL
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
+from ..sponsors.schemas import SponsorSchema
 
 
 class TournamentAPIRouter(
@@ -72,6 +73,11 @@ class TournamentAPIRouter(
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_matches_by_tournament(tournament_id)
 
+        @router.get("/id/{tournament_id}/main_sponsor/",
+                    response_model=Optional[SponsorSchema])
+        async def get_main_sponsor_by_tournament_id_endpoint(tournament_id: int):
+            return await self.service.get_main_tournament_sponsor(tournament_id)
+
         @router.get(
             "/id/{tournament_id}/matches/all/data/",
             response_class=JSONResponse,
@@ -82,10 +88,6 @@ class TournamentAPIRouter(
         ):
             if not all_matches:
                 return []
-                # raise HTTPException(
-                #     status_code=404,
-                #     detail=f"No matches found for the tournament id:{tournament_id}",
-                # )
             return await fetch_list_of_matches_data(all_matches)
 
         @router.get(

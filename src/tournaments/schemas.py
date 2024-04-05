@@ -10,6 +10,7 @@ class TournamentSchemaBase(BaseModel):
     tournament_logo_url: str | None = ''
     season_id: int
     sport_id: int
+    main_sponsor_id: int
 
 
 class TournamentSchemaUpdate(BaseModel):
@@ -19,6 +20,7 @@ class TournamentSchemaUpdate(BaseModel):
     tournament_logo_url: str | None = None
     season_id: int | None = None
     sport_id: int | None = None
+    main_sponsor_id: int | None = None
 
 
 class TournamentSchemaCreate(TournamentSchemaBase):

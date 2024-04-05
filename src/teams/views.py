@@ -23,7 +23,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         router = super().route()
 
         @router.post("/", response_model=TeamSchema)
-        async def create_team(
+        async def create_team_endpoint(
                 team: TeamSchemaCreate,
                 tour_id: int = None,
         ):
@@ -42,7 +42,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             return new_team.__dict__
 
         @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)
-        async def get_team_by_eesl_id(
+        async def get_team_by_eesl_id_endpoint(
                 team_eesl_id: int,
         ):
             tournament = await self.service.get_team_by_eesl_id(value=team_eesl_id)
@@ -57,7 +57,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             "/",
             response_model=TeamSchema,
         )
-        async def update_team(
+        async def update_team_endpoint(
                 item_id: int,
                 item: TeamSchemaUpdate,
         ):
@@ -69,11 +69,11 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             return update_.__dict__
 
         @router.get("/id/{team_id}/matches/")
-        async def get_matches_by_team(team_id: int):
+        async def get_matches_by_team_endpoint(team_id: int):
             return await self.service.get_matches_by_team_id(team_id)
 
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
-        async def upload_team_logo(file: UploadFile = File(...)):
+        async def upload_team_logo_endpoint(file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder='teams/logos')
             print(uploads_path)
             return {"logoUrl": file_location}
@@ -82,7 +82,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             "/api/pars/tournament/{eesl_tournament_id}",
             response_model=List[TeamSchemaCreate],
         )
-        async def get_parse_tournament_teams(eesl_tournament_id: int):
+        async def get_parse_tournament_teams_endpoint(eesl_tournament_id: int):
             return await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
 
         @router.post("/api/pars_and_create/tournament/{eesl_tournament_id}")

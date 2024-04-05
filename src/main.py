@@ -17,6 +17,7 @@ from src.team_tournament import api_team_tournament_router
 from src.matches import api_match_router, template_match_router
 from src.matchdata import api_matchdata_router
 from src.scoreboards import api_scoreboards_router
+from src.sponsors import api_sponsor_router
 
 app = FastAPI()
 
@@ -32,6 +33,7 @@ app.include_router(api_matchdata_router)
 app.include_router(api_playclock_router)
 app.include_router(api_gameclock_router)
 app.include_router(api_scoreboards_router)
+app.include_router(api_sponsor_router)
 
 app.include_router(api_pars_season_router)
 
