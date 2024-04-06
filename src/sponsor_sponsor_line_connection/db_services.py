@@ -21,6 +21,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
         new_sponsor_sponsor_line = self.model(
             sponsor_line_id=sponsor_sponsor_line.sponsor_line_id,
             sponsor_id=sponsor_sponsor_line.sponsor_id,
+            position=sponsor_sponsor_line.position,
         )
         return await super().create(new_sponsor_sponsor_line)
 

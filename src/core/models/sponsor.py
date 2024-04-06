@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import String, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -24,6 +24,11 @@ class SponsorDB(Base):
         nullable=True,
         default="",
         server_default="",
+    )
+    scale_logo: Mapped[int] = mapped_column(
+        Float,
+        nullable=True,
+        default=1.0,
     )
 
     tournaments: Mapped["TournamentDB"] = relationship(

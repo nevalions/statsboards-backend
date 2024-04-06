@@ -16,6 +16,7 @@ class SponsorServiceDB(BaseServiceDB):
         sponsor = self.model(
             title=t.title,
             logo_url=t.logo_url,
+            scale_logo=t.scale_logo,
         )
 
         print('sponsor', sponsor)

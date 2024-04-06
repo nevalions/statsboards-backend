@@ -18,6 +18,7 @@ class SponsorSponsorLineDB(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+
     sponsor_line_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(
@@ -33,4 +34,10 @@ class SponsorSponsorLineDB(Base):
             ondelete="CASCADE",
         ),
         nullable=False,
+    )
+    position: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=1,
+        server_default="1"
     )

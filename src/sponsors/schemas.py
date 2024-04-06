@@ -6,11 +6,13 @@ from typing import Annotated
 class SponsorSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=50)]
     logo_url: str | None = ''
+    scale_logo: float | None = 1.0
 
 
 class SponsorSchemaUpdate(BaseModel):
     title: str | None = None
     logo_url: str | None = None
+    scale_logo: float | None = None
 
 
 class SponsorSchemaCreate(SponsorSchemaBase):
