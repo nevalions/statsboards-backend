@@ -1,43 +1,38 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
+    from .sponsor import SponsorDB
     from .tournament import TournamentDB
     from .team import TeamDB
-    from .sponsor_line import SponsorLineDB
 
 
-class SponsorDB(Base):
-    __tablename__ = "sponsor"
+class SponsorLineDB(Base):
+    __tablename__ = "sponsor_line"
     __table_args__ = {"extend_existing": True}
 
     title: Mapped[str] = mapped_column(
         String(50),
-        nullable=False,
-    )
-    logo_url: Mapped[str] = mapped_column(
-        String(255),
         nullable=True,
-        default="",
-        server_default="",
+        default="Sponsor Line",
+        server_default="Sponsor Line",
     )
 
     tournaments: Mapped["TournamentDB"] = relationship(
         "TournamentDB",
-        back_populates="main_sponsor",
+        back_populates="sponsor_line",
     )
 
     teams: Mapped["TeamDB"] = relationship(
         "TeamDB",
-        back_populates="main_sponsor",
+        back_populates="sponsor_line",
     )
 
-    sponsor_lines: Mapped[list["SponsorLineDB"]] = relationship(
+    sponsors: Mapped[list["SponsorDB"]] = relationship(
         secondary="sponsor_sponsor_line",
-        back_populates="sponsors",
-        cascade="save-update, merge",
+        back_populates="sponsor_lines",
     )

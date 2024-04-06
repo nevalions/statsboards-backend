@@ -13,6 +13,7 @@ from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
 from src.pars_eesl import BASE_SEASON_URL
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
+from ..sponsor_lines.schemas import SponsorLineSchema
 from ..sponsors.schemas import SponsorSchema
 
 
@@ -77,6 +78,11 @@ class TournamentAPIRouter(
                     response_model=Optional[SponsorSchema])
         async def get_main_sponsor_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_main_tournament_sponsor(tournament_id)
+
+        @router.get("/id/{tournament_id}/sponsor_line/",
+                    response_model=Optional[SponsorLineSchema])
+        async def get_sponsor_line_by_tournament_id_endpoint(tournament_id: int):
+            return await self.service.get_tournament_sponsor_line(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/matches/all/data/",

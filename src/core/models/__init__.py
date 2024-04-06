@@ -14,6 +14,8 @@ __all__ = (
     "PlayClockDB",
     "GameClockDB",
     "SponsorDB",
+    "SponsorLineDB",
+    "SponsorSponsorLineDB",
 )
 
 from .base import Base, BaseServiceDB, db
@@ -29,3 +31,5 @@ from .scoreboard import ScoreboardDB
 from .playclock import PlayClockDB
 from .gameclock import GameClockDB
 from .sponsor import SponsorDB
+from .sponsor_line import SponsorLineDB
+from .sponsor_sponsor_line_connection import SponsorSponsorLineDB

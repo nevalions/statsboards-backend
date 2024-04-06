@@ -64,6 +64,7 @@ class TournamentServiceDB(BaseServiceDB):
             season_id=t.season_id,
             sport_id=t.sport_id,
             main_sponsor_id=t.main_sponsor_id,
+            sponsor_line_id=t.sponsor_line_id,
             tournament_eesl_id=t.tournament_eesl_id,
         )
         return await super().create(tournament)
@@ -113,6 +114,12 @@ class TournamentServiceDB(BaseServiceDB):
         return await self.get_related_items_level_one_by_id(
             tournament_id,
             'main_sponsor'
+        )
+
+    async def get_tournament_sponsor_line(self, tournament_id: int):
+        return await self.get_related_items_level_one_by_id(
+            tournament_id,
+            'sponsor_line'
         )
 
 #

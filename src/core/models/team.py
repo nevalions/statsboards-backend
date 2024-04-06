@@ -9,6 +9,8 @@ if TYPE_CHECKING:
     from .tournament import TournamentDB
     from .match import MatchDB
     from .sport import SportDB
+    from .sponsor import SponsorDB
+    from .sponsor_line import SponsorLineDB
 
 
 class TeamDB(Base):
@@ -71,5 +73,25 @@ class TeamDB(Base):
     matches: Mapped["MatchDB"] = relationship(
         "MatchDB",
         primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+        back_populates="teams",
+    )
+
+    sponsor_line_id: Mapped[int] = mapped_column(
+        ForeignKey("sponsor_line.id"),
+        nullable=True,
+    )
+
+    main_sponsor_id: Mapped[int] = mapped_column(
+        ForeignKey("sponsor.id"),
+        nullable=True,
+    )
+
+    main_sponsor: Mapped["SponsorDB"] = relationship(
+        "SponsorDB",
+        back_populates="teams",
+    )
+
+    sponsor_line: Mapped["SponsorLineDB"] = relationship(
+        "SponsorLineDB",
         back_populates="teams",
     )

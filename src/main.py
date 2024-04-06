@@ -18,6 +18,8 @@ from src.matches import api_match_router, template_match_router
 from src.matchdata import api_matchdata_router
 from src.scoreboards import api_scoreboards_router
 from src.sponsors import api_sponsor_router
+from src.sponsor_lines import api_sponsor_line_router
+from src.sponsor_sponsor_line_connection import api_sponsor_sponsor_line_router
 
 app = FastAPI()
 
@@ -34,6 +36,8 @@ app.include_router(api_playclock_router)
 app.include_router(api_gameclock_router)
 app.include_router(api_scoreboards_router)
 app.include_router(api_sponsor_router)
+app.include_router(api_sponsor_line_router)
+app.include_router(api_sponsor_sponsor_line_router)
 
 app.include_router(api_pars_season_router)
 

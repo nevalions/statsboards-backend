@@ -67,6 +67,8 @@ class TeamServiceDB(BaseServiceDB):
             description=t.description,
             team_logo_url=t.team_logo_url,
             team_color=t.team_color,
+            sponsor_line_id=t.sponsor_line_id,
+            main_sponsor_id=t.main_sponsor_id,
         )
 
         print('team', team)
