@@ -545,6 +545,24 @@ class BaseServiceDB:
             except NoResultFound:
                 return None
 
+    async def get_nested_related_items_by_id(
+            self,
+            item_id: int,
+            service: Any,
+            related_property: str,
+            nested_related_property: str,
+    ):
+        related_item = await self.get_related_items_level_one_by_id(
+            item_id, related_property
+        )
+
+        if related_item is not None:
+            _id = related_item.id
+            items = await service.get_related_items_level_one_by_id(_id, nested_related_property)
+            return items
+
+        return None
+
     async def get_related_items_level_one_by_key_and_value(
             self,
             filter_key: str,
