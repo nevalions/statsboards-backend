@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import BaseServiceDB, SponsorSponsorLineDB, SponsorDB
+from src.core.models import BaseServiceDB, SponsorSponsorLineDB, SponsorDB, SponsorLineDB
 from .schemas import SponsorSponsorLineSchemaCreate
 
 
@@ -39,14 +39,15 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
 
     async def get_related_sponsors(self, sponsor_line_id: int):
         async with self.db.async_session() as session:
+            sponsor_line = await session.get(SponsorLineDB, sponsor_line_id)
             result = await session.execute(
-                select(SponsorDB, SponsorSponsorLineDB)
+                select(SponsorDB, SponsorSponsorLineDB.position)
                 .join(SponsorSponsorLineDB, SponsorDB.id == SponsorSponsorLineDB.sponsor_id)
                 .where(SponsorSponsorLineDB.sponsor_line_id == sponsor_line_id)
             )
-            sponsors = [{"sponsor": r[0], "position": r[1].position} for r in result.all()]
+            sponsors = [{"sponsor": r[0], "position": r[1]} for r in result.all()]
             await session.commit()
-            return sponsors
+            return {"sponsor_line": sponsor_line, "sponsors": sponsors}
 
     async def delete_relation_by_sponsor_and_sponsor_line_id(self, sponsor_id: int, sponsor_line_id: int):
         async with self.db.async_session() as session:
