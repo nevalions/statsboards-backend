@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, ForeignKey
+from sqlalchemy import String, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -20,6 +20,12 @@ class SponsorLineDB(Base):
         nullable=True,
         default="Sponsor Line",
         server_default="Sponsor Line",
+    )
+
+    is_visible: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
     )
 
     tournaments: Mapped["TournamentDB"] = relationship(

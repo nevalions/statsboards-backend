@@ -62,12 +62,12 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
             if not item:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Connection team id: {sponsor_id} and tournament id {sponsor_line_id} not foutnd"
+                    detail=f"Connection sponsor id: {sponsor_id} and sponsor_line id {sponsor_line_id} not found"
                 )
 
             await session.delete(item)
             await session.commit()
             raise HTTPException(
                 status_code=200,
-                detail=f"Connection team id: {sponsor_id} and tournament id {sponsor_line_id} deleted",
+                detail=f"Connection sponsor id: {sponsor_id} and sponsor_line id {sponsor_line_id} deleted",
             )
