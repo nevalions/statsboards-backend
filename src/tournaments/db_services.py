@@ -4,6 +4,8 @@ from fastapi import HTTPException
 
 from src.core.models import db, BaseServiceDB, TournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
+from ..sponsor_lines.db_services import SponsorLineServiceDB
+from ..sponsors.db_services import SponsorServiceDB
 
 
 class TournamentServiceDB(BaseServiceDB):
@@ -121,6 +123,30 @@ class TournamentServiceDB(BaseServiceDB):
             tournament_id,
             'sponsor_line'
         )
+
+    async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
+        sponsor_line = await self.get_related_items_level_one_by_id(
+            tournament_id,
+            'sponsor_line'
+        )
+
+        if sponsor_line is not None:
+            sponsor_line_id = sponsor_line.id
+            sponsor_service = SponsorLineServiceDB(self.db)
+            sponsors = await sponsor_service.get_related_items_level_one_by_id(
+                sponsor_line_id,
+                'sponsors'
+            )
+            return sponsors
+
+        return None
+
+    # async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
+    #     return await self.get_related_items_level_one_by_id(
+    #         tournament_id,
+    #         'sponsor_line',
+    #         'sponsors'
+    #     )
 
 #
 # async def get_tournament_db() -> TournamentServiceDB:

@@ -508,6 +508,25 @@ class BaseServiceDB:
             except NoResultFound:
                 return None
 
+    # async def get_related_items_level_one_by_id(
+    #         self,
+    #         item_id: int,
+    #         related_property: str,
+    #         nested_related_property: str = None,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         try:
+    #             query = select(self.model) \
+    #                 .where(self.model.id == item_id) \
+    #                 .options(selectinload(getattr(self.model, related_property)))
+    #             if nested_related_property:
+    #                 query = query.options(
+    #                     selectinload(getattr(self.model, related_property + '.' + nested_related_property)))
+    #             item = await session.execute(query)
+    #             return getattr(item.scalars().one(), related_property)
+    #         except NoResultFound:
+    #             return None
+
     async def get_related_items_level_one_by_id(
             self,
             item_id: int,

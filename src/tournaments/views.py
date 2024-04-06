@@ -84,6 +84,12 @@ class TournamentAPIRouter(
         async def get_sponsor_line_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_tournament_sponsor_line(tournament_id)
 
+        @router.get("/id/{tournament_id}/sponsors/",
+                    response_model=Optional[List[SponsorSchema]]
+                    )
+        async def get_sponsors_from_sponsor_line_by_tournament_id_endpoint(tournament_id: int):
+            return await self.service.get_sponsors_of_tournament_sponsor_line(tournament_id)
+
         @router.get(
             "/id/{tournament_id}/matches/all/data/",
             response_class=JSONResponse,

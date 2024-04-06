@@ -9,7 +9,6 @@ from .schemas import (
     SponsorSponsorLineSchemaCreate,
     SponsorSponsorLineSchemaUpdate,
 )
-from src.teams.schemas import TeamSchema
 
 
 # Team backend
@@ -52,7 +51,7 @@ class SponsorSponsorLineRouter(
             "/",
             response_model=SponsorSponsorLineSchema,
         )
-        async def update_tournament_endpoint(
+        async def update_sponsor_sponsor_line_endpoint(
                 item_id: int,
                 item: SponsorSponsorLineSchemaUpdate,
         ):
@@ -67,17 +66,17 @@ class SponsorSponsorLineRouter(
         async def get_sponsor_sponsor_line_relation_endpoint(sponsor_id: int, sponsor_line_id: int):
             sponsor_sponsor_line = await self.service.get_sponsor_sponsor_line_relation(sponsor_id, sponsor_line_id)
             if not sponsor_sponsor_line:
-                raise HTTPException(status_code=404, detail="Team Tournament not found")
+                raise HTTPException(status_code=404, detail="sponsor_sponsor_line not found")
             return sponsor_sponsor_line
 
-        @router.get("/tournament/id/{sponsor_line_id}/teams")
-        async def get_teams_in_tournament_endpoint(sponsor_line_id: int):
-            teams = await self.service.get_related_teams(sponsor_line_id)
-            return teams
+        @router.get("/sponsor_line/id/{sponsor_line_id}/sponsors")
+        async def get_sponsors_in_sponsor_line_endpoint(sponsor_line_id: int):
+            sponsors = await self.service.get_related_sponsors(sponsor_line_id)
+            return sponsors
 
         @router.delete("/{sponsor_id}in{sponsor_line_id}")
         async def delete_relation_by_sponsor_id_sponsor_line_id_endpoint(sponsor_id: int, sponsor_line_id: int):
-            await self.service.delete_relation_by_team_and_sponsor_line_id(sponsor_id, sponsor_line_id)
+            await self.service.delete_relation_by_sponsor_and_sponsor_line_id(sponsor_id, sponsor_line_id)
 
         return router
 
