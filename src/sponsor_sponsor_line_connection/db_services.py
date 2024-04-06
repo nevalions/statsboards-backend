@@ -40,13 +40,13 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
     async def get_related_sponsors(self, sponsor_line_id: int):
         async with self.db.async_session() as session:
             result = await session.execute(
-                select(SponsorDB).join(SponsorSponsorLineDB).where(
-                    SponsorSponsorLineDB.sponsor_line_id == sponsor_line_id
-                )
+                select(SponsorDB, SponsorSponsorLineDB)
+                .join(SponsorSponsorLineDB, SponsorDB.id == SponsorSponsorLineDB.sponsor_id)
+                .where(SponsorSponsorLineDB.sponsor_line_id == sponsor_line_id)
             )
-            teams = result.scalars().all()
+            sponsors = [{"sponsor": r[0], "position": r[1].position} for r in result.all()]
             await session.commit()
-            return teams
+            return sponsors
 
     async def delete_relation_by_sponsor_and_sponsor_line_id(self, sponsor_id: int, sponsor_line_id: int):
         async with self.db.async_session() as session:
