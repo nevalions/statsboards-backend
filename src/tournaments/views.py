@@ -1,18 +1,19 @@
 import json
 from typing import List, Optional
 
-from fastapi import HTTPException, Request, Depends
+from fastapi import HTTPException, Request, Depends, UploadFile, File
 
 from fastapi.responses import JSONResponse, HTMLResponse
 
 from src.core import BaseRouter, MinimalBaseRouter, db
-from src.core.config import templates
+from src.core.config import templates, uploads_path
 from .db_services import TournamentServiceDB
-from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate
+from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate, UploadTournamentLogoResponse
 from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
 from src.pars_eesl import BASE_SEASON_URL
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
+from ..helpers.file_service import file_service
 from ..sponsor_lines.schemas import SponsorLineSchema
 from ..sponsors.schemas import SponsorSchema
 
@@ -101,6 +102,12 @@ class TournamentAPIRouter(
             if not all_matches:
                 return []
             return await fetch_list_of_matches_data(all_matches)
+
+        @router.post("/upload_logo", response_model=UploadTournamentLogoResponse)
+        async def upload_team_logo_endpoint(file: UploadFile = File(...)):
+            file_location = await file_service.save_upload_image(file, sub_folder='tournaments/logos')
+            print(uploads_path)
+            return {"logoUrl": file_location}
 
         @router.get(
             "/api/pars/season/{eesl_season_id}",

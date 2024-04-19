@@ -8,6 +8,9 @@ class ScoreboardSchemaBase(BaseModel):
     is_time: bool = True
     is_playclock: bool = True
     is_downdistance: bool = True
+    is_tournament_logo: bool = True
+    is_main_sponsor: bool = True
+    is_sponsor_line: bool = True
 
     team_a_game_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     team_b_game_color: Annotated[str, Path(max_length=10)] = "#1c71d8"
@@ -24,6 +27,8 @@ class ScoreboardSchemaBase(BaseModel):
     use_team_a_game_logo: bool = False
     use_team_b_game_logo: bool = False
 
+    scale_tournament_logo: float | None = 2.0
+    scale_main_sponsor: float | None = 2.0
     scale_logo_a: float | None = 2.0
     scale_logo_b: float | None = 2.0
 
@@ -39,6 +44,9 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_time: bool | None = None
     is_playclock: bool | None = None
     is_downdistance: bool | None = None
+    is_tournament_logo: bool | None = None
+    is_main_sponsor: bool | None = None
+    is_sponsor_line: bool | None = None
 
     team_a_game_color: str | None = None
     team_b_game_color: str | None = None
@@ -50,6 +58,8 @@ class ScoreboardSchemaUpdate(BaseModel):
     use_team_a_game_logo: bool | None = None
     use_team_b_game_logo: bool | None = None
 
+    scale_tournament_logo: float | None = None
+    scale_main_sponsor: float | None = None
     scale_logo_a: float | None = None
     scale_logo_b: float | None = None
 

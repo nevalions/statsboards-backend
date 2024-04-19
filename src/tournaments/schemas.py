@@ -29,6 +29,10 @@ class TournamentSchemaCreate(TournamentSchemaBase):
     pass
 
 
+class UploadTournamentLogoResponse(BaseModel):
+    logoUrl: str
+
+
 class TournamentSchema(TournamentSchemaBase):
     model_config = ConfigDict(from_attributes=True)
 

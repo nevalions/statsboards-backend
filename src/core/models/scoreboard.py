@@ -37,6 +37,24 @@ class ScoreboardDB(Base):
         default=True,
     )
 
+    is_tournament_logo: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+
+    is_main_sponsor: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+
+    is_sponsor_line: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+
     team_a_game_color: Mapped[str] = mapped_column(
         String(10),
         nullable=False,
@@ -105,6 +123,18 @@ class ScoreboardDB(Base):
         Boolean,
         nullable=True,
         default=False,
+    )
+
+    scale_tournament_logo: Mapped[int] = mapped_column(
+        Float,
+        nullable=True,
+        default=2.0,
+    )
+
+    scale_main_sponsor: Mapped[int] = mapped_column(
+        Float,
+        nullable=True,
+        default=2.0,
     )
 
     scale_logo_a: Mapped[int] = mapped_column(
