@@ -54,17 +54,17 @@ class MatchDataDB(Base):
         default="1st",
     )
 
-    gameclock: Mapped[int] = mapped_column(
-        Integer,
-        nullable=True,
-        default=720,
-    )
-
-    gameclock_status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=True,
-        default="stopped",
-    )
+    # gameclock: Mapped[int] = mapped_column(
+    #     Integer,
+    #     nullable=True,
+    #     default=720,
+    # )
+    #
+    # gameclock_status: Mapped[str] = mapped_column(
+    #     String(50),
+    #     nullable=True,
+    #     default="stopped",
+    # )
 
     # playclock: Mapped[int] = mapped_column(
     #     Integer,
