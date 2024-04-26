@@ -365,13 +365,14 @@ class MatchAPIRouter(
             team_a = await teams_service.get_by_id(new_match.team_a_id)
             team_b = await teams_service.get_by_id(new_match.team_b_id)
 
+            scale_main_sponsor = tournament_main_sponsor.scale_logo if tournament_main_sponsor else 2.0
             existing_scoreboard = await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
 
             if existing_scoreboard is None:
                 scoreboard_schema = ScoreboardSchemaCreate(
                     match_id=new_match.id,
                     scale_tournament_logo=2,
-                    scale_main_sponsor=tournament_main_sponsor.scale_logo,
+                    scale_main_sponsor=scale_main_sponsor,
                     scale_logo_a=2,
                     scale_logo_b=2,
                     team_a_game_color=team_a.team_color,
@@ -383,7 +384,7 @@ class MatchAPIRouter(
                 scoreboard_schema = ScoreboardSchemaUpdate(
                     match_id=new_match.id,
                     scale_tournament_logo=2,
-                    scale_main_sponsor=tournament_main_sponsor.scale_logo,
+                    scale_main_sponsor=scale_main_sponsor,
                     scale_logo_a=2,
                     scale_logo_b=2,
                     team_a_game_color=team_a.team_color,
