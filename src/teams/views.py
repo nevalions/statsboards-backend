@@ -54,7 +54,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             return tournament.__dict__
 
         @router.put(
-            "/",
+            "/{item_id}/",
             response_model=TeamSchema,
         )
         async def update_team_endpoint(
