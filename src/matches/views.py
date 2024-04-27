@@ -133,7 +133,7 @@ class MatchAPIRouter(
             }
 
         @router.put(
-            "/{item_id}",
+            "/{item_id}/",
             response_model=MatchSchema,
         )
         async def update_match_endpoint(

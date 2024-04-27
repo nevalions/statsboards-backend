@@ -11,7 +11,6 @@ from .db_services import TournamentServiceDB
 from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate, UploadTournamentLogoResponse
 from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
-from src.pars_eesl import BASE_SEASON_URL
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
 from ..helpers.file_service import file_service
 from ..sponsor_lines.schemas import SponsorLineSchema
@@ -40,7 +39,7 @@ class TournamentAPIRouter(
             return new_.__dict__
 
         @router.put(
-            "/",
+            "/{item_id}/",
             response_model=TournamentSchema,
         )
         async def update_tournament_endpoint(
