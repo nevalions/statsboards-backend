@@ -17,7 +17,10 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
     def route(self):
         router = super().route()
 
-        @router.post("/", response_model=PersonSchema)
+        @router.post(
+            "/",
+            response_model=PersonSchema,
+        )
         async def create_person_endpoint(
                 person: PersonSchemaCreate,
         ):
@@ -31,7 +34,10 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                     detail=f"Person creation fail"
                 )
 
-        @router.get("/eesl_id/{eesl_id}", response_model=PersonSchema)
+        @router.get(
+            "/eesl_id/{eesl_id}",
+            response_model=PersonSchema,
+        )
         async def get_person_by_eesl_id_endpoint(
                 person_eesl_id: int,
         ):
@@ -62,7 +68,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
         # async def get_matches_by_person_endpoint(person_id: int):
         #     return await self.service.get_matches_by_person_id(person_id)
 
-        @router.post("/upload_logo", response_model=UploadPersonPhotoResponse)
+        @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
         async def upload_person_logo_endpoint(file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder='persons/photos')
             print(uploads_path)
