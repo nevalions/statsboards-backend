@@ -1,6 +1,4 @@
-from fastapi import Path
-from pydantic import BaseModel, ConfigDict
-from typing import Annotated
+from pydantic import ConfigDict
 
 from datetime import datetime as date_type
 from pydantic import BaseModel

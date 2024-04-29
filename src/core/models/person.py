@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from datetime import datetime as date_type
-from sqlalchemy import String, TIMESTAMP
+from sqlalchemy import String, TIMESTAMP, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -13,6 +13,12 @@ if TYPE_CHECKING:
 class PersonDB(Base):
     __tablename__ = "person"
     __table_args__ = {"extend_existing": True}
+
+    person_eesl_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        unique=True,
+    )
 
     first_name: Mapped[str] = mapped_column(
         String(100),
@@ -35,7 +41,7 @@ class PersonDB(Base):
         server_default="",
     )
 
-    match_date: Mapped[date_type] = mapped_column(
+    person_dob: Mapped[date_type] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
     )
