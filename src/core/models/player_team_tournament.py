@@ -15,6 +15,12 @@ class PlayerTeamTournamentDB(Base):
     __tablename__ = "player_team_tournament"
     __table_args__ = {"extend_existing": True}
 
+    player_team_tournament_eesl_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        unique=True,
+    )
+
     player_id: Mapped[int] = mapped_column(
         ForeignKey(
             "player.id",
