@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Text
+from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -8,6 +8,7 @@ from src.core.models import Base
 if TYPE_CHECKING:
     from .tournament import TournamentDB
     from .team import TeamDB
+    from .player import PlayerDB
 
 
 class SportDB(Base):
@@ -26,6 +27,12 @@ class SportDB(Base):
     )
 
     tournaments: Mapped[list["TournamentDB"]] = relationship(
+        back_populates="sport",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    players: Mapped[list["PlayerDB"]] = relationship(
         back_populates="sport",
         cascade="all, delete-orphan",
         passive_deletes=True,

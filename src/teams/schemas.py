@@ -8,7 +8,7 @@ class TeamSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=50)] = 'Team'
     city: Annotated[str, Path(max_length=50)] | None = 'City'
     description: str | None = ''
-    team_logo_url: str | None = ''
+    team_logo_url: Annotated[str, Path(max_length=500)] | None = ''
     team_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     sponsor_line_id: int | None = None
     main_sponsor_id: int | None = None

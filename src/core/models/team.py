@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .sport import SportDB
     from .sponsor import SponsorDB
     from .sponsor_line import SponsorLineDB
+    from .player_team_tournament import PlayerTeamTournamentDB
 
 
 class TeamDB(Base):
@@ -37,7 +38,7 @@ class TeamDB(Base):
         server_default="",
     )
     team_logo_url: Mapped[str] = mapped_column(
-        String(255),
+        String(500),
         nullable=True,
         default="",
         server_default="",
@@ -94,4 +95,10 @@ class TeamDB(Base):
     sponsor_line: Mapped["SponsorLineDB"] = relationship(
         "SponsorLineDB",
         back_populates="teams",
+    )
+
+    player_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
+        "PlayerTeamTournamentDB",
+        cascade="all",
+        back_populates="team"
     )

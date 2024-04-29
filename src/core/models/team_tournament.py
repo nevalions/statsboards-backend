@@ -1,15 +1,16 @@
-from sqlalchemy import (
-    String,
-    Integer,
-    Text,
-    ForeignKey,
-    Column,
-    UniqueConstraint,
-    Table,
-)
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import TYPE_CHECKING
 
+from sqlalchemy import (
+    Integer,
+    ForeignKey,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.models import Base
+
+if TYPE_CHECKING:
+    from .player import PlayerDB
+    from .player_team_tournament import PlayerTeamTournamentDB
 
 
 class TeamTournamentDB(Base):
@@ -39,7 +40,6 @@ class TeamTournamentDB(Base):
         ),
         nullable=False,
     )
-
 
 # fk_players_id = relationship('PlayerDB',
 #                              secondary='player_team_tournament',
