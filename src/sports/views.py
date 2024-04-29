@@ -36,8 +36,8 @@ class SportAPIRouter(
             response_model=SportSchema,
         )
         async def update_sport_endpoint(
-            item_id: int,
-            item: SportSchemaUpdate,
+                item_id: int,
+                item: SportSchemaUpdate,
         ):
             update_ = await self.service.update_sport(
                 item_id,
@@ -55,8 +55,8 @@ class SportAPIRouter(
             response_class=JSONResponse,
         )
         async def get_sport_by_id_endpoint(
-            item_id,
-            item=Depends(self.service.get_by_id),
+                item_id,
+                item=Depends(self.service.get_by_id),
         ):
             if item:
                 return self.create_response(
@@ -77,6 +77,10 @@ class SportAPIRouter(
         @router.get("/id/{sport_id}/teams")
         async def teams_by_sport_endpoint(sport_id: int):
             return await self.service.get_teams_by_sport(sport_id)
+
+        @router.get("/id/{sport_id}/players")
+        async def players_by_sport_endpoint(sport_id: int):
+            return await self.service.get_players_by_sport(sport_id)
 
         return router
 

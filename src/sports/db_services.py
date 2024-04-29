@@ -21,10 +21,10 @@ class SportServiceDB(BaseServiceDB):
         return await super().create(season)
 
     async def update_sport(
-        self,
-        item_id: int,
-        item: SportSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: SportSchemaUpdate,
+            **kwargs,
     ):
         return await super().update(
             item_id,
@@ -33,9 +33,9 @@ class SportServiceDB(BaseServiceDB):
         )
 
     async def get_tournaments_by_sport(
-        self,
-        sport_id: int,
-        key: str = "id",
+            self,
+            sport_id: int,
+            key: str = "id",
     ):
         return await self.get_related_items_level_one_by_key_and_value(
             key,
@@ -44,9 +44,9 @@ class SportServiceDB(BaseServiceDB):
         )
 
     async def get_teams_by_sport(
-        self,
-        sport_id: int,
-        key: str = "id",
+            self,
+            sport_id: int,
+            key: str = "id",
     ):
         return await self.get_related_items_level_one_by_key_and_value(
             key,
@@ -54,6 +54,16 @@ class SportServiceDB(BaseServiceDB):
             "teams",
         )
 
+    async def get_players_by_sport(
+            self,
+            sport_id: int,
+            key: str = "id",
+    ):
+        return await self.get_related_items_level_one_by_key_and_value(
+            key,
+            sport_id,
+            "players",
+        )
 
 #
 # async def get_season_db() -> SeasonServiceDB:

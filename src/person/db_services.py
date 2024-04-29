@@ -1,7 +1,6 @@
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 
-from src.core.models import db, BaseServiceDB, PersonDB
-
+from src.core.models import BaseServiceDB, PersonDB
 from .schemas import PersonSchemaCreate, PersonSchemaUpdate
 
 
@@ -14,29 +13,29 @@ class PersonServiceDB(BaseServiceDB):
 
     async def create_or_update_person(
             self,
-            t: PersonSchemaCreate | PersonSchemaUpdate,
+            p: PersonSchemaCreate | PersonSchemaUpdate,
     ):
         try:
-            if t.person_eesl_id:
-                person_from_db = await self.get_person_by_eesl_id(t.person_eesl_id)
+            if p.person_eesl_id:
+                person_from_db = await self.get_person_by_eesl_id(p.person_eesl_id)
                 if person_from_db:
                     return await self.update_person_by_eesl(
                         "person_eesl_id",
-                        t,
+                        p,
                     )
                 else:
                     return await self.create_new_person(
-                        t,
+                        p,
                     )
             else:
                 return await self.create_new_person(
-                    t,
+                    p,
                 )
         except Exception as ex:
             print(ex)
             raise HTTPException(
                 status_code=409,
-                detail=f"Person eesl " f"id({t}) " f"returned some error",
+                detail=f"Person eesl " f"id({p}) " f"returned some error",
             )
 
     async def update_person_by_eesl(
@@ -76,15 +75,6 @@ class PersonServiceDB(BaseServiceDB):
             field_name=field_name,
         )
 
-    # async def get_matches_by_person_id(
-    #         self,
-    #         person_id: int,
-    # ):
-    #     return await self.get_related_items_level_one_by_id(
-    #         person_id,
-    #         "matches",
-    #     )
-
     async def update_person(
             self,
             item_id: int,
@@ -96,20 +86,3 @@ class PersonServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
-
-# async def get_person_db() -> PersonServiceDB:
-#     yield PersonServiceDB(db)
-#
-#
-# async def async_main() -> None:
-#     person_service = PersonServiceDB(db)
-#     # t = await person_service.get_person_by_id(1)
-#     # t = await person_service.find_person_tournament_relation(6, 2)
-#     # print(t)
-#     t = await person_service.get_person_by_eesl_id(1)
-#     if t:
-#         print(t.__dict__)
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(async_main())

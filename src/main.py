@@ -21,6 +21,7 @@ from src.sponsors import api_sponsor_router
 from src.sponsor_lines import api_sponsor_line_router
 from src.sponsor_sponsor_line_connection import api_sponsor_sponsor_line_router
 from src.person import api_person_router
+from src.player import api_player_router
 
 app = FastAPI()
 
@@ -40,6 +41,7 @@ app.include_router(api_sponsor_router)
 app.include_router(api_sponsor_line_router)
 app.include_router(api_sponsor_sponsor_line_router)
 app.include_router(api_person_router)
+app.include_router(api_player_router)
 
 app.include_router(api_pars_season_router)
 

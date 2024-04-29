@@ -64,10 +64,6 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 )
             return update_.__dict__
 
-        # @router.get("/id/{person_id}/matches/")
-        # async def get_matches_by_person_endpoint(person_id: int):
-        #     return await self.service.get_matches_by_person_id(person_id)
-
         @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
         async def upload_person_logo_endpoint(file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder='persons/photos')

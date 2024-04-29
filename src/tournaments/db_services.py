@@ -131,7 +131,6 @@ class TournamentServiceDB(BaseServiceDB):
             sponsor_service,
             'sponsor_line',
             'sponsors',
-
         )
 
     # async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):

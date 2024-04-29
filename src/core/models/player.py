@@ -32,7 +32,7 @@ class PlayerDB(Base):
         nullable=True,
     )
 
-    eesl_id: Mapped[int] = mapped_column(
+    player_eesl_id: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
         unique=True,
