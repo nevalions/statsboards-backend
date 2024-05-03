@@ -77,7 +77,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
 
         @router.post("/api/pars_and_create/all_eesl")
         async def create_parsed_players_with_person_endpoint():
-            players = await parse_all_players_from_eesl_index_page_eesl(limit=2)
+            players = await parse_all_players_from_eesl_index_page_eesl(limit=None)
             created_persons = []
             created_players = []
 
