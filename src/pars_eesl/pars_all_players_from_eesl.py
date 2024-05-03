@@ -74,12 +74,12 @@ async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_P
         # if any('disabled' in button.get('class', []) for button in pagination_buttons):
         #     print('Reached the last page.')
         #     break
-        stop = soup.find(
+        next_page_disabled = soup.find(
             "li",
-            class_="pagination-section__item pagination-section__item--arrow "
-                   "pagination-section__item--disabled",
+            class_="pagination-section__item--arrow pagination-section__item--disabled"
         )
-        if stop:
+
+        if next_page_disabled:
             print('Reached the last page.')
             break
         num += 1
