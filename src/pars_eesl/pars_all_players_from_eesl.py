@@ -167,7 +167,7 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
                 relative_image_icon_path = os.path.join(
                     "/static/uploads/persons/photos",
                     person_image_filename,
-                    resized_icon_image_path,
+                    person_image_filename_resized_icon,
                 )
 
                 relative_image_web_path = os.path.join(
@@ -178,8 +178,8 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
 
                 relative_image_path = os.path.join(
                     "/static/uploads/persons/photos",
+                    person_image_filename,
                     person_image_filename_resized_icon,
-                    image_path,
                 )
 
                 # print(image_path)
