@@ -41,43 +41,80 @@ async def parse_all_players_from_eesl_and_create_jsons():
         print(f"Something goes wrong, maybe no data")
 
 
-async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_PLAYERS_URL, limit: int = None):
+async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_PLAYERS_URL, limit: int | None = None):
     players_in_eesl = []
     num = 0
 
     while True:
-        print(num)
-        if num == 0 and num < 1:
-            url = base_url
-            req = get_url(url)
-            soup = BeautifulSoup(req.content, "lxml")
-            all_eesl_players = soup.find_all("tr", class_="table__row")
-            await get_player_from_eesl_participants(players_in_eesl, all_eesl_players,
-                                                    limit - len(players_in_eesl) if limit is not None else float('inf'))
+        remaining_limit = limit - len(players_in_eesl) if limit is not None else None
 
-            if limit is not None and len(players_in_eesl) >= limit:
-                print(f'Reached the limit of {limit} players, stopping.')
-                break
-            # await get_player_from_eesl_participants(players_in_eesl, all_eesl_players)
-            num += 1
-        else:
-            url = base_url + f"?page={num + 1}"
-            req = get_url(url)
-            soup = BeautifulSoup(req.content, "lxml")
-            all_eesl_players = soup.find_all("tr", class_="table__row")
-            await get_player_from_eesl_participants(players_in_eesl, all_eesl_players)
+        print(f"Parsing page: {num}")
+        url = base_url if num == 0 else f"{base_url}?page={num + 1}"
+        req = get_url(url)
+        soup = BeautifulSoup(req.content, "lxml")
+        all_eesl_players = soup.find_all("tr", class_="table__row")
 
-            stop = soup.find(
-                "li",
-                class_="pagination-section__item pagination-section__item--arrow "
-                       "pagination-section__item--disabled",
-            )
-            if stop:
-                print('PARSING FINISHED')
-                break
-            num += 1
+        if not all_eesl_players:
+            print('No players found on the page, stopping.')
+            break
+
+        await get_player_from_eesl_participants(players_in_eesl, all_eesl_players, remaining_limit)
+
+        if limit is not None and len(players_in_eesl) >= limit:
+            print(f'Reached the limit of {limit} players, stopping.')
+            break
+
+        # Check if it's the last page after getting players from the page
+        stop = soup.find(
+            "li",
+            class_="pagination-section__item pagination-section__item--arrow "
+                   "pagination-section__item--disabled",
+        )
+        if stop:
+            print('Reached the last page.')
+            break
+        num += 1
 
     return players_in_eesl
+
+
+# async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_PLAYERS_URL, limit: int | None = None):
+#     players_in_eesl = []
+#     num = 0
+#
+#     while True:
+#         print(num)
+#         if num == 0 and num < 1:
+#             url = base_url
+#             req = get_url(url)
+#             soup = BeautifulSoup(req.content, "lxml")
+#             all_eesl_players = soup.find_all("tr", class_="table__row")
+#             await get_player_from_eesl_participants(players_in_eesl, all_eesl_players,
+#                                                     limit - len(players_in_eesl) if limit is not None else float('inf'))
+#
+#             if limit is not None and len(players_in_eesl) >= limit:
+#                 print(f'Reached the limit of {limit} players, stopping.')
+#                 break
+#             # await get_player_from_eesl_participants(players_in_eesl, all_eesl_players)
+#             num += 1
+#         else:
+#             url = base_url + f"?page={num + 1}"
+#             req = get_url(url)
+#             soup = BeautifulSoup(req.content, "lxml")
+#             all_eesl_players = soup.find_all("tr", class_="table__row")
+#             await get_player_from_eesl_participants(players_in_eesl, all_eesl_players, None)
+#
+#             stop = soup.find(
+#                 "li",
+#                 class_="pagination-section__item pagination-section__item--arrow "
+#                        "pagination-section__item--disabled",
+#             )
+#             if stop:
+#                 print('PARSING FINISHED')
+#                 break
+#             num += 1
+#
+#     return players_in_eesl
 
 
 # async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players):
