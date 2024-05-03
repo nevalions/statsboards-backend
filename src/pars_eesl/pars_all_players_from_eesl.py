@@ -82,7 +82,7 @@ async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_P
         # if stop:
         #     print('Reached the last page.')
         #     break
-        # num += 1
+        num += 1
 
     return players_in_eesl
 
