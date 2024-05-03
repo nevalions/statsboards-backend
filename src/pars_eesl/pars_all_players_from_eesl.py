@@ -149,10 +149,11 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
                 image_path = os.path.join(uploads_path,
                                           f"persons/photos/{person_image_filename}")
                 relative_image_path = os.path.join("/static/uploads/persons/photos", person_image_filename)
+
                 # print(image_path)
                 # print(relative_image_path)
 
-                # await file_service.download_image(player_img_url, image_path)
+                await file_service.download_image(player_img_url, image_path)
 
                 player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
                 player_with_person = {
