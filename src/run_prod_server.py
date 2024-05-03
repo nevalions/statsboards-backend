@@ -25,5 +25,6 @@ if __name__ == "__main__":
         "bind": "0.0.0.0:9000",
         "workers": 4,
         "worker_class": "uvicorn.workers.UvicornWorker",
+        "timeout": 120,
     }
     Application(main.app, options).run()
