@@ -41,6 +41,20 @@ class PersonDB(Base):
         server_default="",
     )
 
+    person_photo_icon_url: Mapped[str] = mapped_column(
+        String(500),
+        nullable=True,
+        default="",
+        server_default="",
+    )
+
+    person_photo_web_url: Mapped[str] = mapped_column(
+        String(500),
+        nullable=True,
+        default="",
+        server_default="",
+    )
+
     person_dob: Mapped[date_type] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,

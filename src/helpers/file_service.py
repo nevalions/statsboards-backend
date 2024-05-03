@@ -1,6 +1,7 @@
 import os
 import shutil
 from PIL import Image
+from io import BytesIO
 from aiohttp import ClientSession
 from datetime import datetime
 from fastapi import UploadFile, HTTPException
@@ -44,6 +45,69 @@ class FileService:
         rel_dest = Path('/static/uploads') / sub_folder / filename
         return str(rel_dest)
 
+    async def save_and_resize_upload_image(
+            self,
+            upload_file: UploadFile,
+            sub_folder: str,
+            icon_height: int = 100,
+            web_view_height: int = 400,
+    ):
+        print('Saving image...')
+
+        upload_dir = self.base_upload_dir / sub_folder
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        print(upload_dir)
+
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        original_filename = f"{timestamp}_{upload_file.filename}"
+        original_dest = upload_dir / original_filename
+
+        if not upload_file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+
+        try:
+            with original_dest.open("wb") as buffer:
+                shutil.copyfileobj(upload_file.file, buffer)
+        except Exception as ex:
+            print(ex)
+            raise HTTPException(status_code=400, detail="An error occurred while uploading file.")
+
+        print('Original file destination', str(original_dest))
+
+        # Open the image for resizing
+        with original_dest.open("rb") as image_file:
+            image = Image.open(image_file)
+
+            # Create and save the icon image
+            icon_filename = f"{timestamp}_icon_{upload_file.filename}"
+            icon_dest = upload_dir / icon_filename
+            icon_width = int((image.width / image.height) * icon_height)
+            icon_image = image.resize((icon_width, icon_height), Image.Resampling.LANCZOS)
+
+            with icon_dest.open("wb") as icon_buffer:
+                icon_image.save(icon_buffer, format=image.format)
+
+            # Create and save the web view image
+            webview_filename = f"{timestamp}_webview_{upload_file.filename}"
+            webview_dest = upload_dir / webview_filename
+            webview_width = int((image.width / image.height) * web_view_height)
+            webview_image = image.resize((webview_width, web_view_height), Image.Resampling.LANCZOS)
+
+            with webview_dest.open("wb") as webview_buffer:
+                webview_image.save(webview_buffer, format=image.format)
+
+        # Construct relative path for all images
+        rel_original_dest = Path('/static/uploads') / sub_folder / original_filename
+        rel_icon_dest = Path('/static/uploads') / sub_folder / icon_filename
+        rel_webview_dest = Path('/static/uploads') / sub_folder / webview_filename
+
+        # Create a dictionary to return the paths of all the image versions created
+        return {
+            "original": str(rel_original_dest),
+            "icon": str(rel_icon_dest),
+            "webview": str(rel_webview_dest)
+        }
+
     async def get_most_common_color(self, image_path: str):
         img = Image.open(image_path)
 
@@ -84,6 +148,44 @@ class FileService:
                 # Write image data to file
                 with open(image_path, 'wb') as fp:
                     fp.write(image_data)
+
+    async def download_and_resize_image(
+            self,
+            img_url: str,
+            original_image_path: str,
+            icon_image_path: str,
+            web_view_image_path: str,
+            icon_height: int = 100,
+            web_view_height: int = 400,
+
+    ):
+        async with ClientSession() as session:
+            async with session.get(img_url) as response:
+                if response.status != 200:
+                    response.raise_for_status()
+                image_data = await response.read()
+
+                # Save the original image
+                os.makedirs(os.path.dirname(original_image_path), exist_ok=True)
+                with open(original_image_path, 'wb') as original_fp:
+                    original_fp.write(image_data)
+
+                image = Image.open(BytesIO(image_data))
+
+                # Create and save the icon image
+                icon_width = int((image.width / image.height) * icon_height)
+                icon_image = image.resize((icon_width, icon_height), Image.Resampling.LANCZOS)
+                os.makedirs(os.path.dirname(icon_image_path), exist_ok=True)
+                with open(icon_image_path, 'wb') as icon_fp:
+                    image_format = 'PNG' if image.format is None else image.format
+                    icon_image.save(icon_fp, format=image_format)
+
+                # Create and save the web view image
+                web_view_width = int((image.width / image.height) * web_view_height)
+                web_view_image = image.resize((web_view_width, web_view_height), Image.Resampling.LANCZOS)
+                os.makedirs(os.path.dirname(web_view_image_path), exist_ok=True)
+                with open(web_view_image_path, 'wb') as web_fp:
+                    web_view_image.save(web_fp, format=image_format)
 
     def hex_to_rgb(self, hex_color: str):
         hex_color = hex_color.lstrip('#')

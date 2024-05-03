@@ -58,6 +58,8 @@ class PersonServiceDB(BaseServiceDB):
             first_name=p.first_name,
             second_name=p.second_name,
             person_photo_url=p.person_photo_url,
+            person_photo_icon_url=p.person_photo_icon_url,
+            person_photo_web_url=p.person_photo_web_url,
             person_dob=p.person_dob,
             person_eesl_id=p.person_eesl_id,
         )

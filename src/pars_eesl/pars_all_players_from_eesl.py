@@ -142,18 +142,58 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
                 )
                 player_img_url = f"{img_url}.{extension.split('.')[1]}"
 
+                icon_image_height = 100
+                web_view_image_height = 400
+
                 path = urlparse(player_img_url).path
                 ext = Path(path).suffix
                 person_image_filename = f'{player_eesl_id}_{player_second_name}_{player_first_name}{ext}'
+                person_image_filename_resized_icon = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}'
+                person_image_filename_resized_web_view = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}'
 
-                image_path = os.path.join(uploads_path,
-                                          f"persons/photos/{person_image_filename}")
-                relative_image_path = os.path.join("/static/uploads/persons/photos", person_image_filename)
+                image_path = os.path.join(
+                    uploads_path,
+                    f"persons/photos/{person_image_filename}"
+                )
+                resized_icon_image_path = os.path.join(
+                    uploads_path,
+                    f"persons/photos/{person_image_filename_resized_icon}",
+                )
+                resized_web_image_path = os.path.join(
+                    uploads_path,
+                    f"persons/photos/{person_image_filename_resized_web_view}",
+                )
+
+                relative_image_icon_path = os.path.join(
+                    "/static/uploads/persons/photos",
+                    person_image_filename,
+                    resized_icon_image_path,
+                )
+
+                relative_image_web_path = os.path.join(
+                    "/static/uploads/persons/photos",
+                    person_image_filename,
+                    person_image_filename_resized_web_view,
+                )
+
+                relative_image_path = os.path.join(
+                    "/static/uploads/persons/photos",
+                    person_image_filename_resized_icon,
+                    image_path,
+                )
 
                 # print(image_path)
                 # print(relative_image_path)
 
-                await file_service.download_image(player_img_url, image_path)
+                # await file_service.download_image(player_img_url, image_path)
+                await file_service.download_and_resize_image(
+                    player_img_url,
+                    image_path,
+                    resized_icon_image_path,
+                    resized_web_image_path,
+                    icon_height=icon_image_height,
+                    web_view_height=web_view_image_height,
+                )
 
                 player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
                 player_with_person = {
@@ -161,6 +201,8 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
                         'first_name': player_first_name,
                         'second_name': player_second_name,
                         'person_photo_url': relative_image_path,
+                        'person_photo_icon_url': relative_image_icon_path,
+                        'person_photo_web_url': relative_image_web_path,
                         'person_dob': player_dob,
                         'person_eesl_id': player_eesl_id,
                     },

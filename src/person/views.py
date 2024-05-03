@@ -4,7 +4,8 @@ from fastapi import HTTPException, UploadFile, File
 
 from src.core import BaseRouter, db
 from .db_services import PersonServiceDB
-from .schemas import PersonSchema, PersonSchemaCreate, PersonSchemaUpdate, UploadPersonPhotoResponse
+from .schemas import PersonSchema, PersonSchemaCreate, PersonSchemaUpdate, UploadPersonPhotoResponse, \
+    UploadResizePersonPhotoResponse
 from ..core.config import uploads_path
 from ..helpers.file_service import file_service
 
@@ -65,10 +66,21 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             return update_.__dict__
 
         @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
-        async def upload_person_logo_endpoint(file: UploadFile = File(...)):
+        async def upload_person_photo_endpoint(file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder='persons/photos')
             print(uploads_path)
             return {"photoUrl": file_location}
+
+        @router.post("/upload_resize_photo", response_model=UploadResizePersonPhotoResponse)
+        async def upload_person_photo_endpoint(file: UploadFile = File(...)):
+            uploaded_paths = await file_service.save_and_resize_upload_image(
+                file,
+                sub_folder='persons/photos',
+                icon_height=100,
+                web_view_height=400,
+            )
+            print(uploads_path)
+            return uploaded_paths
 
         return router
 
