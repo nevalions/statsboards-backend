@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException, UploadFile, File
 
 from src.core import BaseRouter, db

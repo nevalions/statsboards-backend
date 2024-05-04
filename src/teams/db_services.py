@@ -66,6 +66,8 @@ class TeamServiceDB(BaseServiceDB):
             title=t.title,
             description=t.description,
             team_logo_url=t.team_logo_url,
+            team_logo_icon_url=t.team_logo_icon_url,
+            team_logo_web_url=t.team_logo_web_url,
             team_color=t.team_color,
             sponsor_line_id=t.sponsor_line_id,
             main_sponsor_id=t.main_sponsor_id,

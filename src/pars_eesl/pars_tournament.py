@@ -34,7 +34,8 @@ async def parse_tournament_teams_and_create_jsons(t_id: int):
 
 
 async def parse_tournament_teams_index_page_eesl(
-        t_id: int, base_url: str = BASE_TOURNAMENT_URL
+        t_id: int,
+        base_url: str = BASE_TOURNAMENT_URL,
 ):
     teams_in_tournament = []
     url = f"{base_url}{str(t_id)}/teams"
@@ -56,11 +57,44 @@ async def parse_tournament_teams_index_page_eesl(
             path = urlparse(team_logo_url).path
             ext = Path(path).suffix
 
-            image_path = os.path.join(uploads_path, f"teams/logos/{team_title}{ext}")
-            relative_image_path = os.path.join("/static/uploads/teams/logos", f"{team_title}{ext}")
-            # print(image_path)
+            icon_image_height = 100
+            web_view_image_height = 400
 
-            await file_service.download_image(team_logo_url, image_path)
+            main_path = f"teams/logos/"
+            static_uploads_path = f"/static/uploads/"
+
+            image_filename = f"{team_title}".strip().replace(" ", "_")
+            image_icon_filename = f"{image_filename}_{icon_image_height}px{ext}"
+            image_webview_filename = f"{image_filename}_{web_view_image_height}px{ext}"
+
+            image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
+            image_icon_path = os.path.join(uploads_path, f"{main_path}{image_icon_filename}")
+            image_webview_path = os.path.join(uploads_path, f"{main_path}{image_webview_filename}")
+
+            relative_image_path = os.path.join(
+                f"{static_uploads_path}{main_path}",
+                f"{image_filename}{ext}"
+            )
+
+            relative_image_icon_path = os.path.join(
+                f"{static_uploads_path}{main_path}",
+                f"{image_icon_filename}"
+            )
+            relative_image_webview_path = os.path.join(
+                f"{static_uploads_path}{main_path}",
+                f"{image_webview_filename}"
+            )
+
+            # await file_service.download_image(team_logo_url, image_path)
+
+            await file_service.download_and_resize_image(
+                team_logo_url,
+                image_path,
+                image_icon_path,
+                image_webview_path,
+                icon_height=icon_image_height,
+                web_view_height=web_view_image_height,
+            )
 
             team_color = '#c01c28'
             try:
@@ -73,6 +107,8 @@ async def parse_tournament_teams_index_page_eesl(
                 "title": team_title,
                 "description": "",
                 "team_logo_url": relative_image_path,
+                'team_logo_icon_url': relative_image_icon_path,
+                'team_logo_web_url': relative_image_webview_path,
                 "city": '',
                 "team_color": team_color,
                 "sport_id": 1,
@@ -148,7 +184,8 @@ async def parse_tournament_matches_index_page_eesl(
 
 
 async def main():
-    m = await parse_tournament_matches_and_create_jsons(26)
+    m = await parse_tournament_teams_index_page_eesl(28)
+    # m = await parse_tournament_matches_and_create_jsons(26)
     # m = parse_tournament_matches_and_create_jsons(19)
     pprint(m)
 

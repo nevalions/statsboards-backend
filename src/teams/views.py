@@ -4,7 +4,8 @@ from fastapi import HTTPException, UploadFile, File
 
 from src.core import BaseRouter, db
 from .db_services import TeamServiceDB
-from .schemas import TeamSchema, TeamSchemaCreate, TeamSchemaUpdate, UploadTeamLogoResponse
+from .schemas import TeamSchema, TeamSchemaCreate, TeamSchemaUpdate, UploadTeamLogoResponse, \
+    UploadResizeTeamLogoResponse
 from ..core.config import uploads_path
 from ..helpers.file_service import file_service
 from ..pars_eesl.pars_tournament import parse_tournament_teams_index_page_eesl
@@ -78,19 +79,31 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             print(uploads_path)
             return {"logoUrl": file_location}
 
+        @router.post("/upload_resize_logo", response_model=UploadResizeTeamLogoResponse)
+        async def upload_and_resize_team_logo_endpoint(file: UploadFile = File(...)):
+            uploaded_paths = await file_service.save_and_resize_upload_image(
+                file,
+                sub_folder='teams/logos',
+                icon_height=100,
+                web_view_height=400,
+            )
+            print(uploads_path)
+            return uploaded_paths
+
         @router.get(
-            "/api/pars/tournament/{eesl_tournament_id}",
+            "/pars/tournament/{eesl_tournament_id}",
             response_model=List[TeamSchemaCreate],
         )
         async def get_parse_tournament_teams_endpoint(eesl_tournament_id: int):
             return await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
 
-        @router.post("/api/pars_and_create/tournament/{eesl_tournament_id}")
+        @router.post("/pars_and_create/tournament/{eesl_tournament_id}")
         async def create_parsed_teams_endpoint(
                 eesl_tournament_id: int,
         ):
             tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
             teams_list = await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
+            # print(teams_list)
 
             created_teams = []
             created_team_tournament_ids = []
@@ -98,6 +111,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 for t in teams_list:
                     team = TeamSchemaCreate(**t)
                     created_team = await self.service.create_or_update_team(team)
+                    # print(created_team.__dict__)
                     created_teams.append(created_team)
                     if created_team and tournament:
                         dict_conv = TeamTournamentSchemaCreate(
