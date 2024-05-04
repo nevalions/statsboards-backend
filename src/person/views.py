@@ -72,7 +72,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             return {"photoUrl": file_location}
 
         @router.post("/upload_resize_photo", response_model=UploadResizePersonPhotoResponse)
-        async def upload_person_photo_endpoint(file: UploadFile = File(...)):
+        async def upload_and_resize_person_photo_endpoint(file: UploadFile = File(...)):
             uploaded_paths = await file_service.save_and_resize_upload_image(
                 file,
                 sub_folder='persons/photos',

@@ -64,26 +64,6 @@ async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_P
             print(f'Reached the limit of {limit} players, stopping.')
             break
 
-        # Check if it's the last page after getting players from the page
-        # pagination_buttons = soup.find_all(
-        #     "li",
-        #     class_="pagination-section__item pagination-section__item--arrow"
-        # )
-        #
-        # # If there's a disabled class present in any of the pagination buttons, we stop.
-        # if any('disabled' in button.get('class', []) for button in pagination_buttons):
-        #     print('Reached the last page.')
-        #     break
-
-        # next_page_disabled = soup.find(
-        #     "li",
-        #     class_="pagination-section__item--arrow pagination-section__item--disabled"
-        # )
-        #
-        # if next_page_disabled:
-        #     print('Reached the last page.')
-        #     break
-
         # Pagination logic
         pagination = soup.find("ul", {"id": "players-pagination"})
         if pagination:
@@ -102,45 +82,6 @@ async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_P
         num += 1
 
     return players_in_eesl
-
-
-# async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_PLAYERS_URL, limit: int | None = None):
-#     players_in_eesl = []
-#     num = 0
-#
-#     while True:
-#         print(num)
-#         if num == 0 and num < 1:
-#             url = base_url
-#             req = get_url(url)
-#             soup = BeautifulSoup(req.content, "lxml")
-#             all_eesl_players = soup.find_all("tr", class_="table__row")
-#             await get_player_from_eesl_participants(players_in_eesl, all_eesl_players,
-#                                                     limit - len(players_in_eesl) if limit is not None else float('inf'))
-#
-#             if limit is not None and len(players_in_eesl) >= limit:
-#                 print(f'Reached the limit of {limit} players, stopping.')
-#                 break
-#             # await get_player_from_eesl_participants(players_in_eesl, all_eesl_players)
-#             num += 1
-#         else:
-#             url = base_url + f"?page={num + 1}"
-#             req = get_url(url)
-#             soup = BeautifulSoup(req.content, "lxml")
-#             all_eesl_players = soup.find_all("tr", class_="table__row")
-#             await get_player_from_eesl_participants(players_in_eesl, all_eesl_players, None)
-#
-#             stop = soup.find(
-#                 "li",
-#                 class_="pagination-section__item pagination-section__item--arrow "
-#                        "pagination-section__item--disabled",
-#             )
-#             if stop:
-#                 print('PARSING FINISHED')
-#                 break
-#             num += 1
-#
-#     return players_in_eesl
 
 
 # async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players):
@@ -235,14 +176,6 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
                         'player_eesl_id': player_eesl_id,
                     }
                 }
-                # player = {
-                #     "player_eesl_id": player_eesl_id,
-                #     "player_full_name": player_full_name,
-                #     "player_first_name": player_first_name,
-                #     "player_second_name": player_second_name,
-                #     "player_img_url": player_img_url,
-                #     "player_dob": player_dob,
-                # }
 
                 players_in_eesl.append(player_with_person.copy())
                 if remaining_limit is not float('inf'):
@@ -253,7 +186,7 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
 
 async def main():
     # m = await parse_all_players_from_eesl_and_create_jsons()
-    m = await parse_all_players_from_eesl_index_page_eesl(limit=2)
+    m = await parse_all_players_from_eesl_index_page_eesl(limit=None)
     # m = collect_players_dob_from_all_eesl(331)
     pprint(m)
 
