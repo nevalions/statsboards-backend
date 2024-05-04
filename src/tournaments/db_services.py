@@ -63,6 +63,8 @@ class TournamentServiceDB(BaseServiceDB):
             title=t.title,
             description=t.description,
             tournament_logo_url=t.tournament_logo_url,
+            tournament_logo_icon_url=t.tournament_logo_icon_url,
+            tournament_logo_web_url=t.tournament_logo_web_url,
             season_id=t.season_id,
             sport_id=t.sport_id,
             main_sponsor_id=t.main_sponsor_id,

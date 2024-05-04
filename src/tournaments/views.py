@@ -8,7 +8,8 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from src.core import BaseRouter, MinimalBaseRouter, db
 from src.core.config import templates, uploads_path
 from .db_services import TournamentServiceDB
-from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate, UploadTournamentLogoResponse
+from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate, UploadTournamentLogoResponse, \
+    UploadResizeTournamentLogoResponse
 from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
@@ -103,19 +104,30 @@ class TournamentAPIRouter(
             return await fetch_list_of_matches_data(all_matches)
 
         @router.post("/upload_logo", response_model=UploadTournamentLogoResponse)
-        async def upload_team_logo_endpoint(file: UploadFile = File(...)):
+        async def upload_tournament_logo_endpoint(file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder='tournaments/logos')
             print(uploads_path)
             return {"logoUrl": file_location}
 
+        @router.post("/upload_resize_logo", response_model=UploadResizeTournamentLogoResponse)
+        async def upload_and_resize_tournament_logo_endpoint(file: UploadFile = File(...)):
+            uploaded_paths = await file_service.save_and_resize_upload_image(
+                file,
+                sub_folder='tournaments/logos',
+                icon_height=100,
+                web_view_height=400,
+            )
+            print(uploads_path)
+            return uploaded_paths
+
         @router.get(
-            "/api/pars/season/{eesl_season_id}",
+            "/pars/season/{eesl_season_id}",
             response_model=List[TournamentSchemaCreate],
         )
         async def get_parsed_season_tournaments_endpoint(eesl_season_id: int):
             return await parse_season_and_create_jsons(eesl_season_id)
 
-        @router.post("/api/pars_and_create/season/{eesl_season_id}")
+        @router.post("/pars_and_create/season/{eesl_season_id}")
         async def create_parsed_tournament_endpoint(
                 eesl_season_id: int,
         ):

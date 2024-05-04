@@ -45,6 +45,20 @@ class TournamentDB(SeasonSportRelationMixin, Base):
         server_default="",
     )
 
+    tournament_logo_icon_url: Mapped[str] = mapped_column(
+        String(500),
+        nullable=True,
+        default="",
+        server_default="",
+    )
+
+    tournament_logo_web_url: Mapped[str] = mapped_column(
+        String(500),
+        nullable=True,
+        default="",
+        server_default="",
+    )
+
     main_sponsor_id: Mapped[int] = mapped_column(
         ForeignKey("sponsor.id"),
         nullable=True,
