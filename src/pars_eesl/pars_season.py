@@ -35,11 +35,42 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
             path = urlparse(tournament_logo_url).path
             ext = Path(path).suffix
 
-            image_path = os.path.join(uploads_path, f"tournaments/logos/{tournament_title}{ext}")
-            relative_image_path = os.path.join("/static/uploads/tournaments/logos", f"{tournament_title}{ext}")
-            # print(image_path)
+            icon_image_height = 100
+            web_view_image_height = 400
 
-            await file_service.download_image(tournament_logo_url, image_path)
+            main_path = f"tournaments/logos/"
+            static_uploads_path = f"/static/uploads/"
+
+            image_filename = f"{tournament_logo_url}".strip().replace(" ", "_")
+            image_icon_filename = f"{image_filename}_{icon_image_height}px{ext}"
+            image_webview_filename = f"{image_filename}_{web_view_image_height}px{ext}"
+
+            image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
+            image_icon_path = os.path.join(uploads_path, f"{main_path}{image_icon_filename}")
+            image_webview_path = os.path.join(uploads_path, f"{main_path}{image_webview_filename}")
+
+            relative_image_path = os.path.join(
+                f"{static_uploads_path}{main_path}",
+                f"{image_filename}{ext}"
+            )
+
+            relative_image_icon_path = os.path.join(
+                f"{static_uploads_path}{main_path}",
+                f"{image_icon_filename}"
+            )
+            relative_image_webview_path = os.path.join(
+                f"{static_uploads_path}{main_path}",
+                f"{image_webview_filename}"
+            )
+
+            await file_service.download_and_resize_image(
+                tournament_logo_url,
+                image_path,
+                image_icon_path,
+                image_webview_path,
+                icon_height=icon_image_height,
+                web_view_height=web_view_image_height,
+            )
 
             tourn = {
                 "tournament_eesl_id": int(
@@ -55,6 +86,12 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
                 "sport_id": 1,
             }
             tournaments_in_season.append(tourn.copy())
+
+            # image_path = os.path.join(uploads_path, f"tournaments/logos/{tournament_title}{ext}")
+            # relative_image_path = os.path.join("/static/uploads/tournaments/logos", f"{tournament_title}{ext}")
+            # print(image_path)
+
+            # await file_service.download_image(tournament_logo_url, image_path)
         except Exception as ex:
             print(ex)
     return tournaments_in_season

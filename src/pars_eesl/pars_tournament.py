@@ -54,51 +54,57 @@ async def parse_tournament_teams_index_page_eesl(
             team_logo_url = t.find(
                 "img", alt=t.find("a", class_="teams__name-link").text.strip()
             ).get("src")
-            path = urlparse(team_logo_url).path
-            ext = Path(path).suffix
-
+            # path = urlparse(team_logo_url).path
+            # ext = Path(path).suffix
+            #
             icon_image_height = 100
             web_view_image_height = 400
+            #
+            # main_path = f"teams/logos/"
+            # static_uploads_path = f"/static/uploads/"
+            #
+            # image_filename = f"{team_title}".strip().replace(" ", "_")
+            # image_icon_filename = f"{image_filename}_{icon_image_height}px{ext}"
+            # image_webview_filename = f"{image_filename}_{web_view_image_height}px{ext}"
+            #
+            # image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
+            # image_icon_path = os.path.join(uploads_path, f"{main_path}{image_icon_filename}")
+            # image_webview_path = os.path.join(uploads_path, f"{main_path}{image_webview_filename}")
+            #
+            # relative_image_path = os.path.join(
+            #     f"{static_uploads_path}{main_path}",
+            #     f"{image_filename}{ext}"
+            # )
+            #
+            # relative_image_icon_path = os.path.join(
+            #     f"{static_uploads_path}{main_path}",
+            #     f"{image_icon_filename}"
+            # )
+            # relative_image_webview_path = os.path.join(
+            #     f"{static_uploads_path}{main_path}",
+            #     f"{image_webview_filename}"
+            # )
+            #
+            # await file_service.download_and_resize_image(
+            #     team_logo_url,
+            #     image_path,
+            #     image_icon_path,
+            #     image_webview_path,
+            #     icon_height=icon_image_height,
+            #     web_view_height=web_view_image_height,
+            # )
 
-            main_path = f"teams/logos/"
-            static_uploads_path = f"/static/uploads/"
-
-            image_filename = f"{team_title}".strip().replace(" ", "_")
-            image_icon_filename = f"{image_filename}_{icon_image_height}px{ext}"
-            image_webview_filename = f"{image_filename}_{web_view_image_height}px{ext}"
-
-            image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
-            image_icon_path = os.path.join(uploads_path, f"{main_path}{image_icon_filename}")
-            image_webview_path = os.path.join(uploads_path, f"{main_path}{image_webview_filename}")
-
-            relative_image_path = os.path.join(
-                f"{static_uploads_path}{main_path}",
-                f"{image_filename}{ext}"
-            )
-
-            relative_image_icon_path = os.path.join(
-                f"{static_uploads_path}{main_path}",
-                f"{image_icon_filename}"
-            )
-            relative_image_webview_path = os.path.join(
-                f"{static_uploads_path}{main_path}",
-                f"{image_webview_filename}"
-            )
-
-            # await file_service.download_image(team_logo_url, image_path)
-
-            await file_service.download_and_resize_image(
-                team_logo_url,
-                image_path,
-                image_icon_path,
-                image_webview_path,
+            image_info = await file_service.download_and_process_image(
+                image_url=team_logo_url,
+                image_type_prefix='teams/logos/',
+                image_title=team_title,
                 icon_height=icon_image_height,
                 web_view_height=web_view_image_height,
             )
 
             team_color = '#c01c28'
             try:
-                team_color = await file_service.get_most_common_color(image_path) or team_color
+                team_color = await file_service.get_most_common_color(image_info['image_path']) or team_color
             except Exception as err:
                 print(f"Failed to get color for {team_logo_url}. Using default color #c01c28. Error: {err}")
 
@@ -106,14 +112,16 @@ async def parse_tournament_teams_index_page_eesl(
                 "team_eesl_id": team_eesl_id,
                 "title": team_title,
                 "description": "",
-                "team_logo_url": relative_image_path,
-                'team_logo_icon_url': relative_image_icon_path,
-                'team_logo_web_url': relative_image_webview_path,
+                "team_logo_url": image_info['image_url'],
+                'team_logo_icon_url': image_info['image_icon_url'],
+                'team_logo_web_url': image_info['image_webview_url'],
                 "city": '',
                 "team_color": team_color,
                 "sport_id": 1,
             }
             teams_in_tournament.append(team.copy())
+
+            # await file_service.download_image(team_logo_url, image_path)
 
         except Exception as ex:
             print(ex)

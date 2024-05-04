@@ -1,5 +1,7 @@
 import os
 import shutil
+from src.core.config import uploads_path
+from urllib.parse import urlparse
 from PIL import Image
 from io import BytesIO
 from aiohttp import ClientSession
@@ -16,6 +18,11 @@ class FileService:
     ):
         self.base_upload_dir = upload_dir
         self.base_upload_dir.mkdir(parents=True, exist_ok=True)
+
+    def sanitize_filename(sels, filename):
+        filename = filename.strip().replace(' ', '_')
+
+        return filename
 
     async def save_upload_image(self, upload_file: UploadFile, sub_folder: str):
         print('Saving image...')
@@ -186,6 +193,61 @@ class FileService:
                 os.makedirs(os.path.dirname(web_view_image_path), exist_ok=True)
                 with open(web_view_image_path, 'wb') as web_fp:
                     web_view_image.save(web_fp, format=image_format)
+
+    # Import necessary modules at the top (os, urlparse, etc.)
+
+    async def download_and_process_image(
+            self,
+            image_url: str,
+            image_type_prefix: str,
+            image_title: str,
+            icon_height: int,
+            web_view_height: int,
+    ):
+        path = urlparse(image_url).path
+        ext = Path(path).suffix
+
+        main_path = f"{image_type_prefix}"
+        static_uploads_path = "/static/uploads/"
+
+        image_filename = image_title.strip().replace(" ", "_")
+        image_icon_filename = f"{image_filename}_{icon_height}px{ext}"
+        image_webview_filename = f"{image_filename}_{web_view_height}px{ext}"
+
+        image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
+        image_icon_path = os.path.join(uploads_path, f"{main_path}{image_icon_filename}")
+        image_webview_path = os.path.join(uploads_path, f"{main_path}{image_webview_filename}")
+
+        relative_image_path = os.path.join(
+            f"{static_uploads_path}{main_path}",
+            f"{image_filename}{ext}"
+        )
+        relative_image_icon_path = os.path.join(
+            f"{static_uploads_path}{main_path}",
+            f"{image_icon_filename}"
+        )
+        relative_image_webview_path = os.path.join(
+            f"{static_uploads_path}{main_path}",
+            f"{image_webview_filename}"
+        )
+
+        # Download and resize the image
+        await file_service.download_and_resize_image(
+            image_url,
+            image_path,
+            image_icon_path,
+            image_webview_path,
+            icon_height=icon_height,
+            web_view_height=web_view_height,
+        )
+
+        # Return the relative paths for use in the data structure
+        return {
+            "image_path": image_path,
+            "image_url": relative_image_path,
+            "image_icon_url": relative_image_icon_path,
+            "image_webview_url": relative_image_webview_path,
+        }
 
     def hex_to_rgb(self, hex_color: str):
         hex_color = hex_color.lstrip('#')
