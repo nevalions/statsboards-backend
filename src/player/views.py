@@ -75,9 +75,9 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         async def get_parse_player_with_person_teams_endpoint():
             return await parse_all_players_from_eesl_index_page_eesl(limit=2)
 
-        @router.post("/api/pars_and_create/all_eesl")
+        @router.post("/api/pars_and_create/all_eesl/")
         async def create_parsed_players_with_person_endpoint():
-            players = await parse_all_players_from_eesl_index_page_eesl(limit=None)
+            players = await parse_all_players_from_eesl_index_page_eesl(start_page=None, limit=None)
             created_persons = []
             created_players = []
 

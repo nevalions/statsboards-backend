@@ -41,9 +41,16 @@ async def parse_all_players_from_eesl_and_create_jsons():
         print(f"Something goes wrong, maybe no data")
 
 
-async def parse_all_players_from_eesl_index_page_eesl(base_url: str = BASE_ALL_PLAYERS_URL, limit: int | None = None):
+async def parse_all_players_from_eesl_index_page_eesl(
+        base_url: str = BASE_ALL_PLAYERS_URL,
+        start_page: int = None,
+        limit: int = None
+):
     players_in_eesl = []
     num = 0
+
+    if start_page > 0:
+        num = num + start_page - 1
 
     while True:
         remaining_limit = limit - len(players_in_eesl) if limit is not None else None
