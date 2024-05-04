@@ -231,7 +231,7 @@ class BaseServiceDB:
     async def get_all_elements(
             self,
             skip: int = 0,
-            limit: int = 100,
+            limit: int = 500,
             order_by: str = "id",
             descending: bool = False,
     ):
