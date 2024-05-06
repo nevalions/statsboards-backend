@@ -16,7 +16,7 @@ class PositionServiceDB(BaseServiceDB):
     ):
         position = self.model(
             sport_id=t.sport_id,
-            title=t.title,
+            title=t.title.upper(),
         )
 
         print('position', position)
