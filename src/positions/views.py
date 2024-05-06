@@ -36,6 +36,15 @@ class PositionAPIRouter(BaseRouter[PositionSchema, PositionSchemaCreate, Positio
                 )
             return update_.__dict__
 
+        @router.get(
+            "/title/{item_title}/",
+            response_model=PositionSchema,
+        )
+        async def get_position_by_title_endpoint(
+                item_title: str
+        ):
+            return await self.service.get_position_by_title(item_title)
+
         return router
 
 
