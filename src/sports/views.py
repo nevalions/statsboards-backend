@@ -82,6 +82,10 @@ class SportAPIRouter(
         async def players_by_sport_endpoint(sport_id: int):
             return await self.service.get_players_by_sport(sport_id)
 
+        @router.get("/id/{sport_id}/positions")
+        async def positions_by_sport_endpoint(sport_id: int):
+            return await self.service.get_positions_by_sport(sport_id)
+
         return router
 
 

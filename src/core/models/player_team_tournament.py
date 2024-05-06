@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .player import PlayerDB
     from .tournament import TournamentDB
     from .team import TeamDB
+    from .position import PositionDB
 
 
 class PlayerTeamTournamentDB(Base):
@@ -42,6 +43,15 @@ class PlayerTeamTournamentDB(Base):
         nullable=True,
     )
 
+    position_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(
+            "position.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+    )
+
     team: Mapped["TeamDB"] = relationship(
         "TeamDB",
         back_populates="player_team_tournament",
@@ -68,9 +78,14 @@ class PlayerTeamTournamentDB(Base):
         server_default="0",
     )
 
-    player_position: Mapped[str] = mapped_column(
-        String(20),
-        nullable=True,
-        default="",
-        server_default="",
+    position: Mapped["PositionDB"] = relationship(
+        "PositionDB",
+        back_populates="players",
     )
+    #
+    # player_position: Mapped[str] = mapped_column(
+    #     String(20),
+    #     nullable=True,
+    #     default="",
+    #     server_default="",
+    # )

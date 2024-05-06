@@ -65,6 +65,17 @@ class SportServiceDB(BaseServiceDB):
             "players",
         )
 
+    async def get_positions_by_sport(
+            self,
+            sport_id: int,
+            key: str = "id",
+    ):
+        return await self.get_related_items_level_one_by_key_and_value(
+            key,
+            sport_id,
+            "positions",
+        )
+
 #
 # async def get_season_db() -> SeasonServiceDB:
 #     yield SeasonServiceDB(db)

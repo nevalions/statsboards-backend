@@ -59,10 +59,10 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         player_team_tournament = self.model(
             player_team_tournament_eesl_id=p.player_team_tournament_eesl_id,
             player_id=p.player_id,
+            position_id=p.position_id,
             team_id=p.team_id,
             tournament_id=p.tournament_id,
             player_number=p.player_number,
-            player_position=p.player_position,
 
         )
 

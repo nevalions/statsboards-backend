@@ -18,7 +18,8 @@ __all__ = (
     "SponsorSponsorLineDB",
     "PersonDB",
     "PlayerDB",
-    "PlayerTeamTournamentDB"
+    "PlayerTeamTournamentDB",
+    "PositionDB",
 )
 
 from .base import Base, BaseServiceDB, db
@@ -39,3 +40,4 @@ from .sponsor_sponsor_line_connection import SponsorSponsorLineDB
 from .person import PersonDB
 from .player import PlayerDB
 from .player_team_tournament import PlayerTeamTournamentDB
+from .position import PositionDB

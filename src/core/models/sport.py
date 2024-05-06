@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .tournament import TournamentDB
     from .team import TeamDB
     from .player import PlayerDB
+    from .position import PositionDB
 
 
 class SportDB(Base):
@@ -39,6 +40,12 @@ class SportDB(Base):
     )
 
     teams: Mapped[list["TeamDB"]] = relationship(
+        back_populates="sport",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    positions: Mapped[list["PositionDB"]] = relationship(
         back_populates="sport",
         cascade="all, delete-orphan",
         passive_deletes=True,

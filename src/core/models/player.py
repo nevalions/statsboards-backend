@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, ForeignKey, Integer
+from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from .person import PersonDB
     from .sport import SportDB
     from .player_team_tournament import PlayerTeamTournamentDB
-    from .team_tournament import TeamTournamentDB
 
 
 class PlayerDB(Base):
