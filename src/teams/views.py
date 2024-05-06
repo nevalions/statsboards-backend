@@ -87,7 +87,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 icon_height=100,
                 web_view_height=400,
             )
-            print(uploads_path)
+            # print(uploaded_paths)
             return uploaded_paths
 
         @router.get(

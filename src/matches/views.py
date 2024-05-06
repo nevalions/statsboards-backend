@@ -30,7 +30,7 @@ from ..playclocks.schemas import PlayClockSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from ..sponsors.db_services import SponsorServiceDB
 from ..teams.db_services import TeamServiceDB
-from ..teams.schemas import UploadTeamLogoResponse
+from ..teams.schemas import UploadTeamLogoResponse, UploadResizeTeamLogoResponse
 from ..tournaments.db_services import TournamentServiceDB
 
 
@@ -239,6 +239,17 @@ class MatchAPIRouter(
         async def upload_team_logo(match_id: int, file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder=f'match/{match_id}/teams_logos')
             return {"logoUrl": file_location}
+
+        @router.post("/id/{match_id}/upload_resize_logo", response_model=UploadResizeTeamLogoResponse)
+        async def upload_resize_team_logo(match_id: int, file: UploadFile = File(...)):
+            uploaded_paths = await file_service.save_and_resize_upload_image(
+                file,
+                sub_folder=f'match/{match_id}/teams_logos',
+                icon_height=100,
+                web_view_height=400,
+            )
+            # print(uploaded_paths)
+            return uploaded_paths
 
         @router.websocket("/ws/id/{match_id}/{client_id}/")
         async def websocket_endpoint(websocket: WebSocket, client_id: str, match_id: int):
