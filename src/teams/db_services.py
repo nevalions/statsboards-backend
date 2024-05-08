@@ -1,8 +1,9 @@
 import asyncio
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import select
 
-from src.core.models import db, BaseServiceDB, TeamDB
+from src.core.models import db, BaseServiceDB, TeamDB, PlayerTeamTournamentDB
 
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
 
@@ -94,6 +95,22 @@ class TeamServiceDB(BaseServiceDB):
             team_id,
             "matches",
         )
+
+    async def get_players_by_team_id_tournament_id(
+            self,
+            team_id: int,
+            tournament_id: int,
+    ):
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerTeamTournamentDB)
+                .where(PlayerTeamTournamentDB.team_id == team_id)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+            )
+
+            results = await session.execute(stmt)
+            players = results.scalars().all()
+            return players
 
     async def update_team(
             self,

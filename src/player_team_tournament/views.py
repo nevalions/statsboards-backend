@@ -62,7 +62,7 @@ class PlayerTeamTournamentAPIRouter(
             update_ = await self.service.update_player_team_tournament(item_id, item)
             if update_ is None:
                 raise HTTPException(
-                    status_code=404, detail=f"Person id {item_id} not found"
+                    status_code=404, detail=f"Player team tournament id {item_id} not found"
                 )
             return update_.__dict__
 
