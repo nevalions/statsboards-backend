@@ -1,8 +1,9 @@
 import asyncio
 
 from fastapi import HTTPException
+from sqlalchemy import select
 
-from src.core.models import db, BaseServiceDB, TournamentDB
+from src.core.models import db, BaseServiceDB, TournamentDB, PlayerTeamTournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 from ..sponsor_lines.db_services import SponsorLineServiceDB
 from ..sponsors.db_services import SponsorServiceDB
@@ -104,6 +105,29 @@ class TournamentServiceDB(BaseServiceDB):
             tournament_id,
             "teams",
         )
+
+    # async def get_players_by_tournament(
+    #         self,
+    #         tournament_id: int,
+    # ):
+    #     return await self.get_related_items_level_one_by_id(
+    #         tournament_id,
+    #         "players_team_tournament",
+    #     )
+
+    async def get_players_by_tournament(
+            self,
+            tournament_id: int,
+    ):
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerTeamTournamentDB)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+            )
+
+            results = await session.execute(stmt)
+            players = results.scalars().all()
+            return players
 
     async def get_matches_by_tournament(
             self,

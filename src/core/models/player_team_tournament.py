@@ -54,7 +54,7 @@ class PlayerTeamTournamentDB(Base):
 
     team: Mapped["TeamDB"] = relationship(
         "TeamDB",
-        back_populates="player_team_tournament",
+        back_populates="players_team_tournament",
     )
 
     tournament_id: Mapped[int] = mapped_column(
@@ -68,7 +68,7 @@ class PlayerTeamTournamentDB(Base):
 
     tournament: Mapped["TournamentDB"] = relationship(
         "TournamentDB",
-        back_populates="player_team_tournament",
+        back_populates="players_team_tournament",
     )
 
     player_number: Mapped[str] = mapped_column(

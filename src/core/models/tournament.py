@@ -90,7 +90,7 @@ class TournamentDB(SeasonSportRelationMixin, Base):
         back_populates="tournaments",
     )
 
-    player_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
+    players_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
         "PlayerTeamTournamentDB",
         cascade="all",
         back_populates="tournament"

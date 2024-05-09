@@ -71,6 +71,10 @@ class TournamentAPIRouter(
         async def get_teams_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_teams_by_tournament(tournament_id)
 
+        @router.get("/id/{tournament_id}/players/")
+        async def get_players_by_tournament_id_endpoint(tournament_id: int):
+            return await self.service.get_players_by_tournament(tournament_id)
+
         @router.get("/id/{tournament_id}/matches/")
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_matches_by_tournament(tournament_id)

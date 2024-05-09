@@ -111,7 +111,7 @@ class TeamDB(Base):
         back_populates="teams",
     )
 
-    player_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
+    players_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
         "PlayerTeamTournamentDB",
         cascade="all",
         back_populates="team"
