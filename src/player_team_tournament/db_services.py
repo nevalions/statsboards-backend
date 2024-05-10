@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, PlayerTeamTournamentDB
 from .schemas import PlayerTeamTournamentSchemaCreate, PlayerTeamTournamentSchemaUpdate
@@ -30,14 +31,23 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                         p,
                     )
             else:
+                if p.tournament_id and p.player_id:
+                    player_team_tournament_from_db = await self.get_player_team_tournaments_by_tournament_id(
+                        p.tournament_id,
+                        p.player_id
+                    )
+                    if player_team_tournament_from_db:
+                        return await self.update_player_team_tournament(player_team_tournament_from_db.id, p)
                 return await self.create_new_player_team_tournament(
                     p,
                 )
+
+
         except Exception as ex:
             print(ex)
             raise HTTPException(
                 status_code=409,
-                detail=f"Player_team_tournament eesl " f"id({p}) " f"returned some error",
+                detail=f"Player_team_tournament " f"id({p}) " f"returned some error",
             )
 
     async def update_player_team_tournament_by_eesl(
@@ -78,6 +88,22 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             value=value,
             field_name=field_name,
         )
+
+    async def get_player_team_tournaments_by_tournament_id(
+            self,
+            tournament_id,
+            player_id
+    ):
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerTeamTournamentDB)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                .where(PlayerTeamTournamentDB.player_id == player_id)
+            )
+
+            results = await session.execute(stmt)
+            players = results.scalars().one_or_none()
+            return players
 
     async def get_player_team_tournament_with_person(self, player_id: int):
         player_service = PlayerServiceDB(self.db)
