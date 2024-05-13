@@ -31,6 +31,99 @@ async def collect_players_dob_from_all_eesl(player_eesl_id: int, base_url: str =
         print("Timeout occurred")
 
 
+async def collect_player_full_data_eesl(player_eesl_id: int, base_url: str = BASE_PLAYER):
+    url = base_url + str(player_eesl_id)
+    print(url)
+    try:
+        req = get_url(url)
+        soup = BeautifulSoup(req.content, "lxml")
+        dob_text = soup.find("span", class_="player-promo__value").text.strip().lower()
+        dob_text_eng = ru_to_eng_datetime_month(dob_text)
+        dob = datetime.strptime(dob_text_eng, "%d %B %Y")
+
+        player_full_name = (
+            soup.find("p", class_="player-promo__name").text.strip().lower()
+        )
+        player_first_name = player_full_name.split(" ")[1]
+        player_second_name = player_full_name.split(" ")[0]
+        img_url, extension = (
+            soup.find("img", class_="player-promo__img")
+            .get("src")
+            .strip()
+            .split("_")
+        )
+        player_img_url = f"{img_url}.{extension.split('.')[1]}"
+
+        icon_image_height = 100
+        web_view_image_height = 400
+
+        path = urlparse(player_img_url).path
+        ext = Path(path).suffix
+        person_image_filename = f'{player_eesl_id}_{player_second_name}_{player_first_name}{ext}'
+        person_image_filename_resized_icon = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}'
+        person_image_filename_resized_web_view = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}'
+
+        image_path = os.path.join(
+            uploads_path,
+            f"persons/photos/{person_image_filename}"
+        )
+
+        resized_icon_image_path = os.path.join(
+            uploads_path,
+            f"persons/photos/{person_image_filename_resized_icon}",
+        )
+        resized_web_image_path = os.path.join(
+            uploads_path,
+            f"persons/photos/{person_image_filename_resized_web_view}",
+        )
+
+        relative_image_icon_path = os.path.join(
+            "/static/uploads/persons/photos",
+            person_image_filename_resized_icon,
+        )
+
+        relative_image_web_path = os.path.join(
+            "/static/uploads/persons/photos",
+            person_image_filename_resized_web_view,
+        )
+
+        relative_image_path = os.path.join(
+            "/static/uploads/persons/photos",
+            person_image_filename_resized_icon,
+        )
+
+        await file_service.download_and_resize_image(
+            player_img_url,
+            image_path,
+            resized_icon_image_path,
+            resized_web_image_path,
+            icon_height=icon_image_height,
+            web_view_height=web_view_image_height,
+        )
+
+        player_with_person = {
+            'person': {
+                'first_name': player_first_name,
+                'second_name': player_second_name,
+                'person_photo_url': relative_image_path,
+                'person_photo_icon_url': relative_image_icon_path,
+                'person_photo_web_url': relative_image_web_path,
+                'person_dob': dob,
+                'person_eesl_id': player_eesl_id,
+            },
+            'player': {
+                'sport_id': '1',
+                'player_eesl_id': player_eesl_id,
+            }
+        }
+
+        pprint(player_with_person)
+
+        return player_with_person
+    except requests.exceptions.Timeout:
+        print("Timeout occurred")
+
+
 async def parse_all_players_from_eesl_and_create_jsons():
     try:
         players = await parse_all_players_from_eesl_index_page_eesl()
@@ -193,9 +286,10 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
 
 async def main():
     # m = await parse_all_players_from_eesl_and_create_jsons()
-    m = await parse_all_players_from_eesl_index_page_eesl(limit=None)
+    # m = await parse_all_players_from_eesl_index_page_eesl(limit=None)
     # m = collect_players_dob_from_all_eesl(331)
-    pprint(m)
+    # pprint(m)
+    await collect_player_full_data_eesl(1812)
 
 
 if __name__ == "__main__":

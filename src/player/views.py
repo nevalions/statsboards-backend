@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
@@ -70,12 +68,12 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             return await self.service.get_player_with_person(player_id)
 
         @router.get(
-            "/api/pars/all_eesl",
+            "/pars/all_eesl",
         )
         async def get_parse_player_with_person_teams_endpoint():
             return await parse_all_players_from_eesl_index_page_eesl(limit=2)
 
-        @router.post("/api/pars_and_create/all_eesl/")
+        @router.post("/pars_and_create/all_eesl/")
         async def create_parsed_players_with_person_endpoint():
             players = await parse_all_players_from_eesl_index_page_eesl(start_page=None, limit=None)
             created_persons = []
