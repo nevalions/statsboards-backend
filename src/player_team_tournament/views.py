@@ -121,7 +121,7 @@ class PlayerTeamTournamentAPIRouter(
                             new_position = PositionSchemaCreate(**{'title': ptt['player_position'], 'sport_id': 1})
                             new_position_created = await PositionServiceDB(db).create_new_position(new_position)
                             if ptt and team and tournament:
-                                print('new position')
+                                # print('new position')
                                 p = {
                                     'player_team_tournament_eesl_id': ptt['player_eesl_id'],
                                     'player_id': created_player.id,
@@ -133,12 +133,12 @@ class PlayerTeamTournamentAPIRouter(
                                 created_player_in_team_dict = PlayerTeamTournamentSchemaCreate(**p)
                                 created_player_in_team = await self.service.create_or_update_player_team_tournament(
                                     created_player_in_team_dict)
-                                print(created_player_in_team.__dict__)
+                                # print(created_player_in_team.__dict__)
 
                                 created_players_in_team_tournament.append(created_player_in_team)
                         else:
                             if ptt and team and tournament:
-                                print('with position')
+                                # print('with position')
                                 p = {
                                     'player_team_tournament_eesl_id': ptt['player_eesl_id'],
                                     'player_id': created_player.id,
@@ -150,7 +150,7 @@ class PlayerTeamTournamentAPIRouter(
                                 created_player_in_team_dict = PlayerTeamTournamentSchemaCreate(**p)
                                 created_player_in_team = await self.service.create_or_update_player_team_tournament(
                                     created_player_in_team_dict)
-                                print(created_player_in_team.__dict__)
+                                # print(created_player_in_team.__dict__)
 
                                 created_players_in_team_tournament.append(created_player_in_team)
 

@@ -22,13 +22,13 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 player_team_tournament_from_db = await self.get_player_team_tournament_by_eesl_id(
                     p.player_team_tournament_eesl_id)
                 if player_team_tournament_from_db:
-                    print('player updating')
+                    # print('player updating')
                     return await self.update_player_team_tournament_by_eesl(
                         "player_team_tournament_eesl_id",
                         p,
                     )
                 else:
-                    print('player creating')
+                    # print('player creating')
                     return await self.create_new_player_team_tournament(
                         p,
                     )
@@ -39,9 +39,9 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                         p.player_id
                     )
                     if player_team_tournament_from_db:
-                        print('player updating')
+                        # print('player updating')
                         return await self.update_player_team_tournament(player_team_tournament_from_db.id, p)
-                print('player creating')
+                # print('player creating')
                 return await self.create_new_player_team_tournament(
                     p,
                 )
@@ -80,7 +80,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
 
         )
 
-        print('player_team_tournament', player_team_tournament)
+        # print('player_team_tournament', player_team_tournament)
         return await super().create(player_team_tournament)
 
     async def get_player_team_tournament_by_eesl_id(

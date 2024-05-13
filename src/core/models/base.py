@@ -397,10 +397,10 @@ class BaseServiceDB:
                 )
                 await session.commit()
                 find_updated = await self.get_by_id(is_exist.id)
-                print('find_updated: ', find_updated)
+                # print('find_updated: ', find_updated)
                 return find_updated
             else:
-                print('NONE')
+                # print('NONE')
                 return None
 
     async def find_relation(
