@@ -43,7 +43,7 @@ async def get_player_from_team_tournament_eesl(
     for ppp in all_eesl_players:
         try:
             player_eesl_id = int(
-                re.findall("\d+", ppp.find("a", class_="table__player").get("href"))[0]
+                re.findall(r"\d+", ppp.find("a", class_="table__player").get("href"))[0]
             )
             player_number = (
                 ppp.find("td", class_="table__cell table__cell--number")

@@ -193,7 +193,7 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
             if ppp:
                 player_eesl_id = int(
                     re.findall(
-                        "\d+", ppp.find("a", class_="table__player").get("href")
+                        r"\d+", ppp.find("a", class_="table__player").get("href")
                     )[0]
                 )
                 player_full_name = (

@@ -49,7 +49,7 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
             tourn = {
                 "tournament_eesl_id": int(
                     re.findall(
-                        "\d+",
+                        r"\d+",
                         t.find("a", class_="tournaments-archive__link").get("href"),
                     )[0]
                 ),

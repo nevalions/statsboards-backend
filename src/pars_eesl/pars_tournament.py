@@ -48,7 +48,7 @@ async def parse_tournament_teams_index_page_eesl(
         try:
             team_eesl_id = int(
                 re.findall(
-                    "team_id=(\d+)", t.find("a", class_="teams__logo").get("href")
+                    r"team_id=(\d+)", t.find("a", class_="teams__logo").get("href")
                 )[0])
             team_title = t.find("a", class_="teams__name-link").text.strip().lower()
             team_logo_url = t.find(
@@ -117,7 +117,7 @@ async def parse_tournament_matches_index_page_eesl(
                         match = mp.find_all("li", class_="js-calendar-match")
                         for item in match:
                             match_eesl_id = int(
-                                re.findall("\d+", item.find("a", class_="schedule__score").get("href"))[0])
+                                re.findall(r"\d+", item.find("a", class_="schedule__score").get("href"))[0])
                             team_a_id = int(item.find("a", class_="schedule__team-1").get("href").strip().split("=")[1])
                             team_b_id = int(item.find("a", class_="schedule__team-2").get("href").strip().split("=")[1])
                             game_time = item.find("span", class_="schedule__time").text.strip()
