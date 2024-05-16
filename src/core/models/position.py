@@ -8,6 +8,7 @@ from src.core.models import Base
 if TYPE_CHECKING:
     from .sport import SportDB
     from .player_team_tournament import PlayerTeamTournamentDB
+    from .player_match import PlayerMatchDB
 
 
 class PositionDB(Base):
@@ -34,5 +35,9 @@ class PositionDB(Base):
     )
 
     players: Mapped[list["PlayerTeamTournamentDB"]] = relationship(
+        back_populates="position",
+    )
+
+    match_players: Mapped[list["PlayerMatchDB"]] = relationship(
         back_populates="position",
     )

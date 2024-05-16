@@ -40,4 +40,5 @@ from .sponsor_sponsor_line_connection import SponsorSponsorLineDB
 from .person import PersonDB
 from .player import PlayerDB
 from .player_team_tournament import PlayerTeamTournamentDB
+from .player_match import PlayerMatchDB
 from .position import PositionDB

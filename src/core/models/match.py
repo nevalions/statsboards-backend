@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from .scoreboard import ScoreboardDB
     from .playclock import PlayClockDB
     from .gameclock import GameClockDB
+    from .player_match import PlayerMatchDB
+    from .football_home_team_start_lineup import FootballHomeTeamStartLineupDB
 
 
 class MatchDB(Base):
@@ -93,6 +95,20 @@ class MatchDB(Base):
 
     match_scoreboard: Mapped["ScoreboardDB"] = relationship(
         "ScoreboardDB",
+        cascade="all, delete-orphan",
+        back_populates="matches",
+        passive_deletes=True,
+    )
+
+    match_players: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        cascade="all, delete-orphan",
+        back_populates="match",
+        passive_deletes=True,
+    )
+
+    football_home_team_start_lineup: Mapped["FootballHomeTeamStartLineupDB"] = relationship(
+        "FootballHomeTeamStartLineupDB",
         cascade="all, delete-orphan",
         back_populates="matches",
         passive_deletes=True,
