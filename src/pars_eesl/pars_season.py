@@ -13,7 +13,7 @@ from src.pars_eesl.pars_settings import BASE_SEASON_URL, SEASON_ID
 
 def parse_season_and_create_jsons(s_id: int):
     try:
-        s_id = 8  # 2024
+        # s_id = 8  # 2024
         data = parse_season_index_page_eesl(s_id)
         return data
     except Exception as ex:

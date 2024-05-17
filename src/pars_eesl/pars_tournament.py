@@ -105,8 +105,10 @@ async def parse_tournament_matches_index_page_eesl(
     all_schedule_matches = soup.select(".js-schedule")
 
     for week in all_schedule_matches:
+        # print(week)
         try:
             all_weeks_in_schedule = week.find_all("div", class_="js-calendar-matches-header")
+            # print(all_weeks_in_schedule)
             for week_in_schedule in all_weeks_in_schedule:
                 if week_in_schedule:
                     all_matches_in_week = week_in_schedule.find_all("ul", class_="schedule__matches-list")
@@ -115,16 +117,21 @@ async def parse_tournament_matches_index_page_eesl(
 
                     for mp in all_matches_in_week:
                         match = mp.find_all("li", class_="js-calendar-match")
+                        # print(match)
                         for item in match:
+                            # print(item)
                             match_eesl_id = int(
                                 re.findall(r"\d+", item.find("a", class_="schedule__score").get("href"))[0])
                             team_a_id = int(item.find("a", class_="schedule__team-1").get("href").strip().split("=")[1])
                             team_b_id = int(item.find("a", class_="schedule__team-2").get("href").strip().split("=")[1])
                             game_time = item.find("span", class_="schedule__time").text.strip()
                             match_date = date_texts.text.strip()
-                            date_formatted = match_date.replace(',', '') + " " + str(year) + " " + game_time
+                            date_formatted = match_date.replace(',', '') + " " + game_time
+                            # print(date_formatted)
+                            # print(date_formatted.split())
 
-                            date, month, day, year, time = date_formatted.split()
+                            date, month, year, day, time = date_formatted.split()
+                            # print(date, month, year, day, time)
                             month = months[month]
                             date_ = datetime.strptime(f"{date} {month} {year} {time}", "%d %B %Y %H:%M")
                             formatted_date = date_.strftime("%Y-%m-%d %H:%M:%S.%f")

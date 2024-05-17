@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
 
-from src.core.models import db, BaseServiceDB, MatchDB, TeamDB
+from src.core.models import db, BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate
 
 
@@ -128,6 +128,20 @@ class MatchServiceDB(BaseServiceDB):
             }
 
         return None
+
+    async def get_players_by_match(
+            self,
+            match_id: int,
+    ):
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerMatchDB)
+                .where(PlayerMatchDB.match_id == match_id)
+            )
+
+            results = await session.execute(stmt)
+            players = results.scalars().all()
+            return players
 
     async def get_scoreboard_by_match(
             self,
