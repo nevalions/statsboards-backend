@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from .sponsor import SponsorDB
     from .sponsor_line import SponsorLineDB
     from .player_team_tournament import PlayerTeamTournamentDB
+    from .player_match import PlayerMatchDB
 
 
 class TeamDB(Base):
@@ -115,4 +116,11 @@ class TeamDB(Base):
         "PlayerTeamTournamentDB",
         cascade="all",
         back_populates="team"
+    )
+
+    match_players: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        cascade="all, delete-orphan",
+        back_populates="team",
+        passive_deletes=True,
     )

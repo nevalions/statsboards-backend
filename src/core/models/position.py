@@ -39,5 +39,5 @@ class PositionDB(Base):
     )
 
     match_players: Mapped[list["PlayerMatchDB"]] = relationship(
-        back_populates="position",
+        back_populates="match_position",
     )

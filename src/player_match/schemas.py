@@ -6,17 +6,19 @@ from typing import Annotated
 class PlayerMatchSchemaBase(BaseModel):
     player_match_eesl_id: int | None = None
     player_team_tournament_id: int | None = None
-    match_position: int | None = None
+    match_position_id: int | None = None
     match_id: int
     match_number: Annotated[str, Path(max_length=10)] | None = '0'
+    team_id: int
 
 
 class PlayerMatchSchemaUpdate(BaseModel):
     player_match_eesl_id: int | None = None
     player_team_tournament_id: int | None = None
-    match_position: int | None = None
+    match_position_id: int | None = None
     match_id: int | None = None
     match_number: str | None = None
+    team_id: int | None = None
 
 
 class PlayerMatchSchemaCreate(PlayerMatchSchemaBase):

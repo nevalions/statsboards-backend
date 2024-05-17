@@ -20,6 +20,7 @@ __all__ = (
     "PlayerDB",
     "PlayerTeamTournamentDB",
     "PositionDB",
+    "PlayerMatchDB"
 )
 
 from .base import Base, BaseServiceDB, db

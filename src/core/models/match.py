@@ -107,12 +107,12 @@ class MatchDB(Base):
         passive_deletes=True,
     )
 
-    football_home_team_start_lineup: Mapped["FootballHomeTeamStartLineupDB"] = relationship(
-        "FootballHomeTeamStartLineupDB",
-        cascade="all, delete-orphan",
-        back_populates="matches",
-        passive_deletes=True,
-    )
+    # football_home_team_start_lineup: Mapped["FootballHomeTeamStartLineupDB"] = relationship(
+    #     "FootballHomeTeamStartLineupDB",
+    #     cascade="all, delete-orphan",
+    #     back_populates="matches",
+    #     passive_deletes=True,
+    # )
 
 #
 #     fk_match_players_id = relationship('PlayerTeamTournamentDB',

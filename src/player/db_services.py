@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
 from src.core.models import BaseServiceDB, PlayerDB
-from .schemas import PlayerSchemaCreate, PlayerSchemaUpdate
+from .schemas import PlayerSchemaCreate, PlayerSchemaUpdate, PlayerSchema
 
 
 class PlayerServiceDB(BaseServiceDB):
@@ -74,7 +74,7 @@ class PlayerServiceDB(BaseServiceDB):
             field_name=field_name,
         )
 
-    async def get_player_with_person(self, player_id):
+    async def get_player_with_person(self, player_id) -> PlayerSchema:
         return await self.get_related_items_level_one_by_id(
             player_id,
             "person"
