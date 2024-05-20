@@ -6,6 +6,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
 
 from src.core.models import db, BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
+from src.player_match.db_services import PlayerMatchServiceDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate
 
 
@@ -142,6 +143,17 @@ class MatchServiceDB(BaseServiceDB):
             results = await session.execute(stmt)
             players = results.scalars().all()
             return players
+
+    async def get_player_by_match_full_data(self, match_id: int):
+        player_service = PlayerMatchServiceDB(self.db)
+        players = await self.get_players_by_match(match_id)
+        players_with_data = []
+        if players:
+            for player in players:
+                p = await player_service.get_player_in_match_full_data(player.id)
+                players_with_data.append(p)
+            return players_with_data
+        return players_with_data
 
     async def get_scoreboard_by_match(
             self,
