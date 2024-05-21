@@ -77,6 +77,11 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         async def get_players_by_team_and_tournament_endpoint(team_id: int, tournament_id: int):
             return await self.service.get_players_by_team_id_tournament_id(team_id, tournament_id)
 
+        
+        @router.get("/id/{team_id}/tournament/id/{tournament_id}/players_with_persons/")
+        async def get_players_by_team_id_tournament_id_with_person_endpoint(team_id: int, tournament_id: int):
+            return await self.service.get_players_by_team_id_tournament_id_with_person(team_id, tournament_id)            
+
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo_endpoint(file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(file, sub_folder='teams/logos')

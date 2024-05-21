@@ -4,20 +4,20 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
 
 from src.core.models import db, BaseServiceDB, TeamDB, PlayerTeamTournamentDB
-
+from src.positions.db_services import PositionServiceDB
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
 
 
 class TeamServiceDB(BaseServiceDB):
     def __init__(
-            self,
-            database,
+        self,
+        database,
     ):
         super().__init__(database, TeamDB)
 
     async def create_or_update_team(
-            self,
-            t: TeamSchemaCreate | TeamSchemaUpdate,
+        self,
+        t: TeamSchemaCreate | TeamSchemaUpdate,
     ):
         try:
             if t.team_eesl_id:
@@ -45,9 +45,9 @@ class TeamServiceDB(BaseServiceDB):
             )
 
     async def update_team_by_eesl(
-            self,
-            eesl_field_name: str,
-            t: TeamSchemaUpdate,
+        self,
+        eesl_field_name: str,
+        t: TeamSchemaUpdate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -56,8 +56,8 @@ class TeamServiceDB(BaseServiceDB):
         )
 
     async def create_new_team(
-            self,
-            t: TeamSchemaCreate,
+        self,
+        t: TeamSchemaCreate,
     ):
 
         team = self.model(
@@ -74,13 +74,13 @@ class TeamServiceDB(BaseServiceDB):
             main_sponsor_id=t.main_sponsor_id,
         )
 
-        print('team', team)
+        print("team", team)
         return await super().create(team)
 
     async def get_team_by_eesl_id(
-            self,
-            value,
-            field_name="team_eesl_id",
+        self,
+        value,
+        field_name="team_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -88,8 +88,8 @@ class TeamServiceDB(BaseServiceDB):
         )
 
     async def get_matches_by_team_id(
-            self,
-            team_id: int,
+        self,
+        team_id: int,
     ):
         return await self.get_related_items_level_one_by_id(
             team_id,
@@ -97,9 +97,9 @@ class TeamServiceDB(BaseServiceDB):
         )
 
     async def get_players_by_team_id_tournament_id(
-            self,
-            team_id: int,
-            tournament_id: int,
+        self,
+        team_id: int,
+        tournament_id: int,
     ):
         async with self.db.async_session() as session:
             stmt = (
@@ -112,17 +112,48 @@ class TeamServiceDB(BaseServiceDB):
             players = results.scalars().all()
             return players
 
+    async def get_players_by_team_id_tournament_id_with_person(
+        self,
+        team_id: int,
+        tournament_id: int,
+    ):
+        from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
+
+        player_service = PlayerTeamTournamentServiceDB(self.db)
+        position_service = PositionServiceDB(self.db)
+        players = await self.get_players_by_team_id_tournament_id(
+            team_id, tournament_id
+        )
+
+        players_full_data = []
+        if players:
+            for p in players:
+                person = await player_service.get_player_team_tournament_with_person(
+                    p.id
+                )
+                position = await position_service.get_by_id(p.position_id)
+                # players_full_data.append(person)
+                # players_full_data.append(p)
+                player_full_data = {
+                    "player_team_tournament": p,
+                    "person": person,
+                    "position": position,
+                }
+                players_full_data.append(player_full_data)
+            return players_full_data
+
     async def update_team(
-            self,
-            item_id: int,
-            item: TeamSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: TeamSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,
             item,
             **kwargs,
         )
+
 
 # async def get_team_db() -> TeamServiceDB:
 #     yield TeamServiceDB(db)

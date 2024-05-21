@@ -3,9 +3,11 @@ from fastapi import HTTPException
 from src.core import BaseRouter, db
 from .db_services import PlayerServiceDB
 from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
-from ..pars_eesl.pars_all_players_from_eesl import parse_all_players_from_eesl_index_page_eesl
-from ..person.db_services import PersonServiceDB
-from ..person.schemas import PersonSchemaCreate
+from src.pars_eesl.pars_all_players_from_eesl import (
+    parse_all_players_from_eesl_index_page_eesl,
+)
+from src.person.db_services import PersonServiceDB
+from src.person.schemas import PersonSchemaCreate
 
 
 # Player backend
@@ -21,24 +23,21 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             response_model=PlayerSchema,
         )
         async def create_player_endpoint(
-                player: PlayerSchemaCreate,
+            player: PlayerSchemaCreate,
         ):
             print(f"Received player: {player}")
             new_player = await self.service.create_or_update_player(player)
             if new_player:
                 return new_player.__dict__
             else:
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"Player creation fail"
-                )
+                raise HTTPException(status_code=409, detail=f"Player creation fail")
 
         @router.get(
             "/eesl_id/{eesl_id}",
             response_model=PlayerSchema,
         )
         async def get_player_by_eesl_id_endpoint(
-                player_eesl_id: int,
+            player_eesl_id: int,
         ):
             tournament = await self.service.get_player_by_eesl_id(value=player_eesl_id)
             if tournament is None:
@@ -53,8 +52,8 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             response_model=PlayerSchema,
         )
         async def update_player_endpoint(
-                item_id: int,
-                item: PlayerSchemaUpdate,
+            item_id: int,
+            item: PlayerSchemaUpdate,
         ):
             update_ = await self.service.update_player(item_id, item)
             if update_ is None:
@@ -75,20 +74,26 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
 
         @router.post("/pars_and_create/all_eesl/")
         async def create_parsed_players_with_person_endpoint():
-            players = await parse_all_players_from_eesl_index_page_eesl(start_page=None, limit=None)
+            players = await parse_all_players_from_eesl_index_page_eesl(
+                start_page=None, limit=None
+            )
             created_persons = []
             created_players = []
 
             if players:
                 for player_with_person in players:
                     person = PersonSchemaCreate(**player_with_person["person"])
-                    created_person = await PersonServiceDB(db).create_or_update_person(person)
+                    created_person = await PersonServiceDB(db).create_or_update_person(
+                        person
+                    )
                     created_persons.append(created_person)
                     if created_person:
                         player_data_dict = player_with_person["player"]
                         player_data_dict["person_id"] = created_person.id
                         player = PlayerSchemaCreate(**player_data_dict)
-                        created_player = await self.service.create_or_update_player(player)
+                        created_player = await self.service.create_or_update_player(
+                            player
+                        )
                         created_players.append(created_player)
                 return created_players, created_persons
             else:

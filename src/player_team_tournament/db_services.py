@@ -3,24 +3,27 @@ from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, PlayerTeamTournamentDB
 from .schemas import PlayerTeamTournamentSchemaCreate, PlayerTeamTournamentSchemaUpdate
-from ..player.db_services import PlayerServiceDB
+from player.db_services import PlayerServiceDB
 
 
 class PlayerTeamTournamentServiceDB(BaseServiceDB):
     def __init__(
-            self,
-            database,
+        self,
+        database,
     ):
         super().__init__(database, PlayerTeamTournamentDB)
 
     async def create_or_update_player_team_tournament(
-            self,
-            p: PlayerTeamTournamentSchemaCreate | PlayerTeamTournamentSchemaUpdate,
+        self,
+        p: PlayerTeamTournamentSchemaCreate | PlayerTeamTournamentSchemaUpdate,
     ):
         try:
             if p.player_team_tournament_eesl_id:
-                player_team_tournament_from_db = await self.get_player_team_tournament_by_eesl_id(
-                    p.player_team_tournament_eesl_id)
+                player_team_tournament_from_db = (
+                    await self.get_player_team_tournament_by_eesl_id(
+                        p.player_team_tournament_eesl_id
+                    )
+                )
                 if player_team_tournament_from_db:
                     # print('player updating')
                     return await self.update_player_team_tournament_by_eesl(
@@ -34,18 +37,20 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     )
             else:
                 if p.tournament_id and p.player_id:
-                    player_team_tournament_from_db = await self.get_player_team_tournaments_by_tournament_id(
-                        p.tournament_id,
-                        p.player_id
+                    player_team_tournament_from_db = (
+                        await self.get_player_team_tournaments_by_tournament_id(
+                            p.tournament_id, p.player_id
+                        )
                     )
                     if player_team_tournament_from_db:
                         # print('player updating')
-                        return await self.update_player_team_tournament(player_team_tournament_from_db.id, p)
+                        return await self.update_player_team_tournament(
+                            player_team_tournament_from_db.id, p
+                        )
                 # print('player creating')
                 return await self.create_new_player_team_tournament(
                     p,
                 )
-
 
         except Exception as ex:
             print(ex)
@@ -55,9 +60,9 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
 
     async def update_player_team_tournament_by_eesl(
-            self,
-            eesl_field_name: str,
-            p: PlayerTeamTournamentSchemaUpdate,
+        self,
+        eesl_field_name: str,
+        p: PlayerTeamTournamentSchemaUpdate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -66,8 +71,8 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         )
 
     async def create_new_player_team_tournament(
-            self,
-            p: PlayerTeamTournamentSchemaCreate,
+        self,
+        p: PlayerTeamTournamentSchemaCreate,
     ):
 
         player_team_tournament = self.model(
@@ -77,16 +82,15 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             team_id=p.team_id,
             tournament_id=p.tournament_id,
             player_number=p.player_number,
-
         )
 
         # print('player_team_tournament', player_team_tournament)
         return await super().create(player_team_tournament)
 
     async def get_player_team_tournament_by_eesl_id(
-            self,
-            value,
-            field_name="player_team_tournament_eesl_id",
+        self,
+        value,
+        field_name="player_team_tournament_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -94,9 +98,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         )
 
     async def get_player_team_tournaments_by_tournament_id(
-            self,
-            tournament_id,
-            player_id
+        self, tournament_id, player_id
     ):
         async with self.db.async_session() as session:
             stmt = (
@@ -114,15 +116,15 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         return await self.get_nested_related_items_by_id(
             player_id,
             player_service,
-            'player',
-            'person',
+            "player",
+            "person",
         )
 
     async def update_player_team_tournament(
-            self,
-            item_id: int,
-            item: PlayerTeamTournamentSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: PlayerTeamTournamentSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,
