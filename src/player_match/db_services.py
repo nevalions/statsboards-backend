@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, PlayerMatchDB
+from src.positions.db_services import PositionServiceDB
 from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 from ..player.db_services import PlayerServiceDB
 from ..player_team_tournament.db_services import PlayerTeamTournamentServiceDB
@@ -140,10 +141,13 @@ class PlayerMatchServiceDB(BaseServiceDB):
         match_player = await self.get_by_id(match_player_id)
         team_tournament_player = await self.get_player_in_team_tournament(match_player_id)
         person = await self.get_player_person_in_match(match_player_id)
+        position = await PositionServiceDB(self.db).get_by_id(match_player.match_position_id)
+
         return {
             'match_player': match_player,
             'team_tournament_player': team_tournament_player,
             'person': person,
+            'position': position,
         }
 
     async def update_player_match(
