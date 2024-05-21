@@ -78,6 +78,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             match_id=p.match_id,
             match_number=p.match_number,
             team_id=p.team_id,
+            is_start=p.is_start,
         )
 
         # print('player_match', player_match)

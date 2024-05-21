@@ -10,6 +10,7 @@ class PlayerMatchSchemaBase(BaseModel):
     match_id: int
     match_number: Annotated[str, Path(max_length=10)] | None = '0'
     team_id: int
+    is_start: bool | None = False
 
 
 class PlayerMatchSchemaUpdate(BaseModel):
@@ -19,6 +20,7 @@ class PlayerMatchSchemaUpdate(BaseModel):
     match_id: int | None = None
     match_number: str | None = None
     team_id: int | None = None
+    is_start: bool | None = None
 
 
 class PlayerMatchSchemaCreate(PlayerMatchSchemaBase):

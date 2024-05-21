@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, ForeignKey, Integer
+from sqlalchemy import String, ForeignKey, Integer, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -62,6 +62,12 @@ class PlayerMatchDB(Base):
         nullable=True,
         default="0",
         server_default="0",
+    )
+
+    is_start: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
     )
 
     match_position: Mapped["PositionDB"] = relationship(
