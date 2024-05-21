@@ -37,7 +37,6 @@ class PlayerMatchDB(Base):
             ondelete="CASCADE",
         ),
         nullable=False,
-        unique=True,
     )
 
     team_id: Mapped[int] = mapped_column(
@@ -47,7 +46,6 @@ class PlayerMatchDB(Base):
             ondelete="CASCADE",
         ),
         nullable=False,
-        unique=True,
     )
 
     match_position_id: Mapped[int] = mapped_column(
@@ -57,7 +55,6 @@ class PlayerMatchDB(Base):
             ondelete="SET NULL",
         ),
         nullable=True,
-
     )
 
     match_number: Mapped[str] = mapped_column(
