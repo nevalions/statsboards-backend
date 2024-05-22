@@ -55,6 +55,12 @@ class ScoreboardDB(Base):
         default=True,
     )
 
+    is_match_sponsor_line: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=True,
+    )
+
     team_a_game_color: Mapped[str] = mapped_column(
         String(10),
         nullable=False,

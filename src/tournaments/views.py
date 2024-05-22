@@ -8,8 +8,13 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from src.core import BaseRouter, MinimalBaseRouter, db
 from src.core.config import templates, uploads_path
 from .db_services import TournamentServiceDB
-from .schemas import TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate, UploadTournamentLogoResponse, \
-    UploadResizeTournamentLogoResponse
+from .schemas import (
+    TournamentSchema,
+    TournamentSchemaCreate,
+    TournamentSchemaUpdate,
+    UploadTournamentLogoResponse,
+    UploadResizeTournamentLogoResponse,
+)
 from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
@@ -44,8 +49,8 @@ class TournamentAPIRouter(
             response_model=TournamentSchema,
         )
         async def update_tournament_endpoint(
-                item_id: int,
-                item: TournamentSchemaUpdate,
+            item_id: int,
+            item: TournamentSchemaUpdate,
         ):
             update_ = await self.service.update_tournament(item_id, item)
             if update_ is None:
@@ -79,29 +84,37 @@ class TournamentAPIRouter(
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_matches_by_tournament(tournament_id)
 
-        @router.get("/id/{tournament_id}/main_sponsor/",
-                    response_model=Optional[SponsorSchema])
+        @router.get(
+            "/id/{tournament_id}/main_sponsor/", response_model=Optional[SponsorSchema]
+        )
         async def get_main_sponsor_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_main_tournament_sponsor(tournament_id)
 
-        @router.get("/id/{tournament_id}/sponsor_line/",
-                    response_model=Optional[SponsorLineSchema])
+        @router.get(
+            "/id/{tournament_id}/sponsor_line/",
+            response_model=Optional[SponsorLineSchema],
+        )
         async def get_sponsor_line_by_tournament_id_endpoint(tournament_id: int):
             return await self.service.get_tournament_sponsor_line(tournament_id)
 
-        @router.get("/id/{tournament_id}/sponsors/",
-                    response_model=Optional[List[SponsorSchema]]
-                    )
-        async def get_sponsors_from_sponsor_line_by_tournament_id_endpoint(tournament_id: int):
-            return await self.service.get_sponsors_of_tournament_sponsor_line(tournament_id)
+        @router.get(
+            "/id/{tournament_id}/sponsors/",
+            response_model=Optional[List[SponsorSchema]],
+        )
+        async def get_sponsors_from_sponsor_line_by_tournament_id_endpoint(
+            tournament_id: int,
+        ):
+            return await self.service.get_sponsors_of_tournament_sponsor_line(
+                tournament_id
+            )
 
         @router.get(
             "/id/{tournament_id}/matches/all/data/",
             response_class=JSONResponse,
         )
         async def all_tournament_matches_data_endpoint(
-                tournament_id: int,
-                all_matches: List = Depends(self.service.get_matches_by_tournament),
+            tournament_id: int,
+            all_matches: List = Depends(self.service.get_matches_by_tournament),
         ):
             if not all_matches:
                 return []
@@ -109,15 +122,21 @@ class TournamentAPIRouter(
 
         @router.post("/upload_logo", response_model=UploadTournamentLogoResponse)
         async def upload_tournament_logo_endpoint(file: UploadFile = File(...)):
-            file_location = await file_service.save_upload_image(file, sub_folder='tournaments/logos')
+            file_location = await file_service.save_upload_image(
+                file, sub_folder="tournaments/logos"
+            )
             print(uploads_path)
             return {"logoUrl": file_location}
 
-        @router.post("/upload_resize_logo", response_model=UploadResizeTournamentLogoResponse)
-        async def upload_and_resize_tournament_logo_endpoint(file: UploadFile = File(...)):
+        @router.post(
+            "/upload_resize_logo", response_model=UploadResizeTournamentLogoResponse
+        )
+        async def upload_and_resize_tournament_logo_endpoint(
+            file: UploadFile = File(...),
+        ):
             uploaded_paths = await file_service.save_and_resize_upload_image(
                 file,
-                sub_folder='tournaments/logos',
+                sub_folder="tournaments/logos",
                 icon_height=100,
                 web_view_height=400,
             )
@@ -133,7 +152,7 @@ class TournamentAPIRouter(
 
         @router.post("/pars_and_create/season/{eesl_season_id}")
         async def create_parsed_tournament_endpoint(
-                eesl_season_id: int,
+            eesl_season_id: int,
         ):
             tournaments_list = await parse_season_and_create_jsons(eesl_season_id)
 
@@ -141,7 +160,9 @@ class TournamentAPIRouter(
             if tournaments_list:
                 for t in tournaments_list:
                     tournament = TournamentSchemaCreate(**t)
-                    created_tournament = await self.service.create_or_update_tournament(tournament)
+                    created_tournament = await self.service.create_or_update_tournament(
+                        tournament
+                    )
                     created_tournaments.append(created_tournament)
                 return created_tournaments
             else:
@@ -168,8 +189,8 @@ class TournamentTemplateRouter(
             response_class=HTMLResponse,
         )
         async def create_match_in_tournament_endpoint(
-                tournament_id: int,
-                request: Request,
+            tournament_id: int,
+            request: Request,
         ):
             tournament = await self.service.get_by_id(tournament_id)
             season_service_db = SeasonServiceDB(db)
@@ -195,8 +216,8 @@ class TournamentTemplateRouter(
             response_class=HTMLResponse,
         )
         async def get_all_tournament_matches_endpoint(
-                tournament_id: int,
-                request: Request,
+            tournament_id: int,
+            request: Request,
         ):
             tournament = await self.service.get_by_id(tournament_id)
             if tournament is None:

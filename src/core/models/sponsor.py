@@ -7,6 +7,7 @@ from src.core.models import Base
 
 if TYPE_CHECKING:
     from .tournament import TournamentDB
+    from .match import MatchDB
     from .team import TeamDB
     from .sponsor_line import SponsorLineDB
 
@@ -38,6 +39,11 @@ class SponsorDB(Base):
 
     teams: Mapped["TeamDB"] = relationship(
         "TeamDB",
+        back_populates="main_sponsor",
+    )
+
+    matches: Mapped["MatchDB"] = relationship(
+        "MatchDB",
         back_populates="main_sponsor",
     )
 

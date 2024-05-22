@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .sponsor import SponsorDB
     from .tournament import TournamentDB
     from .team import TeamDB
+    from .match import MatchDB
 
 
 class SponsorLineDB(Base):
@@ -35,6 +36,11 @@ class SponsorLineDB(Base):
 
     teams: Mapped["TeamDB"] = relationship(
         "TeamDB",
+        back_populates="sponsor_line",
+    )
+
+    matches: Mapped["MatchDB"] = relationship(
+        "MatchDB",
         back_populates="sponsor_line",
     )
 

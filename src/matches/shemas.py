@@ -14,6 +14,8 @@ class MatchSchemaBase(BaseModel):
     team_a_id: int
     team_b_id: int
     tournament_id: int | None = None
+    sponsor_line_id: int | None = None
+    main_sponsor_id: int | None = None
 
 
 class MatchSchemaUpdate(BaseModel):
@@ -23,6 +25,8 @@ class MatchSchemaUpdate(BaseModel):
     team_a_id: int | None = None
     team_b_id: int | None = None
     tournament_id: int | None = None
+    sponsor_line_id: int | None = None
+    main_sponsor_id: int | None = None
 
 
 class MatchSchemaCreate(MatchSchemaBase):

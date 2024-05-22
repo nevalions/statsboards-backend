@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List
+from typing import re, List
 
 from fastapi import HTTPException, Request, Depends, status, WebSocket, UploadFile, File
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -13,12 +13,12 @@ from .shemas import (
     MatchSchemaCreate,
     MatchSchemaUpdate,
     MatchSchema,
-
 )
 from src.core.config import templates
 
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
+from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
 from ..core.models.base import ws_manager, connection_manager
 from ..gameclocks.db_services import GameClockServiceDB
 from ..gameclocks.schemas import GameClockSchemaCreate
@@ -57,7 +57,7 @@ class MatchAPIRouter(
             response_model=MatchSchema,
         )
         async def create_match_endpoint(
-                match: MatchSchemaCreate,
+            match: MatchSchemaCreate,
         ):
             new_match = await self.service.create_or_update_match(match)
             return new_match.__dict__
@@ -66,7 +66,7 @@ class MatchAPIRouter(
             "/create_with_full_data/",
         )
         async def create_match_with_full_data_endpoint(
-                data: MatchSchemaCreate,
+            data: MatchSchemaCreate,
         ):
             # print(data)
             teams_service = TeamServiceDB(db)
@@ -85,11 +85,15 @@ class MatchAPIRouter(
             default_gameclock = GameClockSchemaCreate(match_id=new_match.id)
 
             tournament = await tournament_service.get_by_id(new_match.tournament_id)
-            tournament_main_sponsor = await sponsor_service.get_by_id(tournament.main_sponsor_id)
+            tournament_main_sponsor = await sponsor_service.get_by_id(
+                tournament.main_sponsor_id
+            )
             team_a = await teams_service.get_by_id(new_match.team_a_id)
             team_b = await teams_service.get_by_id(new_match.team_b_id)
 
-            existing_scoreboard = await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
+            existing_scoreboard = (
+                await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
+            )
 
             if existing_scoreboard is None:
                 scoreboard_schema = ScoreboardSchemaCreate(
@@ -115,9 +119,13 @@ class MatchAPIRouter(
                     team_a_game_title=team_a.title,
                     team_b_game_title=team_b.title,
                 )
-            new_scoreboard = await scoreboard_db_service.create_or_update_scoreboard(scoreboard_schema)
+            new_scoreboard = await scoreboard_db_service.create_or_update_scoreboard(
+                scoreboard_schema
+            )
 
-            new_match_data = await match_db_service.create_match_data(default_match_data)
+            new_match_data = await match_db_service.create_match_data(
+                default_match_data
+            )
             teams_data = await self.service.get_teams_by_match(new_match_data.match_id)
             # new_scoreboard = await scoreboard_db_service.create_scoreboard(
             #     default_scoreboard
@@ -137,8 +145,8 @@ class MatchAPIRouter(
             response_model=MatchSchema,
         )
         async def update_match_endpoint(
-                item_id: int,
-                item: MatchSchemaUpdate,
+            item_id: int,
+            item: MatchSchemaUpdate,
         ):
             match_update = await self.service.update_match(item_id, item)
 
@@ -175,6 +183,15 @@ class MatchAPIRouter(
         async def get_players_with_full_data_by_match_id_endpoint(match_id: int):
             return await self.service.get_player_by_match_full_data(match_id)
 
+        @router.get("/id/{match_id}/sponsor_line")
+        async def get_sponsor_line_by_match_id_endpoint(match_id: int):
+            sponsor_line = await self.service.get_match_sponsor_line(match_id)
+            if sponsor_line:
+                full_sponsor_line = await SponsorSponsorLineServiceDB(
+                    db
+                ).get_related_sponsors(sponsor_line.id)
+                return full_sponsor_line
+
         @router.get(
             "/id/{match_id}/match_data/",
         )
@@ -201,7 +218,7 @@ class MatchAPIRouter(
 
         @router.get("/all/data/", response_class=JSONResponse)
         async def all_matches_data_endpoint_endpoint(
-                all_matches: List = Depends(self.service.get_all_elements),
+            all_matches: List = Depends(self.service.get_all_elements),
         ):
             from src.helpers.fetch_helpers import fetch_list_of_matches_data
 
@@ -212,10 +229,10 @@ class MatchAPIRouter(
             response_class=JSONResponse,
         )
         async def match_data_endpoint(
-                # request: Request,
-                # match_id: int,
-                match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
-                match_data=Depends(get_match_data_by_match_id_endpoint),
+            # request: Request,
+            # match_id: int,
+            match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
+            match_data=Depends(get_match_data_by_match_id_endpoint),
         ):
             return (
                 {
@@ -243,16 +260,23 @@ class MatchAPIRouter(
 
             return await fetch_with_scoreboard_data(match_id)
 
-        @router.post("/id/{match_id}/upload_team_logo", response_model=UploadTeamLogoResponse)
+        @router.post(
+            "/id/{match_id}/upload_team_logo", response_model=UploadTeamLogoResponse
+        )
         async def upload_team_logo(match_id: int, file: UploadFile = File(...)):
-            file_location = await file_service.save_upload_image(file, sub_folder=f'match/{match_id}/teams_logos')
+            file_location = await file_service.save_upload_image(
+                file, sub_folder=f"match/{match_id}/teams_logos"
+            )
             return {"logoUrl": file_location}
 
-        @router.post("/id/{match_id}/upload_resize_logo", response_model=UploadResizeTeamLogoResponse)
+        @router.post(
+            "/id/{match_id}/upload_resize_logo",
+            response_model=UploadResizeTeamLogoResponse,
+        )
         async def upload_resize_team_logo(match_id: int, file: UploadFile = File(...)):
             uploaded_paths = await file_service.save_and_resize_upload_image(
                 file,
-                sub_folder=f'match/{match_id}/teams_logos',
+                sub_folder=f"match/{match_id}/teams_logos",
                 icon_height=100,
                 web_view_height=400,
             )
@@ -260,29 +284,35 @@ class MatchAPIRouter(
             return uploaded_paths
 
         @router.websocket("/ws/id/{match_id}/{client_id}/")
-        async def websocket_endpoint(websocket: WebSocket, client_id: str, match_id: int):
+        async def websocket_endpoint(
+            websocket: WebSocket, client_id: str, match_id: int
+        ):
             await connection_manager.connect(websocket, client_id, match_id)
             await ws_manager.connect(client_id)
-            logger = logging.getLogger('websocket_endpoint')
+            logger = logging.getLogger("websocket_endpoint")
             await websocket.accept()
 
             try:
-                from src.helpers.fetch_helpers import fetch_with_scoreboard_data, fetch_playclock, fetch_gameclock
+                from src.helpers.fetch_helpers import (
+                    fetch_with_scoreboard_data,
+                    fetch_playclock,
+                    fetch_gameclock,
+                )
 
                 initial_data = await fetch_with_scoreboard_data(match_id)
-                initial_data['type'] = 'message-update'
-                print(['WebSocket Connection', initial_data])
+                initial_data["type"] = "message-update"
+                print(["WebSocket Connection", initial_data])
                 await websocket.send_json(initial_data)
 
                 initial_playclock_data = await fetch_playclock(match_id)
-                initial_playclock_data['type'] = 'playclock-update'
+                initial_playclock_data["type"] = "playclock-update"
                 await websocket.send_json(initial_playclock_data)
-                print(['WebSocket Connection', initial_playclock_data])
+                print(["WebSocket Connection", initial_playclock_data])
 
                 initial_gameclock_data = await fetch_gameclock(match_id)
-                initial_gameclock_data['type'] = 'gameclock-update'
+                initial_gameclock_data["type"] = "gameclock-update"
                 await websocket.send_json(initial_gameclock_data)
-                print(['WebSocket Connection', initial_gameclock_data])
+                print(["WebSocket Connection", initial_gameclock_data])
 
                 await process_data_websocket(websocket, client_id, match_id)
 
@@ -293,33 +323,35 @@ class MatchAPIRouter(
                 #     return_exceptions=True
                 # )
             except WebSocketDisconnect:
-                logger.error('WebSocket disconnect:', exc_info=True)
+                logger.error("WebSocket disconnect:", exc_info=True)
             except ConnectionClosedOK:
-                logger.error('ConnectionClosedOK:', exc_info=True)
+                logger.error("ConnectionClosedOK:", exc_info=True)
             except asyncio.TimeoutError:
-                logger.error('TimeoutError:', exc_info=True)
+                logger.error("TimeoutError:", exc_info=True)
             except RuntimeError:
-                logger.error('RuntimeError:', exc_info=True)
+                logger.error("RuntimeError:", exc_info=True)
             except Exception as e:
-                logger.error(f'Unexpected error:{str(e)}', exc_info=True)
+                logger.error(f"Unexpected error:{str(e)}", exc_info=True)
             finally:
                 await connection_manager.disconnect(client_id)
                 await ws_manager.disconnect(client_id)
 
-        async def process_data_websocket(websocket: WebSocket, client_id: str, match_id: int):
+        async def process_data_websocket(
+            websocket: WebSocket, client_id: str, match_id: int
+        ):
             handlers = {
-                'matchdata': process_match_data,
-                'gameclock': process_gameclock_data,
-                'playclock': process_playclock_data,
-                'match': process_match_data,
-                'scoreboard': process_match_data,
+                "matchdata": process_match_data,
+                "gameclock": process_gameclock_data,
+                "playclock": process_playclock_data,
+                "match": process_match_data,
+                "scoreboard": process_match_data,
             }
 
             while websocket.application_state == WebSocketState.CONNECTED:
                 data = await connection_manager.queues[client_id].get()
-                print(f'[DEBUG] client {client_id}: {data}')
+                print(f"[DEBUG] client {client_id}: {data}")
 
-                handler = handlers.get(data.get('table'))
+                handler = handlers.get(data.get("table"))
 
                 if not handler:
                     print(f'[WARNING] No handler for table {data.get("table")}')
@@ -332,23 +364,26 @@ class MatchAPIRouter(
 
         async def process_match_data(websocket: WebSocket, match_id):
             from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+
             full_match_data = await fetch_with_scoreboard_data(match_id)
-            full_match_data['type'] = 'match-update'
-            print('[WebSocket Connection] Full match data fetched: ', full_match_data)
+            full_match_data["type"] = "match-update"
+            print("[WebSocket Connection] Full match data fetched: ", full_match_data)
             await websocket.send_json(full_match_data)
 
         async def process_gameclock_data(websocket: WebSocket, match_id):
             from src.helpers.fetch_helpers import fetch_gameclock
+
             gameclock_data = await fetch_gameclock(match_id)
-            gameclock_data['type'] = 'gameclock-update'
-            print('[WebSocket Connection] Gameclock data fetched: ', gameclock_data)
+            gameclock_data["type"] = "gameclock-update"
+            print("[WebSocket Connection] Gameclock data fetched: ", gameclock_data)
             await websocket.send_json(gameclock_data)
 
         async def process_playclock_data(websocket: WebSocket, match_id):
             from src.helpers.fetch_helpers import fetch_playclock
+
             playclock_data = await fetch_playclock(match_id)
-            playclock_data['type'] = 'playclock-update'
-            print('[WebSocket Connection] Playclock data fetched: ', playclock_data)
+            playclock_data["type"] = "playclock-update"
+            print("[WebSocket Connection] Playclock data fetched: ", playclock_data)
             await websocket.send_json(playclock_data)
 
         @router.get(
@@ -358,11 +393,9 @@ class MatchAPIRouter(
         async def get_parse_tournament_matches(eesl_tournament_id: int):
             return await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
 
-        @router.post(
-            "/add"
-        )
+        @router.post("/add")
         async def create_match_with_full_data_and_scoreboard_endpoint(
-                data: MatchSchemaCreate,
+            data: MatchSchemaCreate,
         ):
             teams_service = TeamServiceDB(db)
             tournament_service = TournamentServiceDB(db)
@@ -380,12 +413,18 @@ class MatchAPIRouter(
             default_gameclock = GameClockSchemaCreate(match_id=new_match.id)
 
             tournament = await tournament_service.get_by_id(new_match.tournament_id)
-            tournament_main_sponsor = await sponsor_service.get_by_id(tournament.main_sponsor_id)
+            tournament_main_sponsor = await sponsor_service.get_by_id(
+                tournament.main_sponsor_id
+            )
             team_a = await teams_service.get_by_id(new_match.team_a_id)
             team_b = await teams_service.get_by_id(new_match.team_b_id)
 
-            scale_main_sponsor = tournament_main_sponsor.scale_logo if tournament_main_sponsor else 2.0
-            existing_scoreboard = await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
+            scale_main_sponsor = (
+                tournament_main_sponsor.scale_logo if tournament_main_sponsor else 2.0
+            )
+            existing_scoreboard = (
+                await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
+            )
 
             if existing_scoreboard is None:
                 scoreboard_schema = ScoreboardSchemaCreate(
@@ -411,9 +450,13 @@ class MatchAPIRouter(
                     team_a_game_title=team_a.title.title(),
                     team_b_game_title=team_b.title.title(),
                 )
-            new_scoreboard = await scoreboard_db_service.create_or_update_scoreboard(scoreboard_schema)
+            new_scoreboard = await scoreboard_db_service.create_or_update_scoreboard(
+                scoreboard_schema
+            )
 
-            new_match_data = await match_db_service.create_match_data(default_match_data)
+            new_match_data = await match_db_service.create_match_data(
+                default_match_data
+            )
             teams_data = await self.service.get_teams_by_match(new_match_data.match_id)
             new_playclock = await playclock_service.create_playclock(default_playclock)
             new_gameclock = await gameclock_service.create_gameclock(default_gameclock)
@@ -422,14 +465,18 @@ class MatchAPIRouter(
 
         @router.post("/api/pars_and_create/tournament/{eesl_tournament_id}")
         async def create_parsed_matches_endpoint(
-                eesl_tournament_id: int,
+            eesl_tournament_id: int,
         ):
             teams_service = TeamServiceDB(db)
             playclock_service = PlayClockServiceDB(db)
             gameclock_service = GameClockServiceDB(db)
             scoreboard_service = ScoreboardServiceDB(db)
-            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
-            matches_list = await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
+            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(
+                eesl_tournament_id
+            )
+            matches_list = await parse_tournament_matches_index_page_eesl(
+                eesl_tournament_id
+            )
 
             created_matches = []
             if matches_list:
@@ -445,7 +492,9 @@ class MatchAPIRouter(
                         "tournament_id": tournament.id,
                     }
                     match_schema = MatchSchemaCreate(**match)
-                    created_match = await self.service.create_or_update_match(match_schema)
+                    created_match = await self.service.create_or_update_match(
+                        match_schema
+                    )
 
                     playclock_schema = PlayClockSchemaCreate(match_id=created_match.id)
                     await playclock_service.create_playclock(playclock_schema)
@@ -453,7 +502,11 @@ class MatchAPIRouter(
                     gameclock_schema = GameClockSchemaCreate(match_id=created_match.id)
                     await gameclock_service.create_gameclock(gameclock_schema)
 
-                    existing_scoreboard = await scoreboard_service.get_scoreboard_by_match_id(created_match.id)
+                    existing_scoreboard = (
+                        await scoreboard_service.get_scoreboard_by_match_id(
+                            created_match.id
+                        )
+                    )
 
                     if existing_scoreboard is None:
                         scoreboard_schema = ScoreboardSchemaCreate(
@@ -475,7 +528,9 @@ class MatchAPIRouter(
                             team_a_game_title=team_a.title,
                             team_b_game_title=team_b.title,
                         )
-                    await scoreboard_service.create_or_update_scoreboard(scoreboard_schema)
+                    await scoreboard_service.create_or_update_scoreboard(
+                        scoreboard_schema
+                    )
 
                     created_matches.append(created_match)
                 return created_matches
@@ -521,8 +576,8 @@ class MatchTemplateRouter(
             response_class=HTMLResponse,
         )
         async def edit_match_data_endpoint(
-                request: Request,
-                match_id: int,
+            request: Request,
+            match_id: int,
         ):
             template = templates.TemplateResponse(
                 name="/scoreboards/display/score-main.html",
@@ -538,8 +593,8 @@ class MatchTemplateRouter(
             response_class=HTMLResponse,
         )
         async def display_fullhd_match_data_endpoint(
-                request: Request,
-                match_id: int,
+            request: Request,
+            match_id: int,
         ):
             template = templates.TemplateResponse(
                 name="/scoreboards/display/score-fullhd.html",

@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from .team import TeamDB
     from .tournament import TournamentDB
     from .matchdata import MatchDataDB
+    from .sponsor import SponsorDB
+    from .sponsor_line import SponsorLineDB
     from .scoreboard import ScoreboardDB
     from .playclock import PlayClockDB
     from .gameclock import GameClockDB
@@ -61,6 +63,16 @@ class MatchDB(Base):
         nullable=True,
     )
 
+    main_sponsor_id: Mapped[int] = mapped_column(
+        ForeignKey("sponsor.id"),
+        nullable=True,
+    )
+
+    sponsor_line_id: Mapped[int] = mapped_column(
+        ForeignKey("sponsor_line.id"),
+        nullable=True,
+    )
+
     tournaments: Mapped["TournamentDB"] = relationship(
         "TournamentDB",
         back_populates="matches",
@@ -70,6 +82,16 @@ class MatchDB(Base):
         "TeamDB",
         back_populates="matches",
         primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+    )
+
+    main_sponsor: Mapped["SponsorDB"] = relationship(
+        "SponsorDB",
+        back_populates="matches",
+    )
+
+    sponsor_line: Mapped["SponsorLineDB"] = relationship(
+        "SponsorLineDB",
+        back_populates="matches",
     )
 
     match_data: Mapped["MatchDataDB"] = relationship(
@@ -106,6 +128,7 @@ class MatchDB(Base):
         back_populates="match",
         passive_deletes=True,
     )
+
 
     # football_home_team_start_lineup: Mapped["FootballHomeTeamStartLineupDB"] = relationship(
     #     "FootballHomeTeamStartLineupDB",

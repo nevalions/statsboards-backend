@@ -11,6 +11,7 @@ class ScoreboardSchemaBase(BaseModel):
     is_tournament_logo: bool = True
     is_main_sponsor: bool = True
     is_sponsor_line: bool = True
+    is_match_sponsor_line: bool = False
 
     team_a_game_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     team_b_game_color: Annotated[str, Path(max_length=10)] = "#1c71d8"
@@ -47,6 +48,7 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_tournament_logo: bool | None = None
     is_main_sponsor: bool | None = None
     is_sponsor_line: bool | None = None
+    is_match_sponsor_line: bool | None = None
 
     team_a_game_color: str | None = None
     team_b_game_color: str | None = None
