@@ -7,6 +7,8 @@ from sqlalchemy.orm import selectinload
 
 from src.core.models import db, BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
 from src.player_match.db_services import PlayerMatchServiceDB
+from src.tournaments.db_services import TournamentServiceDB
+from src.sports.db_services import SportServiceDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate
 
 
@@ -79,6 +81,23 @@ class MatchServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
+
+    async def get_sport_by_match_id(self, match_id: int):
+        tournament_service = TournamentServiceDB(self.db)
+        sport_service = SportServiceDB(self.db)
+        match = await self.get_by_id(match_id)
+        if match:
+            tournament = await tournament_service.get_by_id(match.tournament_id)
+            if tournament:
+                return await sport_service.get_by_id(tournament.sport_id)
+
+        # players_with_data = []
+        # if players:
+        #     for player in players:
+        #         p = await player_service.get_player_in_match_full_data(player.id)
+        #         players_with_data.append(p)
+        #     return players_with_data
+        # return players_with_data
 
     async def get_match_sponsor_line(self, match_id: int):
         return await self.get_related_items_level_one_by_id(match_id, "sponsor_line")

@@ -170,6 +170,12 @@ class MatchAPIRouter(
             return match.__dict__
 
         @router.get(
+            "/id/{match_id}/sport/",
+        )
+        async def get_match_sport_by_match_id_endpoint(match_id: int):
+            return await self.service.get_sport_by_match_id(match_id)
+
+        @router.get(
             "/id/{match_id}/teams/",
         )
         async def get_match_teams_by_match_id_endpoint(match_id: int):
