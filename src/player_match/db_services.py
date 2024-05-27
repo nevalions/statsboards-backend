@@ -148,7 +148,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
 
         return {
             "match_player": match_player,
-            "team_tournament_player": team_tournament_player,
+            "player_team_tournament": team_tournament_player,
             "person": person,
             "position": position,
         }
