@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import re, List
+from typing import List
 
 from fastapi import HTTPException, Request, Depends, status, WebSocket, UploadFile, File
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -180,6 +180,12 @@ class MatchAPIRouter(
         )
         async def get_match_teams_by_match_id_endpoint(match_id: int):
             return await self.service.get_teams_by_match(match_id)
+
+        @router.get(
+            "/id/{match_id}/home_away_teams/",
+        )
+        async def get_match_home_away_teams_by_match_id_endpoint(match_id: int):
+            return await self.service.get_teams_by_match_id(match_id)
 
         @router.get("/id/{match_id}/players/")
         async def get_players_by_match_id_endpoint(match_id: int):
