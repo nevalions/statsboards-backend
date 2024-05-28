@@ -17,7 +17,9 @@ from src.helpers.text_helpers import ru_to_eng_datetime_month
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
 
 
-async def collect_players_dob_from_all_eesl(player_eesl_id: int, base_url: str = BASE_PLAYER):
+async def collect_players_dob_from_all_eesl(
+    player_eesl_id: int, base_url: str = BASE_PLAYER
+):
     url = base_url + str(player_eesl_id)
     print(url)
     try:
@@ -31,7 +33,9 @@ async def collect_players_dob_from_all_eesl(player_eesl_id: int, base_url: str =
         print("Timeout occurred")
 
 
-async def collect_player_full_data_eesl(player_eesl_id: int, base_url: str = BASE_PLAYER):
+async def collect_player_full_data_eesl(
+    player_eesl_id: int, base_url: str = BASE_PLAYER
+):
     url = base_url + str(player_eesl_id)
     print(url)
     try:
@@ -47,10 +51,7 @@ async def collect_player_full_data_eesl(player_eesl_id: int, base_url: str = BAS
         player_first_name = player_full_name.split(" ")[1]
         player_second_name = player_full_name.split(" ")[0]
         img_url, extension = (
-            soup.find("img", class_="player-promo__img")
-            .get("src")
-            .strip()
-            .split("_")
+            soup.find("img", class_="player-promo__img").get("src").strip().split("_")
         )
         player_img_url = f"{img_url}.{extension.split('.')[1]}"
 
@@ -59,13 +60,14 @@ async def collect_player_full_data_eesl(player_eesl_id: int, base_url: str = BAS
 
         path = urlparse(player_img_url).path
         ext = Path(path).suffix
-        person_image_filename = f'{player_eesl_id}_{player_second_name}_{player_first_name}{ext}'
-        person_image_filename_resized_icon = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}'
-        person_image_filename_resized_web_view = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}'
+        person_image_filename = (
+            f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
+        )
+        person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+        person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
 
         image_path = os.path.join(
-            uploads_path,
-            f"persons/photos/{person_image_filename}"
+            uploads_path, f"persons/photos/{person_image_filename}"
         )
 
         resized_icon_image_path = os.path.join(
@@ -102,19 +104,19 @@ async def collect_player_full_data_eesl(player_eesl_id: int, base_url: str = BAS
         )
 
         player_with_person = {
-            'person': {
-                'first_name': player_first_name,
-                'second_name': player_second_name,
-                'person_photo_url': relative_image_path,
-                'person_photo_icon_url': relative_image_icon_path,
-                'person_photo_web_url': relative_image_web_path,
-                'person_dob': dob,
-                'person_eesl_id': player_eesl_id,
+            "person": {
+                "first_name": player_first_name,
+                "second_name": player_second_name,
+                "person_photo_url": relative_image_path,
+                "person_photo_icon_url": relative_image_icon_path,
+                "person_photo_web_url": relative_image_web_path,
+                "person_dob": dob,
+                "person_eesl_id": player_eesl_id,
             },
-            'player': {
-                'sport_id': '1',
-                'player_eesl_id': player_eesl_id,
-            }
+            "player": {
+                "sport_id": "1",
+                "player_eesl_id": player_eesl_id,
+            },
         }
 
         pprint(player_with_person)
@@ -135,14 +137,12 @@ async def parse_all_players_from_eesl_and_create_jsons():
 
 
 async def parse_all_players_from_eesl_index_page_eesl(
-        base_url: str = BASE_ALL_PLAYERS_URL,
-        start_page: int = None,
-        limit: int = None
+    base_url: str = BASE_ALL_PLAYERS_URL, start_page: int = None, limit: int = None
 ):
     players_in_eesl = []
     num = 0
 
-    if start_page > 0:
+    if start_page and start_page > 0:
         num = num + start_page - 1
 
     while True:
@@ -155,29 +155,33 @@ async def parse_all_players_from_eesl_index_page_eesl(
         all_eesl_players = soup.find_all("tr", class_="table__row")
 
         if not all_eesl_players:
-            print('No players found on the page, stopping.')
+            print("No players found on the page, stopping.")
             break
 
-        await get_player_from_eesl_participants(players_in_eesl, all_eesl_players, remaining_limit)
+        await get_player_from_eesl_participants(
+            players_in_eesl, all_eesl_players, remaining_limit
+        )
 
         if limit is not None and len(players_in_eesl) >= limit:
-            print(f'Reached the limit of {limit} players, stopping.')
+            print(f"Reached the limit of {limit} players, stopping.")
             break
 
         # Pagination logic
         pagination = soup.find("ul", {"id": "players-pagination"})
         if pagination:
             # Find the 'next' button. It's typically the last 'li' in the pagination 'ul'.
-            next_button = pagination.find_all("li", class_="pagination-section__item--arrow")[-1]
+            next_button = pagination.find_all(
+                "li", class_="pagination-section__item--arrow"
+            )[-1]
             # Check if the 'next' button is disabled
             is_disabled = "pagination-section__item--disabled" in next_button["class"]
             if is_disabled:
-                print('Reached the last page, stopping.')
+                print("Reached the last page, stopping.")
                 break
 
         # If a limit is set and we've reached it, stop the loop
         if limit is not None and len(players_in_eesl) >= limit:
-            print(f'Reached the limit of {limit} players, stopping.')
+            print(f"Reached the limit of {limit} players, stopping.")
             break
         num += 1
 
@@ -185,7 +189,9 @@ async def parse_all_players_from_eesl_index_page_eesl(
 
 
 # async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players):
-async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, remaining_limit):
+async def get_player_from_eesl_participants(
+    players_in_eesl, all_eesl_players, remaining_limit
+):
     for ppp in all_eesl_players:
         if remaining_limit == 0:
             break
@@ -214,13 +220,14 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
 
                 path = urlparse(player_img_url).path
                 ext = Path(path).suffix
-                person_image_filename = f'{player_eesl_id}_{player_second_name}_{player_first_name}{ext}'
-                person_image_filename_resized_icon = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}'
-                person_image_filename_resized_web_view = f'{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}'
+                person_image_filename = (
+                    f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
+                )
+                person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+                person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
 
                 image_path = os.path.join(
-                    uploads_path,
-                    f"persons/photos/{person_image_filename}"
+                    uploads_path, f"persons/photos/{person_image_filename}"
                 )
 
                 resized_icon_image_path = os.path.join(
@@ -262,23 +269,23 @@ async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players, r
 
                 player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
                 player_with_person = {
-                    'person': {
-                        'first_name': player_first_name,
-                        'second_name': player_second_name,
-                        'person_photo_url': relative_image_path,
-                        'person_photo_icon_url': relative_image_icon_path,
-                        'person_photo_web_url': relative_image_web_path,
-                        'person_dob': player_dob,
-                        'person_eesl_id': player_eesl_id,
+                    "person": {
+                        "first_name": player_first_name,
+                        "second_name": player_second_name,
+                        "person_photo_url": relative_image_path,
+                        "person_photo_icon_url": relative_image_icon_path,
+                        "person_photo_web_url": relative_image_web_path,
+                        "person_dob": player_dob,
+                        "person_eesl_id": player_eesl_id,
                     },
-                    'player': {
-                        'sport_id': '1',
-                        'player_eesl_id': player_eesl_id,
-                    }
+                    "player": {
+                        "sport_id": "1",
+                        "player_eesl_id": player_eesl_id,
+                    },
                 }
 
                 players_in_eesl.append(player_with_person.copy())
-                if remaining_limit is not float('inf'):
+                if remaining_limit and remaining_limit is not float("inf"):
                     remaining_limit -= 1
         except Exception as ex:
             print(ex)

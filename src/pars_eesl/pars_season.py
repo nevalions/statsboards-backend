@@ -30,8 +30,15 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
     all_season_tournaments = soup.find_all("li", class_="tournaments-archive__item")
     for t in all_season_tournaments:
         try:
-            tournament_title = t.find("a", class_="tournaments-archive__link").get("title").lower().strip()
-            tournament_logo_url = t.find("img", class_="tournaments-archive__img").get("src")
+            tournament_title = (
+                t.find("a", class_="tournaments-archive__link")
+                .get("title")
+                .lower()
+                .strip()
+            )
+            tournament_logo_url = t.find("img", class_="tournaments-archive__img").get(
+                "src"
+            )
             path = urlparse(tournament_logo_url).path
             ext = Path(path).suffix
 
@@ -40,7 +47,7 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
 
             image_info = await file_service.download_and_process_image(
                 image_url=tournament_logo_url,
-                image_type_prefix='tournaments/logos/',
+                image_type_prefix="tournaments/logos/",
                 image_title=tournament_title,
                 icon_height=icon_image_height,
                 web_view_height=web_view_image_height,
@@ -55,9 +62,10 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
                 ),
                 "title": tournament_title,
                 "description": "",
-                "tournament_logo_url": image_info['image_url'],
-                'tournament_logo_icon_url': image_info['image_icon_url'],
-                'tournament_logo_web_url': image_info['image_webview_url'],
+                "tournament_logo_url": image_info["image_url"],
+                "tournament_logo_icon_url": image_info["image_icon_url"],
+                "tournament_logo_web_url": image_info["image_webview_url"],
+                # "season_id": 2,
                 "season_id": SEASON_ID,
                 "sport_id": 1,
             }

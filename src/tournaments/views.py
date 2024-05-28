@@ -159,6 +159,7 @@ class TournamentAPIRouter(
             created_tournaments = []
             if tournaments_list:
                 for t in tournaments_list:
+                    print(t)
                     tournament = TournamentSchemaCreate(**t)
                     created_tournament = await self.service.create_or_update_tournament(
                         tournament
