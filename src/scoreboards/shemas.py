@@ -13,6 +13,11 @@ class ScoreboardSchemaBase(BaseModel):
     is_sponsor_line: bool = True
     is_match_sponsor_line: bool = False
 
+    is_team_a_start_offense: bool = False
+    is_team_b_start_offense: bool = False
+    is_team_a_start_defense: bool = False
+    is_team_b_start_defense: bool = False
+
     team_a_game_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     team_b_game_color: Annotated[str, Path(max_length=10)] = "#1c71d8"
     use_team_a_game_color: bool = False
@@ -49,6 +54,11 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_main_sponsor: bool | None = None
     is_sponsor_line: bool | None = None
     is_match_sponsor_line: bool | None = None
+
+    is_team_a_start_offense: bool | None = None
+    is_team_b_start_offense: bool | None = None
+    is_team_a_start_defense: bool | None = None
+    is_team_b_start_defense: bool | None = None
 
     team_a_game_color: str | None = None
     team_b_game_color: str | None = None

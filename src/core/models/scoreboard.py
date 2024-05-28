@@ -49,6 +49,30 @@ class ScoreboardDB(Base):
         default=True,
     )
 
+    is_team_a_start_offense: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    is_team_b_start_offense: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    is_team_a_start_defense: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    is_team_b_start_defense: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
     is_sponsor_line: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
