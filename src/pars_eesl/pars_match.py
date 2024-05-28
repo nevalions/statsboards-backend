@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from bs4 import BeautifulSoup
 import re
 
@@ -10,6 +12,7 @@ def parse_match_and_create_jsons(m_id: int):
     try:
         data = parse_match_index_page_eesl(m_id)
         # save_match_data_to_json(data, str(m_id), DATA_DIR_ABSOLUTE)
+        pprint(data)
         return data
     except Exception as ex:
         print(ex)
@@ -132,7 +135,7 @@ def get_player_eesl_from_match(
         .split(" ")[1],
         "player_eesl_id": int(
             re.findall(
-                "\d+",
+                r"\d+",
                 soup_player_team.find("a", class_="match-protocol__member-name").get(
                     "href"
                 ),
@@ -149,5 +152,5 @@ def get_player_eesl_from_match(
 
 
 if __name__ == "__main__":
-    m = parse_match_and_create_jsons(500)
-    print(m)
+    m = parse_match_and_create_jsons(547)
+    # print(m)
