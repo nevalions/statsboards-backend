@@ -100,7 +100,7 @@ class PlayerMatchAPIRouter(
         async def get_parsed_eesl_match_endpoint(eesl_match_id: int):
             return await parse_match_and_create_jsons(eesl_match_id)
 
-        @router.post("/pars_and_create/match/{eesl_match_id}")
+        @router.get("/pars_and_create/match/{eesl_match_id}")
         async def create_parsed_eesl_match_endpoint(
                 eesl_match_id: int,
         ):
@@ -117,8 +117,7 @@ class PlayerMatchAPIRouter(
             team_a = await TeamServiceDB(db).get_team_by_eesl_id(parsed_match['team_a_eesl_id'])
             team_b = await TeamServiceDB(db).get_team_by_eesl_id(parsed_match['team_b_eesl_id'])
 
-            created_home_players_match = []
-            created_away_players_match = []
+            created_players_match = []
 
             if parsed_match and match:
                 existing_player_ids = set()
@@ -180,9 +179,11 @@ class PlayerMatchAPIRouter(
 
                     player = PlayerMatchSchemaCreate(**player_schema)
                     created_player = await self.service.create_or_update_player_match(player)
-                    created_home_players_match.append({
-                        'home_match_player': created_player,
-                        'home_match_person': person,
+                    created_players_match.append({
+                        'match_player': created_player,
+                        'person': person,
+                        'player_team_tournament': player_in_team,
+                        'position': position
                     })
 
                 for away_player in parsed_match["roster_b"]:
@@ -245,12 +246,14 @@ class PlayerMatchAPIRouter(
 
                     player = PlayerMatchSchemaCreate(**player_schema)
                     created_player = await self.service.create_or_update_player_match(player)
-                    created_away_players_match.append({
-                        'away_match_player': created_player,
-                        'away_match_person': person,
+                    created_players_match.append({
+                        'match_player': created_player,
+                        'person': person,
+                        'player_team_tournament': player_in_team,
+                        'position': position
                     })
 
-                return {'roster_a': created_home_players_match, 'roster_b': created_away_players_match}
+                return created_players_match
             else:
                 return []
 
