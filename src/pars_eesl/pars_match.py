@@ -1,3 +1,4 @@
+import asyncio
 from pprint import pprint
 
 from bs4 import BeautifulSoup
@@ -7,10 +8,10 @@ from src.helpers import get_url
 from src.pars_eesl.pars_settings import BASE_MATCH_URL
 
 
-def parse_match_and_create_jsons(m_id: int):
+async def parse_match_and_create_jsons(m_id: int):
     # m_id = enter_match_id()
     try:
-        data = parse_match_index_page_eesl(m_id)
+        data = await parse_match_index_page_eesl(m_id)
         # save_match_data_to_json(data, str(m_id), DATA_DIR_ABSOLUTE)
         pprint(data)
         return data
@@ -32,7 +33,7 @@ def enter_match_id():
             print("Enter a valid match id")
 
 
-def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
+async def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
     """
     Parse match index page from eesl.pro
     Get:
@@ -47,6 +48,8 @@ def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
     match_data = {
         "team_a": "",
         "team_b": "",
+        'team_a_eesl_id': None,
+        'team_b_eesl_id': None,
         "team_logo_url_a": "",
         "team_logo_url_b": "",
         "score_a": "",
@@ -67,10 +70,19 @@ def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
     logo_urls = soup.find_all("img", class_="match-promo__team-img")
     score = soup.find("div", class_="match-promo__score-main")
 
+    team_a_id = int(
+        soup.find("a", class_="match-protocol__team-name match-protocol__team-name--left").get("href").strip().split(
+            "=")[1])
+    team_b_id = int(
+        soup.find("a", class_="match-protocol__team-name match-protocol__team-name--right").get("href").strip().split(
+            "=")[1])
+
     # print(team_a, team_b, logo_urls, score)
 
     match_data["team_a"] = team_a.text.strip()
     match_data["team_b"] = team_b.text.strip()
+    match_data["team_a_eesl_id"] = team_a_id
+    match_data["team_b_eesl_id"] = team_b_id
     match_data["team_logo_url_a"] = logo_urls[0].get("src")
     match_data["team_logo_url_b"] = logo_urls[1].get("src")
     match_data["score_a"] = score.text.split(":")[0].strip()
@@ -88,7 +100,7 @@ def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
 
     for p in players_a:
         try:
-            player = get_player_eesl_from_match(
+            player = await get_player_eesl_from_match(
                 p, match_data["team_a"], match_data["team_logo_url_a"]
             )
             roster_a.append(player.copy())
@@ -97,7 +109,7 @@ def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
 
     for p in players_b:
         try:
-            player = get_player_eesl_from_match(
+            player = await get_player_eesl_from_match(
                 p, match_data["team_b"], match_data["team_logo_url_b"]
             )
             roster_b.append(player.copy())
@@ -110,8 +122,8 @@ def parse_match_index_page_eesl(m_id: int, base_url: str = BASE_MATCH_URL):
     return match_data
 
 
-def get_player_eesl_from_match(
-    soup_player_team: BeautifulSoup, team: str, team_logo_url: str
+async def get_player_eesl_from_match(
+        soup_player_team: BeautifulSoup, team: str, team_logo_url: str
 ):
     player = {
         "player_number": soup_player_team.find(
@@ -151,6 +163,10 @@ def get_player_eesl_from_match(
     return player
 
 
-if __name__ == "__main__":
-    m = parse_match_and_create_jsons(547)
+async def main():
+    m = await parse_match_and_create_jsons(547)
     # print(m)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

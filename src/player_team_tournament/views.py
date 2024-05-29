@@ -50,13 +50,13 @@ class PlayerTeamTournamentAPIRouter(
             response_model=PlayerTeamTournamentSchema,
         )
         async def get_player_team_tournament_by_eesl_id_endpoint(
-                player_team_tournament_eesl_id: int,
+                eesl_id: int,
         ):
-            tournament = await self.service.get_player_team_tournament_by_eesl_id(value=player_team_tournament_eesl_id)
+            tournament = await self.service.get_player_team_tournament_by_eesl_id(value=eesl_id)
             if tournament is None:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Tournament eesl_id({player_team_tournament_eesl_id}) " f"not found",
+                    detail=f"Player eesl_id({eesl_id}) " f"not found",
                 )
             return tournament.__dict__
 
