@@ -73,6 +73,12 @@ class ScoreboardDB(Base):
         default=False,
     )
 
+    is_match_player_lower: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
     is_sponsor_line: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -155,25 +161,25 @@ class ScoreboardDB(Base):
         default=False,
     )
 
-    scale_tournament_logo: Mapped[int] = mapped_column(
+    scale_tournament_logo: Mapped[float] = mapped_column(
         Float,
         nullable=True,
         default=2.0,
     )
 
-    scale_main_sponsor: Mapped[int] = mapped_column(
+    scale_main_sponsor: Mapped[float] = mapped_column(
         Float,
         nullable=True,
         default=2.0,
     )
 
-    scale_logo_a: Mapped[int] = mapped_column(
+    scale_logo_a: Mapped[float] = mapped_column(
         Float,
         nullable=True,
         default=2.0,
     )
 
-    scale_logo_b: Mapped[int] = mapped_column(
+    scale_logo_b: Mapped[float] = mapped_column(
         Float,
         nullable=True,
         default=2.0,

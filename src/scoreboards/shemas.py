@@ -18,6 +18,8 @@ class ScoreboardSchemaBase(BaseModel):
     is_team_a_start_defense: bool = False
     is_team_b_start_defense: bool = False
 
+    is_match_player_lower: bool = False
+
     team_a_game_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     team_b_game_color: Annotated[str, Path(max_length=10)] = "#1c71d8"
     use_team_a_game_color: bool = False
@@ -59,6 +61,8 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_team_b_start_offense: bool | None = None
     is_team_a_start_defense: bool | None = None
     is_team_b_start_defense: bool | None = None
+
+    is_match_player_lower: bool | None = None
 
     team_a_game_color: str | None = None
     team_b_game_color: str | None = None
