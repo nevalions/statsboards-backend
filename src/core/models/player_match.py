@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .position import PositionDB
     from .match import MatchDB
     from .team import TeamDB
+    from .scoreboard import ScoreboardDB
 
 
 class PlayerMatchDB(Base):
@@ -87,5 +88,10 @@ class PlayerMatchDB(Base):
 
     team: Mapped["TeamDB"] = relationship(
         "TeamDB",
+        back_populates="match_players",
+    )
+
+    match_scoreboard: Mapped["ScoreboardDB"] = relationship(
+        "ScoreboardDB",
         back_populates="match_players",
     )

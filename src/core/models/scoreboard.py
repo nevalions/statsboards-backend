@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.models import Base
 
 if TYPE_CHECKING:
+    from .player_match import PlayerMatchDB
     from .match import MatchDB
 
 
@@ -213,7 +214,21 @@ class ScoreboardDB(Base):
         unique=True,
     )
 
+    player_match_lower_id = mapped_column(
+        Integer,
+        ForeignKey(
+            "player_match.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+    )
+
     matches: Mapped["MatchDB"] = relationship(
         "MatchDB",
+        back_populates="match_scoreboard",
+    )
+
+    match_players: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
         back_populates="match_scoreboard",
     )
