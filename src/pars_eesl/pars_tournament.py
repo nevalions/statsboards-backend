@@ -1,14 +1,10 @@
 import asyncio
-import os
+import re
 from datetime import datetime
-from pathlib import Path
 from pprint import pprint
-from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
-import re
 
-from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import months
@@ -34,8 +30,8 @@ async def parse_tournament_teams_and_create_jsons(t_id: int):
 
 
 async def parse_tournament_teams_index_page_eesl(
-        t_id: int,
-        base_url: str = BASE_TOURNAMENT_URL,
+    t_id: int,
+    base_url: str = BASE_TOURNAMENT_URL,
 ):
     teams_in_tournament = []
     url = f"{base_url}{str(t_id)}/teams"
@@ -49,7 +45,8 @@ async def parse_tournament_teams_index_page_eesl(
             team_eesl_id = int(
                 re.findall(
                     r"team_id=(\d+)", t.find("a", class_="teams__logo").get("href")
-                )[0])
+                )[0]
+            )
             team_title = t.find("a", class_="teams__name-link").text.strip().lower()
             team_logo_url = t.find(
                 "img", alt=t.find("a", class_="teams__name-link").text.strip()
@@ -60,26 +57,31 @@ async def parse_tournament_teams_index_page_eesl(
 
             image_info = await file_service.download_and_process_image(
                 image_url=team_logo_url,
-                image_type_prefix='teams/logos/',
+                image_type_prefix="teams/logos/",
                 image_title=team_title,
                 icon_height=icon_image_height,
                 web_view_height=web_view_image_height,
             )
 
-            team_color = '#c01c28'
+            team_color = "#c01c28"
             try:
-                team_color = await file_service.get_most_common_color(image_info['image_path']) or team_color
+                team_color = (
+                    await file_service.get_most_common_color(image_info["image_path"])
+                    or team_color
+                )
             except Exception as err:
-                print(f"Failed to get color for {team_logo_url}. Using default color #c01c28. Error: {err}")
+                print(
+                    f"Failed to get color for {team_logo_url}. Using default color #c01c28. Error: {err}"
+                )
 
             team = {
                 "team_eesl_id": team_eesl_id,
                 "title": team_title,
                 "description": "",
-                "team_logo_url": image_info['image_url'],
-                'team_logo_icon_url': image_info['image_icon_url'],
-                'team_logo_web_url': image_info['image_webview_url'],
-                "city": '',
+                "team_logo_url": image_info["image_url"],
+                "team_logo_icon_url": image_info["image_icon_url"],
+                "team_logo_web_url": image_info["image_webview_url"],
+                "city": "",
                 "team_color": team_color,
                 "sport_id": 1,
             }
@@ -93,7 +95,7 @@ async def parse_tournament_teams_index_page_eesl(
 
 
 async def parse_tournament_matches_index_page_eesl(
-        t_id: int, base_url: str = BASE_TOURNAMENT_URL, year: int = 2024
+    t_id: int, base_url: str = BASE_TOURNAMENT_URL, year: int = 2024
 ):
     week_counter = 0
     # first_week_num = None
@@ -107,33 +109,62 @@ async def parse_tournament_matches_index_page_eesl(
     for week in all_schedule_matches:
         # print(week)
         try:
-            all_weeks_in_schedule = week.find_all("div", class_="js-calendar-matches-header")
+            all_weeks_in_schedule = week.find_all(
+                "div", class_="js-calendar-matches-header"
+            )
             # print(all_weeks_in_schedule)
             for week_in_schedule in all_weeks_in_schedule:
                 if week_in_schedule:
-                    all_matches_in_week = week_in_schedule.find_all("ul", class_="schedule__matches-list")
-                    date_texts = week_in_schedule.find("span", class_="schedule__head-text")
+                    all_matches_in_week = week_in_schedule.find_all(
+                        "ul", class_="schedule__matches-list"
+                    )
+                    date_texts = week_in_schedule.find(
+                        "span", class_="schedule__head-text"
+                    )
                     # print('DATE', date_texts.text.strip())
 
                     for mp in all_matches_in_week:
                         match = mp.find_all("li", class_="js-calendar-match")
-                        # print(match)
+                        print(match)
                         for item in match:
                             # print(item)
                             match_eesl_id = int(
-                                re.findall(r"\d+", item.find("a", class_="schedule__score").get("href"))[0])
-                            team_a_id = int(item.find("a", class_="schedule__team-1").get("href").strip().split("=")[1])
-                            team_b_id = int(item.find("a", class_="schedule__team-2").get("href").strip().split("=")[1])
-                            game_time = item.find("span", class_="schedule__time").text.strip()
+                                re.findall(
+                                    r"\d+",
+                                    item.find("a", class_="schedule__score").get(
+                                        "href"
+                                    ),
+                                )[0]
+                            )
+                            team_a_id = int(
+                                item.find("a", class_="schedule__team-1")
+                                .get("href")
+                                .strip()
+                                .split("=")[1]
+                            )
+                            team_b_id = int(
+                                item.find("a", class_="schedule__team-2")
+                                .get("href")
+                                .strip()
+                                .split("=")[1]
+                            )
+                            game_time = item.find(
+                                "span", class_="schedule__time"
+                            ).text.strip()
                             match_date = date_texts.text.strip()
-                            date_formatted = match_date.replace(',', '') + " " + game_time
-                            # print(date_formatted)
+                            date_formatted = (
+                                match_date.replace(",", "") + " " + game_time
+                            )
+                            print(date_formatted)
                             # print(date_formatted.split())
 
-                            date, month, year, day, time = date_formatted.split()
+                            # date, month, year, day, time = date_formatted.split()
+                            date, month, day, time = date_formatted.split()
                             # print(date, month, year, day, time)
                             month = months[month]
-                            date_ = datetime.strptime(f"{date} {month} {year} {time}", "%d %B %Y %H:%M")
+                            date_ = datetime.strptime(
+                                f"{date} {month} {year} {time}", "%d %B %Y %H:%M"
+                            )
                             formatted_date = date_.strftime("%Y-%m-%d %H:%M:%S.%f")
 
                             iso_year, iso_week_num, iso_weekday = date_.isocalendar()
