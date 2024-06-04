@@ -125,7 +125,7 @@ async def parse_tournament_matches_index_page_eesl(
 
                     for mp in all_matches_in_week:
                         match = mp.find_all("li", class_="js-calendar-match")
-                        print(match)
+                        # print(match)
                         for item in match:
                             # print(item)
                             match_eesl_id = int(
@@ -148,6 +148,23 @@ async def parse_tournament_matches_index_page_eesl(
                                 .strip()
                                 .split("=")[1]
                             )
+                            score = (
+                                item.find("div", class_="schedule__score-main")
+                                .text.strip()
+                                .split(":")
+                            )
+
+                            print("SCORE", score)
+
+                            score_team_a = 0
+                            score_team_b = 0
+
+                            if int(score[0].strip()):
+                                score_team_a = int(score[0].strip())
+
+                            if int(score[1].strip()):
+                                score_team_b = int(score[1].strip())
+
                             game_time = item.find(
                                 "span", class_="schedule__time"
                             ).text.strip()
@@ -155,7 +172,7 @@ async def parse_tournament_matches_index_page_eesl(
                             date_formatted = (
                                 match_date.replace(",", "") + " " + game_time
                             )
-                            print(date_formatted)
+                            # print(date_formatted)
                             # print(date_formatted.split())
 
                             # date, month, year, day, time = date_formatted.split()
@@ -184,6 +201,8 @@ async def parse_tournament_matches_index_page_eesl(
                                 "team_b_id": team_b_id,
                                 "match_date": formatted_date,
                                 "tournament_eesl_id": t_id,
+                                "score_team_a": score_team_a,
+                                "score_team_b": score_team_b,
                             }
                             pprint(match)
                             matches_in_tournament.append(match.copy())

@@ -8,22 +8,21 @@ from starlette.websockets import WebSocketDisconnect, WebSocketState
 from websockets import ConnectionClosedOK
 
 from src.core import BaseRouter, db, MinimalBaseRouter
+from src.core.config import templates
+from src.matchdata.db_services import MatchDataServiceDB
+from src.scoreboards.db_services import ScoreboardServiceDB
+from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
 from .db_services import MatchServiceDB
 from .shemas import (
     MatchSchemaCreate,
     MatchSchemaUpdate,
     MatchSchema,
 )
-from src.core.config import templates
-
-from src.matchdata.db_services import MatchDataServiceDB
-from src.scoreboards.db_services import ScoreboardServiceDB
-from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
 from ..core.models.base import ws_manager, connection_manager
 from ..gameclocks.db_services import GameClockServiceDB
 from ..gameclocks.schemas import GameClockSchemaCreate
 from ..helpers.file_service import file_service
-from ..matchdata.schemas import MatchDataSchemaCreate
+from ..matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 from ..pars_eesl.pars_tournament import parse_tournament_matches_index_page_eesl
 from ..playclocks.db_services import PlayClockServiceDB
 from ..playclocks.schemas import PlayClockSchemaCreate
@@ -483,6 +482,7 @@ class MatchAPIRouter(
             playclock_service = PlayClockServiceDB(db)
             gameclock_service = GameClockServiceDB(db)
             scoreboard_service = ScoreboardServiceDB(db)
+            match_data_service = MatchDataServiceDB(db)
             tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(
                 eesl_tournament_id
             )
@@ -513,6 +513,33 @@ class MatchAPIRouter(
 
                     gameclock_schema = GameClockSchemaCreate(match_id=created_match.id)
                     await gameclock_service.create_gameclock(gameclock_schema)
+
+                    existing_match_data = (
+                        await match_data_service.get_match_data_by_match_id(
+                            created_match.id
+                        )
+                    )
+
+                    if existing_match_data is None:
+                        match_data_schema_create = MatchDataSchemaCreate(
+                            match_id=created_match.id,
+                            score_team_a=m["score_team_a"],
+                            score_team_b=m["score_team_b"],
+                        )
+                        match_data = await match_data_service.create_match_data(
+                            match_data_schema_create
+                        )
+                        print("match_data", match_data)
+                    else:
+                        match_data_schema_update = MatchDataSchemaUpdate(
+                            match_id=created_match.id,
+                            score_team_a=m["score_team_a"],
+                            score_team_b=m["score_team_b"],
+                        )
+                        match_data = await match_data_service.update_match_data(
+                            existing_match_data.id, match_data_schema_update
+                        )
+                        print("match_data", match_data)
 
                     existing_scoreboard = (
                         await scoreboard_service.get_scoreboard_by_match_id(
