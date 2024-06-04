@@ -1,6 +1,6 @@
-from typing import List, TypeVar, Generic, Optional, Any
+from typing import TypeVar, Generic, Optional, Any
+
 from fastapi import APIRouter, HTTPException
-from fastapi.params import Query
 from starlette import status
 
 ModelType = TypeVar("ModelType")
@@ -41,12 +41,13 @@ class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType
 
         @router.get("/")
         async def get_all_elem(
-                skip: int = Query(0, description="Skip items"),
-                limit: int = Query(500, description="Limit items"),
-                order_by: str = Query("id", description="Order items by"),
-                des: bool = Query(False, description="Sort items in descending order"),
+            # skip: int = Query(0, description="Skip items"),
+            # limit: int = Query(500, description="Limit items"),
+            # order_by: str = Query("id", description="Order items by"),
+            # des: bool = Query(False, description="Sort items in descending order"),
         ):
-            return await self.service.get_all_elements(skip, limit, order_by, des)
+            # return await self.service.get_all_elements(skip, limit, order_by, des)
+            return await self.service.get_all_elements()
 
         @router.get("/id/{model_id}")  # Remove response_model temporarily
         async def get_by_id(model_id: int):

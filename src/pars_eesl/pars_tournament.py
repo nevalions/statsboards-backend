@@ -154,7 +154,7 @@ async def parse_tournament_matches_index_page_eesl(
                                 .split(":")
                             )
 
-                            print("SCORE", score)
+                            # print("SCORE", score)
 
                             score_team_a = 0
                             score_team_b = 0

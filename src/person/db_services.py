@@ -6,19 +6,20 @@ from .schemas import PersonSchemaCreate, PersonSchemaUpdate
 
 class PersonServiceDB(BaseServiceDB):
     def __init__(
-            self,
-            database,
+        self,
+        database,
     ):
         super().__init__(database, PersonDB)
 
     async def create_or_update_person(
-            self,
-            p: PersonSchemaCreate | PersonSchemaUpdate,
+        self,
+        p: PersonSchemaCreate | PersonSchemaUpdate,
     ):
         try:
             if p.person_eesl_id:
                 person_from_db = await self.get_person_by_eesl_id(p.person_eesl_id)
                 if person_from_db:
+                    # print("updating person", person_from_db.__dict__)
                     return await self.update_person_by_eesl(
                         "person_eesl_id",
                         p,
@@ -28,6 +29,7 @@ class PersonServiceDB(BaseServiceDB):
                         p,
                     )
             else:
+                # print("creating person", p)
                 return await self.create_new_person(
                     p,
                 )
@@ -39,9 +41,9 @@ class PersonServiceDB(BaseServiceDB):
             )
 
     async def update_person_by_eesl(
-            self,
-            eesl_field_name: str,
-            p: PersonSchemaUpdate,
+        self,
+        eesl_field_name: str,
+        p: PersonSchemaUpdate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -50,10 +52,9 @@ class PersonServiceDB(BaseServiceDB):
         )
 
     async def create_new_person(
-            self,
-            p: PersonSchemaCreate,
+        self,
+        p: PersonSchemaCreate,
     ):
-
         person = self.model(
             first_name=p.first_name,
             second_name=p.second_name,
@@ -64,13 +65,13 @@ class PersonServiceDB(BaseServiceDB):
             person_eesl_id=p.person_eesl_id,
         )
 
-        print('person', person)
+        print("person", person)
         return await super().create(person)
 
     async def get_person_by_eesl_id(
-            self,
-            value,
-            field_name="person_eesl_id",
+        self,
+        value,
+        field_name="person_eesl_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -78,10 +79,10 @@ class PersonServiceDB(BaseServiceDB):
         )
 
     async def update_person(
-            self,
-            item_id: int,
-            item: PersonSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: PersonSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,

@@ -1,32 +1,31 @@
-import os
 import asyncio
 import json
 import logging
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Dict
-from starlette.websockets import WebSocket
+
 import asyncpg
+from fastapi import HTTPException, UploadFile
+from sqlalchemy import select, update, Result, Column, TextClause
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
     selectinload,
 )
-
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import DeclarativeBase
-
-from fastapi import HTTPException, UploadFile
-from sqlalchemy import select, update, Result, Column, Table, TextClause
+from starlette.websockets import WebSocket
 
 from src.core.config import settings
 
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('WebSocketManager')
+logger = logging.getLogger("WebSocketManager")
 
 
 # DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
@@ -56,8 +55,8 @@ class MatchDataWebSocketManager:
         self.match_data_queues = {}
         self.playclock_queues = {}
         self.gameclock_queues = {}
-        self.logger = logging.getLogger('WebSocketManager')
-        self.logger.info('WebSocketManager initialized')
+        self.logger = logging.getLogger("WebSocketManager")
+        self.logger.info("WebSocketManager initialized")
 
     async def connect(self, client_id: str):
         self.match_data_queues[client_id] = asyncio.Queue()
@@ -71,29 +70,32 @@ class MatchDataWebSocketManager:
 
     async def startup(self):
         self.connection = await asyncpg.connect(self.db_url)
-        await self.connection.add_listener('matchdata_change', self.match_data_listener)
-        await self.connection.add_listener('match_change', self.match_data_listener)
-        await self.connection.add_listener('scoreboard_change', self.match_data_listener)
-        await self.connection.add_listener('playclock_change', self.playclock_listener)
-        await self.connection.add_listener('gameclock_change', self.gameclock_listener)
+        await self.connection.add_listener("matchdata_change", self.match_data_listener)
+        await self.connection.add_listener("match_change", self.match_data_listener)
+        await self.connection.add_listener(
+            "scoreboard_change", self.match_data_listener
+        )
+        await self.connection.add_listener("playclock_change", self.playclock_listener)
+        await self.connection.add_listener("gameclock_change", self.gameclock_listener)
 
     async def playclock_listener(self, connection, pid, channel, payload):
         print("[Playclock listener] Start")
         if not payload or not payload.strip():
-            self.logger.warning('No payload received')
+            self.logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
-        match_id = data['match_id']
-        data['type'] = 'playclock-update'
+        match_id = data["match_id"]
+        data["type"] = "playclock-update"
         self.logger.debug(
-            f'''Match ID: {match_id}
+            f"""Match ID: {match_id}
             Received playclock payload: {payload}
             connection: {connection}
             pid: {pid}
             channel: {channel}
             data: {data}
-            ''')
+            """
+        )
 
         # for queue in self.playclock_queues.values():
         #     await queue.put(data)
@@ -103,20 +105,21 @@ class MatchDataWebSocketManager:
     async def gameclock_listener(self, connection, pid, channel, payload):
         print(f"[Gameclock listener] Start")
         if not payload or not payload.strip():
-            self.logger.warning('No payload received')
+            self.logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
-        match_id = data['match_id']
-        data['type'] = 'gameclock-update'
+        match_id = data["match_id"]
+        data["type"] = "gameclock-update"
         self.logger.debug(
-            f'''Match ID: {match_id}
+            f"""Match ID: {match_id}
             Received gameclock payload: {payload}        
             connection: {connection}
             pid: {pid}
             channel: {channel}
             data: {data}
-            ''')
+            """
+        )
 
         # for queue in self.gameclock_queues.values():
         #     await queue.put(data)
@@ -126,20 +129,21 @@ class MatchDataWebSocketManager:
     async def match_data_listener(self, connection, pid, channel, payload):
         print("[Match Data Listener] Start")
         if not payload or not payload.strip():
-            self.logger.warning('No payload received')
+            self.logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
-        match_id = data['match_id']
-        data['type'] = 'match-update'
+        match_id = data["match_id"]
+        data["type"] = "match-update"
         self.logger.debug(
-            f'''Match ID: {match_id}
+            f"""Match ID: {match_id}
             Received match data payload: {payload}        
             connection: {connection}
             pid: {pid}
             channel: {channel}
             data: {data}
-            ''')
+            """
+        )
         # for queue in self.match_data_queues.values():
         #     await queue.put(data)
 
@@ -162,7 +166,7 @@ class ConnectionManager:
         self.match_subscriptions: Dict[str, List[str]] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str, match_id: str = None):
-        print(f'Active Connections: {len(self.active_connections)}')
+        print(f"Active Connections: {len(self.active_connections)}")
 
         if client_id in self.active_connections:
             await self.active_connections[client_id].close()
@@ -173,10 +177,14 @@ class ConnectionManager:
         if match_id:
             if match_id in self.match_subscriptions:
                 self.match_subscriptions[match_id].append(client_id)
-                print(f'match subscription match id:{match_id}', self.match_subscriptions)
+                print(
+                    f"match subscription match id:{match_id}", self.match_subscriptions
+                )
             else:
                 self.match_subscriptions[match_id] = [client_id]
-                print(f'match subscription client_id{client_id}', self.match_subscriptions)
+                print(
+                    f"match subscription client_id{client_id}", self.match_subscriptions
+                )
 
     async def disconnect(self, client_id: str):
         if client_id in self.active_connections:
@@ -189,19 +197,28 @@ class ConnectionManager:
                     self.match_subscriptions[match_id].remove(client_id)
 
     async def send_to_all(self, data: str, match_id: str = None):
-        print(f"[Debug][send_to_all] Entered method with data: {data}, match_id: {match_id}")
-        print(f"[Debug][send_to_all] Current match_subscriptions: {self.match_subscriptions}")
+        print(
+            f"[Debug][send_to_all] Entered method with data: {data}, match_id: {match_id}"
+        )
+        print(
+            f"[Debug][send_to_all] Current match_subscriptions: {self.match_subscriptions}"
+        )
         if match_id:
             for client_id in self.match_subscriptions.get(match_id, []):
                 print(f"[Debug][send_to_all] Checking client_id: {client_id}")
                 if client_id in self.queues:
-                    print(f"[Debug][send_to_all] Adding data to queue of client_id: {client_id}")
+                    print(
+                        f"[Debug][send_to_all] Adding data to queue of client_id: {client_id}"
+                    )
                     await self.queues[client_id].put(data)
-                    print(f"[send_to_all_{match_id}] Data sent to all client queues with match id:{match_id}", data)
+                    print(
+                        f"[send_to_all_{match_id}] Data sent to all client queues with match id:{match_id}",
+                        data,
+                    )
                 # print("[send_to_all] Data sent to all client queues:", data)
 
     async def send_to_match_id_channels(self, data):
-        match_id = data['match_id']
+        match_id = data["match_id"]
         await connection_manager.send_to_all(data, match_id=match_id)
 
 
@@ -225,29 +242,46 @@ class BaseServiceDB:
                 raise HTTPException(
                     status_code=409,
                     detail=f"{self.model.__name__} creation error."
-                           f"Check input data.",
+                    f"Check input data.",
                 )
 
+    # async def get_all_elements(
+    #     self,
+    #     skip: int = 0,
+    #     limit: int = 1000,
+    #     order_by: str = "id",
+    #     descending: bool = False,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         order = getattr(self.model, order_by)
+    #         new_order = self.is_des(descending, order)
+    #
+    #         stmt = select(self.model).offset(skip).limit(limit).order_by(new_order)
+    #
+    #         items = await session.execute(stmt)
+    #         result = items.scalars().all()
+    #         return list(result)
+
     async def get_all_elements(
-            self,
-            skip: int = 0,
-            limit: int = 500,
-            order_by: str = "id",
-            descending: bool = False,
+        self,
+        # skip: int = 0,
+        # limit: int = 1000,
+        # order_by: str = "id",
+        # descending: bool = False,
     ):
         async with self.db.async_session() as session:
-            order = getattr(self.model, order_by)
-            new_order = self.is_des(descending, order)
+            # order = getattr(self.model, order_by)
+            # new_order = self.is_des(descending, order)
 
-            stmt = select(self.model).offset(skip).limit(limit).order_by(new_order)
+            stmt = select(self.model)
 
             items = await session.execute(stmt)
             result = items.scalars().all()
             return list(result)
 
     async def get_by_id(
-            self,
-            item_id: int,
+        self,
+        item_id: int,
     ):
         async with self.db.async_session() as session:
             result = await session.execute(
@@ -261,9 +295,9 @@ class BaseServiceDB:
             return model
 
     async def get_by_id_and_model(
-            self,
-            model,
-            item_id: int,
+        self,
+        model,
+        item_id: int,
     ):
         async with self.db.async_session() as session:
             result = await session.execute(
@@ -275,30 +309,6 @@ class BaseServiceDB:
             # )  # Add this line for debugging
             # print(model)
             return item
-
-    # async def update(self, item_id: int, item, **kwargs):
-    #     async with self.db.async_session() as session:
-    #         db_item = await self.get_by_id(item_id)
-    #         if not db_item:
-    #             return None
-    #
-    #         for key, value in item.dict(exclude_unset=True).items():
-    #             # Check if the value is a string and represents a boolean
-    #             if isinstance(value, str) and value.lower() in ['true', 'false']:
-    #                 # Convert string 'true' or 'false' to boolean
-    #                 value = value.lower() == 'true'
-    #
-    #             setattr(db_item, key, value)
-    #
-    #         await session.execute(
-    #             update(self.model)
-    #             .where(self.model.id == item_id)
-    #             .values(item.dict(exclude_unset=True))
-    #         )
-    #
-    #         await session.commit()
-    #         updated_item = await self.get_by_id(db_item.id)
-    #         return updated_item
 
     async def update(self, item_id: int, item, **kwargs):
         async with self.db.async_session() as session:
@@ -339,46 +349,18 @@ class BaseServiceDB:
         async with self.db.async_session() as session:
             # Access the column directly from the model
             column: Column = getattr(self.model, field_name)
-            print('Column: ', column)
+            print("Column: ", column)
 
             stmt = select(self.model).where(column == value)
             result: Result = await session.execute(stmt)
             print(result)
             return result.scalars().one_or_none()
 
-    # async def get_items_by_attribute(
-    #     self,
-    #     value,
-    #     field_name: str,
-    #     order_by: str = "id",
-    #     descending: bool = False,
-    #     skip=0,
-    #     limit=100,
-    # ):
-    #     async with self.db.async_session() as session:
-    #         order = getattr(self.model, order_by)
-    #         new_order = self.is_des(descending, order)
-    #         column: Column = getattr(self.model, field_name)
-    #
-    #         stmt = (
-    #             select(self.model)
-    #             .where(column == value)
-    #             .offset(skip)
-    #             .limit(limit)
-    #             .order_by(new_order)
-    #         )
-    #
-    #         items = await session.execute(stmt)
-    #         result = []
-    #         for item in items.scalars().fetchall():
-    #             result.append(item.__dict__)
-    #         return result
-
     async def update_item_by_eesl_id(
-            self,
-            eesl_field_name: str,
-            eesl_value: int,
-            new_item,
+        self,
+        eesl_field_name: str,
+        eesl_value: int,
+        new_item,
     ):
         async with self.db.async_session() as session:
             is_exist = await self.get_item_by_field_value(
@@ -404,12 +386,12 @@ class BaseServiceDB:
                 return None
 
     async def find_relation(
-            self,
-            secondary_table: TextClause,
-            fk_item_one: int,
-            fk_item_two: int,
-            field_name_one: str,
-            field_name_two: str,
+        self,
+        secondary_table: TextClause,
+        fk_item_one: int,
+        fk_item_two: int,
+        field_name_one: str,
+        field_name_two: str,
     ):
         async with self.db.async_session() as session:
             # Check if the relation already exists
@@ -423,12 +405,12 @@ class BaseServiceDB:
             return existing_relation.scalar()
 
     async def is_relation_exist(
-            self,
-            secondary_table,
-            fk_item_one: int,
-            fk_item_two: int,
-            field_name_one: str,
-            field_name_two: str,
+        self,
+        secondary_table,
+        fk_item_one: int,
+        fk_item_two: int,
+        field_name_one: str,
+        field_name_two: str,
     ) -> bool:
         existing_record = await self.find_relation(
             secondary_table,
@@ -442,15 +424,15 @@ class BaseServiceDB:
         return False
 
     async def create_m2m_relation(
-            self,
-            parent_model,
-            child_model,
-            secondary_table: TextClause,
-            parent_id: int,
-            child_id: int,
-            parent_id_name: str,
-            child_id_name: str,
-            child_relation,
+        self,
+        parent_model,
+        child_model,
+        secondary_table: TextClause,
+        parent_id: int,
+        child_id: int,
+        parent_id_name: str,
+        child_id_name: str,
+        child_relation,
     ):
         async with self.db.async_session() as session:
             existing_relation = await self.is_relation_exist(
@@ -465,7 +447,7 @@ class BaseServiceDB:
                 raise HTTPException(
                     status_code=409,
                     detail=f"{parent_model.__name__}-{child_model.__name__} relation "
-                           f"already exists",
+                    f"already exists",
                 )
 
             parent = await session.scalar(
@@ -498,8 +480,8 @@ class BaseServiceDB:
                 )
 
     async def get_related_items(
-            self,
-            item_id: int,
+        self,
+        item_id: int,
     ):
         async with self.db.async_session() as session:
             try:
@@ -530,9 +512,9 @@ class BaseServiceDB:
     #             return None
 
     async def get_related_items_level_one_by_id(
-            self,
-            item_id: int,
-            related_property: str,
+        self,
+        item_id: int,
+        related_property: str,
     ):
         async with self.db.async_session() as session:
             try:
@@ -541,18 +523,17 @@ class BaseServiceDB:
                     .where(self.model.id == item_id)
                     .options(selectinload(getattr(self.model, related_property)))
                     # .options(joinedload(getattr(self.model, related_property)))
-
                 )
                 return getattr(item.scalars().one(), related_property)
             except NoResultFound:
                 return None
 
     async def get_nested_related_items_by_id(
-            self,
-            item_id: int,
-            service: Any,
-            related_property: str,
-            nested_related_property: str,
+        self,
+        item_id: int,
+        service: Any,
+        related_property: str,
+        nested_related_property: str,
     ):
         related_item = await self.get_related_items_level_one_by_id(
             item_id, related_property
@@ -560,16 +541,18 @@ class BaseServiceDB:
 
         if related_item is not None:
             _id = related_item.id
-            items = await service.get_related_items_level_one_by_id(_id, nested_related_property)
+            items = await service.get_related_items_level_one_by_id(
+                _id, nested_related_property
+            )
             return items
 
         return None
 
     async def get_related_items_level_one_by_key_and_value(
-            self,
-            filter_key: str,
-            filter_value: Any,
-            related_property: str,
+        self,
+        filter_key: str,
+        filter_value: Any,
+        related_property: str,
     ):
         async with self.db.async_session() as session:
             try:
@@ -583,12 +566,12 @@ class BaseServiceDB:
                 return None
 
     async def get_related_items_by_two(
-            self,
-            filter_key: str,
-            filter_value: Any,
-            second_model,
-            related_property: str,
-            second_level_property: str,
+        self,
+        filter_key: str,
+        filter_value: Any,
+        second_model,
+        related_property: str,
+        second_level_property: str,
     ):
         async with self.db.async_session() as session:
             query = (

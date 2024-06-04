@@ -1,19 +1,17 @@
 import asyncio
 import os
+import re
+from datetime import datetime
 from pathlib import Path
-from pprint import pprint
 from urllib.parse import urlparse
 
 import requests
-import re
-from datetime import datetime
 from bs4 import BeautifulSoup
 
 from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import ru_to_eng_datetime_month
-
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
 
 
@@ -119,7 +117,7 @@ async def collect_player_full_data_eesl(
             },
         }
 
-        pprint(player_with_person)
+        # pprint(player_with_person)
 
         return player_with_person
     except requests.exceptions.Timeout:
