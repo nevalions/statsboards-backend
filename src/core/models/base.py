@@ -96,10 +96,6 @@ class MatchDataWebSocketManager:
             data: {data}
             """
         )
-
-        # for queue in self.playclock_queues.values():
-        #     await queue.put(data)
-
         await connection_manager.send_to_all(data, match_id=match_id)
 
     async def gameclock_listener(self, connection, pid, channel, payload):
@@ -120,10 +116,6 @@ class MatchDataWebSocketManager:
             data: {data}
             """
         )
-
-        # for queue in self.gameclock_queues.values():
-        #     await queue.put(data)
-
         await connection_manager.send_to_all(data, match_id=match_id)
 
     async def match_data_listener(self, connection, pid, channel, payload):
@@ -144,11 +136,6 @@ class MatchDataWebSocketManager:
             data: {data}
             """
         )
-        # for queue in self.match_data_queues.values():
-        #     await queue.put(data)
-
-        # await connection_manager.send_to_all(data)
-
         await connection_manager.send_to_all(data, match_id=match_id)
 
     async def shutdown(self):
