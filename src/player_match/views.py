@@ -229,12 +229,12 @@ class PlayerMatchAPIRouter(
                     )
 
                     if exist_player_in_match:
-                        print("Player in matchhhhhhhhhhhh")
+                        # print("Player in matchhhhhhhhhhhh")
                         pprint(exist_player_in_match.__dict__)
                         if exist_player_in_match.is_start:
-                            print(
-                                "Player in starttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
-                            )
+                            # print(
+                            #     "Player in starttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+                            # )
                             player_schema[
                                 "player_match_eesl_id"
                             ] = exist_player_in_match.player_match_eesl_id
@@ -250,6 +250,9 @@ class PlayerMatchAPIRouter(
                             ] = exist_player_in_match.match_number
                             player_schema["team_id"] = exist_player_in_match.team_id
                             player_schema["is_start"] = True
+                            position = await PositionServiceDB(db).get_by_id(
+                                exist_player_in_match.match_position_id
+                            )
 
                     player = PlayerMatchSchemaCreate(**player_schema)
                     created_player = await self.service.create_or_update_player_match(
@@ -381,6 +384,9 @@ class PlayerMatchAPIRouter(
                             ] = exist_player_in_match.match_number
                             player_schema["team_id"] = exist_player_in_match.team_id
                             player_schema["is_start"] = True
+                            position = await PositionServiceDB(db).get_by_id(
+                                exist_player_in_match.match_position_id
+                            )
 
                     player = PlayerMatchSchemaCreate(**player_schema)
                     created_player = await self.service.create_or_update_player_match(
