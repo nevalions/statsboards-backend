@@ -25,11 +25,18 @@ class PlayerMatchServiceDB(BaseServiceDB):
                     p.player_match_eesl_id
                 )
                 if player_match_from_db:
-                    print("player updating with eesl")
-                    return await self.update_player_match_by_eesl(
-                        "player_match_eesl_id",
-                        p,
-                    )
+                    if not player_match_from_db.is_start:
+                        print("player updating with eesl")
+                        return await self.update_player_match_by_eesl(
+                            "player_match_eesl_id",
+                            p,
+                        )
+                    else:
+                        return player_match_from_db
+                        # print(
+                        #     "player is in startttttttttttttttttttttttttttttttttttttt",
+                        #     player_match_from_db.id,
+                        # )
                 else:
                     print("player creating no eesl")
                     return await self.create_new_player_match(
@@ -72,7 +79,6 @@ class PlayerMatchServiceDB(BaseServiceDB):
         self,
         p: PlayerMatchSchemaCreate,
     ):
-
         player_match = self.model(
             player_match_eesl_id=p.player_match_eesl_id,
             player_team_tournament_id=p.player_team_tournament_id,
