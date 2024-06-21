@@ -342,7 +342,7 @@ class PlayerMatchAPIRouter(
                                     ],
                                     "player_id": player.id,
                                     "position_id": position.id,
-                                    "team_id": team_a.id,
+                                    "team_id": team_b.id,
                                     "tournament_id": match.tournament_id,
                                     "player_number": away_player["player_number"],
                                 }
