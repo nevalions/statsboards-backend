@@ -1,6 +1,7 @@
+from typing import Annotated
+
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
-from typing import Annotated
 
 
 class ScoreboardSchemaBase(BaseModel):
@@ -44,6 +45,8 @@ class ScoreboardSchemaBase(BaseModel):
     is_flag: bool | None = False
     is_goal_team_a: bool | None = False
     is_goal_team_b: bool | None = False
+    is_timeout_team_a: bool | None = False
+    is_timeout_team_b: bool | None = False
 
     match_id: int | None = None
 
@@ -89,6 +92,8 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_flag: bool | None = None
     is_goal_team_a: bool | None = None
     is_goal_team_b: bool | None = None
+    is_timeout_team_a: bool | None = False
+    is_timeout_team_b: bool | None = False
 
     match_id: int | None = None
 

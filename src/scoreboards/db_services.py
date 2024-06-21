@@ -67,6 +67,8 @@ class ScoreboardServiceDB(BaseServiceDB):
                     is_flag=scoreboard.is_flag,
                     is_goal_team_a=scoreboard.is_goal_team_a,
                     is_goal_team_b=scoreboard.is_goal_team_b,
+                    is_timeout_team_a=scoreboard.is_timeout_team_a,
+                    is_timeout_team_b=scoreboard.is_timeout_team_b,
                     match_id=scoreboard.match_id,
                 )
 
@@ -79,15 +81,15 @@ class ScoreboardServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating result "
-                           f"for match id({scoreboard})"
-                           f"returned some error",
+                    f"for match id({scoreboard})"
+                    f"returned some error",
                 )
 
     async def update_scoreboard(
-            self,
-            item_id: int,
-            item: ScoreboardSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: ScoreboardSchemaUpdate,
+        **kwargs,
     ):
         # print(item)
         updated_item = await super().update(
@@ -100,9 +102,9 @@ class ScoreboardServiceDB(BaseServiceDB):
         return updated_item
 
     async def get_scoreboard_by_match_id(
-            self,
-            value,
-            field_name="match_id",
+        self,
+        value,
+        field_name="match_id",
     ):
         return await self.get_item_by_field_value(
             value=value,
@@ -110,8 +112,8 @@ class ScoreboardServiceDB(BaseServiceDB):
         )
 
     async def create_or_update_scoreboard(
-            self,
-            scoreboard: Union[ScoreboardSchemaCreate, ScoreboardSchemaUpdate],
+        self,
+        scoreboard: Union[ScoreboardSchemaCreate, ScoreboardSchemaUpdate],
     ):
         existing_scoreboard = await self.get_scoreboard_by_match_id(scoreboard.match_id)
 
@@ -132,8 +134,8 @@ class ScoreboardServiceDB(BaseServiceDB):
             return new_scoreboard
 
     async def get_scoreboard_by_matchdata_id(
-            self,
-            matchdata_id,
+        self,
+        matchdata_id,
     ):
         async with self.db.async_session() as session:
             query = select(MatchDataDB).where(MatchDataDB.id == matchdata_id)
@@ -166,8 +168,8 @@ class ScoreboardServiceDB(BaseServiceDB):
         )
         try:
             while (
-                    scoreboard_id
-                    in self.scoreboard_update_manager.active_scoreboard_updates
+                scoreboard_id
+                in self.scoreboard_update_manager.active_scoreboard_updates
             ):
                 print(f"Scoreboard {scoreboard_id} is active for updates")
 
@@ -198,8 +200,8 @@ class ScoreboardServiceDB(BaseServiceDB):
 
         # Ensure that the queue for this scoreboard is available
         if (
-                scoreboard_id
-                not in self.scoreboard_update_manager.active_scoreboard_updates
+            scoreboard_id
+            not in self.scoreboard_update_manager.active_scoreboard_updates
         ):
             print(f"Queue not found for Scoreboard ID:{scoreboard_id}")
             await self.scoreboard_update_manager.enable_scoreboard_update_queue(
