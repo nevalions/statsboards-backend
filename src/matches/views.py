@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from pprint import pprint
 from typing import List
 
 from fastapi import HTTPException, Request, Depends, status, WebSocket, UploadFile, File
@@ -398,7 +399,7 @@ class MatchAPIRouter(
             await websocket.send_json(playclock_data)
 
         @router.get(
-            "/api/pars/tournament/{eesl_tournament_id}",
+            "/pars/tournament/{eesl_tournament_id}",
             # response_model=List[MatchSchemaCreate],
         )
         async def get_parse_tournament_matches(eesl_tournament_id: int):
@@ -474,7 +475,7 @@ class MatchAPIRouter(
 
             return new_match.__dict__
 
-        @router.post("/api/pars_and_create/tournament/{eesl_tournament_id}")
+        @router.get("/pars_and_create/tournament/{eesl_tournament_id}")
         async def create_parsed_matches_endpoint(
             eesl_tournament_id: int,
         ):
@@ -491,6 +492,8 @@ class MatchAPIRouter(
             )
 
             created_matches = []
+            created_matches_full_data = []
+
             if matches_list:
                 for m in matches_list:
                     team_a = await teams_service.get_team_by_eesl_id(m["team_a_id"])
@@ -529,7 +532,7 @@ class MatchAPIRouter(
                         match_data = await match_data_service.create_match_data(
                             match_data_schema_create
                         )
-                        print("match_data", match_data)
+                        # print("match_data", match_data)
                     else:
                         match_data_schema_update = MatchDataSchemaUpdate(
                             match_id=created_match.id,
@@ -539,7 +542,7 @@ class MatchAPIRouter(
                         match_data = await match_data_service.update_match_data(
                             existing_match_data.id, match_data_schema_update
                         )
-                        print("match_data", match_data)
+                        # print("match_data", match_data)
 
                     existing_scoreboard = (
                         await scoreboard_service.get_scoreboard_by_match_id(
@@ -556,23 +559,74 @@ class MatchAPIRouter(
                             team_b_game_color=team_b.team_color,
                             team_a_game_title=team_a.title,
                             team_b_game_title=team_b.title,
+                            # is_qtr=True,
+                            # is_time=True,
+                            # is_playclock=True,
+                            # is_downdistance=True,
+                            # is_tournament_logo=True,
+                            # is_main_sponsor=False,
+                            # is_sponsor_line=False,
+                            # is_match_sponsor_line=False,
+                            # is_team_a_start_offense=False,
+                            # is_team_b_start_offense=False,
+                            # is_team_a_start_defense=False,
+                            # is_team_b_start_defense=False,
+                            # is_match_player_lower=False,
+                            # use_team_a_game_color=False,
+                            # use_team_b_game_color=False,
+                            # use_team_a_game_title=False,
+                            # use_team_b_game_title=False,
+                            # use_team_a_game_logo=False,
+                            # use_team_b_game_logo=False,
+                            # is_flag=False,
+                            # is_goal_team_a=False,
+                            # is_goal_team_b=False,
+                            # scale_tournament_logo=2,
+                            # scale_main_sponsor=2,
                         )
                     else:
-                        scoreboard_schema = ScoreboardSchemaUpdate(
-                            match_id=created_match.id,
-                            scale_logo_a=2,
-                            scale_logo_b=2,
-                            team_a_game_color=team_a.team_color,
-                            team_b_game_color=team_b.team_color,
-                            team_a_game_title=team_a.title,
-                            team_b_game_title=team_b.title,
+                        # Update existing_scoreboard with default values where keys are missing
+                        existing_data = existing_scoreboard.__dict__
+                        default_data = ScoreboardSchemaCreate().model_dump()
+
+                        for key, value in default_data.items():
+                            if key not in existing_data or existing_data[key] is None:
+                                existing_data[key] = value
+
+                        scoreboard_schema = ScoreboardSchemaUpdate(**existing_data)
+                        # scoreboard_schema = ScoreboardSchemaUpdate(
+                        #     match_id=created_match.id,
+                        #     scale_logo_a=2,
+                        #     scale_logo_b=2,
+                        #     team_a_game_color=team_a.team_color,
+                        #     team_b_game_color=team_b.team_color,
+                        #     team_a_game_title=team_a.title,
+                        #     team_b_game_title=team_b.title,
+                        # )
+                    created_scoreboard = (
+                        await scoreboard_service.create_or_update_scoreboard(
+                            scoreboard_schema
                         )
-                    await scoreboard_service.create_or_update_scoreboard(
-                        scoreboard_schema
                     )
 
+                    teams_data = await self.service.get_teams_by_match(created_match.id)
+
                     created_matches.append(created_match)
-                return created_matches
+                    created_matches_full_data.append(
+                        {
+                            "id": created_match.id,
+                            "match_id": created_match.id,
+                            "status_code": 200,
+                            "match": created_match,
+                            "teams_data": teams_data,
+                            "match_data": match_data,
+                            "scoreboard_data": created_scoreboard,
+                        }
+                    )
+
+                    pprint(created_matches_full_data)
+
+                return created_matches_full_data
             else:
                 return []
 

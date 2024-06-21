@@ -2,14 +2,12 @@ import asyncio
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import selectinload
 
 from src.core.models import db, BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
 from src.player_match.db_services import PlayerMatchServiceDB
+from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
-from src.sports.db_services import SportServiceDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate
 
 
@@ -22,13 +20,16 @@ class MatchServiceDB(BaseServiceDB):
             if m.match_eesl_id:
                 match_from_db = await self.get_match_by_eesl_id(m.match_eesl_id)
                 if match_from_db:
+                    print("updating match eesl_id", m.match_eesl_id)
                     return await self.update_match_by_eesl(
                         "match_eesl_id",
                         m,
                     )
                 else:
+                    print("creating match with eesl id", m, m.match_eesl_id)
                     return await self.create_new_match(m)
             else:
+                print("creating match", m)
                 return await self.create_new_match(m)
         except Exception as ex:
             print(ex)
@@ -56,8 +57,8 @@ class MatchServiceDB(BaseServiceDB):
             team_a_id=m.team_a_id,
             team_b_id=m.team_b_id,
             tournament_id=m.tournament_id,
-            main_sponsor=m.main_sponsor,
-            sponsor_line=m.sponsor_line,
+            sponsor_line_id=m.sponsor_line_id,
+            main_sponsor_id=m.main_sponsor_id,
         )
         return await super().create(match)
 

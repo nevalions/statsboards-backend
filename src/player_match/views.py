@@ -220,7 +220,7 @@ class PlayerMatchAPIRouter(
                         "is_start": False,
                     }
 
-                    print("eesl_id", player_schema["player_match_eesl_id"])
+                    # print("eesl_id", player_schema["player_match_eesl_id"])
 
                     exist_player_in_match = (
                         await self.service.get_player_match_by_eesl_id(
@@ -354,7 +354,7 @@ class PlayerMatchAPIRouter(
                         "is_start": False,
                     }
 
-                    print("eesl_id", player_schema["player_match_eesl_id"])
+                    # print("eesl_id", player_schema["player_match_eesl_id"])
 
                     exist_player_in_match = (
                         await self.service.get_player_match_by_eesl_id(
@@ -363,12 +363,12 @@ class PlayerMatchAPIRouter(
                     )
 
                     if exist_player_in_match:
-                        print("Player in matchhhhhhhhhhhh")
+                        # print("Player in matchhhhhhhhhhhh")
                         pprint(exist_player_in_match.__dict__)
                         if exist_player_in_match.is_start:
-                            print(
-                                "Player in starttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
-                            )
+                            # print(
+                            #     "Player in starttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+                            # )
                             player_schema[
                                 "player_match_eesl_id"
                             ] = exist_player_in_match.player_match_eesl_id

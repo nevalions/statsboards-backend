@@ -154,16 +154,22 @@ async def parse_tournament_matches_index_page_eesl(
                                 .split(":")
                             )
 
-                            # print("SCORE", score)
-
+                            # Initialize scores to 0
                             score_team_a = 0
                             score_team_b = 0
 
-                            if int(score[0].strip()):
-                                score_team_a = int(score[0].strip())
+                            # Function to safely convert score to integer or default to 0
+                            def safe_int_conversion(score_str):
+                                try:
+                                    # Try to convert the score to an integer
+                                    return int(score_str.strip())
+                                except (ValueError, TypeError):
+                                    # Return 0 if conversion fails
+                                    return 0
 
-                            if int(score[1].strip()):
-                                score_team_b = int(score[1].strip())
+                            if len(score) == 2:  # Ensure there are exactly two scores
+                                score_team_a = safe_int_conversion(score[0])
+                                score_team_b = safe_int_conversion(score[1])
 
                             game_time = item.find(
                                 "span", class_="schedule__time"
