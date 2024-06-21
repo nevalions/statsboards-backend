@@ -12,6 +12,7 @@ from ..player.schemas import PlayerSchema, PlayerSchemaCreate
 from ..player_team_tournament.schemas import (
     PlayerTeamTournamentSchema,
     PlayerTeamTournamentSchemaCreate,
+    PlayerTeamTournamentSchemaUpdate,
 )
 from ..positions.schemas import PositionSchemaCreate
 
@@ -201,6 +202,26 @@ class PlayerMatchAPIRouter(
                         ).create_or_update_player_team_tournament(
                             created_player_in_team_schema
                         )
+                    else:
+                        updated_player_in_team_schema = (
+                            PlayerTeamTournamentSchemaUpdate(
+                                **{
+                                    "player_team_tournament_eesl_id": home_player[
+                                        "player_eesl_id"
+                                    ],
+                                    "player_id": player.id,
+                                    "position_id": position.id,
+                                    "team_id": team_a.id,
+                                    "tournament_id": match.tournament_id,
+                                    "player_number": home_player["player_number"],
+                                }
+                            )
+                        )
+                        player_in_team = await PlayerTeamTournamentServiceDB(
+                            db
+                        ).create_or_update_player_team_tournament(
+                            updated_player_in_team_schema
+                        )
 
                     if team_a is None or player_in_team is None:
                         continue
@@ -331,6 +352,26 @@ class PlayerMatchAPIRouter(
                             db
                         ).create_or_update_player_team_tournament(
                             created_player_in_team_schema
+                        )
+                    else:
+                        updated_player_in_team_schema = (
+                            PlayerTeamTournamentSchemaUpdate(
+                                **{
+                                    "player_team_tournament_eesl_id": away_player[
+                                        "player_eesl_id"
+                                    ],
+                                    "player_id": player.id,
+                                    "position_id": position.id,
+                                    "team_id": team_b.id,
+                                    "tournament_id": match.tournament_id,
+                                    "player_number": away_player["player_number"],
+                                }
+                            )
+                        )
+                        player_in_team = await PlayerTeamTournamentServiceDB(
+                            db
+                        ).create_or_update_player_team_tournament(
+                            updated_player_in_team_schema
                         )
 
                     # player_in_team = await PlayerTeamTournamentServiceDB(db).get_player_team_tournament_by_eesl_id(
