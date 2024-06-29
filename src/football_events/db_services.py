@@ -12,7 +12,9 @@ class FootballEventServiceDB(BaseServiceDB):
     ):
         super().__init__(database, FootballEventDB)
 
-    async def create_match_event(self, football_event: FootballEventSchemaCreate):
+    async def create_match_football_event(
+        self, football_event: FootballEventSchemaCreate
+    ):
         async with self.db.async_session() as session:
             try:
                 match_event = FootballEventDB(
@@ -50,7 +52,7 @@ class FootballEventServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating match event "
-                    f"for match id({football_event.id})"
+                    f"for match id({football_event.match_id})"
                     f"returned some error",
                 )
 

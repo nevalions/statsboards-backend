@@ -35,7 +35,7 @@ class FootballEventRouter(
             response_model=FootballEventSchema,
         )
         async def create_football_event(football_event: FootballEventSchemaCreate):
-            new_football_event = await self.service.create_football_event(
+            new_football_event = await self.service.create_match_football_event(
                 football_event
             )
             return new_football_event.__dict__
