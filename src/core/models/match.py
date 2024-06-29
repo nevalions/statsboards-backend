@@ -1,5 +1,5 @@
-from typing import TYPE_CHECKING
 from datetime import datetime as date_type
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Integer, TIMESTAMP, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from .playclock import PlayClockDB
     from .gameclock import GameClockDB
     from .player_match import PlayerMatchDB
-    from .football_home_team_start_lineup import FootballHomeTeamStartLineupDB
+    from .football_event import FootballEventDB
 
 
 class MatchDB(Base):
@@ -129,13 +129,13 @@ class MatchDB(Base):
         passive_deletes=True,
     )
 
+    match_events: Mapped["FootballEventDB"] = relationship(
+        "FootballEventDB",
+        cascade="all, delete-orphan",
+        back_populates="matches",
+        passive_deletes=True,
+    )
 
-    # football_home_team_start_lineup: Mapped["FootballHomeTeamStartLineupDB"] = relationship(
-    #     "FootballHomeTeamStartLineupDB",
-    #     cascade="all, delete-orphan",
-    #     back_populates="matches",
-    #     passive_deletes=True,
-    # )
 
 #
 #     fk_match_players_id = relationship('PlayerTeamTournamentDB',

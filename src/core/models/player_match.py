@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .match import MatchDB
     from .team import TeamDB
     from .scoreboard import ScoreboardDB
+    from .football_event import FootballEventDB
 
 
 class PlayerMatchDB(Base):
@@ -94,4 +95,76 @@ class PlayerMatchDB(Base):
     match_scoreboard: Mapped["ScoreboardDB"] = relationship(
         "ScoreboardDB",
         back_populates="match_players",
+    )
+
+    event_qb_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.event_qb",
+        back_populates="event_qb_rel",
+    )
+
+    run_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.run_player",
+        back_populates="run_player_rel",
+    )
+
+    pass_received_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.pass_received_player",
+        back_populates="pass_received_player_rel",
+    )
+
+    pass_dropped_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.pass_dropped_player",
+        back_populates="pass_dropped_player_rel",
+    )
+
+    pass_deflected_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.pass_deflected_player",
+        back_populates="pass_deflected_player_rel",
+    )
+
+    pass_intercepted_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.pass_intercepted_player",
+        back_populates="pass_intercepted_player_rel",
+    )
+
+    fumble_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.fumble_player",
+        back_populates="fumble_player_rel",
+    )
+
+    fumble_recovered_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.fumble_recovered_player",
+        back_populates="fumble_recovered_player_rel",
+    )
+
+    tackle_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.tackle_player",
+        back_populates="tackle_player_rel",
+    )
+
+    sack_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.sack_player",
+        back_populates="sack_player_rel",
+    )
+
+    kick_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.kick_player",
+        back_populates="kick_player_rel",
+    )
+
+    punt_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.punt_player",
+        back_populates="punt_player_rel",
     )
