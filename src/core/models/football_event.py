@@ -55,8 +55,8 @@ class FootballEventDB(Base):
         default=None,
     )
 
-    event_down: Mapped[str] = mapped_column(
-        String,
+    event_down: Mapped[int] = mapped_column(
+        Integer,
         nullable=True,
         default=None,
     )
