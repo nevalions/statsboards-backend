@@ -41,14 +41,14 @@ class FootballEventRouter(
             return new_football_event.__dict__
 
         @router.put(
-            "/id/{item_id}/",
+            "/{item_id}/",
             response_model=FootballEventSchema,
         )
         async def update_football_event_endpoint(
             item_id: int,
             football_event: FootballEventSchemaUpdate,
         ):
-            football_event_update = await self.service.update_football_event(
+            football_event_update = await self.service.update_match_football_event(
                 item_id,
                 football_event,
             )
@@ -65,7 +65,7 @@ class FootballEventRouter(
             response_model=List[FootballEventSchema],
         )
         async def get_football_events_by_match_id(match_id: int):
-            return await self.service.get_match_events_by_match_id(match_id)
+            return await self.service.get_match_football_events_by_match_id(match_id)
 
         return router
 

@@ -56,7 +56,7 @@ class FootballEventServiceDB(BaseServiceDB):
                     f"returned some error",
                 )
 
-    async def update_match_event(
+    async def update_match_football_event(
         self,
         item_id: int,
         item: FootballEventSchemaUpdate,
@@ -70,7 +70,7 @@ class FootballEventServiceDB(BaseServiceDB):
 
         return updated_
 
-    async def get_match_events_by_match_id(self, match_id: int):
+    async def get_match_football_events_by_match_id(self, match_id: int):
         async with self.db.async_session() as session:
             result = await session.scalars(
                 select(FootballEventDB).where(FootballEventDB.match_id == match_id)
