@@ -62,7 +62,8 @@ class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType
 
         @router.delete("/id/{model_id}")
         async def delete(model_id: int):
-            await self.service.delete(model_id)
-            return {"message": f"{ModelType.__name__} {model_id} deleted"}
+            return await self.service.delete(model_id)
+
+        # return {"message": f"{ModelType.__name__} {model_id} deleted"}
 
         return router

@@ -325,12 +325,16 @@ class BaseServiceDB:
                     status_code=404,
                     detail=f"{self.model.__name__} not found",
                 )
+            # print(db_item.__dict__)
             await session.delete(db_item)
             await session.commit()
-            raise HTTPException(
-                status_code=200,
-                detail=f"{self.model.__name__} {db_item.id} deleted",
-            )
+            # print(db_item.__dict__)
+
+            return db_item
+            # raise HTTPException(
+            #     status_code=200,
+            #     detail=f"{self.model.__name__} {db_item.id} deleted",
+            # )
 
     async def get_item_by_field_value(self, value, field_name: str):
         async with self.db.async_session() as session:
