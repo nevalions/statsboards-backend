@@ -85,6 +85,12 @@ class FootballEventDB(Base):
         default=None,
     )
 
+    score_result: Mapped[str] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
+
     run_player: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("player_match.id"),

@@ -7,13 +7,13 @@ from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
 
 class FootballEventServiceDB(BaseServiceDB):
     def __init__(
-        self,
-        database,
+            self,
+            database,
     ):
         super().__init__(database, FootballEventDB)
 
     async def create_match_football_event(
-        self, football_event: FootballEventSchemaCreate
+            self, football_event: FootballEventSchemaCreate
     ):
         async with self.db.async_session() as session:
             try:
@@ -29,6 +29,7 @@ class FootballEventServiceDB(BaseServiceDB):
                     event_hash=football_event.event_hash,
                     play_type=football_event.play_type,
                     play_result=football_event.play_result,
+                    score_result=football_event.score_result,
                     run_player=football_event.run_player,
                     pass_received_player=football_event.pass_received_player,
                     pass_dropped_player=football_event.pass_dropped_player,
@@ -52,15 +53,15 @@ class FootballEventServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating match event "
-                    f"for match id({football_event.match_id})"
-                    f"returned some error",
+                           f"for match id({football_event.match_id})"
+                           f"returned some error",
                 )
 
     async def update_match_football_event(
-        self,
-        item_id: int,
-        item: FootballEventSchemaUpdate,
-        **kwargs,
+            self,
+            item_id: int,
+            item: FootballEventSchemaUpdate,
+            **kwargs,
     ):
         updated_ = await super().update(
             item_id,

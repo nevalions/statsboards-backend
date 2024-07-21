@@ -18,6 +18,7 @@ class FootballEventSchemaBase(BaseModel):
     event_hash: Annotated[str, Path(max_length=150)] | None = None
     play_type: Annotated[str, Path(max_length=150)] | None = None
     play_result: Annotated[str, Path(max_length=150)] | None = None
+    score_result: Annotated[str, Path(max_length=150)] | None = None
 
     run_player: int | None = None
     pass_received_player: int | None = None
@@ -46,6 +47,7 @@ class FootballEventSchemaUpdate(BaseModel):
     event_hash: str | None = None
     play_type: str | None = None
     play_result: str | None = None
+    score_result: str | None = None
 
     run_player: int | None = None
     pass_received_player: int | None = None
