@@ -151,16 +151,55 @@ class PlayerMatchDB(Base):
         back_populates="tackle_player_rel",
     )
 
+    assist_tackle_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.assist_tackle_player",
+        back_populates="assist_tackle_player_rel",
+    )
+
     sack_player_events: Mapped[list["FootballEventDB"]] = relationship(
         "FootballEventDB",
         foreign_keys="FootballEventDB.sack_player",
         back_populates="sack_player_rel",
     )
 
+    score_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.score_player",
+        back_populates="score_player_rel",
+    )
+
+    defence_score_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.defence_score_player",
+        back_populates="defence_score_player_rel",
+    )
+
     kick_player_events: Mapped[list["FootballEventDB"]] = relationship(
         "FootballEventDB",
         foreign_keys="FootballEventDB.kick_player",
         back_populates="kick_player_rel",
+    )
+
+    kickoff_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.kickoff_player",
+        back_populates="kickoff_player_rel",
+    )
+    return_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.return_player",
+        back_populates="return_player_rel",
+    )
+    pat_one_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.pat_one_player",
+        back_populates="pat_one_player_rel",
+    )
+    flagged_player_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        foreign_keys="FootballEventDB.flagged_player",
+        back_populates="flagged_player_rel",
     )
 
     punt_player_events: Mapped[list["FootballEventDB"]] = relationship(

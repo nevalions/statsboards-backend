@@ -32,7 +32,14 @@ class FootballEventSchemaBase(BaseModel):
     fumble_player: int | None = None
     fumble_recovered_player: int | None = None
     tackle_player: int | None = None
+    assist_tackle_player: int | None = None
     sack_player: int | None = None
+    score_player: int | None = None
+    defence_score_player: int | None = None
+    kickoff_player: int | None = None
+    return_player: int | None = None
+    pat_one_player: int | None = None
+    flagged_player: int | None = None
     kick_player: int | None = None
     punt_player: int | None = None
 
@@ -65,7 +72,14 @@ class FootballEventSchemaUpdate(BaseModel):
     fumble_player: int | None = None
     fumble_recovered_player: int | None = None
     tackle_player: int | None = None
+    assist_tackle_player: int | None = None
     sack_player: int | None = None
+    score_player: int | None = None
+    defence_score_player: int | None = None
+    kickoff_player: int | None = None
+    return_player: int | None = None
+    pat_one_player: int | None = None
+    flagged_player: int | None = None
     kick_player: int | None = None
     punt_player: int | None = None
 

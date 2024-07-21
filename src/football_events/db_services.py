@@ -41,9 +41,17 @@ class FootballEventServiceDB(BaseServiceDB):
                     fumble_player=football_event.fumble_player,
                     fumble_recovered_player=football_event.fumble_recovered_player,
                     tackle_player=football_event.tackle_player,
+                    assist_tackle_player=football_event.assist_tackle_player,
                     sack_player=football_event.sack_player,
+                    score_player=football_event.score_player,
+                    defence_score_player=football_event.defence_score_player,
+                    kickoff_player=football_event.kickoff_player,
+                    return_player=football_event.return_player,
+                    pat_one_player=football_event.pat_one_player,
+                    flagged_player=football_event.flagged_player,
                     kick_player=football_event.kick_player,
                     punt_player=football_event.punt_player,
+
                 )
 
                 session.add(match_event)

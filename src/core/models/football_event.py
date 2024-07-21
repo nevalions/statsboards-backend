@@ -165,6 +165,13 @@ class FootballEventDB(Base):
         default=None,
     )
 
+    assist_tackle_player: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("player_match.id"),
+        nullable=True,
+        default=None,
+    )
+
     sack_player: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("player_match.id"),
@@ -172,7 +179,49 @@ class FootballEventDB(Base):
         default=None,
     )
 
+    score_player: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("player_match.id"),
+        nullable=True,
+        default=None,
+    )
+
+    defence_score_player: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("player_match.id"),
+        nullable=True,
+        default=None,
+    )
+
     kick_player: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("player_match.id"),
+        nullable=True,
+        default=None,
+    )
+
+    kickoff_player: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("player_match.id"),
+        nullable=True,
+        default=None,
+    )
+
+    return_player: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("player_match.id"),
+        nullable=True,
+        default=None,
+    )
+
+    pat_one_player: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("player_match.id"),
+        nullable=True,
+        default=None,
+    )
+
+    flagged_player: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("player_match.id"),
         nullable=True,
@@ -245,16 +294,55 @@ class FootballEventDB(Base):
         back_populates="tackle_player_events",
     )
 
+    assist_tackle_player_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        back_populates="assist_tackle_player_events",
+    )
+
     sack_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
         primaryjoin="FootballEventDB.sack_player == PlayerMatchDB.id",
         back_populates="sack_player_events",
     )
 
+    score_player_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        back_populates="score_player_events",
+    )
+
+    defence_score_player_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        back_populates="defence_score_player_events",
+    )
+
     kick_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
         primaryjoin="FootballEventDB.kick_player == PlayerMatchDB.id",
         back_populates="kick_player_events",
+    )
+
+    kickoff_player_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        back_populates="kickoff_player_events",
+    )
+    return_player_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        back_populates="return_player_events",
+    )
+    pat_one_player_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        back_populates="pat_one_player_events",
+    )
+    flagged_player_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        back_populates="flagged_player_events",
     )
 
     punt_player_rel: Mapped["PlayerMatchDB"] = relationship(
