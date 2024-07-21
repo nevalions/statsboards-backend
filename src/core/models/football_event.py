@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Integer, ForeignKey, String
+from sqlalchemy import Integer, ForeignKey, String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -73,6 +73,12 @@ class FootballEventDB(Base):
         default=None,
     )
 
+    play_direction: Mapped[str] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
+
     play_type: Mapped[str] = mapped_column(
         String,
         nullable=True,
@@ -89,6 +95,18 @@ class FootballEventDB(Base):
         String,
         nullable=True,
         default=None,
+    )
+
+    is_fumble: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    is_fumble_recovered: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
     )
 
     run_player: Mapped[int] = mapped_column(
