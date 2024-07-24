@@ -25,6 +25,12 @@ class GameClockDB(Base):
         default=None,
     )
 
+    gameclock_max: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=720,
+    )
+
     gameclock_status: Mapped[str] = mapped_column(
         String(50),
         nullable=True,

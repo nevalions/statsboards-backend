@@ -13,9 +13,7 @@ from .schemas import GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpda
 
 
 class GameClockRouter(
-    BaseRouter[
-        GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate
-    ]
+    BaseRouter[GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate]
 ):
     def __init__(self, service: GameClockServiceDB):
         super().__init__(
@@ -41,8 +39,8 @@ class GameClockRouter(
             response_model=GameClockSchema,
         )
         async def update_gameclock_(
-                item_id: int,
-                gameclock: GameClockSchemaUpdate,
+            item_id: int,
+            gameclock: GameClockSchemaUpdate,
         ):
             gameclock_update = await self.service.update_gameclock(
                 item_id,
@@ -61,8 +59,8 @@ class GameClockRouter(
             response_class=JSONResponse,
         )
         async def update_gameclock_by_id(
-                item_id: int,
-                item=Depends(update_gameclock_),
+            item_id: int,
+            item=Depends(update_gameclock_),
         ):
             if item:
                 return {
@@ -77,7 +75,9 @@ class GameClockRouter(
             )
 
         @router.put("/id/{gameclock_id}/running/", response_class=JSONResponse)
-        async def start_gameclock_endpoint(background_tasks: BackgroundTasks, gameclock_id: int):
+        async def start_gameclock_endpoint(
+            background_tasks: BackgroundTasks, gameclock_id: int
+        ):
             gameclock = await self.service.get_by_id(gameclock_id)
             present_gameclock_status = gameclock.gameclock_status
 
@@ -93,7 +93,9 @@ class GameClockRouter(
                 )
 
                 # Start background task for decrementing the game clock
-                background_tasks.add_task(self.service.loop_decrement_gameclock, gameclock_id)
+                background_tasks.add_task(
+                    self.service.loop_decrement_gameclock, gameclock_id
+                )
 
                 return self.create_response(
                     updated,
@@ -110,17 +112,15 @@ class GameClockRouter(
             response_class=JSONResponse,
         )
         async def pause_gameclock_endpoint(
-                item_id: int,
+            item_id: int,
         ):
             item_status = "paused"
 
             updated_ = await self.service.update(
                 item_id,
-                GameClockSchemaUpdate(
-                    gameclock_status=item_status
-                ),
+                GameClockSchemaUpdate(gameclock_status=item_status),
             )
-            print('updated updated')
+            print("updated updated")
             if updated_:
                 return self.create_response(
                     updated_,
@@ -132,156 +132,26 @@ class GameClockRouter(
             response_class=JSONResponse,
         )
         async def reset_gameclock_endpoint(
-                item_id: int,
-                item_status: str = Path(
-                    ...,
-                    example="stopped",
-                ),
-                sec: int = Path(
-                    ...,
-                    description="Seconds",
-                    example=720,
-                ),
+            item_id: int,
+            item_status: str = Path(
+                ...,
+                example="stopped",
+            ),
+            sec: int = Path(
+                ...,
+                description="Seconds",
+                example=720,
+            ),
         ):
             updated = await self.service.update(
                 item_id,
-                GameClockSchemaUpdate(
-                    gameclock=sec,
-                    gameclock_status=item_status
-                ),
+                GameClockSchemaUpdate(gameclock=sec, gameclock_status=item_status),
             )
 
             return self.create_response(
                 updated,
                 f"Game clock {item_status}",
             )
-
-            # await self.service.trigger_update_gameclock(item_id)
-
-            # updated = await self.service.update(
-            #     item_id,
-            #     GameClockSchemaUpdate(
-            #         gameclock=sec,
-            #         gameclock_status=item_status
-            #     ),
-            # )
-
-            # await self.service.trigger_update_gameclock(item_id)
-
-        # @router.put(
-        #     "/id/{item_id}/running/{sec}/",
-        #     response_class=JSONResponse,
-        # )
-        # async def start_playclock_endpoint(
-        #         background_tasks: BackgroundTasks,
-        #         item_id: int,
-        #         sec: int,
-        # ):
-        #     item_status = "running"
-        #     item = await self.service.get_by_id(item_id)
-        #     present_playclock_status = item.playclock_status
-        #
-        #     await self.service.enable_match_data_clock_queues(item_id)
-        #     if present_playclock_status != "running":
-        #         await self.service.update(
-        #             item_id,
-        #             PlayClockSchemaUpdate(
-        #                 playclock=sec,
-        #                 playclock_status=item_status,
-        #             ),
-        #         )
-        #         await self.service.decrement_playclock(
-        #             background_tasks,
-        #             item_id,
-        #         )
-        #
-        #         return self.create_response(
-        #             item,
-        #             f"Playclock ID:{item_id} {item_status}",
-        #         )
-        #     else:
-        #         return self.create_response(
-        #             item,
-        #             f"Playclock ID:{item_id} already {present_playclock_status}",
-        #         )
-
-        #
-        # @router.put(
-        #     "/id/{item_id}/stopped/",
-        #     response_class=JSONResponse,
-        # )
-        # async def reset_playclock_endpoint(
-        #         item_id: int,
-        # ):
-        #     item_status = "stopped"
-        #
-        #     await self.service.update(
-        #         item_id,
-        #         PlayClockSchemaUpdate(
-        #             playclock=None,
-        #             playclock_status="stopping",
-        #         ),
-        #     )
-        #
-        #     await self.service.trigger_update_playclock(item_id)
-        #
-        #     updated = await self.service.update(
-        #         item_id,
-        #         PlayClockSchemaUpdate(
-        #             playclock_status="stopped",
-        #         ),
-        #     )
-        #
-        #     return self.create_response(
-        #         updated,
-        #         f"Play clock {item_status}",
-        #     )
-
-        # @router.get("/id/{match_data_id}/events/gamedata/")
-        # async def sse_match_data_endpoint(match_data_id: int):
-        #     return StreamingResponse(
-        #         self.service.event_generator_get_match_data(match_data_id),
-        #         media_type="text/event-stream",
-        #     )
-        #
-        # @router.get("/id/{match_data_id}/events/playclock/")
-        # async def sse_match_data_playclock_endpoint(match_data_id: int):
-        #     return StreamingResponse(
-        #         self.service.event_generator_get_match_clock(
-        #             match_data_id,
-        #             "play",
-        #         ),
-        #         media_type="text/event-stream",
-        #     )
-        #
-        # @router.get("/id/{match_data_id}/events/gameclock/")
-        # async def sse_match_data_gameclock_endpoint(match_data_id: int):
-        #     return StreamingResponse(
-        #         self.service.event_generator_get_match_clock(
-        #             match_data_id,
-        #             "game",
-        #         ),
-        #         media_type="text/event-stream",
-        #     )
-
-        # @router.get("/id/{match_data_id}/events/gameclock/")
-        # async def sse_match_data_gameclock_endpoint(match_data_id: int):
-        #
-        #     await self.service.enable_match_data_events_queues(match_data_id)
-        #
-        #     return StreamingResponse(
-        #         self.service.event_generator_get_match_data_gameclock(
-        #             match_data_id
-        #         ),
-        #         media_type="text/event-stream",
-        #     )
-
-        # @router.get(
-        #     "/queue/",
-        #     response_class=JSONResponse,
-        # )
-        # async def queue():
-        #     return await self.service.get_active_match_ids()
 
         return router
 
