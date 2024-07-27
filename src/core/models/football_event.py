@@ -41,6 +41,12 @@ class FootballEventDB(Base):
         default=None,
     )
 
+    distance_on_offence: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+    )
+
     offense_team: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("team.id"),

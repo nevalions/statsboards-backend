@@ -14,6 +14,7 @@ class FootballEventSchemaBase(BaseModel):
     event_qb: int | None = None
     event_down: int | None = None
     event_distance: int | None = None
+    distance_on_offence: int | None = None
 
     event_hash: Annotated[str, Path(max_length=150)] | None = None
     play_direction: Annotated[str, Path(max_length=150)] | None = None
@@ -54,6 +55,7 @@ class FootballEventSchemaUpdate(BaseModel):
     event_qb: int | None = None
     event_down: int | None = None
     event_distance: int | None = None
+    distance_on_offence: int | None = None
 
     event_hash: str | None = None
     play_direction: str | None = None

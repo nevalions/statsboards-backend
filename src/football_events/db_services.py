@@ -7,13 +7,13 @@ from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
 
 class FootballEventServiceDB(BaseServiceDB):
     def __init__(
-            self,
-            database,
+        self,
+        database,
     ):
         super().__init__(database, FootballEventDB)
 
     async def create_match_football_event(
-            self, football_event: FootballEventSchemaCreate
+        self, football_event: FootballEventSchemaCreate
     ):
         async with self.db.async_session() as session:
             try:
@@ -26,6 +26,7 @@ class FootballEventServiceDB(BaseServiceDB):
                     event_qb=football_event.event_qb,
                     event_down=football_event.event_down,
                     event_distance=football_event.event_distance,
+                    distance_on_offence=football_event.distance_on_offence,
                     event_hash=football_event.event_hash,
                     play_direction=football_event.play_direction,
                     play_type=football_event.play_type,
@@ -51,7 +52,6 @@ class FootballEventServiceDB(BaseServiceDB):
                     flagged_player=football_event.flagged_player,
                     kick_player=football_event.kick_player,
                     punt_player=football_event.punt_player,
-
                 )
 
                 session.add(match_event)
@@ -64,15 +64,15 @@ class FootballEventServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating match event "
-                           f"for match id({football_event.match_id})"
-                           f"returned some error",
+                    f"for match id({football_event.match_id})"
+                    f"returned some error",
                 )
 
     async def update_match_football_event(
-            self,
-            item_id: int,
-            item: FootballEventSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: FootballEventSchemaUpdate,
+        **kwargs,
     ):
         updated_ = await super().update(
             item_id,
