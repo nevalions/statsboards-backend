@@ -46,6 +46,8 @@ class ScoreboardServiceDB(BaseServiceDB):
                     is_team_b_start_offense=scoreboard.is_team_b_start_offense,
                     is_team_a_start_defense=scoreboard.is_team_a_start_defense,
                     is_team_b_start_defense=scoreboard.is_team_b_start_defense,
+                    is_home_match_team_lower=scoreboard.is_home_match_team_lower,
+                    is_away_match_team_lower=scoreboard.is_away_match_team_lower,
                     is_match_player_lower=scoreboard.is_match_player_lower,
                     player_match_lower_id=scoreboard.player_match_lower_id,
                     team_a_game_color=scoreboard.team_a_game_color,

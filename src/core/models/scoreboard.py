@@ -74,6 +74,18 @@ class ScoreboardDB(Base):
         default=False,
     )
 
+    is_home_match_team_lower: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
+    is_away_match_team_lower: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
+
     is_match_player_lower: Mapped[bool] = mapped_column(
         Boolean,
         nullable=True,

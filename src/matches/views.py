@@ -559,30 +559,6 @@ class MatchAPIRouter(
                             team_b_game_color=team_b.team_color,
                             team_a_game_title=team_a.title,
                             team_b_game_title=team_b.title,
-                            # is_qtr=True,
-                            # is_time=True,
-                            # is_playclock=True,
-                            # is_downdistance=True,
-                            # is_tournament_logo=True,
-                            # is_main_sponsor=False,
-                            # is_sponsor_line=False,
-                            # is_match_sponsor_line=False,
-                            # is_team_a_start_offense=False,
-                            # is_team_b_start_offense=False,
-                            # is_team_a_start_defense=False,
-                            # is_team_b_start_defense=False,
-                            # is_match_player_lower=False,
-                            # use_team_a_game_color=False,
-                            # use_team_b_game_color=False,
-                            # use_team_a_game_title=False,
-                            # use_team_b_game_title=False,
-                            # use_team_a_game_logo=False,
-                            # use_team_b_game_logo=False,
-                            # is_flag=False,
-                            # is_goal_team_a=False,
-                            # is_goal_team_b=False,
-                            # scale_tournament_logo=2,
-                            # scale_main_sponsor=2,
                         )
                     else:
                         # Update existing_scoreboard with default values where keys are missing
@@ -594,15 +570,7 @@ class MatchAPIRouter(
                                 existing_data[key] = value
 
                         scoreboard_schema = ScoreboardSchemaUpdate(**existing_data)
-                        # scoreboard_schema = ScoreboardSchemaUpdate(
-                        #     match_id=created_match.id,
-                        #     scale_logo_a=2,
-                        #     scale_logo_b=2,
-                        #     team_a_game_color=team_a.team_color,
-                        #     team_b_game_color=team_b.team_color,
-                        #     team_a_game_title=team_a.title,
-                        #     team_b_game_title=team_b.title,
-                        # )
+
                     created_scoreboard = (
                         await scoreboard_service.create_or_update_scoreboard(
                             scoreboard_schema

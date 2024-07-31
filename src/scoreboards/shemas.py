@@ -19,6 +19,9 @@ class ScoreboardSchemaBase(BaseModel):
     is_team_a_start_defense: bool = False
     is_team_b_start_defense: bool = False
 
+    is_home_match_team_lower: bool = False
+    is_away_match_team_lower: bool = False
+
     is_match_player_lower: bool = False
     player_match_lower_id: int | None = None
 
@@ -65,6 +68,9 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_team_b_start_offense: bool | None = None
     is_team_a_start_defense: bool | None = None
     is_team_b_start_defense: bool | None = None
+
+    is_home_match_team_lower: bool | None = None
+    is_away_match_team_lower: bool | None = None
 
     is_match_player_lower: bool | None = None
     player_match_lower_id: int | None = None
