@@ -86,6 +86,11 @@ class ScoreboardDB(Base):
         default=False,
     )
 
+    is_football_qb_full_stats_lower: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+    )
     is_match_player_lower: Mapped[bool] = mapped_column(
         Boolean,
         nullable=True,
@@ -247,12 +252,35 @@ class ScoreboardDB(Base):
         nullable=True,
     )
 
+    football_qb_full_stats_match_lower_id = mapped_column(
+        Integer,
+        ForeignKey(
+            "player_match.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+    )
+
     matches: Mapped["MatchDB"] = relationship(
         "MatchDB",
         back_populates="match_scoreboard",
     )
 
-    match_players: Mapped["PlayerMatchDB"] = relationship(
+    # match_players: Mapped["PlayerMatchDB"] = relationship(
+    #     "PlayerMatchDB",
+    #     back_populates="match_scoreboard",
+    # )
+
+    match_player_match_lower_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        back_populates="match_scoreboard",
+        primaryjoin="ScoreboardDB.player_match_lower_id == PlayerMatchDB.id",
+        back_populates="match_player_lower",
+    )
+
+    match_football_qb_full_stats_match_lower_rel: Mapped[
+        "PlayerMatchDB"
+    ] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="ScoreboardDB.football_qb_full_stats_match_lower_id == PlayerMatchDB.id",
+        back_populates="football_qb_full_stats_match_player_lower",
     )

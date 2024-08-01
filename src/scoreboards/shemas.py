@@ -22,6 +22,8 @@ class ScoreboardSchemaBase(BaseModel):
     is_home_match_team_lower: bool = False
     is_away_match_team_lower: bool = False
 
+    is_football_qb_full_stats_lower: bool = False
+    football_qb_full_stats_match_lower_id: int | None = None
     is_match_player_lower: bool = False
     player_match_lower_id: int | None = None
 
@@ -72,6 +74,8 @@ class ScoreboardSchemaUpdate(BaseModel):
     is_home_match_team_lower: bool | None = None
     is_away_match_team_lower: bool | None = None
 
+    is_football_qb_full_stats_lower: bool | None = None
+    football_qb_full_stats_match_lower_id: int | None = None
     is_match_player_lower: bool | None = None
     player_match_lower_id: int | None = None
 

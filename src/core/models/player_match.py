@@ -92,9 +92,23 @@ class PlayerMatchDB(Base):
         back_populates="match_players",
     )
 
-    match_scoreboard: Mapped["ScoreboardDB"] = relationship(
+    # match_scoreboard: Mapped["ScoreboardDB"] = relationship(
+    #     "ScoreboardDB",
+    #     back_populates="match_players",
+    # )
+
+    match_player_lower: Mapped[list["ScoreboardDB"]] = relationship(
         "ScoreboardDB",
-        back_populates="match_players",
+        foreign_keys="ScoreboardDB.player_match_lower_id",
+        back_populates="match_player_match_lower_rel",
+    )
+
+    football_qb_full_stats_match_player_lower: Mapped[
+        list["ScoreboardDB"]
+    ] = relationship(
+        "ScoreboardDB",
+        foreign_keys="ScoreboardDB.football_qb_full_stats_match_lower_id",
+        back_populates="match_football_qb_full_stats_match_lower_rel",
     )
 
     event_qb_events: Mapped[list["FootballEventDB"]] = relationship(
