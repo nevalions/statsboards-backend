@@ -244,8 +244,9 @@ class PlayerMatchAPIRouter(
                     # print("eesl_id", player_schema["player_match_eesl_id"])
 
                     exist_player_in_match = (
-                        await self.service.get_player_match_by_eesl_id(
-                            player_schema["player_match_eesl_id"]
+                        await self.service.get_player_match_by_match_id_and_eesl_id(
+                            player_schema["match_id"],
+                            player_schema["player_match_eesl_id"],
                         )
                     )
 
@@ -398,8 +399,9 @@ class PlayerMatchAPIRouter(
                     # print("eesl_id", player_schema["player_match_eesl_id"])
 
                     exist_player_in_match = (
-                        await self.service.get_player_match_by_eesl_id(
-                            player_schema["player_match_eesl_id"]
+                        await self.service.get_player_match_by_match_id_and_eesl_id(
+                            player_schema["match_id"],
+                            player_schema["player_match_eesl_id"],
                         )
                     )
 

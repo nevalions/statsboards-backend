@@ -21,7 +21,7 @@ class PlayerMatchDB(Base):
     player_match_eesl_id: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
-        unique=True,
+        unique=False,
     )
 
     player_team_tournament_id: Mapped[int] = mapped_column(
