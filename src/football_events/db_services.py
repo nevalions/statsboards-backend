@@ -22,6 +22,7 @@ class FootballEventServiceDB(BaseServiceDB):
                     event_number=football_event.event_number,
                     event_qtr=football_event.event_qtr,
                     ball_on=football_event.ball_on,
+                    ball_moved_to=football_event.ball_moved_to,
                     offense_team=football_event.offense_team,
                     event_qb=football_event.event_qb,
                     event_down=football_event.event_down,

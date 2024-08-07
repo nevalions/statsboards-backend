@@ -10,6 +10,7 @@ class FootballEventSchemaBase(BaseModel):
     event_number: int | None = None
     event_qtr: int | None = None
     ball_on: int | None = None
+    ball_moved_to: int | None = None
     offense_team: int | None = None
     event_qb: int | None = None
     event_down: int | None = None
@@ -51,6 +52,7 @@ class FootballEventSchemaUpdate(BaseModel):
     event_number: int | None = None
     event_qtr: int | None = None
     ball_on: int | None = None
+    ball_moved_to: int | None = None
     offense_team: int | None = None
     event_qb: int | None = None
     event_down: int | None = None
