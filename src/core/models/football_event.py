@@ -97,6 +97,12 @@ class FootballEventDB(Base):
         default=None,
     )
 
+    event_strong_side: Mapped[str] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
+
     event_hash: Mapped[str] = mapped_column(
         String,
         nullable=True,

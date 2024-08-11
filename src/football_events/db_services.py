@@ -33,6 +33,7 @@ class FootballEventServiceDB(BaseServiceDB):
                     distance_on_offence=football_event.distance_on_offence,
                     event_hash=football_event.event_hash,
                     play_direction=football_event.play_direction,
+                    event_strong_side=football_event.event_strong_side,
                     play_type=football_event.play_type,
                     play_result=football_event.play_result,
                     score_result=football_event.score_result,
