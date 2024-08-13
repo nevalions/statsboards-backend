@@ -65,6 +65,12 @@ class FootballEventDB(Base):
         default=None,
     )
 
+    ball_returned_to_on_fumble: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+    )
+
     distance_on_offence: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
