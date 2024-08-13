@@ -26,6 +26,7 @@ class FootballEventServiceDB(BaseServiceDB):
                     ball_picked_on=football_event.ball_picked_on,
                     ball_kicked_to=football_event.ball_kicked_to,
                     ball_returned_to=football_event.ball_returned_to,
+                    ball_picked_on_fumble=football_event.ball_picked_on_fumble,
                     ball_returned_to_on_fumble=football_event.ball_returned_to_on_fumble,
                     offense_team=football_event.offense_team,
                     event_qb=football_event.event_qb,

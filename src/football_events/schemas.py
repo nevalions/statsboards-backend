@@ -14,6 +14,7 @@ class FootballEventSchemaBase(BaseModel):
     ball_picked_on: int | None = None
     ball_kicked_to: int | None = None
     ball_returned_to: int | None = None
+    ball_picked_on_fumble: int | None = None
     ball_returned_to_on_fumble: int | None = None
     offense_team: int | None = None
     event_qb: int | None = None
@@ -61,6 +62,7 @@ class FootballEventSchemaUpdate(BaseModel):
     ball_picked_on: int | None = None
     ball_kicked_to: int | None = None
     ball_returned_to: int | None = None
+    ball_picked_on_fumble: int | None = None
     ball_returned_to_on_fumble: int | None = None
     offense_team: int | None = None
     event_qb: int | None = None
