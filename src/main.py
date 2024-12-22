@@ -1,4 +1,9 @@
 import os
+from pathlib import Path
+
+import logging
+import logging.config
+import yaml
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +31,23 @@ from src.team_tournament import api_team_tournament_router
 from src.teams import api_team_router
 from src.tournaments import api_tournament_router, template_tournament_router
 
+logger = logging.getLogger("backend_logger_fastapi")
+
+# Ensure logs directory exists
+Path("src/logs").mkdir(parents=True, exist_ok=True)
+
+# Load logging configuration from YAML
+def setup_logging(config_path="src/logging-config.yaml"):
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+        logging.config.dictConfig(config)
+
+setup_logging()
+
+if os.access("src/logs/backend.log", os.W_OK):
+    logger.debug("Log file is writable.")
+else:
+    logger.error("Log file is not writable.")
 app = FastAPI()
 
 app.include_router(api_sport_router)
@@ -56,10 +78,12 @@ app.include_router(api_pars_season_router)
 app.add_event_handler("startup", ws_manager.startup)
 app.add_event_handler("shutdown", ws_manager.shutdown)
 
-print("FASTAPI STATSBOARD STARTED!")
+logger.info("FastAPI app initialized.")
+# print("FASTAPI STATSBOARD STARTED!")
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
 origins = [allowed_origins] if allowed_origins == "*" else allowed_origins.split(",")
-print(f"allowed_origins: {origins}")
+# print(f"allowed_origins: {origins}")
+logger.info(f"allowed_origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,

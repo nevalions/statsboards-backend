@@ -1,5 +1,5 @@
+import logging
 from gunicorn.app.base import BaseApplication
-
 
 class Application(BaseApplication):
 
@@ -20,6 +20,10 @@ class Application(BaseApplication):
 
 if __name__ == "__main__":
     import main
+
+    main.setup_logging()
+    logger = logging.getLogger('backend_logger_server')
+    logger.info("Production Server Started!")
 
     options = {
         "bind": "0.0.0.0:9000",

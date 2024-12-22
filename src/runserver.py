@@ -1,8 +1,12 @@
+import logging
 from uvicorn import run
-
 
 if __name__ == "__main__":
     import main
+
+    main.setup_logging()
+    logger = logging.getLogger('backend_logger_server')
+    logger.info("Developer Server Started!")
 
     app = main.app
 
