@@ -44,6 +44,7 @@ logs_dir.mkdir(parents=True, exist_ok=True)
 
 # Load logging configuration from YAML
 def setup_logging(config_path=logs_config_yaml):
+    print(f'Loading logging configuration from {config_path}')
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
         print(f'config {config}')
