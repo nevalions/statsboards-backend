@@ -5,13 +5,13 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Dict
+from typing import Any, List, Dict, AsyncGenerator
 
 import asyncpg
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import select, update, Result, Column, TextClause
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -36,13 +36,13 @@ db_logger = logging.getLogger("backend_logger_db")
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
         db_logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
-        self.engine = create_async_engine(url=db_url, echo=echo)
-        self.async_session = async_sessionmaker(
+        self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
+        self.async_session: AsyncSession | Any = async_sessionmaker(
             bind=self.engine, class_=AsyncSession, expire_on_commit=False
         )
 
 
-async def get_db_session():
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     db_logger.debug("Creating new database session")
     async with db.async_session() as session:
         db_logger.debug("Beginning transaction")
@@ -218,7 +218,7 @@ connection_manager = ConnectionManager()
 
 
 class BaseServiceDB:
-    def __init__(self, database, model):
+    def __init__(self, database: Database, model: type):
         self.db = database
         self.model = model
 
@@ -398,18 +398,6 @@ class BaseServiceDB:
                     status_code=500,
                     detail="Failed to delete element. Please try again later.",
                 )
-
-    # async def delete(self, item_id: int):
-    #     async with self.db.async_session() as session:
-    #         db_item = await self.get_by_id(item_id)
-    #         if not db_item:
-    #             raise HTTPException(
-    #                 status_code=404,
-    #                 detail=f"{self.model.__name__} not found",
-    #             )
-    #         await session.delete(db_item)
-    #         await session.commit()
-    #         return db_item
 
     async def get_item_by_field_value(self, value, field_name: str):
         async with self.db.async_session() as session:
