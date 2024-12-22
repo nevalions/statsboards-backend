@@ -36,7 +36,7 @@ logger = logging.getLogger("backend_logger_fastapi")
 # Ensure logs directory exists
 # print(Path('src/logs'))
 # Path("src/logs").mkdir(parents=True, exist_ok=True)
-
+print(f'Absolute parent path: {Path(__file__).parent.absolute()}')
 logs_dir = Path(__file__).parent / "logs"
 logs_config_yaml = Path(__file__).parent / "logging-config.yaml"
 logs_dir.mkdir(parents=True, exist_ok=True)
