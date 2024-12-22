@@ -42,13 +42,34 @@ logs_config_yaml = Path(__file__).parent / "logging-config.yaml"
 logs_dir.mkdir(parents=True, exist_ok=True)
 
 
-# Load logging configuration from YAML
+# # Load logging configuration from YAML
+# def setup_logging(config_path=logs_config_yaml):
+#     print(f'Loading logging configuration from {config_path}')
+#     with open(config_path, "r") as file:
+#         config = yaml.safe_load(file)
+#         print(f'config {config}')
+#         logging.config.dictConfig(config)
+
 def setup_logging(config_path=logs_config_yaml):
+    # Resolve the full path of the config file
+    # config_file_path = Path(__file__).parent / config_path
     print(f'Loading logging configuration from {config_path}')
+
+    # Load YAML configuration
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
-        print(f'config {config}')
-        logging.config.dictConfig(config)
+
+    # Define the log directory and add it to the configuration
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    # Replace the placeholder with the actual log directory path
+    config['handlers']['file']['filename'] = str(logs_dir / "backend.log")
+
+    # Apply the logging configuration
+    logging.config.dictConfig(config)
+
+    print(f'Logging setup completed. Log file: {config["handlers"]["file"]["filename"]}')
+
 
 setup_logging()
 
