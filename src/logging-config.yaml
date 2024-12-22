@@ -29,6 +29,14 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_WebSocketManager:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: no
+  backend_logger_db:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: no
 root:
   level: WARNING
   handlers: [console]

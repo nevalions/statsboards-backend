@@ -58,11 +58,10 @@ logger = logging.getLogger("backend_logger_fastapi")
 #
 #     print(f'Logging setup completed. Log file: {config["handlers"]["file"]["filename"]}')
 
-
 setup_logging()
-
 # Check if the log file is writable
 log_file_path = logs_dir / "backend.log"
+
 
 if os.access(log_file_path, os.W_OK):
     logger.debug("Log file is writable.")

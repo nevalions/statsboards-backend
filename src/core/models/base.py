@@ -23,16 +23,19 @@ from sqlalchemy.orm import (
 from starlette.websockets import WebSocket
 
 from src.core.config import settings
+from src.logging_config import setup_logging
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("WebSocketManager")
-
+setup_logging()
+db_logger = logging.getLogger("backend_logger_db")
+# logging.basicConfig(level=logging.DEBUG)
+# logger = logging.getLogger("WebSocketManager")
 
 # DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
 
 
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
+        db_logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
         self.engine = create_async_engine(url=db_url, echo=echo)
         self.async_session = async_sessionmaker(
             bind=self.engine, class_=AsyncSession, expire_on_commit=False
@@ -40,7 +43,9 @@ class Database:
 
 
 async def get_db_session():
+    db_logger.debug("Creating new database session")
     async with db.async_session() as session:
+        db_logger.debug("Beginning transaction")
         async with session.begin():
             yield session
 
@@ -55,7 +60,7 @@ class MatchDataWebSocketManager:
         self.match_data_queues = {}
         self.playclock_queues = {}
         self.gameclock_queues = {}
-        self.logger = logging.getLogger("WebSocketManager")
+        self.logger = logging.getLogger("backend_logger_WebSocketManager")
         self.logger.info("WebSocketManager initialized")
 
     async def connect(self, client_id: str):
@@ -219,103 +224,177 @@ class BaseServiceDB:
 
     async def create(self, item):
         async with self.db.async_session() as session:
+            db_logger.debug(
+                f"Starting to create {self.model.__name__} with data: {item}"
+            )
             try:
                 session.add(item)
                 await session.commit()
                 await session.refresh(item)
+                db_logger.info(f"{self.model.__name__} created successfully: {item}")
                 return item
             except Exception as ex:
-                print(ex)
+                # print(ex)
+                db_logger.error(
+                    f"Error creating {self.model.__name__}: {ex}", exc_info=True
+                )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"{self.model.__name__} creation error."
-                    f"Check input data.",
+                    detail=f"Error creating {self.model.__name__}" f"Check input data.",
                 )
 
-    # async def get_all_elements(
-    #     self,
-    #     skip: int = 0,
-    #     limit: int = 1000,
-    #     order_by: str = "id",
-    #     descending: bool = False,
-    # ):
-    #     async with self.db.async_session() as session:
-    #         order = getattr(self.model, order_by)
-    #         new_order = self.is_des(descending, order)
-    #
-    #         stmt = select(self.model).offset(skip).limit(limit).order_by(new_order)
-    #
-    #         items = await session.execute(stmt)
-    #         result = items.scalars().all()
-    #         return list(result)
-
-    async def get_all_elements(
-        self,
-        # skip: int = 0,
-        # limit: int = 1000,
-        # order_by: str = "id",
-        # descending: bool = False,
-    ):
+    async def get_all_elements(self):
         async with self.db.async_session() as session:
-            # order = getattr(self.model, order_by)
-            # new_order = self.is_des(descending, order)
-
             stmt = select(self.model)
 
             items = await session.execute(stmt)
             result = items.scalars().all()
+            db_logger.debug(f"Fetched {len(result)} elements for {self.model.__name__}")
             return list(result)
 
-    async def get_by_id(
-        self,
-        item_id: int,
-    ):
-        async with self.db.async_session() as session:
-            result = await session.execute(
-                select(self.model).where(self.model.id == item_id)
+    # async def get_by_id(
+    #     self,
+    #     item_id: int,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         result = await session.execute(
+    #             select(self.model).where(self.model.id == item_id)
+    #         )
+    #         model = result.scalars().one_or_none()
+    #         return model
+
+    async def get_by_id(self, item_id: int):
+        db_logger.debug(
+            f"Starting to fetch element with ID: {item_id} for {self.model.__name__}"
+        )
+        try:
+            async with self.db.async_session() as session:
+                result = await session.execute(
+                    select(self.model).where(self.model.id == item_id)
+                )
+                model = result.scalars().one_or_none()
+                if model is not None:
+                    db_logger.debug(
+                        f"Fetched element with ID {item_id} for {self.model.__name__}: {model.__dict__}"
+                    )
+                else:
+                    db_logger.warning(
+                        f"No element found with ID: {item_id} for {self.model.__name__}"
+                    )
+                return model
+        except Exception as ex:
+            db_logger.error(
+                f"Error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",
+                exc_info=True,
             )
-            model = result.scalars().one_or_none()
-            # print(
-            #     f"Type of model: {self.model.__name__}"
-            # )  # Add this line for debugging
-            # print(model)
-            return model
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to fetch element. Please try again later.",
+            )
 
     async def get_by_id_and_model(
         self,
         model,
         item_id: int,
     ):
-        async with self.db.async_session() as session:
-            result = await session.execute(
-                select(model).where(getattr(model, "id") == item_id)
+        db_logger.debug(
+            f"Starting to fetch element with ID: {item_id} for {model.__name__}"
+        )
+        try:
+            async with self.db.async_session() as session:
+                result = await session.execute(
+                    select(model).where(getattr(model, "id") == item_id)
+                )
+                item = result.scalars().one_or_none()
+                if item is not None:
+                    db_logger.debug(
+                        f"Fetched element with ID {item_id} for {model.__name__}: {item.__dict__}"
+                    )
+                else:
+                    db_logger.warning(
+                        f"No element found with ID: {item_id} for {model.__name__}"
+                    )
+                return item
+        except Exception as ex:
+            db_logger.error(
+                f"Error fetching element with ID: {item_id} for {model.__name__}: {ex}",
+                exc_info=True,
             )
-            item = result.scalars().one_or_none()
-            # print(
-            #     f"Type of model: {self.model.__name__}"
-            # )  # Add this line for debugging
-            # print(model)
-            return item
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to fetch element. Please try again later.",
+            )
+
+    # async def get_by_id_and_model(
+    #     self,
+    #     model,
+    #     item_id: int,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         result = await session.execute(
+    #             select(model).where(getattr(model, "id") == item_id)
+    #         )
+    #         item = result.scalars().one_or_none()
+    #         return item
 
     async def update(self, item_id: int, item, **kwargs):
+        db_logger.debug(f"Starting to update element with ID: {item_id}")
         async with self.db.async_session() as session:
-            db_item = await self.get_by_id(item_id)
-            # print(db_item)
-            if not db_item:
-                return None
-            # print(db_item)
-            for key, value in item.dict(exclude_unset=True).items():
-                # print(key, value)
-                setattr(db_item, key, value)
-            await session.execute(
-                update(self.model)
-                .where(self.model.id == item_id)
-                .values(item.dict(exclude_unset=True))
-            )
+            try:
+                updated_item = await self.get_by_id(item_id)
+                if not updated_item:
+                    db_logger.warning(
+                        f"No element found with ID: {item_id} for model {self.model.__name__}"
+                    )
+                    return None
 
-            await session.commit()
-            updated_item = await self.get_by_id(db_item.id)
-            return updated_item
+                for key, value in item.dict(exclude_unset=True).items():
+                    setattr(updated_item, key, value)
+
+                await session.execute(
+                    update(self.model)
+                    .where(self.model.id == item_id)
+                    .values(item.dict(exclude_unset=True))
+                    # update(item.__class__)
+                    # .where(item.__class__.id == item_id)
+                    # .values(item.dict(exclude_unset=True))
+                )
+
+                await session.commit()
+                updated_item = await self.get_by_id(item_id)
+                db_logger.info(
+                    f"Updated element with ID: {item_id}: {updated_item.__dict__}"
+                )
+                return updated_item
+            except Exception as ex:
+                db_logger.error(
+                    f"Error updating element with ID: {item_id} for model {self.model.__name__}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to update element. Please try again later.",
+                )
+
+    # async def update(self, item_id: int, item, **kwargs):
+    #     async with self.db.async_session() as session:
+    #         db_item = await self.get_by_id(item_id)
+    #
+    #         if not db_item:
+    #             return None
+    #
+    #         for key, value in item.dict(exclude_unset=True).items():
+    #
+    #             setattr(db_item, key, value)
+    #         await session.execute(
+    #             update(self.model)
+    #             .where(self.model.id == item_id)
+    #             .values(item.dict(exclude_unset=True))
+    #         )
+    #
+    #         await session.commit()
+    #         updated_item = await self.get_by_id(db_item.id)
+    #         return updated_item
 
     async def delete(self, item_id: int):
         async with self.db.async_session() as session:
@@ -329,12 +408,7 @@ class BaseServiceDB:
             await session.delete(db_item)
             await session.commit()
             # print(db_item.__dict__)
-
             return db_item
-            # raise HTTPException(
-            #     status_code=200,
-            #     detail=f"{self.model.__name__} {db_item.id} deleted",
-            # )
 
     async def get_item_by_field_value(self, value, field_name: str):
         async with self.db.async_session() as session:

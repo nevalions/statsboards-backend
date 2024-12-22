@@ -27,17 +27,6 @@ static_path = os.path.join(template_path, "static")
 
 templates = Jinja2Templates(directory=template_path)
 
-# print(
-#     parent_path,
-#     one_more_parent_path,
-#     template_path,
-#     static_path,
-#     static_main_path,
-#     uploads_path,
-#     # scoreboard_template_path,
-#     # match_template_path,
-# )
-
 logger.info(f"parent_path: {parent_path}")
 logger.info(f"one_more_parent_path: {one_more_parent_path}")
 logger.info(f"template_path: {template_path}")
