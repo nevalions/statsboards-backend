@@ -33,26 +33,13 @@ from src.tournaments import api_tournament_router, template_tournament_router
 
 logger = logging.getLogger("backend_logger_fastapi")
 
-# Ensure logs directory exists
-# print(Path('src/logs'))
-# Path("src/logs").mkdir(parents=True, exist_ok=True)
 print(f'Absolute parent path: {Path(__file__).parent.absolute()}')
 logs_dir = Path(__file__).parent / "logs"
 logs_config_yaml = Path(__file__).parent / "logging-config.yaml"
 logs_dir.mkdir(parents=True, exist_ok=True)
 
-
-# # Load logging configuration from YAML
-# def setup_logging(config_path=logs_config_yaml):
-#     print(f'Loading logging configuration from {config_path}')
-#     with open(config_path, "r") as file:
-#         config = yaml.safe_load(file)
-#         print(f'config {config}')
-#         logging.config.dictConfig(config)
-
 def setup_logging(config_path=logs_config_yaml):
     # Resolve the full path of the config file
-    # config_file_path = Path(__file__).parent / config_path
     print(f'Loading logging configuration from {config_path}')
 
     # Load YAML configuration
