@@ -355,9 +355,6 @@ class BaseServiceDB:
                     update(self.model)
                     .where(self.model.id == item_id)
                     .values(item.dict(exclude_unset=True))
-                    # update(item.__class__)
-                    # .where(item.__class__.id == item_id)
-                    # .values(item.dict(exclude_unset=True))
                 )
 
                 await session.commit()
@@ -376,39 +373,43 @@ class BaseServiceDB:
                     detail="Failed to update element. Please try again later.",
                 )
 
-    # async def update(self, item_id: int, item, **kwargs):
+    async def delete(self, item_id: int):
+        db_logger.debug(f"Starting to delete element with ID: {item_id}")
+        async with self.db.async_session() as session:
+            try:
+                db_item = await self.get_by_id(item_id)
+                if not db_item:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"{self.model.__name__} not found",
+                    )
+                await session.delete(db_item)
+                await session.commit()
+                db_logger.info(
+                    f"Deleted element with ID: {item_id}: {db_item.__dict__}"
+                )
+                return db_item
+            except Exception as ex:
+                db_logger.error(
+                    f"Error deleting element with ID: {item_id} for model {self.model.__name__}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to delete element. Please try again later.",
+                )
+
+    # async def delete(self, item_id: int):
     #     async with self.db.async_session() as session:
     #         db_item = await self.get_by_id(item_id)
-    #
     #         if not db_item:
-    #             return None
-    #
-    #         for key, value in item.dict(exclude_unset=True).items():
-    #
-    #             setattr(db_item, key, value)
-    #         await session.execute(
-    #             update(self.model)
-    #             .where(self.model.id == item_id)
-    #             .values(item.dict(exclude_unset=True))
-    #         )
-    #
+    #             raise HTTPException(
+    #                 status_code=404,
+    #                 detail=f"{self.model.__name__} not found",
+    #             )
+    #         await session.delete(db_item)
     #         await session.commit()
-    #         updated_item = await self.get_by_id(db_item.id)
-    #         return updated_item
-
-    async def delete(self, item_id: int):
-        async with self.db.async_session() as session:
-            db_item = await self.get_by_id(item_id)
-            if not db_item:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"{self.model.__name__} not found",
-                )
-            # print(db_item.__dict__)
-            await session.delete(db_item)
-            await session.commit()
-            # print(db_item.__dict__)
-            return db_item
+    #         return db_item
 
     async def get_item_by_field_value(self, value, field_name: str):
         async with self.db.async_session() as session:
