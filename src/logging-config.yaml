@@ -25,6 +25,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_config:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 root:
   level: WARNING
   handlers: [console]

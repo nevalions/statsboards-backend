@@ -1,11 +1,16 @@
 import os
+import logging
 
 from dotenv import load_dotenv
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from fastapi.templating import Jinja2Templates
 
+from src.logging_config import setup_logging
+
 load_dotenv()
+setup_logging()
+logger = logging.getLogger("backend_logger_config")
 
 # Set the template and static folders
 parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,16 +27,24 @@ static_path = os.path.join(template_path, "static")
 
 templates = Jinja2Templates(directory=template_path)
 
-print(
-    parent_path,
-    one_more_parent_path,
-    template_path,
-    static_path,
-    static_main_path,
-    uploads_path,
-    # scoreboard_template_path,
-    # match_template_path,
-)
+# print(
+#     parent_path,
+#     one_more_parent_path,
+#     template_path,
+#     static_path,
+#     static_main_path,
+#     uploads_path,
+#     # scoreboard_template_path,
+#     # match_template_path,
+# )
+
+logger.info(f"parent_path: {parent_path}")
+logger.info(f"one_more_parent_path: {one_more_parent_path}")
+logger.info(f"template_path: {template_path}")
+logger.info(f"static_path: {static_path}")
+logger.info(f"static_main_path: {static_main_path}")
+logger.info(f"uploads_path: {uploads_path}")
+
 
 class DbSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="DB_")

@@ -13,6 +13,7 @@ from src.core.config import uploads_path
 from src.core.models.base import ws_manager
 from src.football_events import api_football_event_router
 from src.gameclocks import api_gameclock_router
+from src.logging_config import setup_logging, logs_dir
 from src.matchdata import api_matchdata_router
 from src.matches import api_match_router, template_match_router
 from src.person import api_person_router
@@ -33,29 +34,29 @@ from src.tournaments import api_tournament_router, template_tournament_router
 
 logger = logging.getLogger("backend_logger_fastapi")
 
-print(f'Absolute parent path: {Path(__file__).parent.absolute()}')
-logs_dir = Path(__file__).parent / "logs"
-logs_config_yaml = Path(__file__).parent / "logging-config.yaml"
-logs_dir.mkdir(parents=True, exist_ok=True)
-
-def setup_logging(config_path=logs_config_yaml):
-    # Resolve the full path of the config file
-    print(f'Loading logging configuration from {config_path}')
-
-    # Load YAML configuration
-    with open(config_path, "r") as file:
-        config = yaml.safe_load(file)
-
-    # Define the log directory and add it to the configuration
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    # Replace the placeholder with the actual log directory path
-    config['handlers']['file']['filename'] = str(logs_dir / "backend.log")
-
-    # Apply the logging configuration
-    logging.config.dictConfig(config)
-
-    print(f'Logging setup completed. Log file: {config["handlers"]["file"]["filename"]}')
+# print(f'Absolute parent path: {Path(__file__).parent.absolute()}')
+# logs_dir = Path(__file__).parent / "logs"
+# logs_config_yaml = Path(__file__).parent / "logging-config.yaml"
+# logs_dir.mkdir(parents=True, exist_ok=True)
+#
+# def setup_logging(config_path=logs_config_yaml):
+#     # Resolve the full path of the config file
+#     print(f'Loading logging configuration from {config_path}')
+#
+#     # Load YAML configuration
+#     with open(config_path, "r") as file:
+#         config = yaml.safe_load(file)
+#
+#     # Define the log directory and add it to the configuration
+#     logs_dir.mkdir(parents=True, exist_ok=True)
+#
+#     # Replace the placeholder with the actual log directory path
+#     config['handlers']['file']['filename'] = str(logs_dir / "backend.log")
+#
+#     # Apply the logging configuration
+#     logging.config.dictConfig(config)
+#
+#     print(f'Logging setup completed. Log file: {config["handlers"]["file"]["filename"]}')
 
 
 setup_logging()
