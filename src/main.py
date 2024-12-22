@@ -37,19 +37,24 @@ logger = logging.getLogger("backend_logger_fastapi")
 # print(Path('src/logs'))
 # Path("src/logs").mkdir(parents=True, exist_ok=True)
 
-logs_dir = Path(__file__).parent / "src" / "logs"
+logs_dir = Path(__file__).parent / "logs"
+logs_config_yaml = Path(__file__).parent / "logging-config.yaml"
 logs_dir.mkdir(parents=True, exist_ok=True)
 
 
 # Load logging configuration from YAML
-def setup_logging(config_path="src/logging-config.yaml"):
+def setup_logging(config_path=logs_config_yaml):
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
+        print(f'config {config}')
         logging.config.dictConfig(config)
 
 setup_logging()
 
-if os.access("src/logs/backend.log", os.W_OK):
+# Check if the log file is writable
+log_file_path = logs_dir / "backend.log"
+
+if os.access(log_file_path, os.W_OK):
     logger.debug("Log file is writable.")
 else:
     logger.error("Log file is not writable.")
