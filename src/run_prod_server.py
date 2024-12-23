@@ -9,6 +9,7 @@ class Application(BaseApplication):
         self.options = options or {}
         self.application = app
         super().__init__()
+        logger.info("Application class initialized with options: %s", options)
 
     def load_config(self):
         config = {
@@ -35,5 +36,13 @@ if __name__ == "__main__":
         "workers": 4,
         "worker_class": "uvicorn.workers.UvicornWorker",
         "timeout": 120,
+        "loglevel": "info",
+        "errorlog": "-",
+        "accesslog": "-",
     }
-    Application(main.app, options).run()
+
+    try:
+        Application(main.app, options).run()
+    except Exception as e:
+        logger.critical(f"Server encountered an error: {e}", exc_info=True)
+        raise
