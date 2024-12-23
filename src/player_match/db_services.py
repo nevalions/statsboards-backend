@@ -143,7 +143,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
         self,
         match_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             match_id,
             "player_team_tournament",
         )

@@ -760,39 +760,52 @@ class BaseServiceDB:
     #             return None
 
     # async def get_related_items_level_one_by_id(
-    #         self,
-    #         item_id: int,
-    #         related_property: str,
-    #         nested_related_property: str = None,
+    #     self,
+    #     item_id: int,
+    #     related_property: str,
     # ):
     #     async with self.db.async_session() as session:
     #         try:
-    #             query = select(self.model) \
-    #                 .where(self.model.id == item_id) \
+    #             item = await session.execute(
+    #                 select(self.model)
+    #                 .where(self.model.id == item_id)
     #                 .options(selectinload(getattr(self.model, related_property)))
-    #             if nested_related_property:
-    #                 query = query.options(
-    #                     selectinload(getattr(self.model, related_property + '.' + nested_related_property)))
-    #             item = await session.execute(query)
+    #                 # .options(joinedload(getattr(self.model, related_property)))
+    #             )
     #             return getattr(item.scalars().one(), related_property)
     #         except NoResultFound:
     #             return None
 
-    async def get_related_items_level_one_by_id(
+    async def get_related_item_level_one_by_id(
         self,
         item_id: int,
         related_property: str,
     ):
         async with self.db.async_session() as session:
             try:
+                db_logger.debug(
+                    f"Fetching related items for item id one level: {item_id} and property: {related_property} for model {self.model.__name__}"
+                )
                 item = await session.execute(
                     select(self.model)
                     .where(self.model.id == item_id)
                     .options(selectinload(getattr(self.model, related_property)))
                     # .options(joinedload(getattr(self.model, related_property)))
                 )
-                return getattr(item.scalars().one(), related_property)
+                result = getattr(item.scalars().one(), related_property)
+                if result:
+                    db_logger.debug(
+                        f"Related item {result.__dict__} found for property: {related_property} for model {self.model.__name__}"
+                    )
+                else:
+                    db_logger.debug(
+                        f"No related item found one level for property: {related_property} for model {self.model.__name__}"
+                    )
+                return result
             except NoResultFound:
+                db_logger.warning(
+                    f"No result found for item id one level: {item_id} and property: {related_property} for model {self.model.__name__}"
+                )
                 return None
 
     async def get_nested_related_items_by_id(
@@ -802,13 +815,13 @@ class BaseServiceDB:
         related_property: str,
         nested_related_property: str,
     ):
-        related_item = await self.get_related_items_level_one_by_id(
+        related_item = await self.get_related_item_level_one_by_id(
             item_id, related_property
         )
 
         if related_item is not None:
             _id = related_item.id
-            items = await service.get_related_items_level_one_by_id(
+            items = await service.get_related_item_level_one_by_id(
                 _id, nested_related_property
             )
             return items

@@ -17,18 +17,18 @@ class TournamentServiceDB(BaseServiceDB):
         )
 
     async def create_or_update_tournament(
-            self,
-            t: TournamentSchemaCreate | TournamentSchemaUpdate,
+        self,
+        t: TournamentSchemaCreate | TournamentSchemaUpdate,
     ):
         try:
             # Try to query for existing item
             if t.tournament_eesl_id:
-                print('EESL ID', t.tournament_eesl_id)
+                print("EESL ID", t.tournament_eesl_id)
                 tournament_from_db = await self.get_tournament_by_eesl_id(
                     t.tournament_eesl_id
                 )
                 if tournament_from_db:
-                    print('Tournament already exist')
+                    print("Tournament already exist")
                     return await self.update_tournament_by_eesl(
                         "tournament_eesl_id",
                         t,
@@ -36,7 +36,7 @@ class TournamentServiceDB(BaseServiceDB):
                 else:
                     return await self.create_new_tournament(t)
             else:
-                print('Creating new tournament')
+                print("Creating new tournament")
                 return await self.create_new_tournament(t)
         except Exception as ex:
             print(ex)
@@ -46,9 +46,9 @@ class TournamentServiceDB(BaseServiceDB):
             )
 
     async def update_tournament_by_eesl(
-            self,
-            eesl_field_name: str,
-            t: TournamentSchemaUpdate,
+        self,
+        eesl_field_name: str,
+        t: TournamentSchemaUpdate,
     ):
         return await self.update_item_by_eesl_id(
             eesl_field_name,
@@ -57,8 +57,8 @@ class TournamentServiceDB(BaseServiceDB):
         )
 
     async def create_new_tournament(
-            self,
-            t: TournamentSchemaCreate,
+        self,
+        t: TournamentSchemaCreate,
     ):
         tournament = self.model(
             title=t.title,
@@ -75,21 +75,21 @@ class TournamentServiceDB(BaseServiceDB):
         return await super().create(tournament)
 
     async def get_tournament_by_eesl_id(
-            self,
-            value,
-            field_name="tournament_eesl_id",
+        self,
+        value,
+        field_name="tournament_eesl_id",
     ):
-        print('Getting tournament with eesl_id', value, field_name)
+        print("Getting tournament with eesl_id", value, field_name)
         return await self.get_item_by_field_value(
             value=value,
             field_name=field_name,
         )
 
     async def update_tournament(
-            self,
-            item_id: int,
-            item: TournamentSchemaUpdate,
-            **kwargs,
+        self,
+        item_id: int,
+        item: TournamentSchemaUpdate,
+        **kwargs,
     ):
         return await super().update(
             item_id,
@@ -98,10 +98,10 @@ class TournamentServiceDB(BaseServiceDB):
         )
 
     async def get_teams_by_tournament(
-            self,
-            tournament_id: int,
+        self,
+        tournament_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             tournament_id,
             "teams",
         )
@@ -116,13 +116,12 @@ class TournamentServiceDB(BaseServiceDB):
     #     )
 
     async def get_players_by_tournament(
-            self,
-            tournament_id: int,
+        self,
+        tournament_id: int,
     ):
         async with self.db.async_session() as session:
-            stmt = (
-                select(PlayerTeamTournamentDB)
-                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+            stmt = select(PlayerTeamTournamentDB).where(
+                PlayerTeamTournamentDB.tournament_id == tournament_id
             )
 
             results = await session.execute(stmt)
@@ -130,24 +129,22 @@ class TournamentServiceDB(BaseServiceDB):
             return players
 
     async def get_matches_by_tournament(
-            self,
-            tournament_id: int,
+        self,
+        tournament_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             tournament_id,
             "matches",
         )
 
     async def get_main_tournament_sponsor(self, tournament_id: int):
-        return await self.get_related_items_level_one_by_id(
-            tournament_id,
-            'main_sponsor'
+        return await self.get_related_item_level_one_by_id(
+            tournament_id, "main_sponsor"
         )
 
     async def get_tournament_sponsor_line(self, tournament_id: int):
-        return await self.get_related_items_level_one_by_id(
-            tournament_id,
-            'sponsor_line'
+        return await self.get_related_item_level_one_by_id(
+            tournament_id, "sponsor_line"
         )
 
     async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
@@ -155,8 +152,8 @@ class TournamentServiceDB(BaseServiceDB):
         return await self.get_nested_related_items_by_id(
             tournament_id,
             sponsor_service,
-            'sponsor_line',
-            'sponsors',
+            "sponsor_line",
+            "sponsors",
         )
 
     # async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
@@ -182,6 +179,7 @@ class TournamentServiceDB(BaseServiceDB):
     #         'sponsor_line',
     #         'sponsors'
     #     )
+
 
 #
 # async def get_tournament_db() -> TournamentServiceDB:

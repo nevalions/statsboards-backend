@@ -76,7 +76,7 @@ class PlayerServiceDB(BaseServiceDB):
         )
 
     async def get_player_with_person(self, player_id) -> PlayerSchema:
-        return await self.get_related_items_level_one_by_id(player_id, "person")
+        return await self.get_related_item_level_one_by_id(player_id, "person")
 
     async def update_player(
         self,

@@ -109,13 +109,13 @@ class MatchServiceDB(BaseServiceDB):
                 }
 
     async def get_match_sponsor_line(self, match_id: int):
-        return await self.get_related_items_level_one_by_id(match_id, "sponsor_line")
+        return await self.get_related_item_level_one_by_id(match_id, "sponsor_line")
 
     async def get_matchdata_by_match(
         self,
         match_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             match_id,
             "match_data",
         )
@@ -124,7 +124,7 @@ class MatchServiceDB(BaseServiceDB):
         self,
         match_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             match_id,
             "match_playclock",
         )
@@ -133,7 +133,7 @@ class MatchServiceDB(BaseServiceDB):
         self,
         match_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             match_id,
             "match_gameclock",
         )
@@ -189,7 +189,7 @@ class MatchServiceDB(BaseServiceDB):
         self,
         match_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             match_id,
             "match_scoreboard",
         )

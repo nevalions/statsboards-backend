@@ -59,7 +59,6 @@ class TeamServiceDB(BaseServiceDB):
         self,
         t: TeamSchemaCreate,
     ):
-
         team = self.model(
             sport_id=t.sport_id,
             city=t.city,
@@ -91,7 +90,7 @@ class TeamServiceDB(BaseServiceDB):
         self,
         team_id: int,
     ):
-        return await self.get_related_items_level_one_by_id(
+        return await self.get_related_item_level_one_by_id(
             team_id,
             "matches",
         )
