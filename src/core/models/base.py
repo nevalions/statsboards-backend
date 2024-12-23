@@ -808,7 +808,7 @@ class BaseServiceDB:
                 )
                 return None
 
-    async def get_nested_related_items_by_id(
+    async def get_nested_related_item_by_id(
         self,
         item_id: int,
         service: Any,
@@ -828,7 +828,7 @@ class BaseServiceDB:
 
         return None
 
-    async def get_related_items_level_one_by_key_and_value(
+    async def get_related_item_level_one_by_key_and_value(
         self,
         filter_key: str,
         filter_value: Any,

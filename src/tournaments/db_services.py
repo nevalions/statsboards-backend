@@ -149,7 +149,7 @@ class TournamentServiceDB(BaseServiceDB):
 
     async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
         sponsor_service = SponsorLineServiceDB(self.db)
-        return await self.get_nested_related_items_by_id(
+        return await self.get_nested_related_item_by_id(
             tournament_id,
             sponsor_service,
             "sponsor_line",

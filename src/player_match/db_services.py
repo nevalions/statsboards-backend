@@ -124,7 +124,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
 
     async def get_player_in_sport(self, player_id: int):
         player_service = PlayerTeamTournamentServiceDB(self.db)
-        return await self.get_nested_related_items_by_id(
+        return await self.get_nested_related_item_by_id(
             player_id,
             player_service,
             "player_team_tournament",

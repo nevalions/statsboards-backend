@@ -42,7 +42,7 @@ class SeasonServiceDB(BaseServiceDB):
             year: int,
             key: str = "year",
     ):
-        return await self.get_related_items_level_one_by_key_and_value(
+        return await self.get_related_item_level_one_by_key_and_value(
             key,
             year,
             "tournaments",

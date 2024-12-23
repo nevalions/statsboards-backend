@@ -37,7 +37,7 @@ class SportServiceDB(BaseServiceDB):
             sport_id: int,
             key: str = "id",
     ):
-        return await self.get_related_items_level_one_by_key_and_value(
+        return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
             "tournaments",
@@ -48,7 +48,7 @@ class SportServiceDB(BaseServiceDB):
             sport_id: int,
             key: str = "id",
     ):
-        return await self.get_related_items_level_one_by_key_and_value(
+        return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
             "teams",
@@ -59,7 +59,7 @@ class SportServiceDB(BaseServiceDB):
             sport_id: int,
             key: str = "id",
     ):
-        return await self.get_related_items_level_one_by_key_and_value(
+        return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
             "players",
@@ -70,7 +70,7 @@ class SportServiceDB(BaseServiceDB):
             sport_id: int,
             key: str = "id",
     ):
-        return await self.get_related_items_level_one_by_key_and_value(
+        return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
             "positions",
