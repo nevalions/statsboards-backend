@@ -64,7 +64,9 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         eesl_field_name: str,
         p: PlayerTeamTournamentSchemaUpdate,
     ):
-        if (p.player_team_tournament_eesl_id is not None and isinstance(p.player_team_tournament_eesl_id, int)):
+        if p.player_team_tournament_eesl_id is not None and isinstance(
+            p.player_team_tournament_eesl_id, int
+        ):
             return await self.update_item_by_eesl_id(
                 eesl_field_name,
                 p.player_team_tournament_eesl_id,
@@ -79,7 +81,6 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         self,
         p: PlayerTeamTournamentSchemaCreate,
     ):
-
         player_team_tournament = self.model(
             player_team_tournament_eesl_id=p.player_team_tournament_eesl_id,
             player_id=p.player_id,

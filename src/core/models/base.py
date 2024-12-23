@@ -35,7 +35,7 @@ db_logger = logging.getLogger("backend_logger_db")
 
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
-        db_logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
+        db_logger.debug(f"Initializing Database with URL: ***, Echo: {echo}")
         self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
         self.async_session: AsyncSession | Any = async_sessionmaker(
             bind=self.engine, class_=AsyncSession, expire_on_commit=False
@@ -795,7 +795,7 @@ class BaseServiceDB:
                 result = getattr(item.scalars().one(), related_property)
                 if result:
                     db_logger.debug(
-                        f"Related item {result.__dict__} found for property: {related_property} for model {self.model.__name__}"
+                        f"Related item {result} found for property: {related_property} for model {self.model.__name__}"
                     )
                 else:
                     db_logger.debug(
@@ -821,12 +821,43 @@ class BaseServiceDB:
 
         if related_item is not None:
             _id = related_item.id
-            items = await service.get_related_item_level_one_by_id(
+            db_logger.debug(
+                f"Fetching nested related items for item id: {_id} and property: {related_property} "
+                f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
+            )
+            item = await service.get_related_item_level_one_by_id(
                 _id, nested_related_property
             )
-            return items
-
+            db_logger.debug(
+                f"Related item {item} found for item id: {_id} "
+                f"and nested_related_property: {nested_related_property} for model {self.model.__name__}"
+            )
+            return item
+        db_logger.warning(
+            f"No result found for item id: {item_id} and property: {related_property} "
+            f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
+        )
         return None
+
+    # async def get_nested_related_item_by_id(
+    #     self,
+    #     item_id: int,
+    #     service: Any,
+    #     related_property: str,
+    #     nested_related_property: str,
+    # ):
+    #     related_item = await self.get_related_item_level_one_by_id(
+    #         item_id, related_property
+    #     )
+    #
+    #     if related_item is not None:
+    #         _id = related_item.id
+    #         items = await service.get_related_item_level_one_by_id(
+    #             _id, nested_related_property
+    #         )
+    #         return items
+    #
+    #     return None
 
     async def get_related_item_level_one_by_key_and_value(
         self,
@@ -836,14 +867,46 @@ class BaseServiceDB:
     ):
         async with self.db.async_session() as session:
             try:
+                db_logger.debug(
+                    f"Fetching related items for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                )
                 item = await session.execute(
                     select(self.model)
                     .where(getattr(self.model, filter_key) == filter_value)
                     .options(selectinload(getattr(self.model, related_property)))
                 )
-                return getattr(item.scalars().one(), related_property)
+                result = getattr(item.scalars().one(), related_property)
+                if result:
+                    db_logger.debug(
+                        f"Related item found {result} for property: {related_property} for model {self.model.__name__}"
+                    )
+                else:
+                    db_logger.debug(
+                        f"No related item found for property: {related_property} for model {self.model.__name__}"
+                    )
+                return result
             except NoResultFound:
+                db_logger.warning(
+                    f"No result found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                )
                 return None
+
+    # async def get_related_item_level_one_by_key_and_value(
+    #     self,
+    #     filter_key: str,
+    #     filter_value: Any,
+    #     related_property: str,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         try:
+    #             item = await session.execute(
+    #                 select(self.model)
+    #                 .where(getattr(self.model, filter_key) == filter_value)
+    #                 .options(selectinload(getattr(self.model, related_property)))
+    #             )
+    #             return getattr(item.scalars().one(), related_property)
+    #         except NoResultFound:
+    #             return None
 
     async def get_related_items_by_two(
         self,
@@ -854,91 +917,226 @@ class BaseServiceDB:
         second_level_property: str,
     ):
         async with self.db.async_session() as session:
-            query = (
-                select(self.model)
-                .where(getattr(self.model, filter_key) == filter_value)
-                .options(
-                    selectinload(getattr(self.model, related_property)).joinedload(
-                        getattr(second_model, second_level_property)
+            try:
+                db_logger.debug(
+                    f"Fetching related item by two level for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                )
+                query = (
+                    select(self.model)
+                    .where(getattr(self.model, filter_key) == filter_value)
+                    .options(
+                        selectinload(getattr(self.model, related_property)).joinedload(
+                            getattr(second_model, second_level_property)
+                        )
                     )
                 )
-            )
 
-            result = await session.execute(query)
-            item = result.unique().scalars().one_or_none()
+                result = await session.execute(query)
+                item = result.unique().scalars().one_or_none()
 
-            items = []
-            if item:
-                related_items = getattr(item, related_property)
-                for related_item in related_items:
-                    for final_point in getattr(related_item, second_level_property):
-                        items.append(final_point)
-                return items
-            else:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"{second_model} {filter_key} not found",
+                if item:
+                    db_logger.debug(
+                        f"Item {item} found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                    )
+                    related_items = getattr(item, related_property)
+                    items = []
+                    for related_item in related_items:
+                        for final_point in getattr(related_item, second_level_property):
+                            items.append(final_point)
+                    return items
+                else:
+                    db_logger.warning(
+                        f"No item found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                    )
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"{second_model} {filter_key} not found for model {self.model.__name__}",
+                    )
+            except Exception as e:
+                db_logger.error(
+                    f"Error fetching related item for key: {filter_key} and value {filter_value} "
+                    f"for model {self.model.__name__}: {e}",
+                    exc_info=True,
                 )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal Server Error {e}",
+                )
+
+    # async def get_related_items_by_two(
+    #     self,
+    #     filter_key: str,
+    #     filter_value: Any,
+    #     second_model,
+    #     related_property: str,
+    #     second_level_property: str,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         query = (
+    #             select(self.model)
+    #             .where(getattr(self.model, filter_key) == filter_value)
+    #             .options(
+    #                 selectinload(getattr(self.model, related_property)).joinedload(
+    #                     getattr(second_model, second_level_property)
+    #                 )
+    #             )
+    #         )
+    #
+    #         result = await session.execute(query)
+    #         item = result.unique().scalars().one_or_none()
+    #
+    #         items = []
+    #         if item:
+    #             related_items = getattr(item, related_property)
+    #             for related_item in related_items:
+    #                 for final_point in getattr(related_item, second_level_property):
+    #                     items.append(final_point)
+    #             return items
+    #         else:
+    #             raise HTTPException(
+    #                 status_code=404,
+    #                 detail=f"{second_model} {filter_key} not found",
+    #             )
 
     @staticmethod
     def is_des(descending, order):
-        if descending:
-            order = order.desc()
-        else:
-            order = order.asc()
-        return order
+        try:
+            if descending:
+                db_logger.debug("Setting order to descending")
+                return order.desc()
+            else:
+                db_logger.debug("Setting order to ascending")
+                return order.asc()
+        except Exception as e:
+            db_logger.error(f"Error setting order: {e}", exc_info=True)
+            raise
 
     @staticmethod
     def default_serializer(obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        raise TypeError(f"Type {type(obj)} not serializable")
+        try:
+            if isinstance(obj, datetime):
+                db_logger.debug(f"Serializing datetime object: {obj}")
+                return obj.isoformat()
+            raise TypeError(f"Type {type(obj)} not serializable")
+        except Exception as e:
+            db_logger.error(f"Error serializing object {obj}: {e}", exc_info=True)
+            raise
 
     @staticmethod
     def to_dict(model):
-        if isinstance(model, dict):
-            return model
-        elif isinstance(model, Base):  # replace with your model's superclass if needed
-            data = {
-                column.name: getattr(model, column.name)
-                for column in model.__table__.columns
-            }
-            data.pop("_sa_instance_state", None)
-            return data
-        else:
-            raise TypeError("Unsupported type")
+        try:
+            if isinstance(model, dict):
+                db_logger.debug("Model is already a dictionary")
+                return model
+            elif isinstance(
+                model, Base
+            ):  # replace with your model's superclass if needed
+                data = {
+                    column.name: getattr(model, column.name)
+                    for column in model.__table__.columns
+                }
+                db_logger.debug(f"Extracted data from model: {data}")
+                data.pop("_sa_instance_state", None)
+                return data
+            else:
+                raise TypeError("Unsupported type")
+        except Exception as e:
+            db_logger.error(
+                f"Error converting model {model} to dictionary: {e}", exc_info=True
+            )
+            raise
 
+    # @staticmethod
+    # def is_des(descending, order):
+    #     if descending:
+    #         order = order.desc()
+    #     else:
+    #         order = order.asc()
+    #     return order
+    #
+    # @staticmethod
+    # def default_serializer(obj):
+    #     if isinstance(obj, datetime):
+    #         return obj.isoformat()
+    #     raise TypeError(f"Type {type(obj)} not serializable")
+    #
+    # @staticmethod
+    # def to_dict(model):
+    #     if isinstance(model, dict):
+    #         return model
+    #     elif isinstance(model, Base):  # replace with your model's superclass if needed
+    #         data = {
+    #             column.name: getattr(model, column.name)
+    #             for column in model.__table__.columns
+    #         }
+    #         data.pop("_sa_instance_state", None)
+    #         return data
+    #     else:
+    #         raise TypeError("Unsupported type")
+
+    @staticmethod
     async def upload_file(self, upload_file: UploadFile):
-        print(f"Current Working Directory: {os.getcwd()}")
+        db_logger.debug(f"Current Working Directory for uploading: {os.getcwd()}")
 
         # Use an absolute path for the upload directory
         upload_dir = Path("/static/uploads")
 
-        print(f"Upload Directory: {upload_dir.resolve()}")
+        db_logger.debug(
+            f"Upload Directory: {upload_dir.resolve()} and file name {upload_file.filename}"
+        )
 
         try:
-            # Ensure the upload directory exists
             upload_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Does the upload directory exist after mkdir: {upload_dir.exists()}")
-
-            # Define the destination path
+            db_logger.debug(
+                f"Does the upload directory exist after mkdir: {upload_dir.exists()}"
+            )
             dest = upload_dir / upload_file.filename
-            print(f"Destination path: {dest}")
+            db_logger.debug(f"Destination path: {dest}")
 
-            # Write upload_file content into destination file
             with dest.open("wb") as buffer:
                 shutil.copyfileobj(upload_file.file, buffer)
-
-            # Check if the file exists after writing
-            print(f"Does the file exist after writing: {dest.exists()}")
-
-            # Provide upload_file information
-            print(f"File saved to {dest}")
+            db_logger.debug(f"Does the file exist after writing: {dest.exists()}")
+            db_logger.info(f"File saved to {dest}")
             return {"filename": upload_file.filename, "url": str(dest)}
         except Exception as e:
-            print(f"Error type: {type(e)}")
-            print(f"Error args: {e.args}")
-            return {"error": str(e)}
+            db_logger.error(f"Error type: {type(e)}")
+            db_logger.error(f"Error uploading file args: {e.args}", exc_info=True)
+            return HTTPException(
+                status_code=500,
+                detail=f"Internal Server Error Uploading file: {str(e)}",
+            )
+
+    # async def upload_file(self, upload_file: UploadFile):
+    #     print(f"Current Working Directory: {os.getcwd()}")
+    #
+    #     # Use an absolute path for the upload directory
+    #     upload_dir = Path("/static/uploads")
+    #
+    #     print(f"Upload Directory: {upload_dir.resolve()}")
+    #
+    #     try:
+    #         # Ensure the upload directory exists
+    #         upload_dir.mkdir(parents=True, exist_ok=True)
+    #         print(f"Does the upload directory exist after mkdir: {upload_dir.exists()}")
+    #
+    #         # Define the destination path
+    #         dest = upload_dir / upload_file.filename
+    #         print(f"Destination path: {dest}")
+    #
+    #         # Write upload_file content into destination file
+    #         with dest.open("wb") as buffer:
+    #             shutil.copyfileobj(upload_file.file, buffer)
+    #
+    #         # Check if the file exists after writing
+    #         print(f"Does the file exist after writing: {dest.exists()}")
+    #
+    #         # Provide upload_file information
+    #         print(f"File saved to {dest}")
+    #         return {"filename": upload_file.filename, "url": str(dest)}
+    #     except Exception as e:
+    #         print(f"Error type: {type(e)}")
+    #         print(f"Error args: {e.args}")
+    #         return {"error": str(e)}
 
 
 class Base(DeclarativeBase):
