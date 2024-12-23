@@ -724,18 +724,26 @@ class BaseServiceDB:
     ):
         async with self.db.async_session() as session:
             try:
-                db_logger.debug(f"Fetching related items for item id: {item_id} for model {self.model.__name__}")
+                db_logger.debug(
+                    f"Fetching related items for item id: {item_id} for model {self.model.__name__}"
+                )
                 item = await session.execute(
                     select(self.model).where(self.model.id == item_id)
                 )
                 result = item.scalars().one_or_none()
                 if result:
-                    db_logger.debug(f"Related item found with id: {result.id} for model {self.model.__name__}")
+                    db_logger.debug(
+                        f"Related item found with id: {result.id} for model {self.model.__name__}"
+                    )
                 else:
-                    db_logger.debug(f"No related item found for id: {item_id} for model {self.model.__name__}")
+                    db_logger.debug(
+                        f"No related item found for id: {item_id} for model {self.model.__name__}"
+                    )
                 return result
             except NoResultFound:
-                db_logger.warning(f"No result found for item id: {item_id} for model {self.model.__name__}")
+                db_logger.warning(
+                    f"No result found for item id: {item_id} for model {self.model.__name__}"
+                )
                 return None
 
     # async def get_related_items(
