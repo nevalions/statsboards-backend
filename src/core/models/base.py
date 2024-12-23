@@ -225,13 +225,15 @@ class BaseServiceDB:
     async def create(self, item):
         async with self.db.async_session() as session:
             db_logger.debug(
-                f"Starting to create {self.model.__name__} with data: {item}"
+                f"Starting to create {self.model.__name__} with data: {item.__dict__}"
             )
             try:
                 session.add(item)
                 await session.commit()
                 await session.refresh(item)
-                db_logger.info(f"{self.model.__name__} created successfully: {item}")
+                db_logger.info(
+                    f"{self.model.__name__} created successfully: {item.__dict__}"
+                )
                 return item
             except Exception as ex:
                 # print(ex)
@@ -251,17 +253,6 @@ class BaseServiceDB:
             result = items.scalars().all()
             db_logger.debug(f"Fetched {len(result)} elements for {self.model.__name__}")
             return list(result)
-
-    # async def get_by_id(
-    #     self,
-    #     item_id: int,
-    # ):
-    #     async with self.db.async_session() as session:
-    #         result = await session.execute(
-    #             select(self.model).where(self.model.id == item_id)
-    #         )
-    #         model = result.scalars().one_or_none()
-    #         return model
 
     async def get_by_id(self, item_id: int):
         db_logger.debug(
@@ -400,15 +391,48 @@ class BaseServiceDB:
                 )
 
     async def get_item_by_field_value(self, value, field_name: str):
+        db_logger.debug(
+            f"Starting to fetch item by field {field_name} with value: {value} for model {self.model.__name__}"
+        )
         async with self.db.async_session() as session:
-            # Access the column directly from the model
-            column: Column = getattr(self.model, field_name)
-            print("Column: ", column)
+            try:
+                # Access the column directly from the model
+                column: Column = getattr(self.model, field_name)
+                db_logger.info(
+                    f"Accessed column: {column} for model {self.model.__name__}"
+                )
 
-            stmt = select(self.model).where(column == value)
-            result: Result = await session.execute(stmt)
-            print(result)
-            return result.scalars().one_or_none()
+                stmt = select(self.model).where(column == value)
+                db_logger.debug(
+                    f"Executing SQL statement: {stmt} for model {self.model.__name__}"
+                )
+
+                result: Result = await session.execute(stmt)
+                db_logger.debug(
+                    f"Query result: {result.all()} for model {self.model.__name__}"
+                )
+
+                return result.scalars().one_or_none()
+            except Exception as ex:
+                db_logger.error(
+                    f"Error fetching item by {field_name} with value {value}: {ex} for model {self.model.__name__}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to fetch item for model {self.model.__name__}. Please try again later.",
+                )
+
+    # async def get_item_by_field_value(self, value, field_name: str):
+    #     async with self.db.async_session() as session:
+    #         # Access the column directly from the model
+    #         column: Column = getattr(self.model, field_name)
+    #         print("Column: ", column)
+    #
+    #         stmt = select(self.model).where(column == value)
+    #         result: Result = await session.execute(stmt)
+    #         print(result)
+    #         return result.scalars().one_or_none()
 
     async def update_item_by_eesl_id(
         self,
@@ -417,11 +441,17 @@ class BaseServiceDB:
         new_item,
     ):
         async with self.db.async_session() as session:
+            db_logger.info(
+                f"Starting update_item_by_eesl_id with eesl_field_name: {eesl_field_name}, eesl_value: {eesl_value} for model {self.model.__name__}"
+            )
             is_exist = await self.get_item_by_field_value(
                 eesl_value,
                 eesl_field_name,
             )
             if is_exist:
+                db_logger.debug(
+                    f"Item found with id: {is_exist.id} for model {self.model.__name__}"
+                )
                 update_dict = {}
                 for key, value in new_item.__dict__.items():
                     if not key.startswith("_"):
@@ -431,13 +461,47 @@ class BaseServiceDB:
                     .where(getattr(self.model, eesl_field_name) == eesl_value)
                     .values(update_dict)
                 )
+                db_logger.debug(
+                    f"Update operation executed for item with id: {is_exist.id} for model {self.model.__name__}"
+                )
                 await session.commit()
                 find_updated = await self.get_by_id(is_exist.id)
-                # print('find_updated: ', find_updated)
+                db_logger.info(
+                    f"Updated item retrieved with id: {find_updated.id} for model {self.model.__name__}"
+                )
                 return find_updated
             else:
-                # print('NONE')
+                db_logger.error(f"No item found for model {self.model.__name__}")
                 return None
+
+    # async def update_item_by_eesl_id(
+    #     self,
+    #     eesl_field_name: str,
+    #     eesl_value: int,
+    #     new_item,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         is_exist = await self.get_item_by_field_value(
+    #             eesl_value,
+    #             eesl_field_name,
+    #         )
+    #         if is_exist:
+    #             update_dict = {}
+    #             for key, value in new_item.__dict__.items():
+    #                 if not key.startswith("_"):
+    #                     update_dict[key] = value
+    #             await session.execute(
+    #                 update(self.model)
+    #                 .where(getattr(self.model, eesl_field_name) == eesl_value)
+    #                 .values(update_dict)
+    #             )
+    #             await session.commit()
+    #             find_updated = await self.get_by_id(is_exist.id)
+    #             # print('find_updated: ', find_updated)
+    #             return find_updated
+    #         else:
+    #             # print('NONE')
+    #             return None
 
     async def find_relation(
         self,
@@ -448,6 +512,7 @@ class BaseServiceDB:
         field_name_two: str,
     ):
         async with self.db.async_session() as session:
+            db_logger.debug(f"Starting find_relation for model {self.model.__name__}")
             # Check if the relation already exists
             existing_relation = await session.execute(
                 select(secondary_table).filter(
@@ -455,8 +520,32 @@ class BaseServiceDB:
                     & (getattr(self.model, field_name_two) == fk_item_two)
                 )
             )
+            result = existing_relation.scalar()
+            if result:
+                db_logger.info(
+                    f"Relation found {existing_relation.__dict__} for model {self.model.__name__}"
+                )
+            else:
+                db_logger.debug(f"No relation found for model {self.model.__name__}")
+            return result
 
-            return existing_relation.scalar()
+    # async def find_relation(
+    #     self,
+    #     secondary_table: TextClause,
+    #     fk_item_one: int,
+    #     fk_item_two: int,
+    #     field_name_one: str,
+    #     field_name_two: str,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         # Check if the relation already exists
+    #         existing_relation = await session.execute(
+    #             select(secondary_table).filter(
+    #                 (getattr(self.model, field_name_one) == fk_item_one)
+    #                 & (getattr(self.model, field_name_two) == fk_item_two)
+    #             )
+    #         )
+    #         return existing_relation.scalar()
 
     async def is_relation_exist(
         self,
@@ -466,6 +555,7 @@ class BaseServiceDB:
         field_name_one: str,
         field_name_two: str,
     ) -> bool:
+        db_logger.debug(f"Checking if relation exists for model {self.model.__name__}")
         existing_record = await self.find_relation(
             secondary_table,
             fk_item_one,
@@ -474,8 +564,32 @@ class BaseServiceDB:
             field_name_two,
         )
         if existing_record:
+            db_logger.debug(
+                f"Relation found {existing_record.__dict__} for model {self.model.__name__}"
+            )
             return True
-        return False
+        else:
+            db_logger.debug(f"No relation found for model {self.model.__name__}")
+            return False
+
+    # async def is_relation_exist(
+    #     self,
+    #     secondary_table,
+    #     fk_item_one: int,
+    #     fk_item_two: int,
+    #     field_name_one: str,
+    #     field_name_two: str,
+    # ) -> bool:
+    #     existing_record = await self.find_relation(
+    #         secondary_table,
+    #         fk_item_one,
+    #         fk_item_two,
+    #         field_name_one,
+    #         field_name_two,
+    #     )
+    #     if existing_record:
+    #         return True
+    #     return False
 
     async def create_m2m_relation(
         self,
@@ -498,10 +612,13 @@ class BaseServiceDB:
             )
 
             if existing_relation:
+                db_logger.warning(
+                    f"Parent {parent_model.__name__}-{child_model.__name__} relation already exists for model {self.model.__name__}"
+                )
                 raise HTTPException(
                     status_code=409,
                     detail=f"{parent_model.__name__}-{child_model.__name__} relation "
-                    f"already exists",
+                    f"already exists for model {self.model.__name__}",
                 )
 
             parent = await session.scalar(
@@ -510,28 +627,96 @@ class BaseServiceDB:
                 .options(selectinload(getattr(parent_model, child_relation))),
             )
             if parent:
+                db_logger.debug(
+                    f"Parent {parent_model.__name__} found with id: {parent_id} for model {self.model.__name__}"
+                )
                 child = await session.execute(
                     select(child_model).where(child_model.id == child_id)
                 )
                 child_new = child.scalar()
-                # print(child_new.id)
                 if child_new:
+                    db_logger.debug(
+                        f"Child {child_model.__name__} found with id: {child_id} for model {self.model.__name__}"
+                    )
                     try:
                         getattr(parent, child_relation).append(child_new)
                         await session.commit()
+                        db_logger.info(
+                            f"Relation created between {parent_model.__name__} and {child_model.__name__} for model {self.model.__name__}"
+                        )
                         return list(getattr(parent, child_relation))
                     except Exception as ex:
+                        db_logger.error(
+                            f"Error creating relation: {ex} for model {self.model.__name__}",
+                            exc_info=True,
+                        )
                         raise ex
                 else:
                     raise HTTPException(
                         status_code=404,
-                        detail=f"{child_model.__name__} id:{child_id} not found",
+                        detail=f"{child_model.__name__} id:{child_id} for model {self.model.__name__} not found",
                     )
             else:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"{parent_model.__name__} id:{parent_id} not found",
+                    detail=f"{parent_model.__name__} id:{parent_id} for model {self.model.__name__} not found",
                 )
+
+    # async def create_m2m_relation(
+    #     self,
+    #     parent_model,
+    #     child_model,
+    #     secondary_table: TextClause,
+    #     parent_id: int,
+    #     child_id: int,
+    #     parent_id_name: str,
+    #     child_id_name: str,
+    #     child_relation,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         existing_relation = await self.is_relation_exist(
+    #             secondary_table,
+    #             parent_id,
+    #             child_id,
+    #             parent_id_name,
+    #             child_id_name,
+    #         )
+    #
+    #         if existing_relation:
+    #             raise HTTPException(
+    #                 status_code=409,
+    #                 detail=f"{parent_model.__name__}-{child_model.__name__} relation "
+    #                 f"already exists",
+    #             )
+    #
+    #         parent = await session.scalar(
+    #             select(parent_model)
+    #             .where(parent_model.id == parent_id)
+    #             .options(selectinload(getattr(parent_model, child_relation))),
+    #         )
+    #         if parent:
+    #             child = await session.execute(
+    #                 select(child_model).where(child_model.id == child_id)
+    #             )
+    #             child_new = child.scalar()
+    #             # print(child_new.id)
+    #             if child_new:
+    #                 try:
+    #                     getattr(parent, child_relation).append(child_new)
+    #                     await session.commit()
+    #                     return list(getattr(parent, child_relation))
+    #                 except Exception as ex:
+    #                     raise ex
+    #             else:
+    #                 raise HTTPException(
+    #                     status_code=404,
+    #                     detail=f"{child_model.__name__} id:{child_id} not found",
+    #                 )
+    #         else:
+    #             raise HTTPException(
+    #                 status_code=404,
+    #                 detail=f"{parent_model.__name__} id:{parent_id} not found",
+    #             )
 
     async def get_related_items(
         self,
@@ -539,12 +724,32 @@ class BaseServiceDB:
     ):
         async with self.db.async_session() as session:
             try:
+                db_logger.debug(f"Fetching related items for item id: {item_id} for model {self.model.__name__}")
                 item = await session.execute(
                     select(self.model).where(self.model.id == item_id)
                 )
-                return item.scalars().one_or_none()
+                result = item.scalars().one_or_none()
+                if result:
+                    db_logger.debug(f"Related item found with id: {result.id} for model {self.model.__name__}")
+                else:
+                    db_logger.debug(f"No related item found for id: {item_id} for model {self.model.__name__}")
+                return result
             except NoResultFound:
+                db_logger.warning(f"No result found for item id: {item_id} for model {self.model.__name__}")
                 return None
+
+    # async def get_related_items(
+    #     self,
+    #     item_id: int,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         try:
+    #             item = await session.execute(
+    #                 select(self.model).where(self.model.id == item_id)
+    #             )
+    #             return item.scalars().one_or_none()
+    #         except NoResultFound:
+    #             return None
 
     # async def get_related_items_level_one_by_id(
     #         self,
