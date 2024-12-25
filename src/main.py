@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import logging
@@ -10,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.core.config import uploads_path
-from src.core.models.base import ws_manager
+from src.core.models.base import ws_manager, db_logger, db
 from src.football_events import api_football_event_router
 from src.gameclocks import api_gameclock_router
 from src.logging_config import setup_logging, logs_dir
@@ -40,7 +41,28 @@ if os.access(log_file_path, os.W_OK):
     logger.debug("Log file is writable.")
 else:
     logger.error("Log file is not writable.")
-app = FastAPI()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """
+    Lifespan context manager for FastAPI application.
+    Args:
+        _app (FastAPI): The FastAPI application instance (unused).
+    """
+    db_logger.info("Starting application lifespan.")
+    try:
+        await db.test_connection()
+        yield
+    except Exception as e:
+        db_logger.critical(f"Critical error during startup: {e}")
+        raise e
+    finally:
+        db_logger.info("Shutting down application lifespan.")
+        await db.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(api_sport_router)
 app.include_router(api_season_router)

@@ -40,19 +40,13 @@ class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType
         router = super().route()
 
         @router.get("/")
-        async def get_all_elem(
-            # skip: int = Query(0, description="Skip items"),
-            # limit: int = Query(500, description="Limit items"),
-            # order_by: str = Query("id", description="Order items by"),
-            # des: bool = Query(False, description="Sort items in descending order"),
-        ):
-            # return await self.service.get_all_elements(skip, limit, order_by, des)
+        async def get_all_elem():
             return await self.service.get_all_elements()
 
-        @router.get("/id/{model_id}")  # Remove response_model temporarily
+        @router.get("/id/{model_id}")
         async def get_by_id(model_id: int):
             model = await self.service.get_by_id(model_id)
-            print(f"Content of model: {model}")  # Print the content for inspection
+            print(f"Content of model: {model}")
             if model is None:
                 raise HTTPException(
                     status_code=404,
@@ -63,7 +57,5 @@ class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType
         @router.delete("/id/{model_id}")
         async def delete(model_id: int):
             return await self.service.delete(model_id)
-
-        # return {"message": f"{ModelType.__name__} {model_id} deleted"}
 
         return router

@@ -9,8 +9,8 @@ from typing import Any, List, Dict, AsyncGenerator
 
 import asyncpg
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import select, update, Result, Column, TextClause
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy import select, update, Result, Column, TextClause, text
+from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -35,19 +35,35 @@ db_logger = logging.getLogger("backend_logger_db")
 
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
-        db_logger.debug(f"Initializing Database with URL: ***, Echo: {echo}")
-        self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
-        self.async_session: AsyncSession | Any = async_sessionmaker(
-            bind=self.engine, class_=AsyncSession, expire_on_commit=False
-        )
+        db_logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
+        try:
+            self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
+            self.async_session: AsyncSession | Any = async_sessionmaker(
+                bind=self.engine, class_=AsyncSession, expire_on_commit=False
+            )
+        except SQLAlchemyError as e:
+            db_logger.error(f"Error initializing Database engine: {e}")
+        except Exception as e:
+            db_logger.error(f"Unexpected error initializing Database: {e}")
 
+    async def test_connection(self, test_query: str = "SELECT 1"):
+        try:
+            async with self.engine.connect() as connection:
+                await connection.execute(text(test_query))
+                db_logger.info("Database connection successful.")
+        except SQLAlchemyError as e:
+            db_logger.error(f"SQLAlchemy error during connection test: {e}")
+            raise
+        except OSError as e:
+            db_logger.critical(f"OS error during connection test: {e}")
+            raise
+        except Exception as e:
+            db_logger.critical(f"Unexpected error during database connection test: {e}")
+            raise
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    db_logger.debug("Creating new database session")
-    async with db.async_session() as session:
-        db_logger.debug("Beginning transaction")
-        async with session.begin():
-            yield session
+    async def close(self):
+        await self.engine.dispose()
+        db_logger.info("Database connection closed.")
 
 
 db = Database(db_url=settings.db.db_url, echo=settings.db_echo)
