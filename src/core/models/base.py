@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, List, Dict, AsyncGenerator
 
 import asyncpg
+from aiohttp.log import client_logger
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import select, update, Result, Column, TextClause, text
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
@@ -22,11 +23,13 @@ from sqlalchemy.orm import (
 )
 from starlette.websockets import WebSocket
 
-from src.core.config import settings
+from src.core.config import settings, logger
 from src.logging_config import setup_logging
 
 setup_logging()
-db_logger = logging.getLogger("backend_logger_db")
+db_logger = logging.getLogger("backend_logger_base_db")
+websocket_logger = logging.getLogger("backend_websocket_logger")
+connection_socket_logger = logging.getLogger("backend_connection_socket_logger")
 # logging.basicConfig(level=logging.DEBUG)
 # logger = logging.getLogger("WebSocketManager")
 
@@ -35,7 +38,7 @@ db_logger = logging.getLogger("backend_logger_db")
 
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
-        db_logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
+        db_logger.debug(f"Initializing Database with URL: ***, Echo: {echo}")
         try:
             self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
             self.async_session: AsyncSession | Any = async_sessionmaker(
@@ -76,21 +79,29 @@ class MatchDataWebSocketManager:
         self.match_data_queues = {}
         self.playclock_queues = {}
         self.gameclock_queues = {}
-        self.logger = logging.getLogger("backend_logger_WebSocketManager")
-        self.logger.info("WebSocketManager initialized")
+        # self.logger = logging.getLogger("backend_logger_WebSocketManager")
+        # self.logger.info("WebSocketManager initialized")
 
     async def connect(self, client_id: str):
+        websocket_logger.debug(f"Connecting to WebSocket with client_id: {client_id}")
         self.match_data_queues[client_id] = asyncio.Queue()
         self.playclock_queues[client_id] = asyncio.Queue()
         self.gameclock_queues[client_id] = asyncio.Queue()
+        websocket_logger.debug(f"Match Data Queues {self.match_data_queues}")
+        websocket_logger.debug(f"PlayClock Queues {self.playclock_queues}")
+        websocket_logger.debug(f"GameClock Queues {self.gameclock_queues}")
 
     async def disconnect(self, client_id: str):
+        websocket_logger.debug(
+            f"Disconnecting from WebSocket with client_id: {client_id}"
+        )
         del self.match_data_queues[client_id]
         del self.playclock_queues[client_id]
         del self.gameclock_queues[client_id]
 
     async def startup(self):
         self.connection = await asyncpg.connect(self.db_url)
+        websocket_logger.debug(f"WebSocket startup {self.connection}")
         await self.connection.add_listener("matchdata_change", self.match_data_listener)
         await self.connection.add_listener("match_change", self.match_data_listener)
         await self.connection.add_listener(
@@ -98,17 +109,21 @@ class MatchDataWebSocketManager:
         )
         await self.connection.add_listener("playclock_change", self.playclock_listener)
         await self.connection.add_listener("gameclock_change", self.gameclock_listener)
+        websocket_logger.debug(f"WebSocket listen: {self.connection.__dict__}")
 
     async def playclock_listener(self, connection, pid, channel, payload):
-        print("[Playclock listener] Start")
+        # print("[Playclock listener] Start")
+        websocket_logger.debug(
+            f"Playclock listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
+        )
         if not payload or not payload.strip():
-            self.logger.warning("No payload received")
+            websocket_logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
         match_id = data["match_id"]
         data["type"] = "playclock-update"
-        self.logger.debug(
+        websocket_logger.debug(
             f"""Match ID: {match_id}
             Received playclock payload: {payload}
             connection: {connection}
@@ -120,15 +135,18 @@ class MatchDataWebSocketManager:
         await connection_manager.send_to_all(data, match_id=match_id)
 
     async def gameclock_listener(self, connection, pid, channel, payload):
-        print(f"[Gameclock listener] Start")
+        # print(f"[Gameclock listener] Start")
+        websocket_logger.debug(
+            f"Gameclock listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
+        )
         if not payload or not payload.strip():
-            self.logger.warning("No payload received")
+            websocket_logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
         match_id = data["match_id"]
         data["type"] = "gameclock-update"
-        self.logger.debug(
+        websocket_logger.debug(
             f"""Match ID: {match_id}
             Received gameclock payload: {payload}        
             connection: {connection}
@@ -140,15 +158,18 @@ class MatchDataWebSocketManager:
         await connection_manager.send_to_all(data, match_id=match_id)
 
     async def match_data_listener(self, connection, pid, channel, payload):
-        print("[Match Data Listener] Start")
+        # print("[Match Data Listener] Start")
+        websocket_logger.debug(
+            f"Match Data listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
+        )
         if not payload or not payload.strip():
-            self.logger.warning("No payload received")
+            websocket_logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
         match_id = data["match_id"]
         data["type"] = "match-update"
-        self.logger.debug(
+        websocket_logger.debug(
             f"""Match ID: {match_id}
             Received match data payload: {payload}        
             connection: {connection}
@@ -161,6 +182,7 @@ class MatchDataWebSocketManager:
 
     async def shutdown(self):
         if self.connection:
+            websocket_logger.info(f"Shutting down connection: {self.connection}")
             await self.connection.close()
 
 
@@ -174,28 +196,69 @@ class ConnectionManager:
         self.match_subscriptions: Dict[str, List[str]] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str, match_id: str = None):
-        print(f"Active Connections: {len(self.active_connections)}")
+        # print(f"Active Connections: {len(self.active_connections)}")
+        connection_socket_logger.info(
+            f"Active Connections len: {len(self.active_connections)}"
+        )
+        connection_socket_logger.info(f"Active Connections {self.active_connections}")
+        connection_socket_logger.info(
+            f"Connecting to WebSocket at {websocket} with client_id: {client_id} and match_id: {match_id}"
+        )
 
         if client_id in self.active_connections:
+            connection_socket_logger.debug(
+                f"Client with client_id:{client_id} in active_connections: {self.active_connections}"
+            )
+            connection_socket_logger.warning(
+                f"Closing connection for client_id:{client_id}"
+            )
             await self.active_connections[client_id].close()
+            connection_socket_logger.debug(
+                f"Active connections: {self.active_connections}"
+            )
 
+        connection_socket_logger.debug(
+            f"Adding new connection for client with client_id: {client_id}"
+        )
         self.active_connections[client_id] = websocket
         self.queues[client_id] = asyncio.Queue()
+        connection_socket_logger.info(
+            f"New connection created: {self.active_connections[client_id]}"
+        )
+        connection_socket_logger.info(f"New queue created: {self.queues[client_id]}")
 
         if match_id:
             if match_id in self.match_subscriptions:
-                self.match_subscriptions[match_id].append(client_id)
-                print(
-                    f"match subscription match id:{match_id}", self.match_subscriptions
+                connection_socket_logger.debug(
+                    f"Match with match_id: {match_id} in match subscriptions {self.match_subscriptions}"
                 )
+                connection_socket_logger.debug(
+                    f"Adding client with client_id: {client_id} to match_subscription {self.match_subscriptions[match_id]}"
+                )
+                self.match_subscriptions[match_id].append(client_id)
+                connection_socket_logger.debug(
+                    f"Match subscription added {self.match_subscriptions[match_id]}"
+                )
+                # print(
+                #     f"match subscription match id:{match_id}", self.match_subscriptions
+                # )
             else:
+                connection_socket_logger.debug(
+                    f"Match with match_id: {match_id} not in match subscriptions {self.match_subscriptions}"
+                )
                 self.match_subscriptions[match_id] = [client_id]
-                print(
-                    f"match subscription client_id{client_id}", self.match_subscriptions
+                # print(
+                #     f"match subscription client_id{client_id}", self.match_subscriptions
+                # )
+                connection_socket_logger.debug(
+                    f"Match subscription added {self.match_subscriptions[match_id]}"
                 )
 
     async def disconnect(self, client_id: str):
         if client_id in self.active_connections:
+            connection_socket_logger.info(
+                f"Disconnecting from connections for client with client_id:{client_id}"
+            )
             await self.active_connections[client_id].close()
             del self.active_connections[client_id]
             del self.queues[client_id]
@@ -205,24 +268,39 @@ class ConnectionManager:
                     self.match_subscriptions[match_id].remove(client_id)
 
     async def send_to_all(self, data: str, match_id: str = None):
-        print(
-            f"[Debug][send_to_all] Entered method with data: {data}, match_id: {match_id}"
+        # print(
+        #     f"[Debug][send_to_all] Entered method with data: {data}, match_id: {match_id}"
+        # )
+        # print(
+        #     f"[Debug][send_to_all] Current match_subscriptions: {self.match_subscriptions}"
+        # )
+        connection_socket_logger.debug(
+            f"Sending data: {data} with match_id: {match_id}"
         )
-        print(
-            f"[Debug][send_to_all] Current match_subscriptions: {self.match_subscriptions}"
+        connection_socket_logger.debug(
+            f"Current match with match_id: {match_id}, subscriptions: {self.match_subscriptions[match_id]}"
         )
         if match_id:
             for client_id in self.match_subscriptions.get(match_id, []):
-                print(f"[Debug][send_to_all] Checking client_id: {client_id}")
+                # print(f"[Debug][send_to_all] Checking client_id: {client_id}")
+                # connection_socket_logger.debug(
+                #     f"Checking if client with client_id: {client_id} in queues: {self.queues}"
+                # )
                 if client_id in self.queues:
-                    print(
-                        f"[Debug][send_to_all] Adding data to queue of client_id: {client_id}"
+                    connection_socket_logger.debug(
+                        f"Client with client_id: {client_id} in queues: {self.queues[client_id]}"
                     )
+                    # print(
+                    #     f"[Debug][send_to_all] Adding data to queue of client_id: {client_id}"
+                    # )
                     await self.queues[client_id].put(data)
-                    print(
-                        f"[send_to_all_{match_id}] Data sent to all client queues with match id:{match_id}",
-                        data,
+                    connection_socket_logger.debug(
+                        f"Data sent to all clients in queues with match id:{match_id}"
                     )
+                    # print(
+                    #     f"[send_to_all_{match_id}] Data sent to all client queues with match id:{match_id}",
+                    #     data,
+                    # )
                 # print("[send_to_all] Data sent to all client queues:", data)
 
     async def send_to_match_id_channels(self, data):
@@ -800,7 +878,8 @@ class BaseServiceDB:
         async with self.db.async_session() as session:
             try:
                 db_logger.debug(
-                    f"Fetching related items for item id one level: {item_id} and property: {related_property} for model {self.model.__name__}"
+                    f"Fetching related items for item id one level: {item_id} and property: {related_property} "
+                    f"for model {self.model.__name__}"
                 )
                 item = await session.execute(
                     select(self.model)
@@ -811,16 +890,19 @@ class BaseServiceDB:
                 result = getattr(item.scalars().one(), related_property)
                 if result:
                     db_logger.debug(
-                        f"Related item {result} found for property: {related_property} for model {self.model.__name__}"
+                        f"Related item {result} found for property: {related_property} "
+                        f"for model {self.model.__name__}"
                     )
                 else:
                     db_logger.debug(
-                        f"No related item found one level for property: {related_property} for model {self.model.__name__}"
+                        f"No related item found one level for property: {related_property} "
+                        f"for model {self.model.__name__}"
                     )
                 return result
             except NoResultFound:
                 db_logger.warning(
-                    f"No result found for item id one level: {item_id} and property: {related_property} for model {self.model.__name__}"
+                    f"No result found for item id one level: {item_id} and property: {related_property} "
+                    f"for model {self.model.__name__}"
                 )
                 return None
 

@@ -1,14 +1,20 @@
 import asyncio
+import logging
 
 from fastapi import HTTPException
 from sqlalchemy import select
 
 from src.core.models import db, BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
+from src.logging_config import setup_logging
 from src.player_match.db_services import PlayerMatchServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from .shemas import MatchSchemaCreate, MatchSchemaUpdate
+
+
+setup_logging()
+logger = logging.getLogger("backend_logger_MatchServiceDB")
 
 
 class MatchServiceDB(BaseServiceDB):
@@ -189,10 +195,28 @@ class MatchServiceDB(BaseServiceDB):
         self,
         match_id: int,
     ):
-        return await self.get_related_item_level_one_by_id(
-            match_id,
-            "match_scoreboard",
-        )
+        logger.debug(f"get_scoreboard_by_match called with match_id: {match_id}")
+        try:
+            result = await self.get_related_item_level_one_by_id(
+                match_id,
+                "match_scoreboard",
+            )
+            logger.debug(
+                f"get_scoreboard_by_match completed successfully. Result: {result}"
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Error in get_scoreboard_by_match: {e}")
+            raise
+
+    # async def get_scoreboard_by_match(
+    #     self,
+    #     match_id: int,
+    # ):
+    #     return await self.get_related_item_level_one_by_id(
+    #         match_id,
+    #         "match_scoreboard",
+    #     )
 
 
 async def get_match_db() -> MatchServiceDB:

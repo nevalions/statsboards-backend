@@ -18,14 +18,22 @@ handlers:
     backupCount: 5
 loggers:
   backend_logger_fastapi:
-    level: DEBUG
+    level: WARNING
     handlers: [console, file]
     propagate: no
   backend_logger_server:
-    level: DEBUG
+    level: WARNING
     handlers: [ console, file ]
     propagate: no
   backend_logger_config:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_helpers:
+    level: ERROR
+    handlers: [ console, file ]
+    propagate: no
+  backend_fetch_data_helpers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
@@ -33,9 +41,26 @@ loggers:
     level: DEBUG
     handlers: [console, file]
     propagate: no
-  backend_logger_db:
+  backend_websocket_logger:
     level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_base_db:
+    level: WARNING
     handlers: [console, file]
+    propagate: no
+  backend_connection_socket_logger:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
+  backend_logger_MatchServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_MatchDataServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
     propagate: no
 root:
   level: WARNING

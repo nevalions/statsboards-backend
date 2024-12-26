@@ -1,10 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from pathlib import Path
-
-import logging
 import logging.config
-import yaml
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,7 +54,7 @@ async def lifespan(_app: FastAPI):
         db_logger.critical(f"Critical error during startup: {e}")
         raise e
     finally:
-        db_logger.info("Shutting down application lifespan.")
+        db_logger.info("Shutting down application lifespan after test connection.")
         await db.close()
 
 

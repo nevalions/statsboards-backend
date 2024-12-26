@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import List
 
 from fastapi import status
@@ -6,12 +7,17 @@ from fastapi import status
 from src.core import db
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
+from src.logging_config import setup_logging
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.shemas import ScoreboardSchemaCreate
+
+setup_logging()
+logger = logging.getLogger("backend_logger_helpers")
+fetch_data_logger = logging.getLogger("backend_fetch_data_helpers")
 
 
 async def fetch_list_of_matches_data(matches: List):
@@ -80,25 +86,23 @@ async def fetch_match_data(match_id: int):
 async def fetch_with_scoreboard_data(match_id: int):
     from src.matches.db_services import MatchServiceDB
 
+    fetch_data_logger.debug(f"Starting fetching match data with match_id {match_id}")
+
     scoreboard_data_service = ScoreboardServiceDB(db)
     match_data_service_db = MatchDataServiceDB(db)
     match_service_db = MatchServiceDB(db)
 
-    # print("Before getting scoreboard_data")
     scoreboard_data = await match_service_db.get_scoreboard_by_match(match_id)
-    # print("Scoreboard Data:", scoreboard_data)
+    fetch_data_logger.debug(f"Scoreboard Data: {scoreboard_data}")
 
-    # print("Before getting match")
     match = await match_service_db.get_by_id(match_id)
-    # print("Scoreboard Data:", match)
+    fetch_data_logger.debug(f"Match by match_id:{match_id} {match}")
 
-    # print("Before getting match_teams_data")
     match_teams_data = await match_service_db.get_teams_by_match(match_id)
-    #     print("Scoreboard Data:", match_teams_data)
+    fetch_data_logger.debug(f"Match teams by match_id:{match_id} {match_teams_data}")
 
-    #     print("Before getting match_data")
     match_data = await match_service_db.get_matchdata_by_match(match_id)
-    #     print("Scoreboard Data:", match_data)
+    fetch_data_logger.debug(f"Match Data by match_id:{match_id} {match_data}")
 
     if match:
         if match_data is None:
@@ -117,9 +121,9 @@ async def fetch_with_scoreboard_data(match_id: int):
                 "match_id": match_id,
                 "id": match_id,
                 "status_code": status.HTTP_200_OK,
-                "match": deep_dict(match.__dict__),
+                "match": deep_dict_convert(match.__dict__),
                 "scoreboard_data": instance_to_dict(scoreboard_data.__dict__),
-                "teams_data": deep_dict(match_teams_data),
+                "teams_data": deep_dict_convert(match_teams_data),
                 "match_data": instance_to_dict(match_data.__dict__),
             }
         }
@@ -190,20 +194,62 @@ async def fetch_playclock(match_id: int):
 
 
 def instance_to_dict(instance):
-    result_dict = {
-        key: value for key, value in instance.items() if not key.startswith("_")
-    }
-    return result_dict
+    logger.debug(f"Instance to dictionary convert instance: {instance}")
+    logger.debug(f"Instance to dictionary convert instance type: {type(instance)}")
+    try:
+        result_dict = {
+            key: value for key, value in instance.items() if not key.startswith("_")
+        }
+        logger.info(
+            f"Instance to dictionary completed successfully. Result: {result_dict}"
+        )
+        return result_dict
+    except Exception as e:
+        logger.error(f"Error converting instance to dictionary: {e}")
+        raise
 
 
-def deep_dict(obj):
-    result_dict = {}
-    for key, value in obj.items():
-        if not key.startswith("_"):
-            if isinstance(value, datetime.datetime):  # check against datetime.datetime
-                result_dict[key] = value.isoformat()
-            elif isinstance(value, dict):
-                result_dict[key] = deep_dict(value)
-            else:
-                result_dict[key] = value
-    return result_dict
+def deep_dict_convert(obj):
+    logger.debug(f"Deep dictionary convert object: {obj}")
+    logger.debug(f"Deep dictionary convert object type: {type(obj)}")
+    try:
+        result_dict = {}
+        for key, value in obj.items():
+            if not key.startswith("_"):
+                if isinstance(
+                    value, datetime.datetime
+                ):  # check against datetime.datetime
+                    logger.info(f"Converting {key} to datetime")
+                    result_dict[key] = value.isoformat()
+                elif isinstance(value, dict):
+                    logger.info(f"Converting {key} to dict")
+                    result_dict[key] = deep_dict_convert(value)
+                else:
+                    result_dict[key] = value
+        logger.debug(
+            f"Deep dictionary convert completed successfully. Result: {result_dict}"
+        )
+        return result_dict
+    except Exception as e:
+        logger.error(f"Error in deep dictionary convert: {e}")
+        raise
+
+
+# def instance_to_dict(instance):
+#     result_dict = {
+#         key: value for key, value in instance.items() if not key.startswith("_")
+#     }
+#     return result_dict
+#
+#
+# def deep_dict(obj):
+#     result_dict = {}
+#     for key, value in obj.items():
+#         if not key.startswith("_"):
+#             if isinstance(value, datetime.datetime):  # check against datetime.datetime
+#                 result_dict[key] = value.isoformat()
+#             elif isinstance(value, dict):
+#                 result_dict[key] = deep_dict(value)
+#             else:
+#                 result_dict[key] = value
+#     return result_dict

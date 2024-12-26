@@ -23,6 +23,7 @@ from ..core.models.base import ws_manager, connection_manager
 from ..gameclocks.db_services import GameClockServiceDB
 from ..gameclocks.schemas import GameClockSchemaCreate
 from ..helpers.file_service import file_service
+from ..logging_config import setup_logging
 from ..matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 from ..pars_eesl.pars_tournament import parse_tournament_matches_index_page_eesl
 from ..playclocks.db_services import PlayClockServiceDB
@@ -32,6 +33,11 @@ from ..sponsors.db_services import SponsorServiceDB
 from ..teams.db_services import TeamServiceDB
 from ..teams.schemas import UploadTeamLogoResponse, UploadResizeTeamLogoResponse
 from ..tournaments.db_services import TournamentServiceDB
+
+
+setup_logging()
+websocket_logger = logging.getLogger("backend_websocket_logger")
+connection_socket_logger = logging.getLogger("backend_connection_socket_logger")
 
 
 # Match backend
@@ -299,9 +305,13 @@ class MatchAPIRouter(
         async def websocket_endpoint(
             websocket: WebSocket, client_id: str, match_id: int
         ):
+            websocket_logger.debug(
+                f"Websocket endpoint /ws/id/{match_id}/{client_id} {websocket} "
+            )
+            connection_socket_logger.debug(f"Connection Manager {match_id}")
             await connection_manager.connect(websocket, client_id, match_id)
             await ws_manager.connect(client_id)
-            logger = logging.getLogger("websocket_endpoint")
+            # logger = logging.getLogger("websocket_endpoint")
             await websocket.accept()
 
             try:
@@ -311,9 +321,16 @@ class MatchAPIRouter(
                     fetch_gameclock,
                 )
 
+                type_message_update = "message-update"
                 initial_data = await fetch_with_scoreboard_data(match_id)
-                initial_data["type"] = "message-update"
-                print(["WebSocket Connection", initial_data])
+                initial_data["type"] = type_message_update
+                websocket_logger.debug(
+                    f"WebSocket Connection initial_data for type: {type_message_update}"
+                )
+                websocket_logger.info(
+                    f"WebSocket Connection initial_data: {initial_data}"
+                )
+                # print(["WebSocket Connection", initial_data])
                 await websocket.send_json(initial_data)
 
                 initial_playclock_data = await fetch_playclock(match_id)
@@ -334,16 +351,20 @@ class MatchAPIRouter(
                 #     process_playclock_data(websocket, client_id, match_id),
                 #     return_exceptions=True
                 # )
-            except WebSocketDisconnect:
-                logger.error("WebSocket disconnect:", exc_info=True)
-            except ConnectionClosedOK:
-                logger.error("ConnectionClosedOK:", exc_info=True)
-            except asyncio.TimeoutError:
-                logger.error("TimeoutError:", exc_info=True)
-            except RuntimeError:
-                logger.error("RuntimeError:", exc_info=True)
+            except WebSocketDisconnect as e:
+                websocket_logger.error(
+                    f"WebSocket disconnect error:{str(e)}", exc_info=True
+                )
+            except ConnectionClosedOK as e:
+                websocket_logger.error(
+                    f"ConnectionClosedOK error:{str(e)}", exc_info=True
+                )
+            except asyncio.TimeoutError as e:
+                websocket_logger.error(f"TimeoutError error:{str(e)}", exc_info=True)
+            except RuntimeError as e:
+                websocket_logger.error(f"RuntimeError error:{str(e)}", exc_info=True)
             except Exception as e:
-                logger.error(f"Unexpected error:{str(e)}", exc_info=True)
+                websocket_logger.error(f"Unexpected error:{str(e)}", exc_info=True)
             finally:
                 await connection_manager.disconnect(client_id)
                 await ws_manager.disconnect(client_id)
@@ -358,10 +379,14 @@ class MatchAPIRouter(
                 "match": process_match_data,
                 "scoreboard": process_match_data,
             }
+            websocket_logger.debug(f"Process data websocket handlers: {handlers}")
 
             while websocket.application_state == WebSocketState.CONNECTED:
                 data = await connection_manager.queues[client_id].get()
-                print(f"[DEBUG] client {client_id}: {data}")
+                websocket_logger.debug(
+                    f"Process websocket data: {data} for client_id: {client_id}"
+                )
+                # print(f"[!!!!!!!!!!!!DEBUG] client {client_id}: {data}")
 
                 handler = handlers.get(data.get("table"))
 
