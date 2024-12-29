@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from pprint import pprint
-from typing import List
+from typing import List, Annotated
 
 from fastapi import HTTPException, Request, Depends, status, WebSocket, UploadFile, File
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -10,7 +10,7 @@ from websockets import ConnectionClosedOK
 
 from src.core import BaseRouter, db, MinimalBaseRouter
 from src.core.config import templates
-from src.matchdata.db_services import MatchDataServiceDB
+from src.matchdata.db_services import MatchDataServiceDB, logger
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
 from .db_services import MatchServiceDB
@@ -19,7 +19,12 @@ from .shemas import (
     MatchSchemaUpdate,
     MatchSchema,
 )
-from ..core.models.base import ws_manager, connection_manager
+from ..core.models.base import (
+    ws_manager,
+    connection_manager,
+    ConnectionManager,
+    process_client_queue,
+)
 from ..gameclocks.db_services import GameClockServiceDB
 from ..gameclocks.schemas import GameClockSchemaCreate
 from ..helpers.file_service import file_service
@@ -301,18 +306,22 @@ class MatchAPIRouter(
             # print(uploaded_paths)
             return uploaded_paths
 
+        async def get_connection_manager() -> ConnectionManager:
+            return connection_manager
+
         @router.websocket("/ws/id/{match_id}/{client_id}/")
         async def websocket_endpoint(
-            websocket: WebSocket, client_id: str, match_id: int
+            websocket: WebSocket,
+            client_id: str,
+            match_id: int,
         ):
             websocket_logger.debug(
                 f"Websocket endpoint /ws/id/{match_id}/{client_id} {websocket} "
             )
-            connection_socket_logger.debug(f"Connection Manager {match_id}")
+            await websocket.accept()
+            # connection_socket_logger.debug(f"Connection Manager {match_id}")
             await connection_manager.connect(websocket, client_id, match_id)
             await ws_manager.connect(client_id)
-            # logger = logging.getLogger("websocket_endpoint")
-            await websocket.accept()
 
             try:
                 from src.helpers.fetch_helpers import (
@@ -330,27 +339,57 @@ class MatchAPIRouter(
                 websocket_logger.info(
                     f"WebSocket Connection initial_data: {initial_data}"
                 )
-                # print(["WebSocket Connection", initial_data])
-                await websocket.send_json(initial_data)
 
+                type_playclock_update = "playclock-update"
                 initial_playclock_data = await fetch_playclock(match_id)
-                initial_playclock_data["type"] = "playclock-update"
-                await websocket.send_json(initial_playclock_data)
-                print(["WebSocket Connection", initial_playclock_data])
+                initial_playclock_data["type"] = type_playclock_update
+                websocket_logger.debug(
+                    f"WebSocket Connection initial_data for type: {type_playclock_update}"
+                )
+                websocket_logger.info(
+                    f"WebSocket Connection initial_data: {initial_playclock_data}"
+                )
 
+                type_gameclock_update = "gameclock-update"
                 initial_gameclock_data = await fetch_gameclock(match_id)
-                initial_gameclock_data["type"] = "gameclock-update"
+                initial_gameclock_data["type"] = type_gameclock_update
+                websocket_logger.debug(
+                    f"WebSocket Connection initial_data for type: {type_gameclock_update}"
+                )
+                websocket_logger.info(
+                    f"WebSocket Connection initial_data: {initial_gameclock_data}"
+                )
+
+                await websocket.send_json(initial_data)
+                await websocket.send_json(initial_playclock_data)
                 await websocket.send_json(initial_gameclock_data)
-                print(["WebSocket Connection", initial_gameclock_data])
+
+                # Ensure the client_id is associated with a queue
+                if client_id in connection_manager.queues:
+                    # Add the data to the client's queue
+                    await connection_manager.queues[client_id].put(initial_data)
+                    await connection_manager.queues[client_id].put(
+                        initial_playclock_data
+                    )
+                    await connection_manager.queues[client_id].put(
+                        initial_gameclock_data
+                    )
+                    websocket_logger.debug(
+                        f"Put initial_data into queue for client_id:{client_id}: {initial_data}"
+                    )
+                    websocket_logger.debug(
+                        f"Put initial_playclock_data into queue for client_id:{client_id}: {initial_playclock_data}"
+                    )
+                    websocket_logger.debug(
+                        f"Put initial_gameclock_data into queue for client_id:{client_id}: {initial_gameclock_data}"
+                    )
+                else:
+                    websocket_logger.warning(
+                        f"No queue found for client_id {client_id}. Data not enqueued."
+                    )
 
                 await process_data_websocket(websocket, client_id, match_id)
 
-                # await asyncio.gather(
-                #     process_match_data_websocket(websocket, client_id, match_id),
-                #     process_gameclock_data(websocket, client_id, match_id),
-                #     process_playclock_data(websocket, client_id, match_id),
-                #     return_exceptions=True
-                # )
             except WebSocketDisconnect as e:
                 websocket_logger.error(
                     f"WebSocket disconnect error:{str(e)}", exc_info=True
@@ -367,12 +406,23 @@ class MatchAPIRouter(
                 websocket_logger.error(f"Unexpected error:{str(e)}", exc_info=True)
             finally:
                 await connection_manager.disconnect(client_id)
+                connection_socket_logger.warning(
+                    f"Client {client_id} disconnected, closing connection "
+                    f"and removing from subscriptions"
+                )
                 await ws_manager.disconnect(client_id)
+                websocket_logger.warning(
+                    f"Client {client_id} disconnected from websocket, closing connection"
+                )
 
         async def process_data_websocket(
             websocket: WebSocket, client_id: str, match_id: int
         ):
+            websocket_logger.debug(f"WebSocketState: {websocket.application_state}")
             handlers = {
+                "message-update": process_match_data,
+                "gameclock-update": process_gameclock_data,
+                "playclock-update": process_playclock_data,
                 "matchdata": process_match_data,
                 "gameclock": process_gameclock_data,
                 "playclock": process_playclock_data,
@@ -380,24 +430,69 @@ class MatchAPIRouter(
                 "scoreboard": process_match_data,
             }
             websocket_logger.debug(f"Process data websocket handlers: {handlers}")
+            websocket_logger.debug(f"WebSocketState: {websocket.application_state}")
 
             while websocket.application_state == WebSocketState.CONNECTED:
-                data = await connection_manager.queues[client_id].get()
-                websocket_logger.debug(
-                    f"Process websocket data: {data} for client_id: {client_id}"
-                )
-                # print(f"[!!!!!!!!!!!!DEBUG] client {client_id}: {data}")
+                print(f"WebSocketState: {websocket.application_state}")
+                print(f"Process data websocket for client_id: {client_id}")
 
-                handler = handlers.get(data.get("table"))
+                data = await connection_manager.get_queue_for_client(client_id)
+                connection_socket_logger.debug(f"DATAAAAAAAAAAAAA: {data}")
+                # message_data = data.get("data")
+                message_type = data.get("type")  # Extract the message type
 
-                if not handler:
-                    print(f'[WARNING] No handler for table {data.get("table")}')
-                    continue
+                if message_type in handlers:
+                    print(f"Message received for type: {message_type}")
+                    await handlers[message_type](websocket, match_id)
+                    print(f"Message data: {data}")
+                else:
+                    print(f"Unknown message type: {message_type}")
 
-                try:
-                    await handler(websocket, match_id)
-                except Exception as e:
-                    print(f'[ERROR] client {client_id}, table {data.get("table")}: {e}')
+                # data = await connection_manager.get_queue_for_client(client_id)
+                # if data:
+                #     # print(f"Message for client {client_id}: {message}")
+                #     await process_client_queue(client_id, handlers)
+                # else:
+                #     print(f"NO MESSAGE")
+
+            # if data:
+            #     try:
+            #         # Add a timeout to prevent indefinite blocking
+            #         message = await asyncio.wait_for(data.get(), timeout=3.0)
+            #         # print(f"Message for client {client_id}: {message}")
+            #         # connection_socket_logger.critical(f'TABLE: {data.get("table")}')
+            #         connection_socket_logger.critical(
+            #             f"Message for client {client_id}: {message}"
+            #         )
+            #     except asyncio.TimeoutError:
+            #         # print(
+            #         #     f"No messages in the queue for client {client_id} within timeout."
+            #         # )
+            #         connection_socket_logger.warning(
+            #             f"No messages in the queue for client {client_id} within timeout."
+            #         )
+            #         await connection_manager.connect(websocket, client_id, match_id)
+            #         data = await connection_manager.get_queue_for_client(client_id)
+            #         new_massage = await data.get()
+            #         connection_socket_logger.critical(
+            #             f"NEW Message for client {client_id}: {new_massage}"
+            #         )
+
+            # data = await connection_manager.queues[client_id].get()
+            # websocket_logger.debug(
+            #     f"Process websocket data: {data} for client_id: {client_id}"
+            # )
+            # handler = handlers.get(data)
+            # websocket_logger.debug(f"Process websocket handler: {handler}")
+            # if not handler:
+            #     websocket_logger.warning(f"No handler for table {data}")
+            #     continue
+            # try:
+            #     await handler(websocket, match_id)
+            # except Exception as e:
+            #     websocket_logger.error(
+            #         f'Websocket handler error for client {client_id}, table {data.get("table")}: {e}'
+            #     )
 
         async def process_match_data(websocket: WebSocket, match_id):
             from src.helpers.fetch_helpers import fetch_with_scoreboard_data

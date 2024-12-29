@@ -29,6 +29,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_base_db:
+    level: WARNING
+    handlers: [ console, file ]
+    propagate: no
   backend_logger_helpers:
     level: ERROR
     handlers: [ console, file ]
@@ -45,21 +49,18 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_base_db:
-    level: WARNING
-    handlers: [console, file]
-    propagate: no
+
   backend_connection_socket_logger:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
 
   backend_logger_MatchServiceDB:
-    level: DEBUG
+    level: WARNING
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchDataServiceDB:
-    level: DEBUG
+    level: WARNING
     handlers: [ console, file ]
     propagate: no
 root:

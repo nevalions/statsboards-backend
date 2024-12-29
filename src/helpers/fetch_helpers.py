@@ -87,7 +87,6 @@ async def fetch_with_scoreboard_data(match_id: int):
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Starting fetching match data with match_id {match_id}")
-
     scoreboard_data_service = ScoreboardServiceDB(db)
     match_data_service_db = MatchDataServiceDB(db)
     match_service_db = MatchServiceDB(db)
@@ -106,17 +105,27 @@ async def fetch_with_scoreboard_data(match_id: int):
 
     if match:
         if match_data is None:
+            fetch_data_logger.debug(
+                f"Match Data not found for match_id:{match_id}, creating new..."
+            )
             match_data_schema = MatchDataSchemaCreate(match_id=match_id)
+            fetch_data_logger.debug(f"Schema for match data {match_data_schema}")
             match_data = await match_data_service_db.create_match_data(
                 match_data_schema
             )
         if scoreboard_data is None:
+            fetch_data_logger.debug(
+                f"Scoreboard Data not found for match_id:{match_id}, creating new..."
+            )
             scoreboard_data_schema = ScoreboardSchemaCreate(match_id=match_id)
+            fetch_data_logger.debug(
+                f"Schema for scoreboard data {scoreboard_data_schema}"
+            )
             scoreboard_data = await scoreboard_data_service.create_scoreboard(
                 scoreboard_data_schema
             )
 
-        return {
+        final_match_with_scoreboard_data_fetched = {
             "data": {
                 "match_id": match_id,
                 "id": match_id,
@@ -127,7 +136,26 @@ async def fetch_with_scoreboard_data(match_id: int):
                 "match_data": instance_to_dict(match_data.__dict__),
             }
         }
+
+        fetch_data_logger.debug(
+            f"Final match with scoreboard data fetched {final_match_with_scoreboard_data_fetched}"
+        )
+
+        return final_match_with_scoreboard_data_fetched
+
+        # return {
+        #     "data": {
+        #         "match_id": match_id,
+        #         "id": match_id,
+        #         "status_code": status.HTTP_200_OK,
+        #         "match": deep_dict_convert(match.__dict__),
+        #         "scoreboard_data": instance_to_dict(scoreboard_data.__dict__),
+        #         "teams_data": deep_dict_convert(match_teams_data),
+        #         "match_data": instance_to_dict(match_data.__dict__),
+        #     }
+        # }
     else:
+        fetch_data_logger.error(f"Match not found for match_id:{match_id}")
         return {
             "status_code": status.HTTP_404_NOT_FOUND,
         }

@@ -5,7 +5,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Dict, AsyncGenerator
+from typing import Any, List, Dict, AsyncGenerator, Callable, Awaitable, Coroutine
 
 import asyncpg
 from aiohttp.log import client_logger
@@ -95,9 +95,34 @@ class MatchDataWebSocketManager:
         websocket_logger.debug(
             f"Disconnecting from WebSocket with client_id: {client_id}"
         )
-        del self.match_data_queues[client_id]
-        del self.playclock_queues[client_id]
-        del self.gameclock_queues[client_id]
+
+        try:
+            self.match_data_queues.pop(client_id)
+            websocket_logger.info(f"Deleted match data queue for client {client_id}")
+        except KeyError:
+            websocket_logger.warning(
+                f"No match data queue found for client {client_id}"
+            )
+
+        try:
+            self.playclock_queues.pop(client_id)
+            websocket_logger.info(f"Deleted playclock queue for client {client_id}")
+        except KeyError:
+            websocket_logger.warning(f"No playclock queue found for client {client_id}")
+
+        try:
+            self.gameclock_queues.pop(client_id)
+            websocket_logger.info(f"Deleted gameclock queue for client {client_id}")
+        except KeyError:
+            websocket_logger.warning(f"No gameclock queue found for client {client_id}")
+
+    # async def disconnect(self, client_id: str):
+    #     websocket_logger.debug(
+    #         f"Disconnecting from WebSocket with client_id: {client_id}"
+    #     )
+    #     del self.match_data_queues[client_id]
+    #     del self.playclock_queues[client_id]
+    #     del self.gameclock_queues[client_id]
 
     async def startup(self):
         self.connection = await asyncpg.connect(self.db_url)
@@ -109,7 +134,7 @@ class MatchDataWebSocketManager:
         )
         await self.connection.add_listener("playclock_change", self.playclock_listener)
         await self.connection.add_listener("gameclock_change", self.gameclock_listener)
-        websocket_logger.debug(f"WebSocket listen: {self.connection.__dict__}")
+        websocket_logger.debug(f"WebSocket listen: {self.connection}")
 
     async def playclock_listener(self, connection, pid, channel, payload):
         # print("[Playclock listener] Start")
@@ -193,10 +218,9 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.queues: Dict[str, asyncio.Queue] = {}
-        self.match_subscriptions: Dict[str, List[str]] = {}
+        self.match_subscriptions: Dict[str | int, List[str]] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str, match_id: str = None):
-        # print(f"Active Connections: {len(self.active_connections)}")
+    async def connect(self, websocket: WebSocket, client_id: str, match_id: int = None):
         connection_socket_logger.info(
             f"Active Connections len: {len(self.active_connections)}"
         )
@@ -239,17 +263,12 @@ class ConnectionManager:
                 connection_socket_logger.debug(
                     f"Match subscription added {self.match_subscriptions[match_id]}"
                 )
-                # print(
-                #     f"match subscription match id:{match_id}", self.match_subscriptions
-                # )
+
             else:
                 connection_socket_logger.debug(
                     f"Match with match_id: {match_id} not in match subscriptions {self.match_subscriptions}"
                 )
                 self.match_subscriptions[match_id] = [client_id]
-                # print(
-                #     f"match subscription client_id{client_id}", self.match_subscriptions
-                # )
                 connection_socket_logger.debug(
                     f"Match subscription added {self.match_subscriptions[match_id]}"
                 )
@@ -267,6 +286,21 @@ class ConnectionManager:
                 if client_id in self.match_subscriptions[match_id]:
                     self.match_subscriptions[match_id].remove(client_id)
 
+    async def get_active_connections(self):
+        # Return a copy of active WebSocket connections (if computation or async fetching is needed)
+        return self.active_connections
+
+    async def get_match_subscriptions(self, match_id: int):
+        # Return the list of client_ids subscribed to a specific match_id
+        return self.match_subscriptions.get(match_id, [])
+
+    async def get_queue_for_client(self, client_id: str):
+        connection_socket_logger.debug(f"Getting queue for client_id: {client_id}")
+        # Retrieve the queue for a specific client_id asynchronously
+        queue = self.queues[client_id]
+        # connection_socket_logger.debug(f"Queue: {queue}")
+        return queue
+
     async def send_to_all(self, data: str, match_id: str = None):
         # print(
         #     f"[Debug][send_to_all] Entered method with data: {data}, match_id: {match_id}"
@@ -282,33 +316,66 @@ class ConnectionManager:
         )
         if match_id:
             for client_id in self.match_subscriptions.get(match_id, []):
-                # print(f"[Debug][send_to_all] Checking client_id: {client_id}")
-                # connection_socket_logger.debug(
-                #     f"Checking if client with client_id: {client_id} in queues: {self.queues}"
-                # )
                 if client_id in self.queues:
                     connection_socket_logger.debug(
                         f"Client with client_id: {client_id} in queues: {self.queues[client_id]}"
                     )
-                    # print(
-                    #     f"[Debug][send_to_all] Adding data to queue of client_id: {client_id}"
-                    # )
+
                     await self.queues[client_id].put(data)
                     connection_socket_logger.debug(
                         f"Data sent to all clients in queues with match id:{match_id}"
                     )
-                    # print(
-                    #     f"[send_to_all_{match_id}] Data sent to all client queues with match id:{match_id}",
-                    #     data,
-                    # )
-                # print("[send_to_all] Data sent to all client queues:", data)
 
     async def send_to_match_id_channels(self, data):
         match_id = data["match_id"]
-        await connection_manager.send_to_all(data, match_id=match_id)
+        await self.send_to_all(data, match_id=match_id)
 
 
 connection_manager = ConnectionManager()
+
+
+async def process_client_queue(
+    client_id: str | int, handlers: Dict[str | int, Coroutine[Any, Any, None]]
+):
+    if client_id in connection_manager.queues:
+        queue = connection_manager.queues[client_id]
+        while True:
+            try:
+                message = await queue.get()
+                connection_socket_logger.debug(
+                    f"Dequeued message for client_id {client_id}: {message}"
+                )
+
+                # Determine the handler based on the message type
+                message_type = message.get("type")
+                # print(f"Message Type: {message_type}")
+
+                # print(f"HANDLERS {handlers}")
+                get_handlers = handlers.get(message_type)
+                # print(f"GET_HANDLERS {get_handlers}")
+
+                if get_handlers:
+                    connection_socket_logger.info(
+                        f"Handler executed successfully for message: {message}"
+                    )
+                    return get_handlers
+                    # await connection_manager.send_to_match_id_channels(data=message)
+                else:
+                    connection_socket_logger.warning(
+                        f"No handler found for message type {message_type} in client_id {client_id}"
+                    )
+
+                queue.task_done()
+            except asyncio.CancelledError:
+                connection_socket_logger.warning(
+                    f"Queue processing canceled for client_id {client_id}"
+                )
+                break
+            except Exception as e:
+                connection_socket_logger.error(
+                    f"Error processing queue for client_id {client_id}: {e}"
+                )
+                break
 
 
 class BaseServiceDB:
