@@ -36,7 +36,7 @@ if __name__ == "__main__":
         "workers": 4,
         "worker_class": "uvicorn.workers.UvicornWorker",
         "timeout": 120,
-        "loglevel": "info",
+        "loglevel": "debug",
         "errorlog": "-",
         "accesslog": "-",
     }
