@@ -18,11 +18,11 @@ handlers:
     backupCount: 5
 loggers:
   backend_logger_fastapi:
-    level: WARNING
+    level: DEBUG
     handlers: [console, file]
     propagate: no
   backend_logger_server:
-    level: WARNING
+    level: DEBUG
     handlers: [ console, file ]
     propagate: no
   backend_logger_config:
@@ -30,7 +30,7 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_base_db:
-    level: WARNING
+    level: DEBUG
     handlers: [ console, file ]
     propagate: no
   backend_logger_helpers:
