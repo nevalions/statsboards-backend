@@ -128,14 +128,19 @@ class TournamentServiceDB(BaseServiceDB):
         tournament_id: int,
     ):
         self.logger.debug(f"Get players by {ITEM} id:{tournament_id}")
-        async with self.db.async_session() as session:
-            stmt = select(PlayerTeamTournamentDB).where(
-                PlayerTeamTournamentDB.tournament_id == tournament_id
-            )
+        try:
+            async with self.db.async_session() as session:
+                stmt = select(PlayerTeamTournamentDB).where(
+                    PlayerTeamTournamentDB.tournament_id == tournament_id
+                )
 
-            results = await session.execute(stmt)
-            players = results.scalars().all()
-            return players
+                results = await session.execute(stmt)
+                players = results.scalars().all()
+                return players
+        except Exception as ex:
+            self.logger.error(
+                f"Error on get_players_by_tournament: {ex}", exc_info=True
+            )
 
     async def get_matches_by_tournament(
         self,

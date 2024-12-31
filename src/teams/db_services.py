@@ -79,7 +79,7 @@ class TeamServiceDB(BaseServiceDB):
             main_sponsor_id=t.main_sponsor_id,
         )
 
-        self.logger.debug(f"Create new {ITEM}:{tournament}")
+        self.logger.debug(f"Create new {ITEM}:{t}")
         return await super().create(team)
 
     async def get_team_by_eesl_id(
@@ -123,7 +123,9 @@ class TeamServiceDB(BaseServiceDB):
                 players = results.scalars().all()
                 return players
         except Exception as ex:
-            self.logger.error(f"Error on get_players_by_team_id_tournament_id: {ex}")
+            self.logger.error(
+                f"Error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
+            )
 
     async def get_players_by_team_id_tournament_id_with_person(
         self,
@@ -164,7 +166,8 @@ class TeamServiceDB(BaseServiceDB):
                 return players_full_data
         except Exception as ex:
             self.logger.error(
-                f"Error on get_players_by_team_id_tournament_id_with_person: {ex}"
+                f"Error on get_players_by_team_id_tournament_id_with_person: {ex}",
+                exc_info=True,
             )
 
     async def update_team(
