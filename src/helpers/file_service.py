@@ -133,7 +133,13 @@ class FileService:
         }
 
     async def resize_and_save_resized_image(
-        self, height, image, timestamp, upload_dir, upload_file, _type: str
+        self,
+        height: int,
+        image: Any,
+        timestamp: str | None,
+        upload_dir: Path,
+        upload_file,
+        _type: str,
     ):
         self.logger.debug("Start resizing image")
         filename = f"{timestamp}_{_type}_{upload_file.filename}"
@@ -145,20 +151,19 @@ class FileService:
             await self.save_file_with_image_format_to_destination(
                 dest, resized_image, image
             )
+            self.logger.info(f"Resized image {filename} saved to {dest}")
             return filename
         except Exception as e:
             self.logger.error(f"Problem resizing image: {e}")
 
-    async def save_file_with_image_format_to_destination(
-        self, icon_dest, icon_image, image
-    ):
-        self.logger.debug(f"Saving image for subfolder: {icon_dest}")
+    async def save_file_with_image_format_to_destination(self, dest, save_image, image):
+        self.logger.debug(f"Saving image for subfolder: {dest}")
         try:
-            with icon_dest.open("wb") as icon_buffer:
-                icon_image.save(icon_buffer, format=image.format)
-            self.logger.info(f"Image saved: {icon_dest}")
+            with dest.open("wb") as icon_buffer:
+                save_image.save(icon_buffer, format=image.format)
+            self.logger.info(f"Image saved: {dest}")
         except Exception as e:
-            self.logger.error(f"Problem saving image to: {icon_image} {e}")
+            self.logger.error(f"Problem saving image to: {save_image} {e}")
             raise HTTPException(
                 status_code=400, detail="An error occurred while saving file."
             )
@@ -262,19 +267,114 @@ class FileService:
         else:
             return None
 
-    async def download_image(self, img_url: str, image_path: str):
-        async with ClientSession() as session:
-            async with session.get(img_url) as response:
-                if response.status != 200:
-                    response.raise_for_status()
-                image_data = await response.read()
+    async def fetch_image_data_from_url(self, img_url: str) -> bytes:
+        self.logger.debug(f"Fetching image from {img_url}")
+        try:
+            async with ClientSession() as session:
+                async with session.get(img_url) as response:
+                    self.logger.debug(f"Response received: {response}")
+                    if response.status != 200:
+                        self.logger.info(f"Response status code: {response.status}")
+                        response.raise_for_status()
+                    return await response.read()
+        except Exception as e:
+            self.logger.error(f"Error fetching image from {img_url}: {e}")
+            raise
 
-                # Ensure the destination directory exists
-                os.makedirs(os.path.dirname(image_path), exist_ok=True)
+    async def ensure_directory_created(self, image_path: str):
+        self.logger.debug(f"Ensuring directory exists for path: {image_path}")
+        try:
+            os.makedirs(os.path.dirname(image_path), exist_ok=True)
+            self.logger.debug(f"Directory created: {image_path}")
+        except Exception as e:
+            self.logger.error(f"Error creating directory for {image_path}: {e}")
+            raise
 
-                # Write image data to file
-                with open(image_path, "wb") as fp:
-                    fp.write(image_data)
+    async def save_image_to_file(self, image_data: bytes, image_path: str):
+        self.logger.debug(f"Saving image to file: {image_path}")
+        try:
+            with open(image_path, "wb") as fp:
+                fp.write(image_data)
+                self.logger.info(f"Image saved successfully: {image_path}")
+        except Exception as e:
+            self.logger.error(f"Error saving image to file {image_path}: {e}")
+            raise
+
+    async def download_image(self, img_url: str, image_path: str) -> str:
+        self.logger.debug(f"Downloading image from {img_url} to {image_path}")
+        try:
+            image_data = await self.fetch_image_data_from_url(img_url)
+            await self.ensure_directory_created(image_path)
+            await self.save_image_to_file(image_data, image_path)
+            return image_path
+        except Exception as e:
+            self.logger.error(
+                f"Error downloading image from {img_url} to {image_path}: {e}"
+            )
+            raise
+
+    # async def download_image(self, img_url: str, image_path: str):
+    #     self.logger.debug(f"Downloading image from {img_url} to {image_path}")
+    #     try:
+    #         async with ClientSession() as session:
+    #             async with session.get(img_url) as response:
+    #                 self.logger.debug(f"Got response: {response}")
+    #                 if response.status != 200:
+    #                     self.logger.info(f"Response status code: {response.status}")
+    #                     response.raise_for_status()
+    #                 try:
+    #                     image_data = await response.read()
+    #                     self.logger.debug(f"Got image data: {image_data}")
+    #                 except Exception as e:
+    #                     self.logger.error(
+    #                         f"Problem with reading image data {image_data} {e}"
+    #                     )
+    #
+    #                 try:
+    #                     self.logger.debug(f"Try creating directory {image_path}")
+    #                     os.makedirs(os.path.dirname(image_path), exist_ok=True)
+    #                     self.logger.debug(
+    #                         f"Directory created successfully {image_path}"
+    #                     )
+    #                 except Exception as e:
+    #                     self.logger.error(
+    #                         f"Problem creating directory {image_path} {e}"
+    #                     )
+    #                 try:
+    #                     self.logger.debug(f"Open file path: {image_path}")
+    #                     with open(image_path, "wb") as fp:
+    #                         self.logger.debug(f"Writing image to file {image_path}")
+    #                         fp.write(image_data)
+    #                         self.logger.info(f"Image saved: {image_path}")
+    #                         return image_path
+    #                 except Exception as e:
+    #                     self.logger.error(
+    #                         f"Problem writing image data to {image_path} {e}"
+    #                     )
+    #     except Exception as e:
+    #         self.logger.error(
+    #             f"Problem with downloading from {img_url} to {image_path} {e}"
+    #         )
+
+    async def open_file_from_path(self, image_path: str) -> Image:
+        try:
+            self.logger.debug(f"Opening image from {image_path}")
+            with open(image_path, "rb") as file:
+                image_data = file.read()
+                return image_data
+        except Exception as e:
+            self.logger.error(f"Error opening image from {image_path}: {e}")
+            raise
+
+    async def open_image_from_path(self, image_path: str) -> Image:
+        try:
+            self.logger.debug(f"Opening image from {image_path}")
+            with open(image_path, "rb") as file:
+                image_data = file.read()
+                return Image.open(BytesIO(image_data))
+        except Exception as e:
+            self.logger.error(f"Error opening image from {image_path}: {e}")
+            raise
 
     async def download_and_resize_image(
         self,
@@ -285,37 +385,70 @@ class FileService:
         icon_height: int = 100,
         web_view_height: int = 400,
     ):
-        async with ClientSession() as session:
-            async with session.get(img_url) as response:
-                if response.status != 200:
-                    response.raise_for_status()
-                image_data = await response.read()
+        self.logger.debug(f"Initialize download and resize image from {img_url}")
+        image_path = await self.download_image(img_url, original_image_path)
+        file = await self.open_file_from_path(image_path)
+        image = await self.open_image_from_file(file)
 
-                # Save the original image
-                os.makedirs(os.path.dirname(original_image_path), exist_ok=True)
-                with open(original_image_path, "wb") as original_fp:
-                    original_fp.write(image_data)
+        created_icon_path = await self.create_path(icon_image_path)
+        await self.resize_and_save_resized_image(
+            icon_height, image, None, Path(created_icon_path), file, "icon"
+        )
 
-                image = Image.open(BytesIO(image_data))
+        created_web_view_path = await self.create_path(web_view_image_path)
+        await self.resize_and_save_resized_image(
+            web_view_height, image, None, Path(created_web_view_path), file, "webview"
+        )
 
-                # Create and save the icon image
-                icon_width = int((image.width / image.height) * icon_height)
-                icon_image = image.resize(
-                    (icon_width, icon_height), Image.Resampling.LANCZOS
-                )
-                os.makedirs(os.path.dirname(icon_image_path), exist_ok=True)
-                with open(icon_image_path, "wb") as icon_fp:
-                    image_format = "PNG" if image.format is None else image.format
-                    icon_image.save(icon_fp, format=image_format)
+        # async with ClientSession() as session:
+        #     async with session.get(img_url) as response:
+        #         if response.status != 200:
+        #             response.raise_for_status()
+        #         image_data = await response.read()
+        #
+        #         # Save the original image
+        #         os.makedirs(os.path.dirname(original_image_path), exist_ok=True)
+        #         with open(original_image_path, "wb") as original_fp:
+        #             original_fp.write(image_data)
+        #         image = Image.open(BytesIO(image_data))
+        #
+        #         # Create and save the icon image
+        #         icon_width = int((image.width / image.height) * icon_height)
+        #         icon_image = image.resize(
+        #             (icon_width, icon_height), Image.Resampling.LANCZOS
+        #         )
+        #         os.makedirs(os.path.dirname(icon_image_path), exist_ok=True)
+        #         with open(icon_image_path, "wb") as icon_fp:
+        #             image_format = "PNG" if image.format is None else image.format
+        #             icon_image.save(icon_fp, format=image_format)
+        #
+        #         # Create and save the web view image
+        #         web_view_width = int((image.width / image.height) * web_view_height)
+        #         web_view_image = image.resize(
+        #             (web_view_width, web_view_height), Image.Resampling.LANCZOS
+        #         )
+        #         os.makedirs(os.path.dirname(web_view_image_path), exist_ok=True)
+        #         with open(web_view_image_path, "wb") as web_fp:
+        #             image_format = "PNG" if image.format is None else image.format
+        #             web_view_image.save(web_fp, format=image_format)
 
-                # Create and save the web view image
-                web_view_width = int((image.width / image.height) * web_view_height)
-                web_view_image = image.resize(
-                    (web_view_width, web_view_height), Image.Resampling.LANCZOS
-                )
-                os.makedirs(os.path.dirname(web_view_image_path), exist_ok=True)
-                with open(web_view_image_path, "wb") as web_fp:
-                    web_view_image.save(web_fp, format=image_format)
+    async def open_image_from_file(self, file):
+        try:
+            self.logger.debug(f"Opening image from file")
+            image = Image.open(BytesIO(file))
+        except Exception as e:
+            self.logger.error(f"Error opening image from file: {e}")
+            raise
+        return image
+
+    async def create_path(self, path: str) -> str:
+        try:
+            self.logger.debug(f"Creating path {path}")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            return path
+        except Exception as e:
+            self.logger.error(f"Error creating path {path}: {e}")
+            raise
 
     # Import necessary modules at the top (os, urlparse, etc.)
 
@@ -378,16 +511,6 @@ class FileService:
         hex_color = hex_color.lstrip("#")
         # Convert the hex color to a tuple of integers and return it.
         return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
-
-    # async def download_image(self, img_url: str, image_path: str):
-    #     response = requests.get(img_url)
-    #     response.raise_for_status()  # Raise an exception for HTTP errors
-    #
-    #     # Ensure the destination directory exists
-    #     os.makedirs(os.path.dirname(image_path), exist_ok=True)
-    #
-    #     with open(image_path, 'wb') as fp:
-    #         fp.write(response.content)
 
 
 file_service = FileService()
