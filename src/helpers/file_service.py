@@ -1,5 +1,7 @@
 import os
 import shutil
+from typing import TypedDict, Any
+
 from src.core.config import uploads_path
 from urllib.parse import urlparse
 from PIL import Image
@@ -12,12 +14,24 @@ from pathlib import Path
 from src.logging_config import get_logger
 
 
+class ImageData(TypedDict):
+    dest: str
+    filename: str
+    timestamp: str
+    upload_dir: Path | Any
+
+
+class ResizedImagesPaths(TypedDict):
+    original: str
+    icon: str
+    webview: str
+
 
 class FileService:
-
     def __init__(
-            self,
-            upload_dir: Path = Path(__file__).resolve().parent.parent.parent / 'static/uploads',
+        self,
+        upload_dir: Path = Path(__file__).resolve().parent.parent.parent
+        / "static/uploads",
     ):
         self.base_upload_dir = upload_dir
         self.base_upload_dir.mkdir(parents=True, exist_ok=True)
@@ -28,7 +42,7 @@ class FileService:
     def sanitize_filename(self, filename):
         self.logger.debug(f"Sanitizing filename: {filename}")
         try:
-            filename = filename.strip().replace(' ', '_')
+            filename = filename.strip().replace(" ", "_")
             self.logger.debug(f"Sanitized filename: {filename}")
             return filename
         except Exception as e:
@@ -36,100 +50,179 @@ class FileService:
 
     async def save_upload_image(self, upload_file: UploadFile, sub_folder: str):
         self.logger.debug(f"Saving image for subfolder: {sub_folder}")
-
-        upload_dir = self.base_upload_dir / sub_folder
-        self.logger.debug(f"Saving image for subfolder: {sub_folder}")
-
-        try:
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            self.logger.debug(f"Directory created for subfolder: {sub_folder}")
-        except Exception as e:
-            self.logger.error(f"Problem with saving image for subfolder: {sub_folder} {e}")
-
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        self.logger.debug(f"Timestamp: {timestamp}")
-        filename = f"{timestamp}_{upload_file.filename}"
-        self.logger.debug(f"filename: {filename}")
-        dest = upload_dir / filename
-        self.logger.debug(f"destination: {dest}")
-
-        await self.is_image_type(upload_file)
-        try:
-            with dest.open("wb") as buffer:
-                self.logger.debug(f"Trying to save image")
-                shutil.copyfileobj(upload_file.file, buffer)
-        except Exception as ex:
-            self.logger.error(f"Problem with saving image to destination {dest} {ex}")
-            raise HTTPException(status_code=400, detail="An error occurred while uploading file.")
-
-        rel_dest = Path('/static/uploads') / sub_folder / filename
+        data = await self.upload_image_and_return_data(sub_folder, upload_file)
+        rel_dest = Path("/static/uploads") / sub_folder / data["filename"]
         self.logger.debug(f"Relative destination path: {rel_dest}")
         return str(rel_dest)
 
+    async def get_destination_with_filename(self, filename, upload_dir):
+        dest = upload_dir / filename
+        self.logger.debug(f"original destination: {dest}")
+        return dest
+
+    async def get_and_create_upload_dir(self, sub_folder):
+        upload_dir = await self.get_upload_dir(sub_folder)
+        await self.create_upload_dir(sub_folder, upload_dir)
+        return upload_dir
+
     async def save_and_resize_upload_image(
-            self,
-            upload_file: UploadFile,
-            sub_folder: str,
-            icon_height: int = 100,
-            web_view_height: int = 400,
-    ):
-        print('Saving image...')
+        self,
+        upload_file: UploadFile,
+        sub_folder: str,
+        icon_height: int = 100,
+        web_view_height: int = 400,
+    ) -> ResizedImagesPaths:
+        self.logger.debug(
+            f"Saving image for subfolder: {sub_folder} "
+            f"and resize it for icon:{icon_height} and webview:{web_view_height}"
+        )
 
-        upload_dir = self.base_upload_dir / sub_folder
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        print(upload_dir)
+        data = await self.upload_image_and_return_data(sub_folder, upload_file)
 
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        original_filename = f"{timestamp}_{upload_file.filename}"
-        original_dest = upload_dir / original_filename
-
-        await self.is_image_type(upload_file)
-
-        try:
-            with original_dest.open("wb") as buffer:
-                shutil.copyfileobj(upload_file.file, buffer)
-        except Exception as ex:
-            print(ex)
-            raise HTTPException(status_code=400, detail="An error occurred while uploading file.")
-
-        print('Original file destination', str(original_dest))
+        original_dest = data["dest"]
+        original_filename = data["filename"]
+        timestamp = data["timestamp"]
+        upload_dir = data["upload_dir"]
 
         # Open the image for resizing
+        self.logger.debug(f"Opening destination file for resize: {original_dest}")
         with original_dest.open("rb") as image_file:
-            image = Image.open(image_file)
+            try:
+                image = Image.open(image_file)
+                self.logger.debug(f"Image opened: {image}")
+            except Exception as e:
+                self.logger.error(
+                    f"Problem opening image: {image} from {original_dest} {e}"
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="An error occurred while opening image for resize.",
+                )
 
             # Create and save the icon image
-            icon_filename = f"{timestamp}_icon_{upload_file.filename}"
-            icon_dest = upload_dir / icon_filename
-            icon_width = int((image.width / image.height) * icon_height)
-            icon_image = image.resize((icon_width, icon_height), Image.Resampling.LANCZOS)
-
-            with icon_dest.open("wb") as icon_buffer:
-                icon_image.save(icon_buffer, format=image.format)
+            icon_filename = await self.resize_and_save_resized_image(
+                icon_height, image, timestamp, upload_dir, upload_file, "icon"
+            )
 
             # Create and save the web view image
-            webview_filename = f"{timestamp}_webview_{upload_file.filename}"
-            webview_dest = upload_dir / webview_filename
-            webview_width = int((image.width / image.height) * web_view_height)
-            webview_image = image.resize((webview_width, web_view_height), Image.Resampling.LANCZOS)
-
-            with webview_dest.open("wb") as webview_buffer:
-                webview_image.save(webview_buffer, format=image.format)
+            webview_filename = await self.resize_and_save_resized_image(
+                web_view_height, image, timestamp, upload_dir, upload_file, "webview"
+            )
+            # _type = "webview"
+            # webview_filename = f"{timestamp}_{_type}_{upload_file.filename}"
+            # webview_dest = upload_dir / webview_filename
+            # webview_width = int((image.width / image.height) * web_view_height)
+            # webview_image = image.resize(
+            #     (webview_width, web_view_height), Image.Resampling.LANCZOS
+            # )
+            #
+            # await self.save_file_with_image_format_to_destination(
+            #     webview_dest, webview_image, image
+            # )
 
         # Construct relative path for all images
-        rel_original_dest = Path('/static/uploads') / sub_folder / original_filename
-        rel_icon_dest = Path('/static/uploads') / sub_folder / icon_filename
-        rel_webview_dest = Path('/static/uploads') / sub_folder / webview_filename
+        rel_original_dest = Path("/static/uploads") / sub_folder / original_filename
+        rel_icon_dest = Path("/static/uploads") / sub_folder / icon_filename
+        rel_webview_dest = Path("/static/uploads") / sub_folder / webview_filename
 
         # Create a dictionary to return the paths of all the image versions created
         return {
             "original": str(rel_original_dest),
             "icon": str(rel_icon_dest),
-            "webview": str(rel_webview_dest)
+            "webview": str(rel_webview_dest),
         }
 
+    async def resize_and_save_resized_image(
+        self, height, image, timestamp, upload_dir, upload_file, _type: str
+    ):
+        self.logger.debug("Start resizing image")
+        filename = f"{timestamp}_{_type}_{upload_file.filename}"
+        self.logger.debug(f"Icon filename: {filename}")
+        dest = upload_dir / filename
+        try:
+            width = int((image.width / image.height) * height)
+            resized_image = image.resize((width, height), Image.Resampling.LANCZOS)
+            await self.save_file_with_image_format_to_destination(
+                dest, resized_image, image
+            )
+            return filename
+        except Exception as e:
+            self.logger.error(f"Problem resizing image: {e}")
+
+    async def save_file_with_image_format_to_destination(
+        self, icon_dest, icon_image, image
+    ):
+        self.logger.debug(f"Saving image for subfolder: {icon_dest}")
+        try:
+            with icon_dest.open("wb") as icon_buffer:
+                icon_image.save(icon_buffer, format=image.format)
+            self.logger.info(f"Image saved: {icon_dest}")
+        except Exception as e:
+            self.logger.error(f"Problem saving image to: {icon_image} {e}")
+            raise HTTPException(
+                status_code=400, detail="An error occurred while saving file."
+            )
+
+    async def upload_image_and_return_data(self, sub_folder, upload_file) -> ImageData:
+        upload_dir = await self.get_and_create_upload_dir(sub_folder)
+        timestamp = await self.get_timestamp()
+        original_filename = await self.get_filename(timestamp, upload_file)
+        original_dest = await self.get_destination_with_filename(
+            original_filename, upload_dir
+        )
+        await self.is_image_type(upload_file)
+        await self.upload_image(original_dest, upload_file)
+        self.logger.info(
+            f"Data of uploaded image: "
+            f"timestamp: {timestamp} filename: {original_filename}, "
+            f"dest: {original_dest}, upload_dir: {upload_dir}"
+        )
+        return {
+            "dest": original_dest,
+            "filename": original_filename,
+            "timestamp": timestamp,
+            "upload_dir": upload_dir,
+        }
+
+    async def upload_image(self, original_dest, upload_file):
+        try:
+            with original_dest.open("wb") as buffer:
+                self.logger.debug(f"Trying to save image")
+                shutil.copyfileobj(upload_file.file, buffer)
+        except Exception as ex:
+            self.logger.error(
+                f"Problem with saving image to destination {original_dest} {ex}"
+            )
+            raise HTTPException(
+                status_code=400, detail="An error occurred while uploading file."
+            )
+
+    async def get_filename(self, timestamp, upload_file):
+        original_filename = f"{timestamp}_{upload_file.filename}"
+        self.logger.debug(f"original filename: {original_filename}")
+        return original_filename
+
+    async def get_upload_dir(self, sub_folder):
+        upload_dir = self.base_upload_dir / sub_folder
+        self.logger.debug(f"Saving image for subfolder: {sub_folder}")
+        return upload_dir
+
+    async def get_timestamp(self):
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.logger.debug(f"Timestamp: {timestamp}")
+        return timestamp
+
+    async def create_upload_dir(self, sub_folder, upload_dir):
+        try:
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            self.logger.debug(f"Directory created for subfolder: {sub_folder}")
+        except Exception as e:
+            self.logger.error(
+                f"Problem with saving image for subfolder: {sub_folder} {e}"
+            )
+
     async def is_image_type(self, upload_file):
-        if not upload_file.content_type.startswith('image/'):
+        if not upload_file.content_type.startswith("image/"):
             self.logger.error(f"Uploaded file type not an image")
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
@@ -137,12 +230,14 @@ class FileService:
         img = Image.open(image_path)
 
         # If the image has an alpha (transparency) channel, convert it to RGB
-        if img.mode == 'RGBA':
+        if img.mode == "RGBA":
             temp_img = Image.new("RGB", img.size)
             temp_img.paste(img, mask=img.split()[3])  # 3 is the alpha channel
             img = temp_img
 
-        colors = img.convert('RGB').getcolors(img.size[0] * img.size[1])  # Ensures RGB data
+        colors = img.convert("RGB").getcolors(
+            img.size[0] * img.size[1]
+        )  # Ensures RGB data
         if colors:
             colors.sort(key=lambda tup: tup[0], reverse=True)  # Sort by count
             # Exclude black, white, and certain specified colors
@@ -155,8 +250,15 @@ class FileService:
                 set(self.hex_to_rgb("#dfdfdf")),
                 set(self.hex_to_rgb("#fcfcfc")),
             ]
-            most_common_color = next((color for count, color in colors if set(color) not in excluded_colors), None)
-            return '#{:02x}{:02x}{:02x}'.format(*most_common_color) if most_common_color else None
+            most_common_color = next(
+                (color for count, color in colors if set(color) not in excluded_colors),
+                None,
+            )
+            return (
+                "#{:02x}{:02x}{:02x}".format(*most_common_color)
+                if most_common_color
+                else None
+            )
         else:
             return None
 
@@ -171,18 +273,17 @@ class FileService:
                 os.makedirs(os.path.dirname(image_path), exist_ok=True)
 
                 # Write image data to file
-                with open(image_path, 'wb') as fp:
+                with open(image_path, "wb") as fp:
                     fp.write(image_data)
 
     async def download_and_resize_image(
-            self,
-            img_url: str,
-            original_image_path: str,
-            icon_image_path: str,
-            web_view_image_path: str,
-            icon_height: int = 100,
-            web_view_height: int = 400,
-
+        self,
+        img_url: str,
+        original_image_path: str,
+        icon_image_path: str,
+        web_view_image_path: str,
+        icon_height: int = 100,
+        web_view_height: int = 400,
     ):
         async with ClientSession() as session:
             async with session.get(img_url) as response:
@@ -192,35 +293,39 @@ class FileService:
 
                 # Save the original image
                 os.makedirs(os.path.dirname(original_image_path), exist_ok=True)
-                with open(original_image_path, 'wb') as original_fp:
+                with open(original_image_path, "wb") as original_fp:
                     original_fp.write(image_data)
 
                 image = Image.open(BytesIO(image_data))
 
                 # Create and save the icon image
                 icon_width = int((image.width / image.height) * icon_height)
-                icon_image = image.resize((icon_width, icon_height), Image.Resampling.LANCZOS)
+                icon_image = image.resize(
+                    (icon_width, icon_height), Image.Resampling.LANCZOS
+                )
                 os.makedirs(os.path.dirname(icon_image_path), exist_ok=True)
-                with open(icon_image_path, 'wb') as icon_fp:
-                    image_format = 'PNG' if image.format is None else image.format
+                with open(icon_image_path, "wb") as icon_fp:
+                    image_format = "PNG" if image.format is None else image.format
                     icon_image.save(icon_fp, format=image_format)
 
                 # Create and save the web view image
                 web_view_width = int((image.width / image.height) * web_view_height)
-                web_view_image = image.resize((web_view_width, web_view_height), Image.Resampling.LANCZOS)
+                web_view_image = image.resize(
+                    (web_view_width, web_view_height), Image.Resampling.LANCZOS
+                )
                 os.makedirs(os.path.dirname(web_view_image_path), exist_ok=True)
-                with open(web_view_image_path, 'wb') as web_fp:
+                with open(web_view_image_path, "wb") as web_fp:
                     web_view_image.save(web_fp, format=image_format)
 
     # Import necessary modules at the top (os, urlparse, etc.)
 
     async def download_and_process_image(
-            self,
-            image_url: str,
-            image_type_prefix: str,
-            image_title: str,
-            icon_height: int,
-            web_view_height: int,
+        self,
+        image_url: str,
+        image_type_prefix: str,
+        image_title: str,
+        icon_height: int,
+        web_view_height: int,
     ):
         path = urlparse(image_url).path
         ext = Path(path).suffix
@@ -233,20 +338,21 @@ class FileService:
         image_webview_filename = f"{image_filename}_{web_view_height}px{ext}"
 
         image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
-        image_icon_path = os.path.join(uploads_path, f"{main_path}{image_icon_filename}")
-        image_webview_path = os.path.join(uploads_path, f"{main_path}{image_webview_filename}")
+        image_icon_path = os.path.join(
+            uploads_path, f"{main_path}{image_icon_filename}"
+        )
+        image_webview_path = os.path.join(
+            uploads_path, f"{main_path}{image_webview_filename}"
+        )
 
         relative_image_path = os.path.join(
-            f"{static_uploads_path}{main_path}",
-            f"{image_filename}{ext}"
+            f"{static_uploads_path}{main_path}", f"{image_filename}{ext}"
         )
         relative_image_icon_path = os.path.join(
-            f"{static_uploads_path}{main_path}",
-            f"{image_icon_filename}"
+            f"{static_uploads_path}{main_path}", f"{image_icon_filename}"
         )
         relative_image_webview_path = os.path.join(
-            f"{static_uploads_path}{main_path}",
-            f"{image_webview_filename}"
+            f"{static_uploads_path}{main_path}", f"{image_webview_filename}"
         )
 
         # Download and resize the image
@@ -267,10 +373,11 @@ class FileService:
             "image_webview_url": relative_image_webview_path,
         }
 
-    def hex_to_rgb(self, hex_color: str):
-        hex_color = hex_color.lstrip('#')
+    @staticmethod
+    def hex_to_rgb(hex_color: str):
+        hex_color = hex_color.lstrip("#")
         # Convert the hex color to a tuple of integers and return it.
-        return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
     # async def download_image(self, img_url: str, image_path: str):
     #     response = requests.get(img_url)
