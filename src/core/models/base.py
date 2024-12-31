@@ -24,49 +24,47 @@ from sqlalchemy.orm import (
 from starlette.websockets import WebSocket
 
 from src.core.config import settings, logger
-from src.logging_config import setup_logging
+from src.logging_config import setup_logging, get_logger
 
 setup_logging()
-db_logger = logging.getLogger("backend_logger_base_db")
-websocket_logger = logging.getLogger("backend_websocket_logger")
-connection_socket_logger = logging.getLogger("backend_connection_socket_logger")
-# logging.basicConfig(level=logging.DEBUG)
-# logger = logging.getLogger("WebSocketManager")
+connection_socket_logger_helper = logging.getLogger("backend_connection_socket_logger")
+db_logger_helper = logging.getLogger("backend_logger_base_db")
 
 # DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
 
 
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
-        db_logger.debug(f"Initializing Database with URL: ***, Echo: {echo}")
+        self.logger = get_logger("backend_logger_base_db", self)
+        self.logger.debug(f"Initializing Database with URL: ***, Echo: {echo}")
         try:
             self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
             self.async_session: AsyncSession | Any = async_sessionmaker(
                 bind=self.engine, class_=AsyncSession, expire_on_commit=False
             )
         except SQLAlchemyError as e:
-            db_logger.error(f"Error initializing Database engine: {e}")
+            self.logger.error(f"Error initializing Database engine: {e}")
         except Exception as e:
-            db_logger.error(f"Unexpected error initializing Database: {e}")
+            self.logger.error(f"Unexpected error initializing Database: {e}")
 
     async def test_connection(self, test_query: str = "SELECT 1"):
         try:
             async with self.engine.connect() as connection:
                 await connection.execute(text(test_query))
-                db_logger.info("Database connection successful.")
+                self.logger.info("Database connection successful.")
         except SQLAlchemyError as e:
-            db_logger.error(f"SQLAlchemy error during connection test: {e}")
+            self.logger.error(f"SQLAlchemy error during connection test: {e}")
             raise
         except OSError as e:
-            db_logger.critical(f"OS error during connection test: {e}")
+            self.logger.critical(f"OS error during connection test: {e}")
             raise
         except Exception as e:
-            db_logger.critical(f"Unexpected error during database connection test: {e}")
+            self.logger.critical(f"Unexpected error during database connection test: {e}")
             raise
 
     async def close(self):
         await self.engine.dispose()
-        db_logger.info("Database connection closed.")
+        self.logger.info("Database connection closed.")
 
 
 db = Database(db_url=settings.db.db_url, echo=settings.db_echo)
@@ -79,45 +77,45 @@ class MatchDataWebSocketManager:
         self.match_data_queues = {}
         self.playclock_queues = {}
         self.gameclock_queues = {}
-        # self.logger = logging.getLogger("backend_logger_WebSocketManager")
-        # self.logger.info("WebSocketManager initialized")
+        self.logger = logging.getLogger("backend_websocket_logger")
+        self.logger.info("WebSocketManager initialized")
 
     async def connect(self, client_id: str):
-        websocket_logger.debug(f"Connecting to WebSocket with client_id: {client_id}")
+        self.logger.debug(f"Connecting to WebSocket with client_id: {client_id}")
         self.match_data_queues[client_id] = asyncio.Queue()
         self.playclock_queues[client_id] = asyncio.Queue()
         self.gameclock_queues[client_id] = asyncio.Queue()
-        websocket_logger.debug(f"Match Data Queues {self.match_data_queues}")
-        websocket_logger.debug(f"PlayClock Queues {self.playclock_queues}")
-        websocket_logger.debug(f"GameClock Queues {self.gameclock_queues}")
+        self.logger.debug(f"Match Data Queues {self.match_data_queues}")
+        self.logger.debug(f"PlayClock Queues {self.playclock_queues}")
+        self.logger.debug(f"GameClock Queues {self.gameclock_queues}")
 
     async def disconnect(self, client_id: str):
-        websocket_logger.debug(
+        self.logger.debug(
             f"Disconnecting from WebSocket with client_id: {client_id}"
         )
 
         try:
             self.match_data_queues.pop(client_id)
-            websocket_logger.info(f"Deleted match data queue for client {client_id}")
+            self.logger.info(f"Deleted match data queue for client {client_id}")
         except KeyError:
-            websocket_logger.warning(
+            self.logger.warning(
                 f"No match data queue found for client {client_id}"
             )
 
         try:
             self.playclock_queues.pop(client_id)
-            websocket_logger.info(f"Deleted playclock queue for client {client_id}")
+            self.logger.info(f"Deleted playclock queue for client {client_id}")
         except KeyError:
-            websocket_logger.warning(f"No playclock queue found for client {client_id}")
+            self.logger.warning(f"No playclock queue found for client {client_id}")
 
         try:
             self.gameclock_queues.pop(client_id)
-            websocket_logger.info(f"Deleted gameclock queue for client {client_id}")
+            self.logger.info(f"Deleted gameclock queue for client {client_id}")
         except KeyError:
-            websocket_logger.warning(f"No gameclock queue found for client {client_id}")
+            self.logger.warning(f"No gameclock queue found for client {client_id}")
 
     # async def disconnect(self, client_id: str):
-    #     websocket_logger.debug(
+    #     self.logger.debug(
     #         f"Disconnecting from WebSocket with client_id: {client_id}"
     #     )
     #     del self.match_data_queues[client_id]
@@ -126,7 +124,7 @@ class MatchDataWebSocketManager:
 
     async def startup(self):
         self.connection = await asyncpg.connect(self.db_url)
-        websocket_logger.debug(f"WebSocket startup {self.connection}")
+        self.logger.debug(f"WebSocket startup {self.connection}")
         await self.connection.add_listener("matchdata_change", self.match_data_listener)
         await self.connection.add_listener("match_change", self.match_data_listener)
         await self.connection.add_listener(
@@ -134,21 +132,21 @@ class MatchDataWebSocketManager:
         )
         await self.connection.add_listener("playclock_change", self.playclock_listener)
         await self.connection.add_listener("gameclock_change", self.gameclock_listener)
-        websocket_logger.debug(f"WebSocket listen: {self.connection}")
+        self.logger.debug(f"WebSocket listen: {self.connection}")
 
     async def playclock_listener(self, connection, pid, channel, payload):
         # print("[Playclock listener] Start")
-        websocket_logger.debug(
+        self.logger.debug(
             f"Playclock listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
         )
         if not payload or not payload.strip():
-            websocket_logger.warning("No payload received")
+            self.logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
         match_id = data["match_id"]
         data["type"] = "playclock-update"
-        websocket_logger.debug(
+        self.logger.debug(
             f"""Match ID: {match_id}
             Received playclock payload: {payload}
             connection: {connection}
@@ -161,17 +159,17 @@ class MatchDataWebSocketManager:
 
     async def gameclock_listener(self, connection, pid, channel, payload):
         # print(f"[Gameclock listener] Start")
-        websocket_logger.debug(
+        self.logger.debug(
             f"Gameclock listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
         )
         if not payload or not payload.strip():
-            websocket_logger.warning("No payload received")
+            self.logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
         match_id = data["match_id"]
         data["type"] = "gameclock-update"
-        websocket_logger.debug(
+        self.logger.debug(
             f"""Match ID: {match_id}
             Received gameclock payload: {payload}        
             connection: {connection}
@@ -184,17 +182,17 @@ class MatchDataWebSocketManager:
 
     async def match_data_listener(self, connection, pid, channel, payload):
         # print("[Match Data Listener] Start")
-        websocket_logger.debug(
+        self.logger.debug(
             f"Match Data listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
         )
         if not payload or not payload.strip():
-            websocket_logger.warning("No payload received")
+            self.logger.warning("No payload received")
             return
 
         data = json.loads(payload.strip())
         match_id = data["match_id"]
         data["type"] = "match-update"
-        websocket_logger.debug(
+        self.logger.debug(
             f"""Match ID: {match_id}
             Received match data payload: {payload}        
             connection: {connection}
@@ -207,7 +205,7 @@ class MatchDataWebSocketManager:
 
     async def shutdown(self):
         if self.connection:
-            websocket_logger.info(f"Shutting down connection: {self.connection}")
+            self.logger.info(f"Shutting down connection: {self.connection}")
             await self.connection.close()
 
 
@@ -219,63 +217,65 @@ class ConnectionManager:
         self.active_connections: Dict[str, WebSocket] = {}
         self.queues: Dict[str, asyncio.Queue] = {}
         self.match_subscriptions: Dict[str | int, List[str]] = {}
+        self.logger = logging.getLogger("connection_socket_logger")
+        self.logger.info("ConnectionManager initialized")
 
     async def connect(self, websocket: WebSocket, client_id: str, match_id: int = None):
-        connection_socket_logger.info(
+        self.logger.info(
             f"Active Connections len: {len(self.active_connections)}"
         )
-        connection_socket_logger.info(f"Active Connections {self.active_connections}")
-        connection_socket_logger.info(
+        self.logger.info(f"Active Connections {self.active_connections}")
+        self.logger.info(
             f"Connecting to WebSocket at {websocket} with client_id: {client_id} and match_id: {match_id}"
         )
 
         if client_id in self.active_connections:
-            connection_socket_logger.debug(
+            self.logger.debug(
                 f"Client with client_id:{client_id} in active_connections: {self.active_connections}"
             )
-            connection_socket_logger.warning(
+            self.logger.warning(
                 f"Closing connection for client_id:{client_id}"
             )
             await self.active_connections[client_id].close()
-            connection_socket_logger.debug(
+            self.logger.debug(
                 f"Active connections: {self.active_connections}"
             )
 
-        connection_socket_logger.debug(
+        self.logger.debug(
             f"Adding new connection for client with client_id: {client_id}"
         )
         self.active_connections[client_id] = websocket
         self.queues[client_id] = asyncio.Queue()
-        connection_socket_logger.info(
+        self.logger.info(
             f"New connection created: {self.active_connections[client_id]}"
         )
-        connection_socket_logger.info(f"New queue created: {self.queues[client_id]}")
+        self.logger.info(f"New queue created: {self.queues[client_id]}")
 
         if match_id:
             if match_id in self.match_subscriptions:
-                connection_socket_logger.debug(
+                self.logger.debug(
                     f"Match with match_id: {match_id} in match subscriptions {self.match_subscriptions}"
                 )
-                connection_socket_logger.debug(
+                self.logger.debug(
                     f"Adding client with client_id: {client_id} to match_subscription {self.match_subscriptions[match_id]}"
                 )
                 self.match_subscriptions[match_id].append(client_id)
-                connection_socket_logger.debug(
+                self.logger.debug(
                     f"Match subscription added {self.match_subscriptions[match_id]}"
                 )
 
             else:
-                connection_socket_logger.debug(
+                self.logger.debug(
                     f"Match with match_id: {match_id} not in match subscriptions {self.match_subscriptions}"
                 )
                 self.match_subscriptions[match_id] = [client_id]
-                connection_socket_logger.debug(
+                self.logger.debug(
                     f"Match subscription added {self.match_subscriptions[match_id]}"
                 )
 
     async def disconnect(self, client_id: str):
         if client_id in self.active_connections:
-            connection_socket_logger.info(
+            self.logger.info(
                 f"Disconnecting from connections for client with client_id:{client_id}"
             )
             await self.active_connections[client_id].close()
@@ -295,10 +295,10 @@ class ConnectionManager:
         return self.match_subscriptions.get(match_id, [])
 
     async def get_queue_for_client(self, client_id: str):
-        connection_socket_logger.debug(f"Getting queue for client_id: {client_id}")
+        self.logger.debug(f"Getting queue for client_id: {client_id}")
         # Retrieve the queue for a specific client_id asynchronously
         queue = self.queues[client_id]
-        # connection_socket_logger.debug(f"Queue: {queue}")
+        # self.logger.debug(f"Queue: {queue}")
         return queue
 
     async def send_to_all(self, data: str, match_id: str = None):
@@ -308,21 +308,21 @@ class ConnectionManager:
         # print(
         #     f"[Debug][send_to_all] Current match_subscriptions: {self.match_subscriptions}"
         # )
-        connection_socket_logger.debug(
+        self.logger.debug(
             f"Sending data: {data} with match_id: {match_id}"
         )
-        connection_socket_logger.debug(
+        self.logger.debug(
             f"Current match with match_id: {match_id}, subscriptions: {self.match_subscriptions[match_id]}"
         )
         if match_id:
             for client_id in self.match_subscriptions.get(match_id, []):
                 if client_id in self.queues:
-                    connection_socket_logger.debug(
+                    self.logger.debug(
                         f"Client with client_id: {client_id} in queues: {self.queues[client_id]}"
                     )
 
                     await self.queues[client_id].put(data)
-                    connection_socket_logger.debug(
+                    self.logger.debug(
                         f"Data sent to all clients in queues with match id:{match_id}"
                     )
 
@@ -342,7 +342,7 @@ async def process_client_queue(
         while True:
             try:
                 message = await queue.get()
-                connection_socket_logger.debug(
+                connection_socket_logger_helper.debug(
                     f"Dequeued message for client_id {client_id}: {message}"
                 )
 
@@ -355,24 +355,24 @@ async def process_client_queue(
                 # print(f"GET_HANDLERS {get_handlers}")
 
                 if get_handlers:
-                    connection_socket_logger.info(
+                    connection_socket_logger_helper.info(
                         f"Handler executed successfully for message: {message}"
                     )
                     return get_handlers
                     # await connection_manager.send_to_match_id_channels(data=message)
                 else:
-                    connection_socket_logger.warning(
+                    connection_socket_logger_helper.warning(
                         f"No handler found for message type {message_type} in client_id {client_id}"
                     )
 
                 queue.task_done()
             except asyncio.CancelledError:
-                connection_socket_logger.warning(
+                connection_socket_logger_helper.warning(
                     f"Queue processing canceled for client_id {client_id}"
                 )
                 break
             except Exception as e:
-                connection_socket_logger.error(
+                connection_socket_logger_helper.error(
                     f"Error processing queue for client_id {client_id}: {e}"
                 )
                 break
@@ -380,30 +380,30 @@ async def process_client_queue(
 
 class BaseServiceDB:
     def __init__(self, database: Database, model: type):
+        self.logger = get_logger("backend_logger_base_db", self)
         self.db = database
         self.model = model
 
     async def create(self, item):
         async with self.db.async_session() as session:
-            db_logger.debug(
+            self.logger.debug(
                 f"Starting to create {self.model.__name__} with data: {item.__dict__}"
             )
             try:
                 session.add(item)
                 await session.commit()
                 await session.refresh(item)
-                db_logger.info(
+                self.logger.info(
                     f"{self.model.__name__} created successfully: {item.__dict__}"
                 )
                 return item
             except Exception as ex:
-                # print(ex)
-                db_logger.error(
+                self.logger.error(
                     f"Error creating {self.model.__name__}: {ex}", exc_info=True
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Error creating {self.model.__name__}" f"Check input data.",
+                    detail=f"Error creating {self.model.__name__} Check input data. {item}",
                 )
 
     async def get_all_elements(self):
@@ -412,11 +412,11 @@ class BaseServiceDB:
 
             items = await session.execute(stmt)
             result = items.scalars().all()
-            db_logger.debug(f"Fetched {len(result)} elements for {self.model.__name__}")
+            self.logger.debug(f"Fetched {len(result)} elements for {self.model.__name__}")
             return list(result)
 
     async def get_by_id(self, item_id: int):
-        db_logger.debug(
+        self.logger.debug(
             f"Starting to fetch element with ID: {item_id} for {self.model.__name__}"
         )
         try:
@@ -426,22 +426,22 @@ class BaseServiceDB:
                 )
                 model = result.scalars().one_or_none()
                 if model is not None:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"Fetched element with ID {item_id} for {self.model.__name__}: {model.__dict__}"
                     )
                 else:
-                    db_logger.warning(
+                    self.logger.warning(
                         f"No element found with ID: {item_id} for {self.model.__name__}"
                     )
                 return model
         except Exception as ex:
-            db_logger.error(
+            self.logger.error(
                 f"Error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
-                detail="Failed to fetch element. Please try again later.",
+                detail=f"Failed to fetch element for model id:{item_id} {self.model.__name__}.",
             )
 
     async def get_by_id_and_model(
@@ -449,7 +449,7 @@ class BaseServiceDB:
         model,
         item_id: int,
     ):
-        db_logger.debug(
+        self.logger.debug(
             f"Starting to fetch element with ID: {item_id} for {model.__name__}"
         )
         try:
@@ -459,22 +459,22 @@ class BaseServiceDB:
                 )
                 item = result.scalars().one_or_none()
                 if item is not None:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"Fetched element with ID {item_id} for {model.__name__}: {item.__dict__}"
                     )
                 else:
-                    db_logger.warning(
+                    self.logger.warning(
                         f"No element found with ID: {item_id} for {model.__name__}"
                     )
                 return item
         except Exception as ex:
-            db_logger.error(
+            self.logger.error(
                 f"Error fetching element with ID: {item_id} for {model.__name__}: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
-                detail="Failed to fetch element. Please try again later.",
+                detail=f"Failed to fetch element for model id:{item_id} {self.model.__name__}.",
             )
 
     # async def get_by_id_and_model(
@@ -490,12 +490,12 @@ class BaseServiceDB:
     #         return item
 
     async def update(self, item_id: int, item, **kwargs):
-        db_logger.debug(f"Starting to update element with ID: {item_id}")
+        self.logger.debug(f"Starting to update element with ID: {item_id}")
         async with self.db.async_session() as session:
             try:
                 updated_item = await self.get_by_id(item_id)
                 if not updated_item:
-                    db_logger.warning(
+                    self.logger.warning(
                         f"No element found with ID: {item_id} for model {self.model.__name__}"
                     )
                     return None
@@ -511,22 +511,22 @@ class BaseServiceDB:
 
                 await session.commit()
                 updated_item = await self.get_by_id(item_id)
-                db_logger.info(
+                self.logger.info(
                     f"Updated element with ID: {item_id}: {updated_item.__dict__}"
                 )
                 return updated_item
             except Exception as ex:
-                db_logger.error(
+                self.logger.error(
                     f"Error updating element with ID: {item_id} for model {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to update element. Please try again later.",
+                    detail=f"Failed to update element for model id:{item_id} {self.model.__name__}.",
                 )
 
     async def delete(self, item_id: int):
-        db_logger.debug(f"Starting to delete element with ID: {item_id}")
+        self.logger.debug(f"Starting to delete element with ID: {item_id}")
         async with self.db.async_session() as session:
             try:
                 db_item = await self.get_by_id(item_id)
@@ -537,45 +537,45 @@ class BaseServiceDB:
                     )
                 await session.delete(db_item)
                 await session.commit()
-                db_logger.info(
+                self.logger.info(
                     f"Deleted element with ID: {item_id}: {db_item.__dict__}"
                 )
                 return db_item
             except Exception as ex:
-                db_logger.error(
+                self.logger.error(
                     f"Error deleting element with ID: {item_id} for model {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to delete element. Please try again later.",
+                    detail=f"Failed to delete element for model id:{item_id} {self.model.__name__}.",
                 )
 
     async def get_item_by_field_value(self, value, field_name: str):
-        db_logger.debug(
+        self.logger.debug(
             f"Starting to fetch item by field {field_name} with value: {value} for model {self.model.__name__}"
         )
         async with self.db.async_session() as session:
             try:
                 # Access the column directly from the model
                 column: Column = getattr(self.model, field_name)
-                db_logger.info(
+                self.logger.info(
                     f"Accessed column: {column} for model {self.model.__name__}"
                 )
 
                 stmt = select(self.model).where(column == value)
-                db_logger.debug(
+                self.logger.debug(
                     f"Executing SQL statement: {stmt} for model {self.model.__name__}"
                 )
 
                 result: Result = await session.execute(stmt)
-                db_logger.debug(
+                self.logger.debug(
                     f"Query result: {result.all()} for model {self.model.__name__}"
                 )
 
                 return result.scalars().one_or_none()
             except Exception as ex:
-                db_logger.error(
+                self.logger.error(
                     f"Error fetching item by {field_name} with value {value}: {ex} for model {self.model.__name__}",
                     exc_info=True,
                 )
@@ -602,7 +602,7 @@ class BaseServiceDB:
         new_item,
     ):
         async with self.db.async_session() as session:
-            db_logger.info(
+            self.logger.info(
                 f"Starting update_item_by_eesl_id with eesl_field_name: {eesl_field_name}, eesl_value: {eesl_value} for model {self.model.__name__}"
             )
             is_exist = await self.get_item_by_field_value(
@@ -610,7 +610,7 @@ class BaseServiceDB:
                 eesl_field_name,
             )
             if is_exist:
-                db_logger.debug(
+                self.logger.debug(
                     f"Item found with id: {is_exist.id} for model {self.model.__name__}"
                 )
                 update_dict = {}
@@ -622,17 +622,17 @@ class BaseServiceDB:
                     .where(getattr(self.model, eesl_field_name) == eesl_value)
                     .values(update_dict)
                 )
-                db_logger.debug(
+                self.logger.debug(
                     f"Update operation executed for item with id: {is_exist.id} for model {self.model.__name__}"
                 )
                 await session.commit()
                 find_updated = await self.get_by_id(is_exist.id)
-                db_logger.info(
+                self.logger.info(
                     f"Updated item retrieved with id: {find_updated.id} for model {self.model.__name__}"
                 )
                 return find_updated
             else:
-                db_logger.error(f"No item found for model {self.model.__name__}")
+                self.logger.error(f"No item found for model {self.model.__name__}")
                 return None
 
     # async def update_item_by_eesl_id(
@@ -673,7 +673,7 @@ class BaseServiceDB:
         field_name_two: str,
     ):
         async with self.db.async_session() as session:
-            db_logger.debug(f"Starting find_relation for model {self.model.__name__}")
+            self.logger.debug(f"Starting find_relation for model {self.model.__name__}")
             # Check if the relation already exists
             existing_relation = await session.execute(
                 select(secondary_table).filter(
@@ -683,11 +683,11 @@ class BaseServiceDB:
             )
             result = existing_relation.scalar()
             if result:
-                db_logger.info(
+                self.logger.info(
                     f"Relation found {existing_relation.__dict__} for model {self.model.__name__}"
                 )
             else:
-                db_logger.debug(f"No relation found for model {self.model.__name__}")
+                self.logger.debug(f"No relation found for model {self.model.__name__}")
             return result
 
     # async def find_relation(
@@ -716,7 +716,7 @@ class BaseServiceDB:
         field_name_one: str,
         field_name_two: str,
     ) -> bool:
-        db_logger.debug(f"Checking if relation exists for model {self.model.__name__}")
+        self.logger.debug(f"Checking if relation exists for model {self.model.__name__}")
         existing_record = await self.find_relation(
             secondary_table,
             fk_item_one,
@@ -725,12 +725,12 @@ class BaseServiceDB:
             field_name_two,
         )
         if existing_record:
-            db_logger.debug(
+            self.logger.debug(
                 f"Relation found {existing_record.__dict__} for model {self.model.__name__}"
             )
             return True
         else:
-            db_logger.debug(f"No relation found for model {self.model.__name__}")
+            self.logger.debug(f"No relation found for model {self.model.__name__}")
             return False
 
     # async def is_relation_exist(
@@ -773,7 +773,7 @@ class BaseServiceDB:
             )
 
             if existing_relation:
-                db_logger.warning(
+                self.logger.warning(
                     f"Parent {parent_model.__name__}-{child_model.__name__} relation already exists for model {self.model.__name__}"
                 )
                 raise HTTPException(
@@ -788,7 +788,7 @@ class BaseServiceDB:
                 .options(selectinload(getattr(parent_model, child_relation))),
             )
             if parent:
-                db_logger.debug(
+                self.logger.debug(
                     f"Parent {parent_model.__name__} found with id: {parent_id} for model {self.model.__name__}"
                 )
                 child = await session.execute(
@@ -796,22 +796,22 @@ class BaseServiceDB:
                 )
                 child_new = child.scalar()
                 if child_new:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"Child {child_model.__name__} found with id: {child_id} for model {self.model.__name__}"
                     )
                     try:
                         getattr(parent, child_relation).append(child_new)
                         await session.commit()
-                        db_logger.info(
+                        self.logger.info(
                             f"Relation created between {parent_model.__name__} and {child_model.__name__} for model {self.model.__name__}"
                         )
                         return list(getattr(parent, child_relation))
                     except Exception as ex:
-                        db_logger.error(
+                        self.logger.error(
                             f"Error creating relation: {ex} for model {self.model.__name__}",
                             exc_info=True,
                         )
-                        raise ex
+                        return None
                 else:
                     raise HTTPException(
                         status_code=404,
@@ -885,7 +885,7 @@ class BaseServiceDB:
     ):
         async with self.db.async_session() as session:
             try:
-                db_logger.debug(
+                self.logger.debug(
                     f"Fetching related items for item id: {item_id} for model {self.model.__name__}"
                 )
                 item = await session.execute(
@@ -893,16 +893,16 @@ class BaseServiceDB:
                 )
                 result = item.scalars().one_or_none()
                 if result:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"Related item found with id: {result.id} for model {self.model.__name__}"
                     )
                 else:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"No related item found for id: {item_id} for model {self.model.__name__}"
                     )
                 return result
             except NoResultFound:
-                db_logger.warning(
+                self.logger.warning(
                     f"No result found for item id: {item_id} for model {self.model.__name__}"
                 )
                 return None
@@ -944,7 +944,7 @@ class BaseServiceDB:
     ):
         async with self.db.async_session() as session:
             try:
-                db_logger.debug(
+                self.logger.debug(
                     f"Fetching related items for item id one level: {item_id} and property: {related_property} "
                     f"for model {self.model.__name__}"
                 )
@@ -956,18 +956,18 @@ class BaseServiceDB:
                 )
                 result = getattr(item.scalars().one(), related_property)
                 if result:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"Related item {result} found for property: {related_property} "
                         f"for model {self.model.__name__}"
                     )
                 else:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"No related item found one level for property: {related_property} "
                         f"for model {self.model.__name__}"
                     )
                 return result
             except NoResultFound:
-                db_logger.warning(
+                self.logger.warning(
                     f"No result found for item id one level: {item_id} and property: {related_property} "
                     f"for model {self.model.__name__}"
                 )
@@ -986,19 +986,19 @@ class BaseServiceDB:
 
         if related_item is not None:
             _id = related_item.id
-            db_logger.debug(
+            self.logger.debug(
                 f"Fetching nested related items for item id: {_id} and property: {related_property} "
                 f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
             )
             item = await service.get_related_item_level_one_by_id(
                 _id, nested_related_property
             )
-            db_logger.debug(
+            self.logger.debug(
                 f"Related item {item} found for item id: {_id} "
                 f"and nested_related_property: {nested_related_property} for model {self.model.__name__}"
             )
             return item
-        db_logger.warning(
+        self.logger.warning(
             f"No result found for item id: {item_id} and property: {related_property} "
             f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
         )
@@ -1032,7 +1032,7 @@ class BaseServiceDB:
     ):
         async with self.db.async_session() as session:
             try:
-                db_logger.debug(
+                self.logger.debug(
                     f"Fetching related items for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                 )
                 item = await session.execute(
@@ -1042,16 +1042,16 @@ class BaseServiceDB:
                 )
                 result = getattr(item.scalars().one(), related_property)
                 if result:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"Related item found {result} for property: {related_property} for model {self.model.__name__}"
                     )
                 else:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"No related item found for property: {related_property} for model {self.model.__name__}"
                     )
                 return result
             except NoResultFound:
-                db_logger.warning(
+                self.logger.warning(
                     f"No result found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                 )
                 return None
@@ -1083,7 +1083,7 @@ class BaseServiceDB:
     ):
         async with self.db.async_session() as session:
             try:
-                db_logger.debug(
+                self.logger.debug(
                     f"Fetching related item by two level for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                 )
                 query = (
@@ -1100,7 +1100,7 @@ class BaseServiceDB:
                 item = result.unique().scalars().one_or_none()
 
                 if item:
-                    db_logger.debug(
+                    self.logger.debug(
                         f"Item {item} found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                     )
                     related_items = getattr(item, related_property)
@@ -1110,7 +1110,7 @@ class BaseServiceDB:
                             items.append(final_point)
                     return items
                 else:
-                    db_logger.warning(
+                    self.logger.warning(
                         f"No item found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                     )
                     raise HTTPException(
@@ -1118,7 +1118,7 @@ class BaseServiceDB:
                         detail=f"{second_model} {filter_key} not found for model {self.model.__name__}",
                     )
             except Exception as e:
-                db_logger.error(
+                self.logger.error(
                     f"Error fetching related item for key: {filter_key} and value {filter_value} "
                     f"for model {self.model.__name__}: {e}",
                     exc_info=True,
@@ -1167,31 +1167,31 @@ class BaseServiceDB:
     def is_des(descending, order):
         try:
             if descending:
-                db_logger.debug("Setting order to descending")
+                db_logger_helper.debug("Setting order to descending")
                 return order.desc()
             else:
-                db_logger.debug("Setting order to ascending")
+                db_logger_helper.debug("Setting order to ascending")
                 return order.asc()
         except Exception as e:
-            db_logger.error(f"Error setting order: {e}", exc_info=True)
-            raise
+            db_logger_helper.error(f"Error setting order: {e}", exc_info=True)
+            return None
 
     @staticmethod
     def default_serializer(obj):
         try:
             if isinstance(obj, datetime):
-                db_logger.debug(f"Serializing datetime object: {obj}")
+                db_logger_helper.debug(f"Serializing datetime object: {obj}")
                 return obj.isoformat()
             raise TypeError(f"Type {type(obj)} not serializable")
         except Exception as e:
-            db_logger.error(f"Error serializing object {obj}: {e}", exc_info=True)
-            raise
+            db_logger_helper.error(f"Error serializing object {obj}: {e}", exc_info=True)
+            return None
 
     @staticmethod
     def to_dict(model):
         try:
             if isinstance(model, dict):
-                db_logger.debug("Model is already a dictionary")
+                db_logger_helper.debug("Model is already a dictionary")
                 return model
             elif isinstance(
                 model, Base
@@ -1200,16 +1200,16 @@ class BaseServiceDB:
                     column.name: getattr(model, column.name)
                     for column in model.__table__.columns
                 }
-                db_logger.debug(f"Extracted data from model: {data}")
+                db_logger_helper.debug(f"Extracted data from model: {data}")
                 data.pop("_sa_instance_state", None)
                 return data
             else:
                 raise TypeError("Unsupported type")
         except Exception as e:
-            db_logger.error(
+            db_logger_helper.error(
                 f"Error converting model {model} to dictionary: {e}", exc_info=True
             )
-            raise
+            return None
 
     # @staticmethod
     # def is_des(descending, order):
@@ -1241,31 +1241,31 @@ class BaseServiceDB:
 
     @staticmethod
     async def upload_file(self, upload_file: UploadFile):
-        db_logger.debug(f"Current Working Directory for uploading: {os.getcwd()}")
+        self.logger.debug(f"Current Working Directory for uploading: {os.getcwd()}")
 
         # Use an absolute path for the upload directory
         upload_dir = Path("/static/uploads")
 
-        db_logger.debug(
+        self.logger.debug(
             f"Upload Directory: {upload_dir.resolve()} and file name {upload_file.filename}"
         )
 
         try:
             upload_dir.mkdir(parents=True, exist_ok=True)
-            db_logger.debug(
+            self.logger.debug(
                 f"Does the upload directory exist after mkdir: {upload_dir.exists()}"
             )
             dest = upload_dir / upload_file.filename
-            db_logger.debug(f"Destination path: {dest}")
+            self.logger.debug(f"Destination path: {dest}")
 
             with dest.open("wb") as buffer:
                 shutil.copyfileobj(upload_file.file, buffer)
-            db_logger.debug(f"Does the file exist after writing: {dest.exists()}")
-            db_logger.info(f"File saved to {dest}")
+            self.logger.debug(f"Does the file exist after writing: {dest.exists()}")
+            self.logger.info(f"File saved to {dest}")
             return {"filename": upload_file.filename, "url": str(dest)}
         except Exception as e:
-            db_logger.error(f"Error type: {type(e)}")
-            db_logger.error(f"Error uploading file args: {e.args}", exc_info=True)
+            self.logger.error(f"Error type: {type(e)}")
+            self.logger.error(f"Error uploading file args: {e.args}", exc_info=True)
             return HTTPException(
                 status_code=500,
                 detail=f"Internal Server Error Uploading file: {str(e)}",

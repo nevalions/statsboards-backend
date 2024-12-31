@@ -2,7 +2,7 @@ version: 1
 disable_existing_loggers: false
 formatters:
   simple:
-    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s - Class: %(classname)s - Func: %(funcName)s'
 handlers:
   console:
     class: logging.StreamHandler
@@ -16,6 +16,9 @@ handlers:
     filename: backend.log
     maxBytes: 10485760  # 10MB
     backupCount: 5
+filters:
+  context_filter:
+    (): src.logging_config.ContextFilter
 loggers:
   backend_logger_fastapi:
     level: DEBUG
@@ -32,12 +35,17 @@ loggers:
   backend_logger_base_db:
     level: DEBUG
     handlers: [ console, file ]
+    filters: [context_filter]
     propagate: no
   backend_logger_helpers:
     level: ERROR
     handlers: [ console, file ]
     propagate: no
   backend_fetch_data_helpers:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_parser_eesl:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no

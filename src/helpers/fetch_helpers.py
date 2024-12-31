@@ -20,6 +20,7 @@ logger = logging.getLogger("backend_logger_helpers")
 fetch_data_logger = logging.getLogger("backend_fetch_data_helpers")
 
 
+
 async def fetch_list_of_matches_data(matches: List):
     from src.matches.db_services import MatchServiceDB
 
@@ -234,7 +235,7 @@ def instance_to_dict(instance):
         return result_dict
     except Exception as e:
         logger.error(f"Error converting instance to dictionary: {e}")
-        raise
+        return None
 
 
 def deep_dict_convert(obj):
@@ -260,7 +261,7 @@ def deep_dict_convert(obj):
         return result_dict
     except Exception as e:
         logger.error(f"Error in deep dictionary convert: {e}")
-        raise
+        return None
 
 
 # def instance_to_dict(instance):

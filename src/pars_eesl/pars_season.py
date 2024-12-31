@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from urllib.parse import urlparse
@@ -8,17 +9,22 @@ import re
 from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
+from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_SEASON_URL, SEASON_ID
 
+setup_logging()
+logger = logging.getLogger("backend_logger_parser_eesl")
 
 def parse_season_and_create_jsons(s_id: int):
+    logger.debug(f"Starting parse season and create json for season id:{s_id}")
     try:
         # s_id = 8  # 2024
         data = parse_season_index_page_eesl(s_id)
+        logger.debug(f"Parsed season id{s_id} data: {data}")
         return data
     except Exception as ex:
-        print(ex)
-        print(f"Something goes wrong, maybe no data in season id({s_id})")
+        logger.error(f"Something goes wrong, maybe no data in season id({s_id}), {ex}", exc_info=True)
+        return None
 
 
 async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_URL):

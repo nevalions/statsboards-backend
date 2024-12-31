@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.core.config import uploads_path
-from src.core.models.base import ws_manager, db_logger, db
+from src.core.models.base import ws_manager, db
 from src.football_events import api_football_event_router
 from src.gameclocks import api_gameclock_router
 from src.logging_config import setup_logging, logs_dir
@@ -30,6 +30,7 @@ from src.teams import api_team_router
 from src.tournaments import api_tournament_router, template_tournament_router
 
 logger = logging.getLogger("backend_logger_fastapi")
+db_logger = logging.getLogger("backend_logger_base_db")
 setup_logging()
 
 log_file_path = logs_dir / "backend.log"
