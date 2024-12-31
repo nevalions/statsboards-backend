@@ -98,47 +98,48 @@ class FileService:
         timestamp = data["timestamp"]
         upload_dir = data["upload_dir"]
 
-        # Open the image for resizing
-        self.logger.debug(f"Opening destination file for resize: {original_dest}")
-        with original_dest.open("rb") as image_file:
-            try:
-                image = Image.open(image_file)
-                self.logger.debug(f"Image opened: {image}")
-            except Exception as e:
-                self.logger.error(
-                    f"Problem opening image: {image} from {original_dest} {e}"
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="An error occurred while opening image for resize.",
-                )
+        image = await self.open_image_from_path(original_dest)
 
-            # Create and save the icon image
-            icon_filename = await self.resize_and_save_resized_uploaded_image(
-                icon_height, image, timestamp, upload_dir, upload_file.filename, "icon"
-            )
+        # Create and save the icon image
+        icon_filename = await self.resize_and_save_resized_uploaded_image(
+            icon_height,
+            image,
+            timestamp,
+            upload_dir,
+            upload_file.filename,
+            "icon",
+        )
 
-            # Create and save the web view image
-            webview_filename = await self.resize_and_save_resized_uploaded_image(
-                web_view_height,
-                image,
-                timestamp,
-                upload_dir,
-                upload_file.filename,
-                "webview",
-            )
+        # Create and save the web view image
+        webview_filename = await self.resize_and_save_resized_uploaded_image(
+            web_view_height,
+            image,
+            timestamp,
+            upload_dir,
+            upload_file.filename,
+            "webview",
+        )
 
         # Construct relative path for all images
-        rel_original_dest = Path("/static/uploads") / sub_folder / original_filename
-        rel_icon_dest = Path("/static/uploads") / sub_folder / icon_filename
-        rel_webview_dest = Path("/static/uploads") / sub_folder / webview_filename
+        try:
+            rel_original_dest = Path("/static/uploads") / sub_folder / original_filename
+            rel_icon_dest = Path("/static/uploads") / sub_folder / icon_filename
+            rel_webview_dest = Path("/static/uploads") / sub_folder / webview_filename
 
-        # Create a dictionary to return the paths of all the image versions created
-        return {
-            "original": str(rel_original_dest),
-            "icon": str(rel_icon_dest),
-            "webview": str(rel_webview_dest),
-        }
+            final_urls_for_uploaded_and_resized_image = {
+                "original": str(rel_original_dest),
+                "icon": str(rel_icon_dest),
+                "webview": str(rel_webview_dest),
+            }
+
+            self.logger.info(
+                f"URLs for uploaded and resized images generated: {final_urls_for_uploaded_and_resized_image}"
+            )
+            return final_urls_for_uploaded_and_resized_image
+        except Exception as e:
+            self.logger.error(
+                f"Generating resized image for subfolder: {sub_folder} {e}"
+            )
 
     async def resize_and_save_resized_downloaded_image(
         self,
@@ -156,9 +157,10 @@ class FileService:
         )
 
         self.logger.debug(f"Downloaded Image filename: {file_name}")
-        dest = upload_dir
         try:
-            await self.final_image_resizer_and_save(dest, file_name, height, image)
+            await self.final_image_resizer_and_save(
+                upload_dir, file_name, height, image
+            )
             return file_name
         except Exception as e:
             self.logger.error(f"Problem resizing downloaded image: {e}")
@@ -215,20 +217,6 @@ class FileService:
             file_name = f"{timestamp}_{_type}_{upload_file_filename}"
         self.logger.debug(f"Generated filename: {file_name}")
         return file_name
-
-    # async def save_uploaded_file_with_image_format_to_destination(
-    #     self, dest, save_image, image
-    # ):
-    #     self.logger.debug(f"Saving upload image to folder: {dest}")
-    #     try:
-    #         with dest.open("wb") as icon_buffer:
-    #             save_image.save(icon_buffer, format=image.format)
-    #         self.logger.info(f"Uploaded image saved: {dest}")
-    #     except Exception as e:
-    #         self.logger.error(f"Problem saving uploaded image to: {save_image} {e}")
-    #         raise HTTPException(
-    #             status_code=400, detail="An error occurred while saving upload image."
-    #         )
 
     async def save_file_with_image_format_to_destination(self, dest, save_image, image):
         self.logger.debug(f"Saving image to folder: {dest}")
@@ -307,10 +295,12 @@ class FileService:
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
     async def get_most_common_color(self, image_path: str):
+        self.logger.debug(f"Getting most common color: {image_path}")
         img = Image.open(image_path)
 
         # If the image has an alpha (transparency) channel, convert it to RGB
         if img.mode == "RGBA":
+            self.logger.debug(f"Most common color: {img.mode}")
             temp_img = Image.new("RGB", img.size)
             temp_img.paste(img, mask=img.split()[3])  # 3 is the alpha channel
             img = temp_img
@@ -340,6 +330,7 @@ class FileService:
                 else None
             )
         else:
+            self.logger.warning(f"No common color detected")
             return None
 
     async def fetch_image_data_from_url(self, img_url: str) -> bytes:
@@ -396,9 +387,9 @@ class FileService:
             with open(file_path, "rb") as file:
                 file_data = file.read()
                 try:
-                    filename = os.path.basename(file_path)
-                    self.logger.debug(f"Filename: {filename}")
-                    return {"filename": filename, "data": file_data}
+                    _filename = os.path.basename(file_path)
+                    self.logger.debug(f"Filename: {_filename}")
+                    return {"filename": _filename, "data": file_data}
                 except Exception as e:
                     self.logger.error(f"Error opening file from {file_path}: {e}")
         except Exception as e:
@@ -558,71 +549,16 @@ class FileService:
             "relative_webview_url": relative_webview_url,
         }
 
-    # async def download_and_process_image(
-    #     self,
-    #     image_url: str,
-    #     image_type_prefix: str,
-    #     image_title: str,
-    #     icon_height: int,
-    #     web_view_height: int,
-    # ) -> DownloadedAndResizedImagesPaths:
-    #     self.logger.debug(f"Getting paths for downloaded and resized image")
-    #     path = urlparse(image_url).path
-    #     ext = Path(path).suffix
-    #
-    #     main_path = f"{image_type_prefix}"
-    #     static_uploads_path = "/static/uploads/"
-    #
-    #     image_filename = image_title.strip().replace(" ", "_")
-    #     image_icon_filename = f"{image_filename}_{icon_height}px{ext}"
-    #     image_webview_filename = f"{image_filename}_{web_view_height}px{ext}"
-    #
-    #     image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
-    #     image_icon_path = os.path.join(
-    #         uploads_path, f"{main_path}{image_icon_filename}"
-    #     )
-    #     image_webview_path = os.path.join(
-    #         uploads_path, f"{main_path}{image_webview_filename}"
-    #     )
-    #
-    #     relative_image_path = os.path.join(
-    #         f"{static_uploads_path}{main_path}", f"{image_filename}{ext}"
-    #     )
-    #     relative_image_icon_path = os.path.join(
-    #         f"{static_uploads_path}{main_path}", f"{image_icon_filename}"
-    #     )
-    #     relative_image_webview_path = os.path.join(
-    #         f"{static_uploads_path}{main_path}", f"{image_webview_filename}"
-    #     )
-    #
-    #     # Download and resize the image
-    #     await file_service.download_and_resize_image(
-    #         image_url,
-    #         image_path,
-    #         image_icon_path,
-    #         image_webview_path,
-    #         icon_height=icon_height,
-    #         web_view_height=web_view_height,
-    #     )
-    #
-    #     final_paths_processed = {
-    #         "image_path": image_path,
-    #         "image_url": relative_image_path,
-    #         "image_icon_url": relative_image_icon_path,
-    #         "image_webview_url": relative_image_webview_path,
-    #     }
-    #
-    #     self.logger.info(
-    #         f"Final processed download and resized images paths: {final_paths_processed}"
-    #     )
-    #
-    #     return final_paths_processed
-
-    @staticmethod
-    def hex_to_rgb(hex_color: str):
-        hex_color = hex_color.lstrip("#")
-        # Convert the hex color to a tuple of integers and return it.
-        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+    def hex_to_rgb(self, hex_color: str):
+        try:
+            self.logger.debug(f"Converting hex color: {hex_color}")
+            hex_color = hex_color.lstrip("#")
+            # Convert the hex color to a tuple of integers and return it.
+            final_color = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+            self.logger.info(f"Converted hex color: {final_color}")
+            return final_color
+        except Exception as e:
+            self.logger.warning(f"Problem converting hex color: {hex_color} {e}")
 
 
 file_service = FileService()
