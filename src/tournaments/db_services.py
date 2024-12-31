@@ -1,12 +1,12 @@
-import asyncio
-
 from fastapi import HTTPException
 from sqlalchemy import select
 
 from src.core.models import db, BaseServiceDB, TournamentDB, PlayerTeamTournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
+from ..logging_config import setup_logging, get_logger
 from ..sponsor_lines.db_services import SponsorLineServiceDB
-from ..sponsors.db_services import SponsorServiceDB
+
+setup_logging()
 
 
 class TournamentServiceDB(BaseServiceDB):
@@ -15,6 +15,7 @@ class TournamentServiceDB(BaseServiceDB):
             database,
             TournamentDB,
         )
+        self.logger = get_logger("backend_logger_TournamentServiceDB", self)
 
     async def create_or_update_tournament(
         self,
@@ -22,13 +23,18 @@ class TournamentServiceDB(BaseServiceDB):
     ):
         try:
             # Try to query for existing item
+            self.logger.debug(
+                f"Creat or update tournament:{t.id} with eesl_id:{t.tournament_eesl_id}"
+            )
             if t.tournament_eesl_id:
-                print("EESL ID", t.tournament_eesl_id)
+                self.logger.debug(f"Get tournament eesl_id:{t.tournament_eesl_id}")
                 tournament_from_db = await self.get_tournament_by_eesl_id(
                     t.tournament_eesl_id
                 )
                 if tournament_from_db:
-                    print("Tournament already exist")
+                    self.logger.debug(
+                        f"Tournament eesl_id:{t.tournament_eesl_id} already exists updating"
+                    )
                     return await self.update_tournament_by_eesl(
                         "tournament_eesl_id",
                         t,
@@ -72,6 +78,7 @@ class TournamentServiceDB(BaseServiceDB):
             sponsor_line_id=t.sponsor_line_id,
             tournament_eesl_id=t.tournament_eesl_id,
         )
+        self.logger.debug(f"Create new tournament:{tournament}")
         return await super().create(tournament)
 
     async def get_tournament_by_eesl_id(
@@ -79,7 +86,7 @@ class TournamentServiceDB(BaseServiceDB):
         value,
         field_name="tournament_eesl_id",
     ):
-        print("Getting tournament with eesl_id", value, field_name)
+        self.logger.debug(f"Get tournament {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
             field_name=field_name,
@@ -91,6 +98,7 @@ class TournamentServiceDB(BaseServiceDB):
         item: TournamentSchemaUpdate,
         **kwargs,
     ):
+        self.logger.debug(f"Update tournament:{item_id}")
         return await super().update(
             item_id,
             item,
@@ -101,6 +109,7 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ):
+        self.logger.debug(f"Get teams by tournament id:{tournament_id}")
         return await self.get_related_item_level_one_by_id(
             tournament_id,
             "teams",
@@ -119,6 +128,7 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ):
+        self.logger.debug(f"Get players by tournament id:{tournament_id}")
         async with self.db.async_session() as session:
             stmt = select(PlayerTeamTournamentDB).where(
                 PlayerTeamTournamentDB.tournament_id == tournament_id
@@ -132,23 +142,33 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ):
+        self.logger.debug(f"Get matches by tournament id:{tournament_id}")
         return await self.get_related_item_level_one_by_id(
             tournament_id,
             "matches",
         )
 
     async def get_main_tournament_sponsor(self, tournament_id: int):
+        self.logger.debug(
+            f"Get main tournament's sponsor by tournament id:{tournament_id}"
+        )
         return await self.get_related_item_level_one_by_id(
             tournament_id, "main_sponsor"
         )
 
     async def get_tournament_sponsor_line(self, tournament_id: int):
+        self.logger.debug(
+            f"Get tournament's sponsor line by tournament id:{tournament_id}"
+        )
         return await self.get_related_item_level_one_by_id(
             tournament_id, "sponsor_line"
         )
 
     async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
         sponsor_service = SponsorLineServiceDB(self.db)
+        self.logger.debug(
+            f"Get sponsors of tournament sponsor line tournament id:{tournament_id}"
+        )
         return await self.get_nested_related_item_by_id(
             tournament_id,
             sponsor_service,
@@ -179,19 +199,3 @@ class TournamentServiceDB(BaseServiceDB):
     #         'sponsor_line',
     #         'sponsors'
     #     )
-
-
-#
-# async def get_tournament_db() -> TournamentServiceDB:
-#     yield TournamentServiceDB(db)
-#
-#
-# async def async_main() -> None:
-#     tournament_service = TournamentServiceDB(db)
-#     # t = await tournament_service.get_tournaments_by_year(2222)
-#     # print(t)
-#     # print(t.__dict__)
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(async_main())

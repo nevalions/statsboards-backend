@@ -67,6 +67,10 @@ loggers:
     handlers: [ console, file ]
     propagate: no
 
+  backend_logger_TournamentServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
   backend_logger_MatchServiceDB:
     level: WARNING
     handlers: [ console, file ]

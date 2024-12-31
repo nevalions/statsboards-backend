@@ -138,7 +138,8 @@ class FileService:
             return final_urls_for_uploaded_and_resized_image
         except Exception as e:
             self.logger.error(
-                f"Generating resized image for subfolder: {sub_folder} {e}"
+                f"Generating resized image for subfolder: {sub_folder} {e}",
+                exc_info=True,
             )
 
     async def resize_and_save_resized_downloaded_image(
@@ -163,7 +164,7 @@ class FileService:
             )
             return file_name
         except Exception as e:
-            self.logger.error(f"Problem resizing downloaded image: {e}")
+            self.logger.error(f"Problem resizing downloaded image: {e}", exc_info=True)
 
     async def resize_and_save_resized_uploaded_image(
         self,
@@ -186,18 +187,18 @@ class FileService:
             await self.final_image_resizer_and_save(dest, file_name, height, image)
             return file_name
         except Exception as e:
-            self.logger.error(f"Problem resizing image: {e}")
+            self.logger.error(f"Problem resizing image: {e}", exc_info=True)
 
     async def final_image_resizer_and_save(self, dest, file_name, height, image):
         try:
             width = int((image.width / image.height) * height)
         except Exception as e:
-            self.logger.error(f"Problem getting width: {e}")
+            self.logger.error(f"Problem getting width: {e}", exc_info=True)
             raise
         try:
             resized_image = image.resize((width, height), Image.Resampling.LANCZOS)
         except Exception as e:
-            self.logger.error(f"Problem resizing image: {e}")
+            self.logger.error(f"Problem resizing image: {e}", exc_info=True)
             raise
 
         await self.save_file_with_image_format_to_destination(
@@ -225,7 +226,9 @@ class FileService:
                 save_image.save(icon_buffer, format=image.format)
             self.logger.info(f"image saved: {dest}")
         except Exception as e:
-            self.logger.error(f"Problem saving image to: {save_image} {e}")
+            self.logger.error(
+                f"Problem saving image to: {save_image} {e}", exc_info=True
+            )
             raise HTTPException(
                 status_code=400,
                 detail="An error occurred while saving image.",
@@ -259,7 +262,8 @@ class FileService:
                 shutil.copyfileobj(upload_file.file, buffer)
         except Exception as ex:
             self.logger.error(
-                f"Problem with saving image to destination {original_dest} {ex}"
+                f"Problem with saving image to destination {original_dest} {ex}",
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=400, detail="An error occurred while uploading file."
@@ -286,12 +290,13 @@ class FileService:
             self.logger.debug(f"Directory created for subfolder: {sub_folder}")
         except Exception as e:
             self.logger.error(
-                f"Problem with saving image for subfolder: {sub_folder} {e}"
+                f"Problem with saving image for subfolder: {sub_folder} {e}",
+                exc_info=True,
             )
 
     async def is_image_type(self, upload_file):
         if not upload_file.content_type.startswith("image/"):
-            self.logger.error(f"Uploaded file type not an image")
+            self.logger.error(f"Uploaded file type not an image", exc_info=True)
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
     async def get_most_common_color(self, image_path: str):
@@ -363,7 +368,9 @@ class FileService:
                 fp.write(image_data)
                 self.logger.info(f"Image saved successfully: {image_path}")
         except Exception as e:
-            self.logger.error(f"Error saving image to file {image_path}: {e}")
+            self.logger.error(
+                f"Error saving image to file {image_path}: {e}", exc_info=True
+            )
             raise
 
     async def download_image(
@@ -377,7 +384,7 @@ class FileService:
             return path_with_image_name
         except Exception as e:
             self.logger.error(
-                f"Error downloading image from {img_url} to {path_with_image_name}: {e}"
+                f"Error downloading image from {img_url} to {path_with_image_name}: {e}, exc_info=True"
             )
             raise
 
@@ -391,9 +398,13 @@ class FileService:
                     self.logger.debug(f"Filename: {_filename}")
                     return {"filename": _filename, "data": file_data}
                 except Exception as e:
-                    self.logger.error(f"Error opening file from {file_path}: {e}")
+                    self.logger.error(
+                        f"Error opening file from {file_path}: {e}", exc_info=True
+                    )
         except Exception as e:
-            self.logger.error(f"Error opening file from {file_path}: {e}")
+            self.logger.error(
+                f"Error opening file from {file_path}: {e}", exc_info=True
+            )
             raise
 
     async def open_image_from_file(self, file):
@@ -401,7 +412,7 @@ class FileService:
             self.logger.debug(f"Opening image from file")
             image = Image.open(BytesIO(file))
         except Exception as e:
-            self.logger.error(f"Error opening image from file: {e}")
+            self.logger.error(f"Error opening image from file: {e}", exc_info=True)
             raise
         return image
 
@@ -412,7 +423,7 @@ class FileService:
             self.logger.debug(f"Path created: {os.path.dirname(path)}")
             return path
         except Exception as e:
-            self.logger.error(f"Error creating path {path}: {e}")
+            self.logger.error(f"Error creating path {path}: {e}", exc_info=True)
             raise
 
     async def open_image_from_path(self, image_path: str) -> Image:
@@ -422,7 +433,9 @@ class FileService:
                 image_data = file.read()
                 return Image.open(BytesIO(image_data))
         except Exception as e:
-            self.logger.error(f"Error opening image from {image_path}: {e}")
+            self.logger.error(
+                f"Error opening image from {image_path}: {e}", exc_info=True
+            )
             raise
 
     async def download_and_resize_image(
@@ -558,7 +571,9 @@ class FileService:
             self.logger.info(f"Converted hex color: {final_color}")
             return final_color
         except Exception as e:
-            self.logger.warning(f"Problem converting hex color: {hex_color} {e}")
+            self.logger.warning(
+                f"Problem converting hex color: {hex_color} {e}", exc_info=True
+            )
 
 
 file_service = FileService()
