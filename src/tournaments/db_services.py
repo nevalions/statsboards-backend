@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import db, BaseServiceDB, TournamentDB, PlayerTeamTournamentDB
+from src.core.models import BaseServiceDB, TournamentDB, PlayerTeamTournamentDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 from ..logging_config import setup_logging, get_logger
 from ..sponsor_lines.db_services import SponsorLineServiceDB
@@ -43,7 +43,7 @@ class TournamentServiceDB(BaseServiceDB):
             else:
                 return await self.create_new_tournament(t)
         except Exception as ex:
-            print(ex)
+            self.logger.error(f"{ITEM} returned an error: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=409,
                 detail=f"{ITEM} ({t}) returned some error",

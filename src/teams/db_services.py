@@ -43,7 +43,7 @@ class TeamServiceDB(BaseServiceDB):
             else:
                 return await self.create_new_team(t)
         except Exception as ex:
-            print(ex)
+            self.logger.error(f"{ITEM} returned an error: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=409,
                 detail=f"{ITEM} ({t}) returned some error",
@@ -182,21 +182,3 @@ class TeamServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
-
-
-# async def get_team_db() -> TeamServiceDB:
-#     yield TeamServiceDB(db)
-#
-#
-# async def async_main() -> None:
-#     team_service = TeamServiceDB(db)
-#     # t = await team_service.get_team_by_id(1)
-#     # t = await team_service.find_team_tournament_relation(6, 2)
-#     # print(t)
-#     t = await team_service.get_team_by_eesl_id(1)
-#     if t:
-#         print(t.__dict__)
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(async_main())
