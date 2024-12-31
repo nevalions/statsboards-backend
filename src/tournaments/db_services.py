@@ -7,6 +7,7 @@ from ..logging_config import setup_logging, get_logger
 from ..sponsor_lines.db_services import SponsorLineServiceDB
 
 setup_logging()
+ITEM = "TOURNAMENT"
 
 
 class TournamentServiceDB(BaseServiceDB):
@@ -16,22 +17,22 @@ class TournamentServiceDB(BaseServiceDB):
             TournamentDB,
         )
         self.logger = get_logger("backend_logger_TournamentServiceDB", self)
+        self.logger.debug(f"Initialized TournamentServiceDB")
 
     async def create_or_update_tournament(
         self,
         t: TournamentSchemaCreate | TournamentSchemaUpdate,
     ):
         try:
-            # Try to query for existing item
-            self.logger.debug(f"Creat or update tournament:{t}")
+            self.logger.debug(f"Creat or update {ITEM}:{t}")
             if t.tournament_eesl_id:
-                self.logger.debug(f"Get tournament eesl_id:{t.tournament_eesl_id}")
+                self.logger.debug(f"Get {ITEM} eesl_id:{t.tournament_eesl_id}")
                 tournament_from_db = await self.get_tournament_by_eesl_id(
                     t.tournament_eesl_id
                 )
                 if tournament_from_db:
                     self.logger.debug(
-                        f"Tournament eesl_id:{t.tournament_eesl_id} already exists updating"
+                        f"{ITEM} eesl_id:{t.tournament_eesl_id} already exists updating"
                     )
                     return await self.update_tournament_by_eesl(
                         "tournament_eesl_id",
@@ -40,13 +41,12 @@ class TournamentServiceDB(BaseServiceDB):
                 else:
                     return await self.create_new_tournament(t)
             else:
-                print("Creating new tournament")
                 return await self.create_new_tournament(t)
         except Exception as ex:
             print(ex)
             raise HTTPException(
                 status_code=409,
-                detail=f"Tournament eesl id:({t}) returned some error",
+                detail=f"{ITEM} ({t}) returned some error",
             )
 
     async def update_tournament_by_eesl(
@@ -54,6 +54,7 @@ class TournamentServiceDB(BaseServiceDB):
         eesl_field_name: str,
         t: TournamentSchemaUpdate,
     ):
+        self.logger.debug(f"Update {ITEM} {eesl_field_name}:{t.tournament_eesl_id}")
         return await self.update_item_by_eesl_id(
             eesl_field_name,
             t.tournament_eesl_id,
@@ -76,7 +77,7 @@ class TournamentServiceDB(BaseServiceDB):
             sponsor_line_id=t.sponsor_line_id,
             tournament_eesl_id=t.tournament_eesl_id,
         )
-        self.logger.debug(f"Create new tournament:{tournament}")
+        self.logger.debug(f"Create new {ITEM}:{tournament}")
         return await super().create(tournament)
 
     async def get_tournament_by_eesl_id(
@@ -84,7 +85,7 @@ class TournamentServiceDB(BaseServiceDB):
         value,
         field_name="tournament_eesl_id",
     ):
-        self.logger.debug(f"Get tournament {field_name}:{value}")
+        self.logger.debug(f"Get {ITEM} {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
             field_name=field_name,
@@ -96,7 +97,7 @@ class TournamentServiceDB(BaseServiceDB):
         item: TournamentSchemaUpdate,
         **kwargs,
     ):
-        self.logger.debug(f"Update tournament:{item_id}")
+        self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,
             item,
@@ -107,7 +108,7 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ):
-        self.logger.debug(f"Get teams by tournament id:{tournament_id}")
+        self.logger.debug(f"Get teams by {ITEM} id:{tournament_id}")
         return await self.get_related_item_level_one_by_id(
             tournament_id,
             "teams",
@@ -126,7 +127,7 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ):
-        self.logger.debug(f"Get players by tournament id:{tournament_id}")
+        self.logger.debug(f"Get players by {ITEM} id:{tournament_id}")
         async with self.db.async_session() as session:
             stmt = select(PlayerTeamTournamentDB).where(
                 PlayerTeamTournamentDB.tournament_id == tournament_id
@@ -140,24 +141,20 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ):
-        self.logger.debug(f"Get matches by tournament id:{tournament_id}")
+        self.logger.debug(f"Get matches by {ITEM} id:{tournament_id}")
         return await self.get_related_item_level_one_by_id(
             tournament_id,
             "matches",
         )
 
     async def get_main_tournament_sponsor(self, tournament_id: int):
-        self.logger.debug(
-            f"Get main tournament's sponsor by tournament id:{tournament_id}"
-        )
+        self.logger.debug(f"Get main tournament's sponsor by {ITEM} id:{tournament_id}")
         return await self.get_related_item_level_one_by_id(
             tournament_id, "main_sponsor"
         )
 
     async def get_tournament_sponsor_line(self, tournament_id: int):
-        self.logger.debug(
-            f"Get tournament's sponsor line by tournament id:{tournament_id}"
-        )
+        self.logger.debug(f"Get tournament's sponsor line by {ITEM} id:{tournament_id}")
         return await self.get_related_item_level_one_by_id(
             tournament_id, "sponsor_line"
         )
@@ -165,7 +162,7 @@ class TournamentServiceDB(BaseServiceDB):
     async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
         sponsor_service = SponsorLineServiceDB(self.db)
         self.logger.debug(
-            f"Get sponsors of tournament sponsor line tournament id:{tournament_id}"
+            f"Get sponsors of tournament sponsor line {ITEM} id:{tournament_id}"
         )
         return await self.get_nested_related_item_by_id(
             tournament_id,
