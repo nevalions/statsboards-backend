@@ -20,7 +20,6 @@ logger = logging.getLogger("backend_logger_helpers")
 fetch_data_logger = logging.getLogger("backend_fetch_data_helpers")
 
 
-
 async def fetch_list_of_matches_data(matches: List):
     from src.matches.db_services import MatchServiceDB
 

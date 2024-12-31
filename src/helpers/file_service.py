@@ -9,6 +9,9 @@ from datetime import datetime
 from fastapi import UploadFile, HTTPException
 from pathlib import Path
 
+from src.logging_config import get_logger
+
+
 
 class FileService:
 
@@ -18,38 +21,49 @@ class FileService:
     ):
         self.base_upload_dir = upload_dir
         self.base_upload_dir.mkdir(parents=True, exist_ok=True)
+        self.logger = get_logger("backend_logger_fileservice", self)
+        self.logger.debug(f"Initializing FileService")
 
-    def sanitize_filename(sels, filename):
-        filename = filename.strip().replace(' ', '_')
-
-        return filename
+    @staticmethod
+    def sanitize_filename(self, filename):
+        self.logger.debug(f"Sanitizing filename: {filename}")
+        try:
+            filename = filename.strip().replace(' ', '_')
+            self.logger.debug(f"Sanitized filename: {filename}")
+            return filename
+        except Exception as e:
+            self.logger.debug(f"Problem with sanitizing filename: {filename} {e}")
 
     async def save_upload_image(self, upload_file: UploadFile, sub_folder: str):
-        print('Saving image...')
+        self.logger.debug(f"Saving image for subfolder: {sub_folder}")
 
         upload_dir = self.base_upload_dir / sub_folder
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        print(upload_dir)
-
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        filename = f"{timestamp}_{upload_file.filename}"
-
-        dest = upload_dir / filename
-
-        if not upload_file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="Unsupported file type")
+        self.logger.debug(f"Saving image for subfolder: {sub_folder}")
 
         try:
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            self.logger.debug(f"Directory created for subfolder: {sub_folder}")
+        except Exception as e:
+            self.logger.error(f"Problem with saving image for subfolder: {sub_folder} {e}")
+
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        self.logger.debug(f"Timestamp: {timestamp}")
+        filename = f"{timestamp}_{upload_file.filename}"
+        self.logger.debug(f"filename: {filename}")
+        dest = upload_dir / filename
+        self.logger.debug(f"destination: {dest}")
+
+        await self.is_image_type(upload_file)
+        try:
             with dest.open("wb") as buffer:
+                self.logger.debug(f"Trying to save image")
                 shutil.copyfileobj(upload_file.file, buffer)
         except Exception as ex:
-            print(ex)
+            self.logger.error(f"Problem with saving image to destination {dest} {ex}")
             raise HTTPException(status_code=400, detail="An error occurred while uploading file.")
 
-        print('file destination', str(dest))
-
-        # Construct the relative path
         rel_dest = Path('/static/uploads') / sub_folder / filename
+        self.logger.debug(f"Relative destination path: {rel_dest}")
         return str(rel_dest)
 
     async def save_and_resize_upload_image(
@@ -69,8 +83,7 @@ class FileService:
         original_filename = f"{timestamp}_{upload_file.filename}"
         original_dest = upload_dir / original_filename
 
-        if not upload_file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="Unsupported file type")
+        await self.is_image_type(upload_file)
 
         try:
             with original_dest.open("wb") as buffer:
@@ -114,6 +127,11 @@ class FileService:
             "icon": str(rel_icon_dest),
             "webview": str(rel_webview_dest)
         }
+
+    async def is_image_type(self, upload_file):
+        if not upload_file.content_type.startswith('image/'):
+            self.logger.error(f"Uploaded file type not an image")
+            raise HTTPException(status_code=400, detail="Unsupported file type")
 
     async def get_most_common_color(self, image_path: str):
         img = Image.open(image_path)
