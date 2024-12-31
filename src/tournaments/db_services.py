@@ -23,9 +23,7 @@ class TournamentServiceDB(BaseServiceDB):
     ):
         try:
             # Try to query for existing item
-            self.logger.debug(
-                f"Creat or update tournament:{t.id} with eesl_id:{t.tournament_eesl_id}"
-            )
+            self.logger.debug(f"Creat or update tournament:{t}")
             if t.tournament_eesl_id:
                 self.logger.debug(f"Get tournament eesl_id:{t.tournament_eesl_id}")
                 tournament_from_db = await self.get_tournament_by_eesl_id(

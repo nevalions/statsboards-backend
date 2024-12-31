@@ -59,7 +59,9 @@ class Database:
             self.logger.critical(f"OS error during connection test: {e}")
             raise
         except Exception as e:
-            self.logger.critical(f"Unexpected error during database connection test: {e}")
+            self.logger.critical(
+                f"Unexpected error during database connection test: {e}"
+            )
             raise
 
     async def close(self):
@@ -90,17 +92,13 @@ class MatchDataWebSocketManager:
         self.logger.debug(f"GameClock Queues {self.gameclock_queues}")
 
     async def disconnect(self, client_id: str):
-        self.logger.debug(
-            f"Disconnecting from WebSocket with client_id: {client_id}"
-        )
+        self.logger.debug(f"Disconnecting from WebSocket with client_id: {client_id}")
 
         try:
             self.match_data_queues.pop(client_id)
             self.logger.info(f"Deleted match data queue for client {client_id}")
         except KeyError:
-            self.logger.warning(
-                f"No match data queue found for client {client_id}"
-            )
+            self.logger.warning(f"No match data queue found for client {client_id}")
 
         try:
             self.playclock_queues.pop(client_id)
@@ -221,9 +219,7 @@ class ConnectionManager:
         self.logger.info("ConnectionManager initialized")
 
     async def connect(self, websocket: WebSocket, client_id: str, match_id: int = None):
-        self.logger.info(
-            f"Active Connections len: {len(self.active_connections)}"
-        )
+        self.logger.info(f"Active Connections len: {len(self.active_connections)}")
         self.logger.info(f"Active Connections {self.active_connections}")
         self.logger.info(
             f"Connecting to WebSocket at {websocket} with client_id: {client_id} and match_id: {match_id}"
@@ -233,13 +229,9 @@ class ConnectionManager:
             self.logger.debug(
                 f"Client with client_id:{client_id} in active_connections: {self.active_connections}"
             )
-            self.logger.warning(
-                f"Closing connection for client_id:{client_id}"
-            )
+            self.logger.warning(f"Closing connection for client_id:{client_id}")
             await self.active_connections[client_id].close()
-            self.logger.debug(
-                f"Active connections: {self.active_connections}"
-            )
+            self.logger.debug(f"Active connections: {self.active_connections}")
 
         self.logger.debug(
             f"Adding new connection for client with client_id: {client_id}"
@@ -308,9 +300,7 @@ class ConnectionManager:
         # print(
         #     f"[Debug][send_to_all] Current match_subscriptions: {self.match_subscriptions}"
         # )
-        self.logger.debug(
-            f"Sending data: {data} with match_id: {match_id}"
-        )
+        self.logger.debug(f"Sending data: {data} with match_id: {match_id}")
         self.logger.debug(
             f"Current match with match_id: {match_id}, subscriptions: {self.match_subscriptions[match_id]}"
         )
@@ -412,7 +402,9 @@ class BaseServiceDB:
 
             items = await session.execute(stmt)
             result = items.scalars().all()
-            self.logger.debug(f"Fetched {len(result)} elements for {self.model.__name__}")
+            self.logger.debug(
+                f"Fetched {len(result)} elements for {self.model.__name__}"
+            )
             return list(result)
 
     async def get_by_id(self, item_id: int):
@@ -570,7 +562,7 @@ class BaseServiceDB:
 
                 result: Result = await session.execute(stmt)
                 self.logger.debug(
-                    f"Query result: {result.all()} for model {self.model.__name__}"
+                    f"Query result: {result} for model {self.model.__name__}"
                 )
 
                 return result.scalars().one_or_none()
@@ -716,7 +708,9 @@ class BaseServiceDB:
         field_name_one: str,
         field_name_two: str,
     ) -> bool:
-        self.logger.debug(f"Checking if relation exists for model {self.model.__name__}")
+        self.logger.debug(
+            f"Checking if relation exists for model {self.model.__name__}"
+        )
         existing_record = await self.find_relation(
             secondary_table,
             fk_item_one,
@@ -1184,7 +1178,9 @@ class BaseServiceDB:
                 return obj.isoformat()
             raise TypeError(f"Type {type(obj)} not serializable")
         except Exception as e:
-            db_logger_helper.error(f"Error serializing object {obj}: {e}", exc_info=True)
+            db_logger_helper.error(
+                f"Error serializing object {obj}: {e}", exc_info=True
+            )
             return None
 
     @staticmethod
