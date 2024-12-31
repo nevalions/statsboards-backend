@@ -15,6 +15,7 @@ from src.pars_eesl.pars_settings import BASE_SEASON_URL, SEASON_ID
 setup_logging()
 logger = logging.getLogger("backend_logger_parser_eesl")
 
+
 def parse_season_and_create_jsons(s_id: int):
     logger.debug(f"Starting create parsed json for season id:{s_id}")
     try:
@@ -23,7 +24,10 @@ def parse_season_and_create_jsons(s_id: int):
         logger.debug(f"Parsed json for season id{s_id} data: {data}")
         return data
     except Exception as ex:
-        logger.error(f"Something goes wrong with creating parsed json, maybe no data in season id:{s_id}, {ex}", exc_info=True)
+        logger.error(
+            f"Something goes wrong with creating parsed json, maybe no data in season id:{s_id}, {ex}",
+            exc_info=True,
+        )
         return None
 
 
@@ -49,9 +53,9 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
                     .strip()
                 )
                 logger.debug(f"Tournament title: {tournament_title}")
-                tournament_logo_url = t.find("img", class_="tournaments-archive__img").get(
-                    "src"
-                )
+                tournament_logo_url = t.find(
+                    "img", class_="tournaments-archive__img"
+                ).get("src")
                 logger.debug(f"Tournament logo url: {tournament_logo_url}")
                 path = urlparse(tournament_logo_url).path
                 ext = Path(path).suffix
@@ -60,7 +64,7 @@ async def parse_season_index_page_eesl(s_id: int, base_url: str = BASE_SEASON_UR
                 web_view_image_height = 400
 
                 image_info = await file_service.download_and_process_image(
-                    image_url=tournament_logo_url,
+                    img_url=tournament_logo_url,
                     image_type_prefix="tournaments/logos/",
                     image_title=tournament_title,
                     icon_height=icon_image_height,

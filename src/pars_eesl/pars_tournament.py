@@ -56,7 +56,7 @@ async def parse_tournament_teams_index_page_eesl(
             web_view_image_height = 400
 
             image_info = await file_service.download_and_process_image(
-                image_url=team_logo_url,
+                img_url=team_logo_url,
                 image_type_prefix="teams/logos/",
                 image_title=team_title,
                 icon_height=icon_image_height,
