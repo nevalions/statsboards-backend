@@ -6,7 +6,7 @@ venv/
 /static/uploads/
 /localhost.crt
 /localhost.key
-*.log
+*.log*
 activate.sh
 *.gz
 .env

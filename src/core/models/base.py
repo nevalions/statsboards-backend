@@ -5,7 +5,16 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Dict, AsyncGenerator, Callable, Awaitable, Coroutine
+from typing import (
+    Any,
+    List,
+    Dict,
+    AsyncGenerator,
+    Callable,
+    Awaitable,
+    Coroutine,
+    final,
+)
 
 import asyncpg
 from aiohttp.log import client_logger
@@ -413,19 +422,22 @@ class BaseServiceDB:
         )
         try:
             async with self.db.async_session() as session:
+                # self.logger.debug(f"self model id: {self.model.id} item id:{item_id}")
                 result = await session.execute(
                     select(self.model).where(self.model.id == item_id)
                 )
-                model = result.scalars().one_or_none()
-                if model is not None:
+                if result:
+                    final_result = result.scalars().one_or_none()
+                    self.logger.debug(f"Result found: {final_result}")
                     self.logger.debug(
-                        f"Fetched element with ID {item_id} for {self.model.__name__}: {model.__dict__}"
+                        f"Fetched element successfully with ID {item_id} for {self.model.__name__}"
                     )
+                    return final_result
+
                 else:
                     self.logger.warning(
                         f"No element found with ID: {item_id} for {self.model.__name__}"
                     )
-                return model
         except Exception as ex:
             self.logger.error(
                 f"Error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",

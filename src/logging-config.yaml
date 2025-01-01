@@ -68,7 +68,7 @@ loggers:
     propagate: no
 
   backend_logger_TournamentServiceDB:
-    level: WARNING
+    level: DEBUG
     handlers: [ console, file ]
     propagate: no
   backend_logger_TeamServiceDB:
@@ -76,11 +76,24 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchServiceDB:
-    level: WARNING
+    level: DEBUG
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchDataServiceDB:
-    level: WARNING
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
+  backend_logger_TournamentAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_TeamAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_MatchAPIRouter:
+    level: DEBUG
     handlers: [ console, file ]
     propagate: no
 root:

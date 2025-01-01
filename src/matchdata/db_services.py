@@ -163,9 +163,7 @@ class MatchDataServiceDB(BaseServiceDB):
                 select(MatchDataDB).where(MatchDataDB.match_id == match_id)
             )
             if result:
-                logger.debug(
-                    f"get_match_data_by_match_id completed successfully. Result: {result.one_or_none().__dict__}"
-                )
+                logger.debug(f"get_match_data_by_match_id completed successfully.")
                 return result.one_or_none()
             else:
                 logger.debug(

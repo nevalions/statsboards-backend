@@ -19,8 +19,11 @@ from src.helpers.fetch_helpers import fetch_list_of_matches_data
 from src.seasons.db_services import SeasonServiceDB
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
 from ..helpers.file_service import file_service
+from ..logging_config import get_logger, setup_logging
 from ..sponsor_lines.schemas import SponsorLineSchema
 from ..sponsors.schemas import SponsorSchema
+
+setup_logging()
 
 
 class TournamentAPIRouter(
@@ -32,6 +35,8 @@ class TournamentAPIRouter(
             ["tournaments-api"],
             service,
         )
+        self.logger = get_logger("backend_logger_TournamentAPIRouter", self)
+        self.logger.debug(f"Initialized TournamentAPIRouter")
 
     def route(self):
         router = super().route()
@@ -41,6 +46,7 @@ class TournamentAPIRouter(
             response_model=TournamentSchema,
         )
         async def create_tournament_endpoint(item: TournamentSchemaCreate):
+            self.logger.debug(f"Create or update tournament endpoint got data: {item}")
             new_ = await self.service.create_or_update_tournament(item)
             return new_.__dict__
 
@@ -52,6 +58,7 @@ class TournamentAPIRouter(
             item_id: int,
             item: TournamentSchemaUpdate,
         ):
+            self.logger.debug(f"Update tournament endpoint id:{item_id} data: {item}")
             update_ = await self.service.update_tournament(item_id, item)
             if update_ is None:
                 raise HTTPException(
@@ -64,6 +71,9 @@ class TournamentAPIRouter(
             response_model=TournamentSchema,
         )
         async def get_tournament_by_eesl_id_endpoint(eesl_id: int):
+            self.logger.debug(
+                f"Get tournament by eesl_id endpoint got eesl_id:{eesl_id}"
+            )
             tournament = await self.service.get_tournament_by_eesl_id(value=eesl_id)
             if tournament is None:
                 raise HTTPException(
@@ -74,20 +84,26 @@ class TournamentAPIRouter(
 
         @router.get("/id/{tournament_id}/teams/")
         async def get_teams_by_tournament_id_endpoint(tournament_id: int):
+            self.logger.debug(f"Get teams by tournament id:{tournament_id} endpoint")
             return await self.service.get_teams_by_tournament(tournament_id)
 
         @router.get("/id/{tournament_id}/players/")
         async def get_players_by_tournament_id_endpoint(tournament_id: int):
+            self.logger.debug(f"Get players by tournament id:{tournament_id} endpoint")
             return await self.service.get_players_by_tournament(tournament_id)
 
         @router.get("/id/{tournament_id}/matches/")
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
+            self.logger.debug(f"Get matches by tournament id:{tournament_id} endpoint")
             return await self.service.get_matches_by_tournament(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/main_sponsor/", response_model=Optional[SponsorSchema]
         )
         async def get_main_sponsor_by_tournament_id_endpoint(tournament_id: int):
+            self.logger.debug(
+                f"Get main_tournament_sponsor by tournament id:{tournament_id} endpoint"
+            )
             return await self.service.get_main_tournament_sponsor(tournament_id)
 
         @router.get(
@@ -95,6 +111,9 @@ class TournamentAPIRouter(
             response_model=Optional[SponsorLineSchema],
         )
         async def get_sponsor_line_by_tournament_id_endpoint(tournament_id: int):
+            self.logger.debug(
+                f"Get tournament_sponsor_line by tournament id:{tournament_id} endpoint"
+            )
             return await self.service.get_tournament_sponsor_line(tournament_id)
 
         @router.get(
@@ -104,6 +123,9 @@ class TournamentAPIRouter(
         async def get_sponsors_from_sponsor_line_by_tournament_id_endpoint(
             tournament_id: int,
         ):
+            self.logger.debug(
+                f"Get sponsors_from_sponsor_line by tournament id:{tournament_id} endpoint"
+            )
             return await self.service.get_sponsors_of_tournament_sponsor_line(
                 tournament_id
             )
@@ -125,7 +147,9 @@ class TournamentAPIRouter(
             file_location = await file_service.save_upload_image(
                 file, sub_folder="tournaments/logos"
             )
-            print(uploads_path)
+            self.logger.debug(
+                f"Upload and resize tournament logo endpoint file location: {file_location}"
+            )
             return {"logoUrl": file_location}
 
         @router.post(
@@ -140,7 +164,9 @@ class TournamentAPIRouter(
                 icon_height=100,
                 web_view_height=400,
             )
-            print(uploads_path)
+            self.logger.debug(
+                f"Upload and resize tournament logo endpoint file location: {uploaded_paths}"
+            )
             return uploaded_paths
 
         @router.get(
@@ -148,26 +174,44 @@ class TournamentAPIRouter(
             response_model=List[TournamentSchemaCreate],
         )
         async def get_parsed_season_tournaments_endpoint(eesl_season_id: int):
+            self.logger.debug(
+                f"Get parsed tournaments from season eesl_id:{eesl_season_id} endpoint"
+            )
             return await parse_season_and_create_jsons(eesl_season_id)
 
         @router.post("/pars_and_create/season/{eesl_season_id}")
         async def create_parsed_tournament_endpoint(
             eesl_season_id: int,
         ):
+            self.logger.debug(
+                f"Get and Save parsed tournaments from season eesl_id:{eesl_season_id} endpoint"
+            )
             tournaments_list = await parse_season_and_create_jsons(eesl_season_id)
 
             created_tournaments = []
-            if tournaments_list:
-                for t in tournaments_list:
-                    print(t)
-                    tournament = TournamentSchemaCreate(**t)
-                    created_tournament = await self.service.create_or_update_tournament(
-                        tournament
+            try:
+                if tournaments_list:
+                    for t in tournaments_list:
+                        tournament = TournamentSchemaCreate(**t)
+                        created_tournament = (
+                            await self.service.create_or_update_tournament(tournament)
+                        )
+                        self.logger.debug(
+                            f"Created or updated tournament after parse {created_tournament}"
+                        )
+                        created_tournaments.append(created_tournament)
+                    self.logger.info(
+                        f"Created tournaments after parsing: {created_tournaments}"
                     )
-                    created_tournaments.append(created_tournament)
-                return created_tournaments
-            else:
-                return []
+                    return created_tournaments
+                else:
+                    self.logger.warning(f"Teams list is empty")
+                    return []
+            except Exception as ex:
+                self.logger.error(
+                    f"Error on parse and tournaments from season: {ex}",
+                    exc_info=True,
+                )
 
         return router
 

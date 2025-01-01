@@ -59,5 +59,14 @@ def ru_to_eng_datetime_month_day_time(ru, year="2023"):
     return f"{year} {day_num} {eng_month} {eng_day} {time}"
 
 
+def safe_int_conversion(score_str):
+    try:
+        # Try to convert the score to an integer
+        return int(score_str.strip())
+    except (ValueError, TypeError):
+        # Return 0 if conversion fails
+        return 0
+
+
 if __name__ == "__main__":
     print(ru_to_eng_datetime_month_day_time("22 Апреля / Суббота / 13:00"))

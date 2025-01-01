@@ -4,64 +4,88 @@ from fastapi import HTTPException, UploadFile, File
 
 from src.core import BaseRouter, db
 from .db_services import TeamServiceDB
-from .schemas import TeamSchema, TeamSchemaCreate, TeamSchemaUpdate, UploadTeamLogoResponse, \
-    UploadResizeTeamLogoResponse
+from .schemas import (
+    TeamSchema,
+    TeamSchemaCreate,
+    TeamSchemaUpdate,
+    UploadTeamLogoResponse,
+    UploadResizeTeamLogoResponse,
+)
 from ..core.config import uploads_path
 from ..helpers.file_service import file_service
-from ..pars_eesl.pars_tournament import parse_tournament_teams_index_page_eesl
+from ..logging_config import setup_logging, get_logger
+from ..pars_eesl.pars_tournament import (
+    parse_tournament_teams_index_page_eesl,
+    ParsedTeamData,
+)
 
 from ..team_tournament.db_services import TeamTournamentServiceDB
 from ..team_tournament.schemas import TeamTournamentSchemaCreate
 from ..tournaments.db_services import TournamentServiceDB
+
+setup_logging()
 
 
 # Team backend
 class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
     def __init__(self, service: TeamServiceDB):
         super().__init__("/api/teams", ["teams"], service)
+        self.logger = get_logger("backend_logger_TeamAPIRouter", self)
+        self.logger.debug(f"Initialized TeamAPIRouter")
 
     def route(self):
         router = super().route()
 
         @router.post("/", response_model=TeamSchema)
         async def create_team_endpoint(
-                team: TeamSchemaCreate,
-                tour_id: int = None,
+            team: TeamSchemaCreate,
+            tour_id: int = None,
         ):
-            print(f"Received team: {team}")
+            self.logger.debug(f"Create team endpoint got data: {team}")
             new_team = await self.service.create_or_update_team(team)
             if new_team and tour_id:
+                self.logger.debug(f"Check if team in tournament exists")
                 dict_conv = TeamTournamentSchemaCreate(
                     **{"team_id": new_team.id, "tournament_id": tour_id}
                 )
                 try:
+                    self.logger.debug(
+                        f"Try creating team_tournament connection team_id: {new_team.id} to tour_id: {tour_id}"
+                    )
                     await TeamTournamentServiceDB(db).create_team_tournament_relation(
                         dict_conv
                     )
                 except Exception as ex:
-                    print(ex)
+                    self.logger.error(
+                        f"Error creating team_tournament connection "
+                        f"team_id: {new_team.id} and tour_id: {tour_id} : {ex}",
+                        exc_info=ex,
+                    )
             return new_team.__dict__
 
         @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)
         async def get_team_by_eesl_id_endpoint(
-                team_eesl_id: int,
+            eesl_id: int,
         ):
-            tournament = await self.service.get_team_by_eesl_id(value=team_eesl_id)
-            if tournament is None:
+            self.logger.debug(f"Get team by eesl_id endpoint got eesl_id:{eesl_id}")
+            team = await self.service.get_team_by_eesl_id(value=eesl_id)
+            if team is None:
+                self.logger.warning(f"No team found with eesl_id: {eesl_id}")
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Tournament eesl_id({team_eesl_id}) " f"not found",
+                    detail=f"Tournament eesl_id({eesl_id}) " f"not found",
                 )
-            return tournament.__dict__
+            return team.__dict__
 
         @router.put(
             "/{item_id}/",
             response_model=TeamSchema,
         )
         async def update_team_endpoint(
-                item_id: int,
-                item: TeamSchemaUpdate,
+            item_id: int,
+            item: TeamSchemaUpdate,
         ):
+            self.logger.debug(f"Update team endpoint id:{item_id} data: {item}")
             update_ = await self.service.update_team(item_id, item)
             if update_ is None:
                 raise HTTPException(
@@ -71,32 +95,52 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
         @router.get("/id/{team_id}/matches/")
         async def get_matches_by_team_endpoint(team_id: int):
+            self.logger.debug(f"Get matches by team id:{team_id} endpoint")
             return await self.service.get_matches_by_team_id(team_id)
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players/")
-        async def get_players_by_team_and_tournament_endpoint(team_id: int, tournament_id: int):
-            return await self.service.get_players_by_team_id_tournament_id(team_id, tournament_id)
+        async def get_players_by_team_and_tournament_endpoint(
+            team_id: int, tournament_id: int
+        ):
+            self.logger.debug(
+                f"Get players by team id:{team_id} and tournament id: {tournament_id} endpoint"
+            )
+            return await self.service.get_players_by_team_id_tournament_id(
+                team_id, tournament_id
+            )
 
-        
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players_with_persons/")
-        async def get_players_by_team_id_tournament_id_with_person_endpoint(team_id: int, tournament_id: int):
-            return await self.service.get_players_by_team_id_tournament_id_with_person(team_id, tournament_id)            
+        async def get_players_by_team_id_tournament_id_with_person_endpoint(
+            team_id: int, tournament_id: int
+        ):
+            self.logger.debug(
+                f"Get players with persons by team id:{team_id} and tournament id: {tournament_id} endpoint"
+            )
+            return await self.service.get_players_by_team_id_tournament_id_with_person(
+                team_id, tournament_id
+            )
 
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo_endpoint(file: UploadFile = File(...)):
-            file_location = await file_service.save_upload_image(file, sub_folder='teams/logos')
-            print(uploads_path)
+            file_location = await file_service.save_upload_image(
+                file, sub_folder="teams/logos"
+            )
+            self.logger.debug(
+                f"Upload team logo endpoint file location: {file_location}"
+            )
             return {"logoUrl": file_location}
 
         @router.post("/upload_resize_logo", response_model=UploadResizeTeamLogoResponse)
         async def upload_and_resize_team_logo_endpoint(file: UploadFile = File(...)):
             uploaded_paths = await file_service.save_and_resize_upload_image(
                 file,
-                sub_folder='teams/logos',
+                sub_folder="teams/logos",
                 icon_height=100,
                 web_view_height=400,
             )
-            # print(uploaded_paths)
+            self.logger.debug(
+                f"Upload and resize team logo endpoint file location: {uploaded_paths}"
+            )
             return uploaded_paths
 
         @router.get(
@@ -104,40 +148,77 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             response_model=List[TeamSchemaCreate],
         )
         async def get_parse_tournament_teams_endpoint(eesl_tournament_id: int):
+            self.logger.debug(
+                f"Get parsed teams from tournament eesl_id:{eesl_tournament_id} endpoint"
+            )
             return await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
 
         @router.post("/pars_and_create/tournament/{eesl_tournament_id}")
         async def create_parsed_teams_endpoint(
-                eesl_tournament_id: int,
+            eesl_tournament_id: int,
         ):
-            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
-            teams_list = await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
-            # print(teams_list)
+            self.logger.debug(
+                f"Get and Save parsed teams from tournament eesl_id:{eesl_tournament_id} endpoint"
+            )
+            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(
+                eesl_tournament_id
+            )
+            self.logger.debug(f"Tournament: {tournament}")
+            teams_list = await parse_tournament_teams_index_page_eesl(
+                eesl_tournament_id
+            )
+            self.logger.debug(f"Teams after parse: {teams_list}")
 
             created_teams = []
             created_team_tournament_ids = []
-            if teams_list:
-                for t in teams_list:
-                    team = TeamSchemaCreate(**t)
-                    created_team = await self.service.create_or_update_team(team)
-                    # print(created_team.__dict__)
-                    created_teams.append(created_team)
-                    if created_team and tournament:
-                        dict_conv = TeamTournamentSchemaCreate(
-                            **{"team_id": created_team.id, "tournament_id": tournament.id}
+            try:
+                if teams_list:
+                    for t in teams_list:
+                        t: ParsedTeamData
+                        team = TeamSchemaCreate(**t)
+                        created_team = await self.service.create_or_update_team(team)
+                        self.logger.debug(
+                            f"Created or updated team after parse {created_team}"
                         )
-                        try:
-                            team_tournament_connection = await TeamTournamentServiceDB(
-                                db).create_team_tournament_relation(
-                                dict_conv
+                        created_teams.append(created_team)
+                        if created_team and tournament:
+                            dict_conv = TeamTournamentSchemaCreate(
+                                **{
+                                    "team_id": created_team.id,
+                                    "tournament_id": tournament.id,
+                                }
                             )
-                            created_team_tournament_ids.append(team_tournament_connection)
-                        except Exception as ex:
-                            print(ex)
+                            try:
+                                self.logger.debug(
+                                    f"Trying to create team and tournament connection after parse"
+                                )
+                                team_tournament_connection = (
+                                    await TeamTournamentServiceDB(
+                                        db
+                                    ).create_team_tournament_relation(dict_conv)
+                                )
+                                created_team_tournament_ids.append(
+                                    team_tournament_connection
+                                )
+                            except Exception as ex:
+                                self.logger.error(
+                                    f"Error create team and tournament connection after parse {ex}",
+                                    exc_info=True,
+                                )
+                    self.logger.info(f"Created teams after parsing: {created_teams}")
+                    self.logger.info(
+                        f"Created team tournament connections after parsing: {created_team_tournament_ids}"
+                    )
 
-                return created_teams, created_team_tournament_ids
-            else:
-                return []
+                    return created_teams, created_team_tournament_ids
+                else:
+                    self.logger.warning(f"Team list is empty")
+                    return []
+            except Exception as ex:
+                self.logger.error(
+                    f"Error on parse and create teams from tournament: {ex}",
+                    exc_info=True,
+                )
 
         return router
 

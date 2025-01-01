@@ -201,40 +201,53 @@ class MatchServiceDB(BaseServiceDB):
         self,
         match_id: int,
     ):
-        async with self.db.async_session() as session:
-            stmt = select(PlayerMatchDB).where(PlayerMatchDB.match_id == match_id)
+        self.logger.debug(f"Get players by {ITEM} id:{match_id}")
+        try:
+            async with self.db.async_session() as session:
+                stmt = select(PlayerMatchDB).where(PlayerMatchDB.match_id == match_id)
 
-            results = await session.execute(stmt)
-            players = results.scalars().all()
-            return players
+                results = await session.execute(stmt)
+                players = results.scalars().all()
+                return players
+        except Exception as ex:
+            self.logger.error(
+                f"Error getting players for {ITEM} id:{match_id} {ex}", exc_info=True
+            )
 
     async def get_player_by_match_full_data(self, match_id: int):
+        self.logger.debug(f"Get players with full data by {ITEM} id:{match_id}")
         player_service = PlayerMatchServiceDB(self.db)
         players = await self.get_players_by_match(match_id)
         players_with_data = []
-        if players:
-            for player in players:
-                p = await player_service.get_player_in_match_full_data(player.id)
-                players_with_data.append(p)
-            return players_with_data
+        try:
+            if players:
+                for player in players:
+                    p = await player_service.get_player_in_match_full_data(player.id)
+                    players_with_data.append(p)
+                return players_with_data
+        except Exception as ex:
+            self.logger.error(
+                f"Error getting players with full data for {ITEM} id:{match_id} {ex}",
+                exc_info=True,
+            )
         return players_with_data
 
     async def get_scoreboard_by_match(
         self,
         match_id: int,
     ):
-        self.logger.debug(f"get_scoreboard_by_match called with match_id: {match_id}")
+        self.logger.debug(f"Getting scoreboard for {ITEM} id:{match_id}")
         try:
             result = await self.get_related_item_level_one_by_id(
                 match_id,
                 "match_scoreboard",
             )
-            self.logger.debug(
-                f"get_scoreboard_by_match completed successfully. Result: {result}"
-            )
+            self.logger.debug(f"Got scoreboard successfully. Result: {result}")
             return result
         except Exception as e:
-            self.logger.error(f"Error in get_scoreboard_by_match: {e}", exc_info=True)
+            self.logger.error(
+                f"Error getting scoreboard for {ITEM} id:{match_id} {e}", exc_info=True
+            )
             raise
 
     # async def get_scoreboard_by_match(
