@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 from pprint import pprint
-from typing import TypedDict, List
+from typing import TypedDict, List, Optional
 
 from bs4 import BeautifulSoup
 
@@ -81,7 +81,7 @@ async def parse_tournament_teams_and_create_jsons(_id: int):
 async def parse_tournament_teams_index_page_eesl(
     _id: int,
     base_url: str = BASE_TOURNAMENT_URL,
-) -> List[ParsedTeamData] | None:
+) -> Optional[List[ParsedTeamData]]:
     logger.debug(
         f"Starting parse for eesl {ITEM_PARSED} for {ITEM_GOT} id:{_id} url:{base_url}{_id}"
     )
@@ -172,7 +172,7 @@ async def parse_tournament_teams_index_page_eesl(
 
 async def parse_tournament_matches_index_page_eesl(
     _id: int, base_url: str = BASE_TOURNAMENT_URL, year: int = 2024
-) -> List[ParsedTeamData] | []:
+) -> Optional[List[ParsedTeamData]]:
     logger.debug(
         f"Starting parse for eesl {ITEM_PARSED} for {ITEM_GOT_MATCH} id:{_id} url:{base_url}{_id}"
     )
