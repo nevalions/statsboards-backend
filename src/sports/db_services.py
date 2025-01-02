@@ -4,6 +4,10 @@ from sqlalchemy import select, Result
 
 from src.core.models import db, BaseServiceDB, SportDB
 from .schemas import SportSchemaCreate, SportSchemaUpdate
+from ..logging_config import get_logger, setup_logging
+
+setup_logging()
+ITEM = "SPORT"
 
 
 class SportServiceDB(BaseServiceDB):
@@ -12,8 +16,11 @@ class SportServiceDB(BaseServiceDB):
             database,
             model=SportDB,
         )
+        self.logger = get_logger("backend_logger_SportServiceDB", self)
+        self.logger.debug(f"Initialized SportServiceDB")
 
     async def create_sport(self, s: SportSchemaCreate):
+        self.logger.debug(f"Creat {ITEM}:{s}")
         season = self.model(
             title=s.title,
             description=s.description,
@@ -26,6 +33,7 @@ class SportServiceDB(BaseServiceDB):
         item: SportSchemaUpdate,
         **kwargs,
     ):
+        self.logger.debug(f"Update {ITEM} with id:{item_id}")
         return await super().update(
             item_id,
             item,
@@ -37,6 +45,7 @@ class SportServiceDB(BaseServiceDB):
         sport_id: int,
         key: str = "id",
     ):
+        self.logger.debug(f"Get tournaments by {ITEM} id:{sport_id}")
         return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
@@ -48,6 +57,7 @@ class SportServiceDB(BaseServiceDB):
         sport_id: int,
         key: str = "id",
     ):
+        self.logger.debug(f"Get teams by {ITEM} id:{sport_id}")
         return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
@@ -59,6 +69,7 @@ class SportServiceDB(BaseServiceDB):
         sport_id: int,
         key: str = "id",
     ):
+        self.logger.debug(f"Get players by {ITEM} id:{sport_id}")
         return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
@@ -70,37 +81,9 @@ class SportServiceDB(BaseServiceDB):
         sport_id: int,
         key: str = "id",
     ):
+        self.logger.debug(f"Get positions by {ITEM} id:{sport_id}")
         return await self.get_related_item_level_one_by_key_and_value(
             key,
             sport_id,
             "positions",
         )
-
-
-#
-# async def get_season_db() -> SeasonServiceDB:
-#     yield SeasonServiceDB(db)
-#
-#
-# async def async_main() -> None:
-#     season_service = SeasonServiceDB(db)
-#
-#     # try:
-#     # get_season = await season_service.get_by_id(1)
-#     # print(get_season.__dict__)
-#     # get_tours = await season_service.get_tournaments_by_year(2222)
-#     get_tours = await season_service.get_teams_by_year(2222)
-#     print(get_tours)
-#     for tour in get_tours:
-#         print(tour.title)
-#         print(tour.id)
-#     # for tour in get_tours:
-#     #     print(tour.__dict__)
-#     # except Exception as ex:
-#     #     print(ex)
-#
-#     await db.engine.dispose()
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(async_main())

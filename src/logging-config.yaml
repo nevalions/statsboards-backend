@@ -83,6 +83,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_SportServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_TournamentAPIRouter:
     level: DEBUG

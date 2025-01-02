@@ -438,6 +438,7 @@ class BaseServiceDB:
                     self.logger.warning(
                         f"No element found with ID: {item_id} for {self.model.__name__}"
                     )
+                    return None
         except Exception as ex:
             self.logger.error(
                 f"Error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",
