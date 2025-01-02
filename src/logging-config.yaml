@@ -96,7 +96,10 @@ loggers:
     handlers: [ console, file ]
     propagate: no
 
-
+  backend_logger_SeasonAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
   backend_logger_SportAPIRouter:
     level: DEBUG
     handlers: [ console, file ]
