@@ -67,11 +67,23 @@ loggers:
     handlers: [ console, file ]
     propagate: no
 
+  backend_logger_SeasonServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_SportServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
   backend_logger_TournamentServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
   backend_logger_TeamServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_TeamTournamentServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
@@ -83,11 +95,12 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SportServiceDB:
+
+
+  backend_logger_SportAPIRouter:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-
   backend_logger_TournamentAPIRouter:
     level: DEBUG
     handlers: [ console, file ]
