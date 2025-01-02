@@ -1074,7 +1074,8 @@ class BaseServiceDB:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(
-                    f"Fetching related item by two level for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                    f"Fetching related item by two level for "
+                    f"key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                 )
                 query = (
                     select(self.model)
@@ -1091,7 +1092,8 @@ class BaseServiceDB:
 
                 if item:
                     self.logger.debug(
-                        f"Item {item} found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                        f"Item {item} found for "
+                        f"key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                     )
                     related_items = getattr(item, related_property)
                     items = []
@@ -1101,7 +1103,8 @@ class BaseServiceDB:
                     return items
                 else:
                     self.logger.warning(
-                        f"No item found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                        f"No item found for "
+                        f"ey: {filter_key} and value: {filter_value} for model {self.model.__name__}"
                     )
                     raise HTTPException(
                         status_code=404,
@@ -1150,9 +1153,7 @@ class BaseServiceDB:
             if isinstance(model, dict):
                 db_logger_helper.debug("Model is already a dictionary")
                 return model
-            elif isinstance(
-                model, Base
-            ):  # replace with your model's superclass if needed
+            elif isinstance(model, Base):
                 data = {
                     column.name: getattr(model, column.name)
                     for column in model.__table__.columns
@@ -1167,34 +1168,6 @@ class BaseServiceDB:
                 f"Error converting model {model} to dictionary: {e}", exc_info=True
             )
             return None
-
-    # @staticmethod
-    # def is_des(descending, order):
-    #     if descending:
-    #         order = order.desc()
-    #     else:
-    #         order = order.asc()
-    #     return order
-    #
-    # @staticmethod
-    # def default_serializer(obj):
-    #     if isinstance(obj, datetime):
-    #         return obj.isoformat()
-    #     raise TypeError(f"Type {type(obj)} not serializable")
-    #
-    # @staticmethod
-    # def to_dict(model):
-    #     if isinstance(model, dict):
-    #         return model
-    #     elif isinstance(model, Base):  # replace with your model's superclass if needed
-    #         data = {
-    #             column.name: getattr(model, column.name)
-    #             for column in model.__table__.columns
-    #         }
-    #         data.pop("_sa_instance_state", None)
-    #         return data
-    #     else:
-    #         raise TypeError("Unsupported type")
 
     @staticmethod
     async def upload_file(self, upload_file: UploadFile):
@@ -1227,38 +1200,6 @@ class BaseServiceDB:
                 status_code=500,
                 detail=f"Internal Server Error Uploading file: {str(e)}",
             )
-
-    # async def upload_file(self, upload_file: UploadFile):
-    #     print(f"Current Working Directory: {os.getcwd()}")
-    #
-    #     # Use an absolute path for the upload directory
-    #     upload_dir = Path("/static/uploads")
-    #
-    #     print(f"Upload Directory: {upload_dir.resolve()}")
-    #
-    #     try:
-    #         # Ensure the upload directory exists
-    #         upload_dir.mkdir(parents=True, exist_ok=True)
-    #         print(f"Does the upload directory exist after mkdir: {upload_dir.exists()}")
-    #
-    #         # Define the destination path
-    #         dest = upload_dir / upload_file.filename
-    #         print(f"Destination path: {dest}")
-    #
-    #         # Write upload_file content into destination file
-    #         with dest.open("wb") as buffer:
-    #             shutil.copyfileobj(upload_file.file, buffer)
-    #
-    #         # Check if the file exists after writing
-    #         print(f"Does the file exist after writing: {dest.exists()}")
-    #
-    #         # Provide upload_file information
-    #         print(f"File saved to {dest}")
-    #         return {"filename": upload_file.filename, "url": str(dest)}
-    #     except Exception as e:
-    #         print(f"Error type: {type(e)}")
-    #         print(f"Error args: {e.args}")
-    #         return {"error": str(e)}
 
 
 class Base(DeclarativeBase):

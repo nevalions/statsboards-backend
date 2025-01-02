@@ -59,7 +59,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     self.logger.error(
                         f"Error creating team_tournament connection "
                         f"team_id: {new_team.id} and tour_id: {tour_id} : {ex}",
-                        exc_info=ex,
+                        exc_info=True,
                     )
             else:
                 raise HTTPException(

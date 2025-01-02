@@ -43,7 +43,7 @@ class SeasonAPIRouter(
             except Exception as ex:
                 self.logger.error(
                     f"Error creating season with data: {item} {ex}",
-                    exc_info=ex,
+                    exc_info=True,
                 )
 
         @router.put("/", response_model=SeasonSchema)

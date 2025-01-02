@@ -39,8 +39,10 @@ class TeamServiceDB(BaseServiceDB):
                         t,
                     )
                 else:
+                    self.logger.debug(f"No team in DB, create new")
                     return await self.create_new_team(t)
             else:
+                self.logger.debug(f"No eesl team in DB, create new")
                 return await self.create_new_team(t)
         except Exception as ex:
             self.logger.error(f"{ITEM} returned an error: {ex}", exc_info=True)
