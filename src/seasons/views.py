@@ -51,19 +51,19 @@ class SeasonAPIRouter(
                 )
             return update_.__dict__
 
-        # @router.get(
-        #     "/id/{item_id}/",
-        #     response_class=JSONResponse,
-        # )
-        # async def get_season_by_id_endpoint(
-        #     item=Depends(self.service.get_by_id),
-        # ):
-        #     self.logger.debug(f"Get season by id endpoint")
-        #     return self.create_response(
-        #         item,
-        #         f"Season ID:{item.id}",
-        #         "Season",
-        #     )
+        @router.get(
+            "/id/{item_id}/",
+            response_class=JSONResponse,
+        )
+        async def get_season_by_id_endpoint(
+            item=Depends(self.service.get_by_id),
+        ):
+            self.logger.debug(f"Get season by id endpoint")
+            return self.create_response(
+                item,
+                f"Season ID:{item.id}",
+                "Season",
+            )
 
         @router.get("/id/{item_id}/sports/id/{sport_id}/tournaments")
         async def tournaments_by_season_id_and_sport_endpoint(
