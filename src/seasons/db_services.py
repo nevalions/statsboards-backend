@@ -1,5 +1,5 @@
 import asyncio
-
+from fastapi import HTTPException
 from sqlalchemy import select, and_
 
 from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB, SportDB, TeamDB
@@ -64,16 +64,24 @@ class SeasonServiceDB(BaseServiceDB):
         sport_id: int,
     ):
         async with self.db.async_session() as session:
-            self.logger.debug(f"Get tournaments by {ITEM} id:{sport_id}")
+            self.logger.debug(f"Get tournaments by {ITEM} year:{year} id:{sport_id}")
             stmt = (
                 select(TournamentDB)
                 .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
                 .join(SportDB, TournamentDB.sport_id == SportDB.id)
                 .where(and_(SeasonDB.year == year, SportDB.id == sport_id))
             )
-            results = await session.execute(stmt)
-            tournaments = results.scalars().all()
-            return tournaments
+            try:
+                results = await session.execute(stmt)
+                tournaments = results.scalars().all()
+                self.logger.info(f"Got tournaments: {tournaments}")
+                return tournaments
+            except Exception as e:
+                self.logger.error(f"Error getting tournaments: {e}")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Error getting tournaments",
+                )
 
     async def get_tournaments_by_season_and_sport_ids(
         self,
@@ -90,9 +98,17 @@ class SeasonServiceDB(BaseServiceDB):
                 .join(SportDB, TournamentDB.sport_id == SportDB.id)
                 .where(and_(SeasonDB.id == season_id, SportDB.id == sport_id))
             )
-            results = await session.execute(stmt)
-            tournaments = results.scalars().all()
-            return tournaments
+            try:
+                results = await session.execute(stmt)
+                tournaments = results.scalars().all()
+                self.logger.info(f"Got tournaments: {tournaments}")
+                return tournaments
+            except Exception as e:
+                self.logger.error(f"Error getting tournaments: {e}")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Error getting tournaments",
+                )
 
     async def get_teams_by_year(
         self,
@@ -121,31 +137,3 @@ class SeasonServiceDB(BaseServiceDB):
             related_property="tournaments",
             second_level_property="matches",
         )
-
-
-# async def get_season_db() -> SeasonServiceDB:
-#     yield SeasonServiceDB(db)
-#
-#
-# async def async_main() -> None:
-#     season_service = SeasonServiceDB(db)
-#
-#     # try:
-#     # get_season = await season_service.get_by_id(1)
-#     # print(get_season.__dict__)
-#     # get_tours = await season_service.get_tournaments_by_year(2222)
-#     get_tours = await season_service.get_teams_by_year(2222)
-#     print(get_tours)
-#     for tour in get_tours:
-#         print(tour.title)
-#         print(tour.id)
-#     # for tour in get_tours:
-#     #     print(tour.__dict__)
-#     # except Exception as ex:
-#     #     print(ex)
-#
-#     await db.engine.dispose()
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(async_main())

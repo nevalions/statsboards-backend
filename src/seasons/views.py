@@ -31,8 +31,20 @@ class SeasonAPIRouter(
         @router.post("/", response_model=SeasonSchema)
         async def create_season_endpoint(item: SeasonSchemaCreate):
             self.logger.debug(f"Create season endpoint got data: {item}")
-            new_ = await self.service.create_season(item)
-            return new_.__dict__
+            try:
+                new_ = await self.service.create_season(item)
+                if new_:
+                    return new_.__dict__
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Error creating new season",
+                    )
+            except Exception as ex:
+                self.logger.error(
+                    f"Error creating season with data: {item} {ex}",
+                    exc_info=ex,
+                )
 
         @router.put("/", response_model=SeasonSchema)
         async def update_season_endpoint(

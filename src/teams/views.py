@@ -61,6 +61,11 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                         f"team_id: {new_team.id} and tour_id: {tour_id} : {ex}",
                         exc_info=ex,
                     )
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Error creating new team",
+                )
             return new_team.__dict__
 
         @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)

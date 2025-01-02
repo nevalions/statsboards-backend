@@ -1063,23 +1063,6 @@ class BaseServiceDB:
                 )
                 return None
 
-    # async def get_related_item_level_one_by_key_and_value(
-    #     self,
-    #     filter_key: str,
-    #     filter_value: Any,
-    #     related_property: str,
-    # ):
-    #     async with self.db.async_session() as session:
-    #         try:
-    #             item = await session.execute(
-    #                 select(self.model)
-    #                 .where(getattr(self.model, filter_key) == filter_value)
-    #                 .options(selectinload(getattr(self.model, related_property)))
-    #             )
-    #             return getattr(item.scalars().one(), related_property)
-    #         except NoResultFound:
-    #             return None
-
     async def get_related_items_by_two(
         self,
         filter_key: str,
@@ -1134,41 +1117,6 @@ class BaseServiceDB:
                     status_code=500,
                     detail=f"Internal Server Error {e}",
                 )
-
-    # async def get_related_items_by_two(
-    #     self,
-    #     filter_key: str,
-    #     filter_value: Any,
-    #     second_model,
-    #     related_property: str,
-    #     second_level_property: str,
-    # ):
-    #     async with self.db.async_session() as session:
-    #         query = (
-    #             select(self.model)
-    #             .where(getattr(self.model, filter_key) == filter_value)
-    #             .options(
-    #                 selectinload(getattr(self.model, related_property)).joinedload(
-    #                     getattr(second_model, second_level_property)
-    #                 )
-    #             )
-    #         )
-    #
-    #         result = await session.execute(query)
-    #         item = result.unique().scalars().one_or_none()
-    #
-    #         items = []
-    #         if item:
-    #             related_items = getattr(item, related_property)
-    #             for related_item in related_items:
-    #                 for final_point in getattr(related_item, second_level_property):
-    #                     items.append(final_point)
-    #             return items
-    #         else:
-    #             raise HTTPException(
-    #                 status_code=404,
-    #                 detail=f"{second_model} {filter_key} not found",
-    #             )
 
     @staticmethod
     def is_des(descending, order):
