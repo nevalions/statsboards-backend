@@ -53,6 +53,15 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+
+  backend_logger_ClockManager:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_GameClockServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
   backend_logger_WebSocketManager:
     level: DEBUG
     handlers: [console, file]
@@ -61,7 +70,6 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-
   backend_connection_socket_logger:
     level: DEBUG
     handlers: [ console, file ]

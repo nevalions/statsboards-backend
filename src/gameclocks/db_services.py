@@ -6,21 +6,30 @@ from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, GameClockDB
 from .schemas import GameClockSchemaCreate, GameClockSchemaUpdate
+from ..logging_config import setup_logging, get_logger
+
+setup_logging()
+ITEM = "GAMECLOCK"
 
 
 class ClockManager:
     def __init__(self):
         self.active_gameclock_matches = {}
+        self.logger = get_logger("backend_logger_ClockManager", self)
+        self.logger.debug(f"Initialized ClockManager")
 
     async def start_clock(self, match_id):
+        self.logger.debug(f"Clock started in Clock Manager match_id:{match_id}")
         if match_id not in self.active_gameclock_matches:
             self.active_gameclock_matches[match_id] = asyncio.Queue()
 
     async def end_clock(self, match_id):
+        self.logger.debug(f"Clock stopped in Clock Manager match_id:{match_id}")
         if match_id in self.active_gameclock_matches:
             del self.active_gameclock_matches[match_id]
 
     async def update_queue_clock(self, match_id, message):
+        self.logger.debug(f"Clock updated in Clock Manager match_id:{match_id}")
         if match_id in self.active_gameclock_matches:
             queue = self.active_gameclock_matches[match_id]
             await queue.put(message)
@@ -30,6 +39,8 @@ class GameClockServiceDB(BaseServiceDB):
     def __init__(self, database):
         super().__init__(database, GameClockDB)
         self.clock_manager = ClockManager()
+        self.logger = get_logger("backend_logger_GameClockServiceDB", self)
+        self.logger.debug(f"Initialized GameClockServiceDB")
 
     async def create_gameclock(self, gameclock: GameClockSchemaCreate):
         async with self.db.async_session() as session:

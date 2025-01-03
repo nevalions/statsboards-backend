@@ -136,24 +136,11 @@ async def fetch_with_scoreboard_data(match_id: int):
                 "match_data": instance_to_dict(match_data.__dict__),
             }
         }
-
         fetch_data_logger.debug(
             f"Final match with scoreboard data fetched {final_match_with_scoreboard_data_fetched}"
         )
 
         return final_match_with_scoreboard_data_fetched
-
-        # return {
-        #     "data": {
-        #         "match_id": match_id,
-        #         "id": match_id,
-        #         "status_code": status.HTTP_200_OK,
-        #         "match": deep_dict_convert(match.__dict__),
-        #         "scoreboard_data": instance_to_dict(scoreboard_data.__dict__),
-        #         "teams_data": deep_dict_convert(match_teams_data),
-        #         "match_data": instance_to_dict(match_data.__dict__),
-        #     }
-        # }
     else:
         fetch_data_logger.error(f"Match not found for match_id:{match_id}")
         return {
