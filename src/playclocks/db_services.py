@@ -136,7 +136,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 self.logger.debug(f"Playclock in DB: {result}")
                 playclock: PlayClockSchemaBase = result.one_or_none()
                 if playclock:
-                    self.logger.info(f"Playclock found: {playclock}")
+                    self.logger.debug(f"Playclock found: {playclock}")
                     return playclock
 
     async def decrement_playclock(
