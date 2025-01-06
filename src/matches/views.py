@@ -491,7 +491,7 @@ class MatchAPIRouter(
                         message_type = data.get("type")
 
                         if message_type in handlers:
-                            websocket_logger.info(
+                            websocket_logger.debug(
                                 f"Processing message type: {message_type}"
                             )
                             try:
