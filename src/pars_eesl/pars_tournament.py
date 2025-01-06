@@ -172,7 +172,7 @@ async def parse_tournament_teams_index_page_eesl(
 
 async def parse_tournament_matches_index_page_eesl(
     _id: int, base_url: str = BASE_TOURNAMENT_URL, year: int = 2024
-) -> Optional[List[ParsedTeamData]]:
+) -> Optional[List[ParsedMatchData]]:
     logger.debug(
         f"Starting parse for eesl {ITEM_PARSED} for {ITEM_GOT_MATCH} id:{_id} url:{base_url}{_id}"
     )
@@ -343,8 +343,6 @@ async def parse_tournament_matches_index_page_eesl(
                                     last_week_num = iso_week_num
 
                                 match_week = week_counter
-
-                                # pprint([formatted_date, match_eesl_id, team_a_id, team_b_id, _id])
 
                                 final_match: ParsedMatchData = {
                                     "week": match_week,
