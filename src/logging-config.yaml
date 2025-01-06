@@ -53,16 +53,16 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-
-  backend_logger_WebSocketManager:
-    level: DEBUG
-    handlers: [console, file]
-    propagate: no
-  backend_websocket_logger:
+#
+#  backend_logger_WebSocketManager:
+#    level: DEBUG
+#    handlers: [console, file]
+#    propagate: no
+  backend_logger_MatchDataWebSocketManager:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_connection_socket_logger:
+  backend_logger_ConnectionManager:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
