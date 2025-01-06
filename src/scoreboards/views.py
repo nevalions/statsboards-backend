@@ -7,9 +7,12 @@ from .shemas import ScoreboardSchema, ScoreboardSchemaCreate, ScoreboardSchemaUp
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from ..logging_config import get_logger, setup_logging
 
-# Team backend
-class ScoreboardRouter(
+setup_logging()
+
+
+class ScoreboardAPIRouter(
     BaseRouter[
         ScoreboardSchema,
         ScoreboardSchemaCreate,
@@ -18,6 +21,8 @@ class ScoreboardRouter(
 ):
     def __init__(self, service: ScoreboardServiceDB):
         super().__init__("/api/scoreboards", ["scoreboards"], service)
+        self.logger = get_logger("backend_logger_ScoreboardAPIRouter", self)
+        self.logger.debug(f"Initialized ScoreboardAPIRouter")
 
     def route(self):
         router = super().route()
@@ -26,9 +31,16 @@ class ScoreboardRouter(
             "/",
             response_model=ScoreboardSchema,
         )
-        async def create_scoreboard(scoreboard: ScoreboardSchemaCreate):
-            new_scoreboard = await self.service.create_scoreboard(scoreboard)
-            return new_scoreboard.__dict__
+        async def create_scoreboard(scoreboard_data: ScoreboardSchemaCreate):
+            self.logger.debug(f"Create scoreboard endpoint got data: {scoreboard_data}")
+            try:
+                new_scoreboard = await self.service.create_scoreboard(scoreboard_data)
+                return new_scoreboard.__dict__
+            except Exception as ex:
+                self.logger.error(
+                    f"Error creating scoreboard with data: {scoreboard_data} {ex}",
+                    exc_info=True,
+                )
 
         @router.put(
             "/{item_id}/",
@@ -38,17 +50,28 @@ class ScoreboardRouter(
             item_id: int,
             item: ScoreboardSchemaUpdate,
         ):
-            update_ = await self.service.update_scoreboard(
-                item_id,
-                item,
-            )
-            if update_:
-                return update_
+            self.logger.debug(f"Update scoreboard endpoint id:{item_id} data: {item}")
+            try:
+                scoreboard_update = await self.service.update_scoreboard(
+                    item_id,
+                    item,
+                )
 
-            raise HTTPException(
-                status_code=404,
-                detail=f"Scoreboard id:{item_id} not found",
-            )
+                if scoreboard_update is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Scoreboard id({item_id}) not found",
+                    )
+                return scoreboard_update
+            except Exception as ex:
+                self.logger.error(
+                    f"Error updating scoreboard with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Error updating scoreboard with data",
+                )
 
         @router.put(
             "/id/{item_id}/",
@@ -58,6 +81,7 @@ class ScoreboardRouter(
             item_id: int,
             item=Depends(update_scoreboard_),
         ):
+            self.logger.debug(f"Update scoreboard endpoint by ID")
             if item:
                 return {
                     "content": item.__dict__,
@@ -75,11 +99,13 @@ class ScoreboardRouter(
             response_model=ScoreboardSchema,
         )
         async def get_scoreboard_by_match_id_endpoint(match_id: int):
+            self.logger.debug(f"Get scoreboard by match id: {match_id} endpoint")
             scoreboard = await self.service.get_scoreboard_by_match_id(value=match_id)
             if scoreboard is None:
+                self.logger.warning(f"No scoreboard found for match id: {match_id}")
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Scoreboard match id({match_id}) " f"not found",
+                    detail=f"Scoreboard match id({match_id}) not found",
                 )
             return scoreboard.__dict__
 
@@ -88,34 +114,41 @@ class ScoreboardRouter(
             response_model=ScoreboardSchema,
         )
         async def get_scoreboard_by_matchdata_id_endpoint(matchdata_id: int):
+            self.logger.debug(
+                f"Get scoreboard by matchdata id: {matchdata_id} endpoint"
+            )
             scoreboard = await self.service.get_scoreboard_by_matchdata_id(matchdata_id)
             if scoreboard is None:
+                self.logger.warning(
+                    f"No scoreboard found for matchdata id: {matchdata_id}"
+                )
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Scoreboard match id({matchdata_id}) " f"not found",
+                    detail=f"Scoreboard match id({matchdata_id}) not found",
                 )
             return scoreboard.__dict__
 
-        @router.get("/matchdata/id/{match_data_id}/events/scoreboard_data/")
-        async def sse_scoreboard_data_endpoint(match_data_id: int):
-            print("SSE Scoreboard Starts")
-            scoreboard = await self.service.get_scoreboard_by_matchdata_id(
-                match_data_id
-            )
-            print(scoreboard)
-            # scoreboard = await self.service.get_scoreboard_by_match_id(5)
-            print(scoreboard)
-            if scoreboard:
-                print(scoreboard)
-                return StreamingResponse(
-                    self.service.event_generator_get_scoreboard_data(scoreboard.id),
-                    media_type="text/event-stream",
-                )
-            else:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Scoreboard match data id({match_data_id}) " f"not found",
-                )
+        """triggers for sse process, now we use websocket"""
+        # @router.get("/matchdata/id/{match_data_id}/events/scoreboard_data/")
+        # async def sse_scoreboard_data_endpoint(match_data_id: int):
+        #     print("SSE Scoreboard Starts")
+        #     scoreboard = await self.service.get_scoreboard_by_matchdata_id(
+        #         match_data_id
+        #     )
+        #     print(scoreboard)
+        #     # scoreboard = await self.service.get_scoreboard_by_match_id(5)
+        #     print(scoreboard)
+        #     if scoreboard:
+        #         print(scoreboard)
+        #         return StreamingResponse(
+        #             self.service.event_generator_get_scoreboard_data(scoreboard.id),
+        #             media_type="text/event-stream",
+        #         )
+        #     else:
+        #         raise HTTPException(
+        #             status_code=404,
+        #             detail=f"Scoreboard match data id({match_data_id}) " f"not found",
+        #         )
 
         # def create_directories():
         #     if not os.path.exists(static_path):
@@ -163,4 +196,4 @@ class ScoreboardRouter(
         return router
 
 
-api_scoreboards_router = ScoreboardRouter(ScoreboardServiceDB(db)).route()
+api_scoreboards_router = ScoreboardAPIRouter(ScoreboardServiceDB(db)).route()

@@ -54,14 +54,6 @@ loggers:
     handlers: [ console, file ]
     propagate: no
 
-  backend_logger_ClockManager:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_GameClockServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
   backend_logger_WebSocketManager:
     level: DEBUG
     handlers: [console, file]
@@ -71,6 +63,26 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_connection_socket_logger:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_ScoreboardUpdateManager:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_ScoreboardServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_ClockManager:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_PlayClockServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_GameClockServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
@@ -125,6 +137,18 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchDataAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_ScoreboardAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_GameClockAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_PlayClockAPIRouter:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no

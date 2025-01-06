@@ -9,9 +9,12 @@ from fastapi.responses import JSONResponse
 from src.core import BaseRouter, db
 from .db_services import PlayClockServiceDB
 from .schemas import PlayClockSchema, PlayClockSchemaCreate, PlayClockSchemaUpdate
+from ..logging_config import setup_logging, get_logger
+
+setup_logging()
 
 
-class PlayClockRouter(
+class PlayClockAPIRouter(
     BaseRouter[
         PlayClockSchema,
         PlayClockSchemaCreate,
@@ -24,6 +27,8 @@ class PlayClockRouter(
             ["playclock"],
             service,
         )
+        self.logger = get_logger("backend_logger_PlayClockAPIRouter", self)
+        self.logger.debug(f"Initialized PlayClockAPIRouter")
 
     def route(self):
         router = super().route()
@@ -33,9 +38,16 @@ class PlayClockRouter(
             "/",
             response_model=PlayClockSchema,
         )
-        async def create_playclock_endpoint(playclock: PlayClockSchemaCreate):
-            new_playclock = await self.service.create_playclock(playclock)
-            return new_playclock.__dict__
+        async def create_playclock_endpoint(playclock_data: PlayClockSchemaCreate):
+            self.logger.debug(f"Create playclock endpoint got data: {playclock_data}")
+            try:
+                new_playclock = await self.service.create_playclock(playclock_data)
+                return new_playclock.__dict__
+            except Exception as ex:
+                self.logger.error(
+                    f"Error creating playclock with data: {playclock_data} {ex}",
+                    exc_info=True,
+                )
 
         @router.put(
             "/{item_id}/",
@@ -43,19 +55,30 @@ class PlayClockRouter(
         )
         async def update_playclock_(
             item_id: int,
-            playclock: PlayClockSchemaUpdate,
+            item: PlayClockSchemaUpdate,
         ):
-            playclock_update = await self.service.update_playclock(
-                item_id,
-                playclock,
-            )
-
-            if playclock_update is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Playclock " f"id({item_id}) " f"not found",
+            self.logger.debug(f"Update playclock endpoint id:{item_id} data: {item}")
+            try:
+                playclock_update = await self.service.update_playclock(
+                    item_id,
+                    item,
                 )
-            return playclock_update
+
+                if playclock_update is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Playclock id({item_id}) not found",
+                    )
+                return playclock_update
+            except Exception as ex:
+                self.logger.error(
+                    f"Error updating playclock with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Error updating playclock with data",
+                )
 
         @router.put(
             "/id/{item_id}/",
@@ -65,6 +88,7 @@ class PlayClockRouter(
             item_id: int,
             item=Depends(update_playclock_),
         ):
+            self.logger.debug(f"Update playclock endpoint by ID")
             if item:
                 return {
                     "content": item.__dict__,
@@ -84,6 +108,7 @@ class PlayClockRouter(
         async def get_playclock_by_id(
             item=Depends(self.service.get_by_id),
         ):
+            self.logger.debug(f"Get playclock endpoint by ID")
             return self.create_response(
                 item,
                 f"Playclock ID:{item.id}",
@@ -99,33 +124,40 @@ class PlayClockRouter(
             item_id: int,
             sec: int,
         ):
-            item_status = "running"
-            item = await self.service.get_by_id(item_id)
-            present_playclock_status = item.playclock_status
+            self.logger.debug(f"Start playclock endpoint with id: {item_id}")
+            try:
+                item_status = "running"
+                item = await self.service.get_by_id(item_id)
+                present_playclock_status = item.playclock_status
 
-            await self.service.enable_match_data_clock_queues(item_id)
-            if present_playclock_status != "running":
-                await self.service.update(
-                    item_id,
-                    PlayClockSchemaUpdate(
-                        playclock=sec,
-                        playclock_status=item_status,
-                    ),
-                )
-                await self.service.decrement_playclock(
-                    background_tasks,
-                    item_id,
-                )
+                await self.service.enable_match_data_clock_queues(item_id)
+                if present_playclock_status != "running":
+                    await self.service.update(
+                        item_id,
+                        PlayClockSchemaUpdate(
+                            playclock=sec,
+                            playclock_status=item_status,
+                        ),
+                    )
+                    self.logger.debug(
+                        f"Start playclock background task, loop decrement"
+                    )
+                    await self.service.decrement_playclock(
+                        background_tasks,
+                        item_id,
+                    )
 
-                return self.create_response(
-                    item,
-                    f"Playclock ID:{item_id} {item_status}",
-                )
-            else:
-                return self.create_response(
-                    item,
-                    f"Playclock ID:{item_id} already {present_playclock_status}",
-                )
+                    return self.create_response(
+                        item,
+                        f"Playclock ID:{item_id} {item_status}",
+                    )
+                else:
+                    return self.create_response(
+                        item,
+                        f"Playclock ID:{item_id} already {present_playclock_status}",
+                    )
+            except Exception as ex:
+                self.logger.error(f"Error starting playclock with id: {item_id} {ex}")
 
         @router.put(
             "/id/{item_id}/stopped/",
@@ -134,22 +166,26 @@ class PlayClockRouter(
         async def reset_playclock_endpoint(
             item_id: int,
         ):
-            item_status = "stopped"
+            self.logger.debug(f"Resetting playclock endpoint with id: {item_id}")
+            try:
+                item_status = "stopped"
 
-            updated = await self.service.update(
-                item_id,
-                PlayClockSchemaUpdate(
-                    playclock=None,
-                    playclock_status="stopped",
-                ),
-            )
+                updated = await self.service.update(
+                    item_id,
+                    PlayClockSchemaUpdate(
+                        playclock=None,
+                        playclock_status="stopped",
+                    ),
+                )
 
-            return self.create_response(
-                updated,
-                f"Play clock {item_status}",
-            )
+                return self.create_response(
+                    updated,
+                    f"Playclock {item_status}",
+                )
+            except Exception as ex:
+                self.logger.error(f"Error resetting playclock with id: {item_id} {ex}")
 
         return router
 
 
-api_playclock_router = PlayClockRouter(PlayClockServiceDB(db)).route()
+api_playclock_router = PlayClockAPIRouter(PlayClockServiceDB(db)).route()

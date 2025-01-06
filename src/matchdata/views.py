@@ -7,7 +7,7 @@ from fastapi import (
     status,
     BackgroundTasks,
 )
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
 from .db_services import MatchDataServiceDB
@@ -93,6 +93,7 @@ class MatchDataAPIRouter(
             item_id: int,
             item=Depends(update_match_data_),
         ):
+            self.logger.debug(f"Update matchdata by ID")
             if item:
                 return {
                     "content": item.__dict__,
@@ -332,6 +333,7 @@ class MatchDataAPIRouter(
             item_id: int,
         ):
             item_status = "stopped"
+            self.logger.debug(f"Reset playclock id{item_id} endpoint")
 
             await self.service.update(
                 item_id,
