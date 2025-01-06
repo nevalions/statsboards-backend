@@ -6,12 +6,12 @@ formatters:
 handlers:
   console:
     class: logging.StreamHandler
-    level: DEBUG
+    level: INFO
     formatter: simple
     stream: ext://sys.stdout  # Direct logs to standard output (console)
   file:
     class: logging.handlers.RotatingFileHandler
-    level: DEBUG
+    level: INFO
     formatter: simple
     filename: backend.log
     maxBytes: 10485760  # 10MB
@@ -21,19 +21,19 @@ filters:
     (): src.logging_config.ContextFilter
 loggers:
   backend_logger_fastapi:
-    level: DEBUG
+    level: INFO
     handlers: [console, file]
     propagate: no
   backend_logger_server:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_config:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_base_db:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     filters: [context_filter]
     propagate: no
@@ -42,114 +42,110 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_fetch_data_helpers:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_parser_eesl:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_fileservice:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
-#
-#  backend_logger_WebSocketManager:
-#    level: DEBUG
-#    handlers: [console, file]
-#    propagate: no
+
   backend_logger_MatchDataWebSocketManager:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_ConnectionManager:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_ScoreboardUpdateManager:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_ScoreboardServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_ClockManager:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_PlayClockServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_GameClockServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
 
   backend_logger_SeasonServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_SportServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_TournamentServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_TeamServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_TeamTournamentServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchDataServiceDB:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
 
   backend_logger_SeasonAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_SportAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_TournamentAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_TeamAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_MatchDataAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_ScoreboardAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_GameClockAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
   backend_logger_PlayClockAPIRouter:
-    level: DEBUG
+    level: INFO
     handlers: [ console, file ]
     propagate: no
 root:
