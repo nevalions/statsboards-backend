@@ -137,7 +137,7 @@ class GameClockServiceDB(BaseServiceDB):
                 self.logger.debug(f"Gameclock in DB: {result}")
                 gameclock = result.one_or_none()
                 if gameclock:
-                    self.logger.info(f"Gameclock found: {gameclock}")
+                    self.logger.debug(f"Gameclock found: {gameclock}")
                     return gameclock
 
     async def decrement_gameclock(

@@ -550,7 +550,7 @@ class BaseServiceDB:
 
                 await session.commit()
                 updated_item = await self.get_by_id(item_id)
-                self.logger.info(
+                self.logger.debug(
                     f"Updated element with ID: {item_id}: {updated_item.__dict__}"
                 )
                 return updated_item
