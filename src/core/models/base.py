@@ -121,15 +121,6 @@ class MatchDataWebSocketManager:
             self.is_connected = False
             raise
 
-    # async def connect(self, client_id: str):
-    #     self.logger.debug(f"Connecting to WebSocket with client_id: {client_id}")
-    #     self.match_data_queues[client_id] = asyncio.Queue()
-    #     self.playclock_queues[client_id] = asyncio.Queue()
-    #     self.gameclock_queues[client_id] = asyncio.Queue()
-    #     self.logger.debug(f"Match Data Queues {self.match_data_queues}")
-    #     self.logger.debug(f"PlayClock Queues {self.playclock_queues}")
-    #     self.logger.debug(f"GameClock Queues {self.gameclock_queues}")
-
     async def disconnect(self, client_id: str):
         self.logger.debug(f"Disconnecting from WebSocket with client_id: {client_id}")
 
@@ -150,14 +141,6 @@ class MatchDataWebSocketManager:
             self.logger.info(f"Deleted gameclock queue for client {client_id}")
         except KeyError:
             self.logger.warning(f"No gameclock queue found for client {client_id}")
-
-    # async def disconnect(self, client_id: str):
-    #     self.logger.debug(
-    #         f"Disconnecting from WebSocket with client_id: {client_id}"
-    #     )
-    #     del self.match_data_queues[client_id]
-    #     del self.playclock_queues[client_id]
-    #     del self.gameclock_queues[client_id]
 
     async def setup_listeners(self):
         """Set up all database listeners"""
@@ -191,86 +174,58 @@ class MatchDataWebSocketManager:
             self.logger.error(f"Startup error: {str(e)}", exc_info=True)
             raise
 
-    # async def startup(self):
-    #     self.connection = await asyncpg.connect(self.db_url)
-    #     self.logger.debug(f"WebSocket startup {self.connection}")
-    #     await self.connection.add_listener("matchdata_change", self.match_data_listener)
-    #     await self.connection.add_listener("match_change", self.match_data_listener)
-    #     await self.connection.add_listener(
-    #         "scoreboard_change", self.match_data_listener
-    #     )
-    #     await self.connection.add_listener("playclock_change", self.playclock_listener)
-    #     await self.connection.add_listener("gameclock_change", self.gameclock_listener)
-    #     self.logger.debug(f"WebSocket listen: {self.connection}")
-
-    # async def playclock_listener(self, connection, pid, channel, payload):
-    #     # print("[Playclock listener] Start")
+    # async def handle_notification(self, channel, payload, update_type, queue_attr):
     #     self.logger.debug(
-    #         f"Playclock listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
+    #         f"{update_type.capitalize()} notification received on channel {channel}"
     #     )
+    #
     #     if not payload or not payload.strip():
-    #         self.logger.warning("No payload received")
+    #         self.logger.warning(f"Empty payload received for {update_type}")
     #         return
     #
-    #     data = json.loads(payload.strip())
-    #     match_id = data["match_id"]
-    #     data["type"] = "playclock-update"
-    #     self.logger.debug(
-    #         f"""Match ID: {match_id}
-    #         Received playclock payload: {payload}
-    #         connection: {connection}
-    #         pid: {pid}
-    #         channel: {channel}
-    #         data: {data}
-    #         """
-    #     )
-    #     await connection_manager.send_to_all(data, match_id=match_id)
+    #     try:
+    #         data = json.loads(payload.strip())
+    #         match_id = data["match_id"]
+    #         data["type"] = update_type
     #
-    # async def gameclock_listener(self, connection, pid, channel, payload):
-    #     # print(f"[Gameclock listener] Start")
-    #     self.logger.debug(
-    #         f"Gameclock listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
-    #     )
-    #     if not payload or not payload.strip():
-    #         self.logger.warning("No payload received")
-    #         return
+    #         self.logger.info(f"Processing {update_type} update for match {match_id}")
     #
-    #     data = json.loads(payload.strip())
-    #     match_id = data["match_id"]
-    #     data["type"] = "gameclock-update"
-    #     self.logger.debug(
-    #         f"""Match ID: {match_id}
-    #         Received gameclock payload: {payload}
-    #         connection: {connection}
-    #         pid: {pid}
-    #         channel: {channel}
-    #         data: {data}
-    #         """
-    #     )
-    #     await connection_manager.send_to_all(data, match_id=match_id)
+    #         # Add to all relevant client queues
+    #         clients = await connection_manager.get_match_subscriptions(match_id)
+    #         queues = getattr(self, queue_attr)
+    #         for client_id in clients:
+    #             if client_id in queues:
+    #                 await queues[client_id].put(data)
+    #                 self.logger.debug(
+    #                     f"Added {update_type} update to queue for client {client_id}"
+    #                 )
     #
-    # async def match_data_listener(self, connection, pid, channel, payload):
-    #     # print("[Match Data Listener] Start")
-    #     self.logger.debug(
-    #         f"Match Data listener connection:{connection}, pid: {pid}, channel: {channel}, payload: {payload}"
-    #     )
-    #     if not payload or not payload.strip():
-    #         self.logger.warning("No payload received")
-    #         return
+    #         # Send to all connected clients for this match
+    #         await connection_manager.send_to_all(data, match_id=match_id)
     #
-    #     data = json.loads(payload.strip())
-    #     match_id = data["match_id"]
-    #     data["type"] = "match-update"
-    #     self.logger.debug(
-    #         f"""Match ID: {match_id}
-    #         Received match data payload: {payload}
-    #         # connection: {connection}
-    #         pid: {pid}
-    #         channel: {channel}
-    #         data: {data}
-    #         """
+    #     except json.JSONDecodeError as e:
+    #         self.logger.error(
+    #             f"JSON decode error in {update_type} listener: {str(e)}", exc_info=True
+    #         )
+    #     except Exception as e:
+    #         self.logger.error(
+    #             f"Error in {update_type} listener: {str(e)}", exc_info=True
+    #         )
+    #
+    # async def playclock_listener(self, connection, channel, payload):
+    #     await self.handle_notification(
+    #         connection, channel, payload, "playclock-update", "playclock_queues"
     #     )
-    #     await connection_manager.send_to_all(data, match_id=match_id)
+    #
+    # async def match_data_listener(self, connection, channel, payload):
+    #     await self.handle_notification(
+    #         connection, channel, payload, "match-update", "match_data_queues"
+    #     )
+    #
+    # async def gameclock_listener(self, connection, channel, payload):
+    #     await self.handle_notification(
+    #         connection, channel, payload, "gameclock-update", "gameclock_queues"
+    #     )
 
     async def playclock_listener(self, connection, pid, channel, payload):
         self.logger.debug(f"Playclock notification received on channel {channel}")
@@ -321,6 +276,8 @@ class MatchDataWebSocketManager:
 
             # Add to all relevant client queues
             clients = await connection_manager.get_match_subscriptions(match_id)
+            self.logger.debug(f"Client ids: {clients}")
+            self.logger.debug(f"Match data queues: {self.match_data_queues}")
             for client_id in clients:
                 if client_id in self.match_data_queues:
                     await self.match_data_queues[client_id].put(data)
@@ -389,11 +346,6 @@ class MatchDataWebSocketManager:
             self.logger.info("WebSocket manager shutdown complete")
         except Exception as e:
             self.logger.error(f"Error during shutdown: {str(e)}", exc_info=True)
-
-    # async def shutdown(self):
-    #     if self.connection:
-    #         self.logger.info(f"Shutting down connection: {self.connection}")
-    #         await self.connection.close()
 
 
 ws_manager = MatchDataWebSocketManager(db_url=settings.db.db_url_websocket())
