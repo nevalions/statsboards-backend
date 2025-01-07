@@ -127,6 +127,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PlayerTeamTournamentServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_SeasonAPIRouter:
     level: DEBUG
@@ -156,6 +160,14 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PositionAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_PlayerTeamTournamentAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_MatchDataAPIRouter:
     level: DEBUG
@@ -175,6 +187,10 @@ loggers:
     propagate: no
 
   backend_logger_parse_players_from_eesl:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_parse_players_from_team_tournament_eesl:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no

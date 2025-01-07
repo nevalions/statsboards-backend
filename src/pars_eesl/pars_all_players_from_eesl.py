@@ -4,8 +4,9 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import TypedDict, Optional, List
 from urllib.parse import urlparse
-
+from fastapi import HTTPException
 import requests
 from bs4 import BeautifulSoup
 
@@ -20,6 +21,26 @@ from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
 setup_logging()
 logger = logging.getLogger("backend_logger_parse_players_from_eesl")
 ITEM_GOT = "PLAYER"
+
+
+class ParsedPlayerData(TypedDict):
+    sport_id: str
+    player_eesl_id: int
+
+
+class ParsedPersonData(TypedDict):
+    first_name: str
+    second_name: str
+    person_photo_url: str
+    person_photo_icon_url: str
+    person_photo_web_url: str
+    person_dob: datetime
+    person_eesl_id: int
+
+
+class ParsePlayerWithPersonData(TypedDict):
+    person: ParsedPersonData
+    player: ParsedPlayerData
 
 
 async def collect_players_dob_from_all_eesl(
@@ -44,7 +65,7 @@ async def collect_players_dob_from_all_eesl(
 
 async def collect_player_full_data_eesl(
     player_eesl_id: int, base_url: str = BASE_PLAYER
-):
+) -> Optional[ParsePlayerWithPersonData]:
     logger.debug(f"Collect players full data from eesl")
     url = base_url + str(player_eesl_id)
     logger.debug(f"URL: {url}")
@@ -129,7 +150,7 @@ async def collect_player_full_data_eesl(
         except Exception as ex:
             logger.error(f"Error while downloading person image: {ex}", exc_info=True)
 
-        player_with_person = {
+        player_with_person: ParsePlayerWithPersonData = {
             "person": {
                 "first_name": player_first_name,
                 "second_name": player_second_name,
@@ -144,8 +165,14 @@ async def collect_player_full_data_eesl(
                 "player_eesl_id": player_eesl_id,
             },
         }
-        logger.info(f"Final player with person data parsed {player_with_person}")
-        return player_with_person
+        if player_with_person:
+            logger.info(f"Final player with person data parsed {player_with_person}")
+            return player_with_person
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Parsed player does not exist",
+            )
     except requests.exceptions.Timeout:
         logger.error(f"Timeout occur while parsing player with person from eesl")
     except Exception as ex:
@@ -240,7 +267,7 @@ async def parse_all_players_from_eesl_index_page_eesl(
 
 async def get_player_from_eesl_participants(
     players_in_eesl, all_eesl_players, remaining_limit
-):
+) -> Optional[List[ParsePlayerWithPersonData]] | bool:
     logger.debug("Parsing player from eesl participants")
     for ppp in all_eesl_players:
         if remaining_limit == 0:
@@ -334,7 +361,7 @@ async def get_player_from_eesl_participants(
                     break
 
                 player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
-                player_with_person = {
+                player_with_person: ParsePlayerWithPersonData = {
                     "person": {
                         "first_name": player_first_name,
                         "second_name": player_second_name,

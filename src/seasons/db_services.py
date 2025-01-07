@@ -77,7 +77,7 @@ class SeasonServiceDB(BaseServiceDB):
                 self.logger.info(f"Got tournaments: {tournaments}")
                 return tournaments
             except Exception as e:
-                self.logger.error(f"Error getting tournaments: {e}")
+                self.logger.error(f"Error getting tournaments: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=404,
                     detail=f"Error getting tournaments",
@@ -101,10 +101,10 @@ class SeasonServiceDB(BaseServiceDB):
             try:
                 results = await session.execute(stmt)
                 tournaments = results.scalars().all()
-                self.logger.info(f"Got tournaments: {tournaments}")
+                self.logger.debug(f"Got number of tournaments: {len(tournaments)}")
                 return tournaments
             except Exception as e:
-                self.logger.error(f"Error getting tournaments: {e}")
+                self.logger.error(f"Error getting tournaments: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=404,
                     detail=f"Error getting tournaments",

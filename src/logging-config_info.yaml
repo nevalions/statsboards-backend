@@ -124,7 +124,11 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_PositionServiceDB:
-    level: DEBUG
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_PlayerTeamTournamentServiceDB:
+    level: INFO
     handlers: [ console, file ]
     propagate: no
 
@@ -156,6 +160,14 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PositionAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_PlayerTeamTournamentAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_MatchDataAPIRouter:
     level: INFO
@@ -175,6 +187,10 @@ loggers:
     propagate: no
 
   backend_logger_parse_players_from_eesl:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_parse_players_from_team_tournament_eesl:
     level: INFO
     handlers: [ console, file ]
     propagate: no

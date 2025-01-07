@@ -23,15 +23,22 @@ class PositionAPIRouter(
         async def create_position_endpoint(
             position: PositionSchemaCreate,
         ):
-            self.logger.debug(
-                f"Create or update position endpoint got data: {position}"
-            )
-            new_position = await self.service.create_new_position(position)
-            if new_position:
-                return new_position.__dict__
-            else:
-                self.logger.error(f"Error on create position got data: {position}")
-                raise HTTPException(status_code=409, detail=f"Position creation fail")
+            try:
+                self.logger.debug(
+                    f"Create or update position endpoint got data: {position}"
+                )
+                new_position = await self.service.create_new_position(position)
+                if new_position:
+                    return new_position.__dict__
+                else:
+                    self.logger.error(f"Error on create position got data: {position}")
+                    raise HTTPException(
+                        status_code=409, detail=f"Position creation fail"
+                    )
+            except Exception as e:
+                self.logger.error(
+                    f"Error on create position got data: {position} {e}", exc_info=True
+                )
 
         @router.put(
             "/{item_id}/",
