@@ -183,12 +183,12 @@ class PlayerTeamTournamentAPIRouter(
                         if created_person:
                             player_data_dict = player_in_team["player"]
                             player_data_dict["person_id"] = created_person.id
-                            pprint(player_data_dict)
+                            # pprint(player_data_dict)
                             player = PlayerSchemaCreate(**player_data_dict)
                             created_player = await PlayerServiceDB(
                                 db
                             ).create_or_update_player(player)
-                            pprint(created_player.__dict__)
+                            # pprint(created_player.__dict__)
                             created_players.append(created_player)
 
                             tournament = await TournamentServiceDB(
