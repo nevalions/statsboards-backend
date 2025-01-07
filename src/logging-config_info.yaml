@@ -49,10 +49,6 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_parser_eesl:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
   backend_logger_fileservice:
     level: INFO
     handlers: [ console, file ]
@@ -132,7 +128,19 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_PlayerMatchServiceDB:
-    level: DEBUG
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_SponsorServiceDB:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_SponsorLineServiceDB:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_SponsorSponsorLineServiceDB:
+    level: INFO
     handlers: [ console, file ]
     propagate: no
 
@@ -176,6 +184,18 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
+  backend_logger_SponsorAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_SponsorLineAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_SponsorSponsorLineAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_MatchDataAPIRouter:
     level: INFO
@@ -194,6 +214,10 @@ loggers:
     handlers: [ console, file ]
     propagate: no
 
+  backend_logger_parser_eesl:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
   backend_logger_parse_players_from_eesl:
     level: INFO
     handlers: [ console, file ]

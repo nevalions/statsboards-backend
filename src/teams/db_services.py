@@ -1,9 +1,7 @@
-import asyncio
-
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import db, BaseServiceDB, TeamDB, PlayerTeamTournamentDB
+from src.core.models import BaseServiceDB, TeamDB, PlayerTeamTournamentDB
 from src.positions.db_services import PositionServiceDB
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
 from ..logging_config import setup_logging, get_logger
