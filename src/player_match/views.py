@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
