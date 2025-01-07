@@ -1,4 +1,3 @@
-from pprint import pprint
 from typing import List
 
 from fastapi import HTTPException
@@ -11,10 +10,7 @@ from .schemas import (
     PlayerTeamTournamentSchemaUpdate,
 )
 from ..logging_config import setup_logging, get_logger
-from ..pars_eesl.pars_all_players_from_eesl import (
-    collect_player_full_data_eesl,
-    ParsePlayerWithPersonData,
-)
+from ..pars_eesl.pars_all_players_from_eesl import collect_player_full_data_eesl
 from ..pars_eesl.parse_player_team_tournament import (
     parse_players_from_team_tournament_eesl_and_create_jsons,
 )
@@ -30,7 +26,6 @@ from ..tournaments.db_services import TournamentServiceDB
 setup_logging()
 
 
-# Person backend
 class PlayerTeamTournamentAPIRouter(
     BaseRouter[
         PlayerTeamTournamentSchema,

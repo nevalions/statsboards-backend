@@ -61,10 +61,8 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     p,
                 )
         except Exception as ex:
-            print(ex)
-            raise HTTPException(
-                status_code=409,
-                detail=f"{ITEM} create or update ({p}) returned some error",
+            self.logger.error(
+                f"Error creating or updating {ITEM}:{p} {ex}", exc_info=True
             )
 
     async def update_player_team_tournament_by_eesl(

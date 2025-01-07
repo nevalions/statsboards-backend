@@ -131,6 +131,10 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PlayerMatchServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_SeasonAPIRouter:
     level: INFO
@@ -165,6 +169,10 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_PlayerTeamTournamentAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_PlayerMatchAPIRouter:
     level: INFO
     handlers: [ console, file ]
     propagate: no
