@@ -602,7 +602,7 @@ class BaseServiceDB:
             try:
                 # Access the column directly from the model
                 column: Column = getattr(self.model, field_name)
-                self.logger.info(
+                self.logger.debug(
                     f"Accessed column: {column} for model {self.model.__name__}"
                 )
 
