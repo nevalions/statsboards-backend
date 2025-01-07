@@ -143,6 +143,10 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
+  backend_logger_FootballEventServiceDB:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_SeasonAPIRouter:
     level: INFO
@@ -193,6 +197,10 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_SponsorSponsorLineAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_FootballEventAPIRouter:
     level: INFO
     handlers: [ console, file ]
     propagate: no

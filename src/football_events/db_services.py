@@ -3,6 +3,10 @@ from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, FootballEventDB
 from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
+from ..logging_config import setup_logging, get_logger
+
+setup_logging()
+ITEM = "FOOTBALL_EVENT"
 
 
 class FootballEventServiceDB(BaseServiceDB):
@@ -11,12 +15,15 @@ class FootballEventServiceDB(BaseServiceDB):
         database,
     ):
         super().__init__(database, FootballEventDB)
+        self.logger = get_logger("backend_logger_FootballEventServiceDB", self)
+        self.logger.debug(f"Initialized FootballEventServiceDB")
 
     async def create_match_football_event(
         self, football_event: FootballEventSchemaCreate
     ):
         async with self.db.async_session() as session:
             try:
+                self.logger.debug(f"Creating {ITEM}")
                 match_event = FootballEventDB(
                     match_id=football_event.match_id,
                     event_number=football_event.event_number,
@@ -64,16 +71,17 @@ class FootballEventServiceDB(BaseServiceDB):
                 session.add(match_event)
                 await session.commit()
                 await session.refresh(match_event)
-
-                return match_event
-            except Exception as ex:
-                print(ex)
+                if match_event:
+                    self.logger.debug(f"{ITEM} created")
+                    return match_event
                 raise HTTPException(
                     status_code=409,
-                    detail=f"While creating match event "
+                    detail=f"While creating {ITEM} "
                     f"for match id({football_event.match_id})"
                     f"returned some error",
                 )
+            except Exception as ex:
+                self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
 
     async def update_match_football_event(
         self,
@@ -81,23 +89,33 @@ class FootballEventServiceDB(BaseServiceDB):
         item: FootballEventSchemaUpdate,
         **kwargs,
     ):
-        updated_ = await super().update(
-            item_id,
-            item,
-            **kwargs,
-        )
+        try:
+            self.logger.debug(f"Updating {ITEM}")
+            updated_ = await super().update(
+                item_id,
+                item,
+                **kwargs,
+            )
 
-        return updated_
+            return updated_
+        except Exception as ex:
+            self.logger.error(f"Error updating {ITEM} {ex}", exc_info=True)
 
     async def get_match_football_events_by_match_id(self, match_id: int):
         async with self.db.async_session() as session:
-            result = await session.scalars(
-                select(FootballEventDB).where(FootballEventDB.match_id == match_id)
-            )
-            if result:
-                # print(result.__dict__)
-                match_events = result.all()
-                if match_events:
-                    return match_events
-                else:
-                    return []
+            try:
+                self.logger.debug(f"Getting {ITEM}s by match id({match_id})")
+                result = await session.scalars(
+                    select(FootballEventDB).where(FootballEventDB.match_id == match_id)
+                )
+                if result:
+                    match_events = result.all()
+                    if match_events:
+                        return match_events
+                    else:
+                        return []
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting {ITEM}s with match id:{match_id} {ex}",
+                    exc_info=True,
+                )
