@@ -203,6 +203,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_parse_match_eesl:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 root:
   level: WARNING
   handlers: [console]
