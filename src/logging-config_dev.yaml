@@ -119,6 +119,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PlayerServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_SeasonAPIRouter:
     level: DEBUG
@@ -141,10 +145,6 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_PersonAPIRouter:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayerServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no

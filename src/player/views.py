@@ -96,14 +96,18 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 start_page=0, limit=2, season_id=8
             )
 
-        @router.post("/pars_and_create/all_eesl/")
-        async def create_parsed_players_with_person_endpoint():
+        @router.post(
+            "/pars_and_create/all_eesl/start_page/{start_page}/season_id/{season_id}/"
+        )
+        async def create_parsed_players_with_person_endpoint(
+            start_page: int = 0, season_id: int = 8
+        ):
             try:
                 self.logger.debug(
                     f"Create parsed players with person from all eesl endpoint"
                 )
                 players = await parse_all_players_from_eesl_index_page_eesl(
-                    start_page=0, limit=2, season_id=8
+                    start_page=start_page, limit=None, season_id=season_id
                 )
                 created_persons = []
                 created_players = []
@@ -129,8 +133,12 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                             self.logger.debug(
                                 f"Player created successfully: {created_player}"
                             )
-                    self.logger.debug(f"Created parsed persons: {created_persons}")
-                    self.logger.debug(f"Created parsed players: {created_players}")
+                    self.logger.debug(
+                        f"Created parsed persons number:{len(created_persons)}"
+                    )
+                    self.logger.debug(
+                        f"Created parsed players number:{len(created_players)}"
+                    )
                     return created_players, created_persons
                 else:
                     return []
