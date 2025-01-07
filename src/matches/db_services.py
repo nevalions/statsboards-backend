@@ -1,9 +1,7 @@
-import asyncio
-
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import db, BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
+from src.core.models import BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
 from src.logging_config import setup_logging, get_logger
 from src.player_match.db_services import PlayerMatchServiceDB
 from src.sports.db_services import SportServiceDB
@@ -41,7 +39,7 @@ class MatchServiceDB(BaseServiceDB):
             else:
                 return await self.create_new_match(m)
         except Exception as ex:
-            self.logger.error(f"{ITEM} returned an error: {ex}", exc_info=True)
+            self.logger.error(f"{ITEM} {m} returned an error: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=409,
                 detail=f"{ITEM} ({m}) returned some error",

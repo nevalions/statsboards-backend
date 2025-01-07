@@ -111,6 +111,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PersonServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_SeasonAPIRouter:
     level: DEBUG
@@ -132,6 +136,11 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PersonAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
   backend_logger_MatchDataAPIRouter:
     level: DEBUG
     handlers: [ console, file ]

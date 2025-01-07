@@ -446,7 +446,7 @@ class BaseServiceDB:
             items = await session.execute(stmt)
             result = items.scalars().all()
             self.logger.debug(
-                f"Fetched {len(result)} elements for {self.model.__name__}"
+                f"Fetched list of {len(result)} elements for {self.model.__name__}"
             )
             return list(result)
 
@@ -462,11 +462,15 @@ class BaseServiceDB:
                 )
                 if result:
                     final_result = result.scalars().one_or_none()
-                    self.logger.debug(f"Result found: {final_result}")
-                    self.logger.debug(
-                        f"Fetched element successfully with ID {item_id} for {self.model.__name__}"
-                    )
-                    return final_result
+                    if final_result:
+                        self.logger.debug(f"Result found: {final_result.__dict__}")
+                        self.logger.debug(
+                            f"Fetched element successfully with ID:{item_id} for {self.model.__name__}"
+                        )
+                        return final_result
+                    else:
+                        self.logger.warning(f"No element with ID:{item_id} found")
+                        return None
 
                 else:
                     self.logger.warning(
@@ -666,7 +670,7 @@ class BaseServiceDB:
                 )
                 await session.commit()
                 find_updated = await self.get_by_id(is_exist.id)
-                self.logger.info(
+                self.logger.debug(
                     f"Updated item retrieved with id: {find_updated.id} for model {self.model.__name__}"
                 )
                 return find_updated
@@ -722,7 +726,7 @@ class BaseServiceDB:
             )
             result = existing_relation.scalar()
             if result:
-                self.logger.info(
+                self.logger.debug(
                     f"Relation found {existing_relation.__dict__} for model {self.model.__name__}"
                 )
             else:

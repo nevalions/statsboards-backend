@@ -127,26 +127,34 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo_endpoint(file: UploadFile = File(...)):
-            file_location = await file_service.save_upload_image(
-                file, sub_folder="teams/logos"
-            )
-            self.logger.debug(
-                f"Upload team logo endpoint file location: {file_location}"
-            )
-            return {"logoUrl": file_location}
+            try:
+                file_location = await file_service.save_upload_image(
+                    file, sub_folder="teams/logos"
+                )
+                self.logger.debug(
+                    f"Upload team logo endpoint file location: {file_location}"
+                )
+                return {"logoUrl": file_location}
+            except Exception as ex:
+                self.logger.error(f"Error saving team logo file: {ex}", exc_info=True)
 
         @router.post("/upload_resize_logo", response_model=UploadResizeTeamLogoResponse)
         async def upload_and_resize_team_logo_endpoint(file: UploadFile = File(...)):
-            uploaded_paths = await file_service.save_and_resize_upload_image(
-                file,
-                sub_folder="teams/logos",
-                icon_height=100,
-                web_view_height=400,
-            )
-            self.logger.debug(
-                f"Upload and resize team logo endpoint file location: {uploaded_paths}"
-            )
-            return uploaded_paths
+            try:
+                uploaded_paths = await file_service.save_and_resize_upload_image(
+                    file,
+                    sub_folder="teams/logos",
+                    icon_height=100,
+                    web_view_height=400,
+                )
+                self.logger.debug(
+                    f"Upload and resize team logo endpoint file location: {uploaded_paths}"
+                )
+                return uploaded_paths
+            except Exception as ex:
+                self.logger.error(
+                    f"Error saving and resizing team logo file: {ex}", exc_info=True
+                )
 
         @router.get(
             "/pars/tournament/{eesl_tournament_id}",
@@ -169,56 +177,66 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 eesl_tournament_id
             )
             self.logger.debug(f"Tournament: {tournament}")
-            teams_list = await parse_tournament_teams_index_page_eesl(
-                eesl_tournament_id
-            )
-            self.logger.debug(f"Teams after parse: {teams_list}")
-
-            created_teams = []
-            created_team_tournament_ids = []
             try:
-                if teams_list:
-                    for t in teams_list:
-                        t: ParsedTeamData
-                        team = TeamSchemaCreate(**t)
-                        created_team = await self.service.create_or_update_team(team)
-                        self.logger.debug(
-                            f"Created or updated team after parse {created_team}"
-                        )
-                        created_teams.append(created_team)
-                        if created_team and tournament:
-                            dict_conv = TeamTournamentSchemaCreate(
-                                **{
-                                    "team_id": created_team.id,
-                                    "tournament_id": tournament.id,
-                                }
-                            )
-                            try:
-                                self.logger.debug(
-                                    f"Trying to create team and tournament connection after parse"
-                                )
-                                team_tournament_connection = (
-                                    await TeamTournamentServiceDB(
-                                        db
-                                    ).create_team_tournament_relation(dict_conv)
-                                )
-                                created_team_tournament_ids.append(
-                                    team_tournament_connection
-                                )
-                            except Exception as ex:
-                                self.logger.error(
-                                    f"Error create team and tournament connection after parse {ex}",
-                                    exc_info=True,
-                                )
-                    self.logger.info(f"Created teams after parsing: {created_teams}")
-                    self.logger.info(
-                        f"Created team tournament connections after parsing: {created_team_tournament_ids}"
-                    )
+                teams_list = await parse_tournament_teams_index_page_eesl(
+                    eesl_tournament_id
+                )
+                self.logger.debug(f"Teams after parse: {teams_list}")
 
-                    return created_teams, created_team_tournament_ids
-                else:
-                    self.logger.warning(f"Team list is empty")
-                    return []
+                created_teams = []
+                created_team_tournament_ids = []
+                try:
+                    if teams_list:
+                        for t in teams_list:
+                            t: ParsedTeamData
+                            team = TeamSchemaCreate(**t)
+                            created_team = await self.service.create_or_update_team(
+                                team
+                            )
+                            self.logger.debug(
+                                f"Created or updated team after parse {created_team}"
+                            )
+                            created_teams.append(created_team)
+                            if created_team and tournament:
+                                dict_conv = TeamTournamentSchemaCreate(
+                                    **{
+                                        "team_id": created_team.id,
+                                        "tournament_id": tournament.id,
+                                    }
+                                )
+                                try:
+                                    self.logger.debug(
+                                        f"Trying to create team and tournament connection after parse"
+                                    )
+                                    team_tournament_connection = (
+                                        await TeamTournamentServiceDB(
+                                            db
+                                        ).create_team_tournament_relation(dict_conv)
+                                    )
+                                    created_team_tournament_ids.append(
+                                        team_tournament_connection
+                                    )
+                                except Exception as ex:
+                                    self.logger.error(
+                                        f"Error create team and tournament connection after parse {ex}",
+                                        exc_info=True,
+                                    )
+                        self.logger.info(
+                            f"Created teams after parsing: {created_teams}"
+                        )
+                        self.logger.info(
+                            f"Created team tournament connections after parsing: {created_team_tournament_ids}"
+                        )
+
+                        return created_teams, created_team_tournament_ids
+                    else:
+                        self.logger.warning(f"Team list is empty")
+                        return []
+                except Exception as ex:
+                    self.logger.error(
+                        f"Error on parse and create teams from tournament: {ex}",
+                        exc_info=True,
+                    )
             except Exception as ex:
                 self.logger.error(
                     f"Error on parse and create teams from tournament: {ex}",

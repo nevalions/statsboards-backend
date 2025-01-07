@@ -76,7 +76,11 @@ class MatchAPIRouter(
         ):
             self.logger.debug(f"Create or update match endpoint got data: {match}")
             new_match = await self.service.create_or_update_match(match)
-            return new_match.__dict__
+            if new_match:
+                return new_match.__dict__
+            else:
+                self.logger.error(f"Error creating match with data: {match}")
+                raise HTTPException(status_code=409, detail=f"Match creation fail")
 
         @router.post(
             "/create_with_full_data/",
@@ -624,66 +628,90 @@ class MatchAPIRouter(
             scoreboard_db_service = ScoreboardServiceDB(db)
 
             # Create all
-            self.logger.debug(f"Creating simple match: {data}")
-            new_match = await self.service.create_or_update_match(data)
+            try:
+                self.logger.debug(f"Creating simple match: {data}")
+                new_match = await self.service.create_or_update_match(data)
 
-            self.logger.debug(f"Creating default matchdata, playclock and gameclock")
-            default_match_data = MatchDataSchemaCreate(match_id=new_match.id)
-            default_playclock = PlayClockSchemaCreate(match_id=new_match.id)
-            default_gameclock = GameClockSchemaCreate(match_id=new_match.id)
-
-            tournament = await tournament_service.get_by_id(new_match.tournament_id)
-            tournament_main_sponsor = await sponsor_service.get_by_id(
-                tournament.main_sponsor_id
-            )
-            team_a = await teams_service.get_by_id(new_match.team_a_id)
-            team_b = await teams_service.get_by_id(new_match.team_b_id)
-
-            scale_main_sponsor = (
-                tournament_main_sponsor.scale_logo if tournament_main_sponsor else 2.0
-            )
-            existing_scoreboard = (
-                await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
-            )
-
-            if existing_scoreboard is None:
-                scoreboard_schema = ScoreboardSchemaCreate(
-                    match_id=new_match.id,
-                    scale_tournament_logo=2,
-                    scale_main_sponsor=scale_main_sponsor,
-                    scale_logo_a=2,
-                    scale_logo_b=2,
-                    team_a_game_color=team_a.team_color,
-                    team_b_game_color=team_b.team_color,
-                    team_a_game_title=team_a.title.title(),
-                    team_b_game_title=team_b.title.title(),
+                self.logger.debug(
+                    f"Creating default matchdata, playclock and gameclock"
                 )
-            else:
-                scoreboard_schema = ScoreboardSchemaUpdate(
-                    match_id=new_match.id,
-                    scale_tournament_logo=2,
-                    scale_main_sponsor=scale_main_sponsor,
-                    scale_logo_a=2,
-                    scale_logo_b=2,
-                    team_a_game_color=team_a.team_color,
-                    team_b_game_color=team_b.team_color,
-                    team_a_game_title=team_a.title.title(),
-                    team_b_game_title=team_b.title.title(),
-                )
-            new_scoreboard = await scoreboard_db_service.create_or_update_scoreboard(
-                scoreboard_schema
-            )
+                default_match_data = MatchDataSchemaCreate(match_id=new_match.id)
+                default_playclock = PlayClockSchemaCreate(match_id=new_match.id)
+                default_gameclock = GameClockSchemaCreate(match_id=new_match.id)
 
-            new_match_data = await match_db_service.create_match_data(
-                default_match_data
-            )
-            teams_data = await self.service.get_teams_by_match(new_match_data.match_id)
-            new_playclock = await playclock_service.create_playclock(default_playclock)
-            new_gameclock = await gameclock_service.create_gameclock(default_gameclock)
-            self.logger.info(
-                f"Created match with full data and scoreboard {new_match.__dict__}"
-            )
-            return new_match.__dict__
+                self.logger.debug(f"Get tournament and tournament main sponsor")
+                tournament = await tournament_service.get_by_id(new_match.tournament_id)
+                tournament_main_sponsor = await sponsor_service.get_by_id(
+                    tournament.main_sponsor_id
+                )
+                self.logger.debug(f"Get teams for match")
+                team_a = await teams_service.get_by_id(new_match.team_a_id)
+                team_b = await teams_service.get_by_id(new_match.team_b_id)
+
+                scale_main_sponsor = (
+                    tournament_main_sponsor.scale_logo
+                    if tournament_main_sponsor
+                    else 2.0
+                )
+                self.logger.debug(f"If scoreboard exist")
+                existing_scoreboard = (
+                    await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
+                )
+
+                if existing_scoreboard is None:
+                    scoreboard_schema = ScoreboardSchemaCreate(
+                        match_id=new_match.id,
+                        scale_tournament_logo=2,
+                        scale_main_sponsor=scale_main_sponsor,
+                        scale_logo_a=2,
+                        scale_logo_b=2,
+                        team_a_game_color=team_a.team_color,
+                        team_b_game_color=team_b.team_color,
+                        team_a_game_title=team_a.title.title(),
+                        team_b_game_title=team_b.title.title(),
+                    )
+                else:
+                    scoreboard_schema = ScoreboardSchemaUpdate(
+                        match_id=new_match.id,
+                        scale_tournament_logo=2,
+                        scale_main_sponsor=scale_main_sponsor,
+                        scale_logo_a=2,
+                        scale_logo_b=2,
+                        team_a_game_color=team_a.team_color,
+                        team_b_game_color=team_b.team_color,
+                        team_a_game_title=team_a.title.title(),
+                        team_b_game_title=team_b.title.title(),
+                    )
+                new_scoreboard = (
+                    await scoreboard_db_service.create_or_update_scoreboard(
+                        scoreboard_schema
+                    )
+                )
+                self.logger.debug(
+                    f"Scoreboard created or updated: {new_scoreboard.__dict__}"
+                )
+
+                new_match_data = await match_db_service.create_match_data(
+                    default_match_data
+                )
+                teams_data = await self.service.get_teams_by_match(
+                    new_match_data.match_id
+                )
+                new_playclock = await playclock_service.create_playclock(
+                    default_playclock
+                )
+                new_gameclock = await gameclock_service.create_gameclock(
+                    default_gameclock
+                )
+                self.logger.info(
+                    f"Created match with full data and scoreboard {new_match.__dict__}"
+                )
+                return new_match.__dict__
+            except Exception as e:
+                self.logger.error(
+                    f"Error creating match with full data and scoreboard: {str(e)}",
+                    exc_info=True,
+                )
 
         @router.get("/pars_and_create/tournament/{eesl_tournament_id}")
         async def create_parsed_matches_endpoint(
@@ -700,149 +728,158 @@ class MatchAPIRouter(
             tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(
                 eesl_tournament_id
             )
-            matches_list: List[
-                ParsedMatchData
-            ] = await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
+            try:
+                self.logger.debug(f"Start parsing tournament for matches")
+                matches_list: List[
+                    ParsedMatchData
+                ] = await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
 
-            created_matches = []
-            created_matches_full_data = []
+                created_matches = []
+                created_matches_full_data = []
 
-            if matches_list:
-                for m in matches_list:
-                    try:
-                        self.logger.debug(f"Parsed match: {m}")
-                        team_a = await teams_service.get_team_by_eesl_id(
-                            m["team_a_eesl_id"]
-                        )
-                        if team_a:
-                            self.logger.debug(f"team_a: {team_a}")
-                        else:
-                            self.logger.error(f"Home team(a) not found")
-                            raise
-                        team_b = await teams_service.get_team_by_eesl_id(
-                            m["team_b_eesl_id"]
-                        )
-                        if team_b:
-                            self.logger.debug(f"team_a: {team_b}")
-                        else:
-                            self.logger.error(f"Away team(b) not found")
-                            raise
-                        match = {
-                            "week": m["week"],
-                            "match_eesl_id": m["match_eesl_id"],
-                            "team_a_id": team_a.id,
-                            "team_b_id": team_b.id,
-                            "match_date": m["match_date"],
-                            "tournament_id": tournament.id,
-                        }
-                        match_schema = MatchSchemaCreate(**match)
-                        created_match = await self.service.create_or_update_match(
-                            match_schema
-                        )
-
-                        playclock_schema = PlayClockSchemaCreate(
-                            match_id=created_match.id
-                        )
-                        await playclock_service.create_playclock(playclock_schema)
-
-                        gameclock_schema = GameClockSchemaCreate(
-                            match_id=created_match.id
-                        )
-                        await gameclock_service.create_gameclock(gameclock_schema)
-
-                        existing_match_data = (
-                            await match_data_service.get_match_data_by_match_id(
-                                created_match.id
+                if matches_list:
+                    for m in matches_list:
+                        try:
+                            self.logger.debug(f"Parsed match: {m}")
+                            team_a = await teams_service.get_team_by_eesl_id(
+                                m["team_a_eesl_id"]
                             )
-                        )
-
-                        if existing_match_data is None:
-                            match_data_schema_create = MatchDataSchemaCreate(
-                                match_id=created_match.id,
-                                score_team_a=m["score_team_a"],
-                                score_team_b=m["score_team_b"],
+                            if team_a:
+                                self.logger.debug(f"team_a: {team_a}")
+                            else:
+                                self.logger.error(f"Home team(a) not found")
+                                raise
+                            team_b = await teams_service.get_team_by_eesl_id(
+                                m["team_b_eesl_id"]
                             )
-                            match_data = await match_data_service.create_match_data(
-                                match_data_schema_create
-                            )
-                            # print("match_data", match_data)
-                        else:
-                            match_data_schema_update = MatchDataSchemaUpdate(
-                                match_id=created_match.id,
-                                score_team_a=m["score_team_a"],
-                                score_team_b=m["score_team_b"],
-                            )
-                            match_data = await match_data_service.update_match_data(
-                                existing_match_data.id, match_data_schema_update
-                            )
-                            # print("match_data", match_data)
-
-                        existing_scoreboard = (
-                            await scoreboard_service.get_scoreboard_by_match_id(
-                                created_match.id
-                            )
-                        )
-
-                        if existing_scoreboard is None:
-                            scoreboard_schema = ScoreboardSchemaCreate(
-                                match_id=created_match.id,
-                                scale_logo_a=2,
-                                scale_logo_b=2,
-                                team_a_game_color=team_a.team_color,
-                                team_b_game_color=team_b.team_color,
-                                team_a_game_title=team_a.title,
-                                team_b_game_title=team_b.title,
-                            )
-                        else:
-                            # Update existing_scoreboard with default values where keys are missing
-                            existing_data = existing_scoreboard.__dict__
-                            default_data = ScoreboardSchemaCreate().model_dump()
-
-                            for key, value in default_data.items():
-                                if (
-                                    key not in existing_data
-                                    or existing_data[key] is None
-                                ):
-                                    existing_data[key] = value
-
-                            scoreboard_schema = ScoreboardSchemaUpdate(**existing_data)
-
-                        created_scoreboard = (
-                            await scoreboard_service.create_or_update_scoreboard(
-                                scoreboard_schema
-                            )
-                        )
-
-                        teams_data = await self.service.get_teams_by_match(
-                            created_match.id
-                        )
-
-                        created_matches.append(created_match)
-                        created_matches_full_data.append(
-                            {
-                                "id": created_match.id,
-                                "match_id": created_match.id,
-                                "status_code": 200,
-                                "match": created_match,
-                                "teams_data": teams_data,
-                                "match_data": match_data,
-                                "scoreboard_data": created_scoreboard,
+                            if team_b:
+                                self.logger.debug(f"team_a: {team_b}")
+                            else:
+                                self.logger.error(f"Away team(b) not found")
+                                raise
+                            match = {
+                                "week": m["week"],
+                                "match_eesl_id": m["match_eesl_id"],
+                                "team_a_id": team_a.id,
+                                "team_b_id": team_b.id,
+                                "match_date": m["match_date"],
+                                "tournament_id": tournament.id,
                             }
-                        )
+                            match_schema = MatchSchemaCreate(**match)
+                            created_match = await self.service.create_or_update_match(
+                                match_schema
+                            )
 
-                        self.logger.info(
-                            f"Created matches with full data after parsing: {created_matches_full_data}"
-                        )
-                    except Exception as ex:
-                        self.logger.error(
-                            f"Error on parse and create matches from tournament: {ex}",
-                            exc_info=True,
-                        )
+                            playclock_schema = PlayClockSchemaCreate(
+                                match_id=created_match.id
+                            )
+                            await playclock_service.create_playclock(playclock_schema)
 
-                return created_matches_full_data
-            else:
-                self.logger.warning(f"Matches list is empty")
-                return []
+                            gameclock_schema = GameClockSchemaCreate(
+                                match_id=created_match.id
+                            )
+                            await gameclock_service.create_gameclock(gameclock_schema)
+
+                            existing_match_data = (
+                                await match_data_service.get_match_data_by_match_id(
+                                    created_match.id
+                                )
+                            )
+
+                            if existing_match_data is None:
+                                match_data_schema_create = MatchDataSchemaCreate(
+                                    match_id=created_match.id,
+                                    score_team_a=m["score_team_a"],
+                                    score_team_b=m["score_team_b"],
+                                )
+                                match_data = await match_data_service.create_match_data(
+                                    match_data_schema_create
+                                )
+                                # print("match_data", match_data)
+                            else:
+                                match_data_schema_update = MatchDataSchemaUpdate(
+                                    match_id=created_match.id,
+                                    score_team_a=m["score_team_a"],
+                                    score_team_b=m["score_team_b"],
+                                )
+                                match_data = await match_data_service.update_match_data(
+                                    existing_match_data.id, match_data_schema_update
+                                )
+                                # print("match_data", match_data)
+
+                            existing_scoreboard = (
+                                await scoreboard_service.get_scoreboard_by_match_id(
+                                    created_match.id
+                                )
+                            )
+
+                            if existing_scoreboard is None:
+                                scoreboard_schema = ScoreboardSchemaCreate(
+                                    match_id=created_match.id,
+                                    scale_logo_a=2,
+                                    scale_logo_b=2,
+                                    team_a_game_color=team_a.team_color,
+                                    team_b_game_color=team_b.team_color,
+                                    team_a_game_title=team_a.title,
+                                    team_b_game_title=team_b.title,
+                                )
+                            else:
+                                # Update existing_scoreboard with default values where keys are missing
+                                existing_data = existing_scoreboard.__dict__
+                                default_data = ScoreboardSchemaCreate().model_dump()
+
+                                for key, value in default_data.items():
+                                    if (
+                                        key not in existing_data
+                                        or existing_data[key] is None
+                                    ):
+                                        existing_data[key] = value
+
+                                scoreboard_schema = ScoreboardSchemaUpdate(
+                                    **existing_data
+                                )
+
+                            created_scoreboard = (
+                                await scoreboard_service.create_or_update_scoreboard(
+                                    scoreboard_schema
+                                )
+                            )
+
+                            teams_data = await self.service.get_teams_by_match(
+                                created_match.id
+                            )
+
+                            created_matches.append(created_match)
+                            created_matches_full_data.append(
+                                {
+                                    "id": created_match.id,
+                                    "match_id": created_match.id,
+                                    "status_code": 200,
+                                    "match": created_match,
+                                    "teams_data": teams_data,
+                                    "match_data": match_data,
+                                    "scoreboard_data": created_scoreboard,
+                                }
+                            )
+
+                            self.logger.info(
+                                f"Created matches with full data after parsing: {created_matches_full_data}"
+                            )
+                        except Exception as ex:
+                            self.logger.error(
+                                f"Error on parse and create matches from tournament: {ex}",
+                                exc_info=True,
+                            )
+
+                    return created_matches_full_data
+                else:
+                    self.logger.warning(f"Matches list is empty")
+                    return []
+            except Exception as ex:
+                self.logger.error(
+                    f"Error on parse and create matches from tournament: {ex}",
+                    exc_info=True,
+                )
 
         return router
 

@@ -111,6 +111,10 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PersonServiceDB:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_SeasonAPIRouter:
     level: INFO
@@ -132,6 +136,11 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PersonAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+
   backend_logger_MatchDataAPIRouter:
     level: INFO
     handlers: [ console, file ]
