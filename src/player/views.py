@@ -8,12 +8,16 @@ from src.pars_eesl.pars_all_players_from_eesl import (
 )
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate
+from ..logging_config import setup_logging, get_logger
+
+setup_logging()
 
 
-# Player backend
 class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate]):
     def __init__(self, service: PlayerServiceDB):
         super().__init__("/api/players", ["players"], service)
+        self.logger = get_logger("backend_logger_PlayerAPIRouter", self)
+        self.logger.debug(f"Initialized PlayerAPIRouter")
 
     def route(self):
         router = super().route()
@@ -25,11 +29,14 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         async def create_player_endpoint(
             player: PlayerSchemaCreate,
         ):
-            print(f"Received player: {player}")
+            self.logger.debug(f"Create or update player endpoint got data: {player}")
             new_player = await self.service.create_or_update_player(player)
             if new_player:
                 return new_player.__dict__
             else:
+                self.logger.error(
+                    f"Error on create or update player, got data: {player}"
+                )
                 raise HTTPException(status_code=409, detail=f"Player creation fail")
 
         @router.get(
@@ -39,13 +46,20 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         async def get_player_by_eesl_id_endpoint(
             player_eesl_id: int,
         ):
-            tournament = await self.service.get_player_by_eesl_id(value=player_eesl_id)
-            if tournament is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Tournament eesl_id({player_eesl_id}) " f"not found",
+            try:
+                self.logger.debug(f"Get player by eesl_id: {player_eesl_id} endpoint")
+                player = await self.service.get_player_by_eesl_id(value=player_eesl_id)
+                if player is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Player eesl_id({player_eesl_id}) not found",
+                    )
+                return player.__dict__
+            except Exception as ex:
+                self.logger.error(
+                    f"Error on get player by eesl_id: {player_eesl_id} {ex}",
+                    exc_info=True,
                 )
-            return tournament.__dict__
 
         @router.put(
             "/{item_id}/",
@@ -55,49 +69,76 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             item_id: int,
             item: PlayerSchemaUpdate,
         ):
-            update_ = await self.service.update_player(item_id, item)
-            if update_ is None:
-                raise HTTPException(
-                    status_code=404, detail=f"Player id {item_id} not found"
-                )
-            return update_.__dict__
+            try:
+                self.logger.debug(f"Update player endpoint got data: {item}")
+                update_ = await self.service.update_player(item_id, item)
+                if update_ is None:
+                    raise HTTPException(
+                        status_code=404, detail=f"Player id {item_id} not found"
+                    )
+                return update_.__dict__
+            except Exception as ex:
+                self.logger.error(f"Error on update player: {item} {ex}", exc_info=True)
 
         @router.get("/id/{player_id}/person")
         async def person_by_player_id(player_id: int):
+            self.logger.debug(f"Get person by player id: {player_id} endpoint")
             return await self.service.get_player_with_person(player_id)
 
         @router.get(
             "/pars/all_eesl",
         )
-        async def get_parse_player_with_person_teams_endpoint():
-            return await parse_all_players_from_eesl_index_page_eesl(limit=2)
+        async def get_parse_player_with_person_endpoint():
+            self.logger.debug(
+                f"Get parsed players with person endpoint limit 2 and season 8"
+            )
+            return await parse_all_players_from_eesl_index_page_eesl(
+                start_page=0, limit=2, season_id=8
+            )
 
         @router.post("/pars_and_create/all_eesl/")
         async def create_parsed_players_with_person_endpoint():
-            players = await parse_all_players_from_eesl_index_page_eesl(
-                start_page=None, limit=None
-            )
-            created_persons = []
-            created_players = []
+            try:
+                self.logger.debug(
+                    f"Create parsed players with person from all eesl endpoint"
+                )
+                players = await parse_all_players_from_eesl_index_page_eesl(
+                    start_page=0, limit=2, season_id=8
+                )
+                created_persons = []
+                created_players = []
 
-            if players:
-                for player_with_person in players:
-                    person = PersonSchemaCreate(**player_with_person["person"])
-                    created_person = await PersonServiceDB(db).create_or_update_person(
-                        person
-                    )
-                    created_persons.append(created_person)
-                    if created_person:
-                        player_data_dict = player_with_person["player"]
-                        player_data_dict["person_id"] = created_person.id
-                        player = PlayerSchemaCreate(**player_data_dict)
-                        created_player = await self.service.create_or_update_player(
-                            player
-                        )
-                        created_players.append(created_player)
-                return created_players, created_persons
-            else:
-                return []
+                if players:
+                    for player_with_person in players:
+                        person = PersonSchemaCreate(**player_with_person["person"])
+                        created_person = await PersonServiceDB(
+                            db
+                        ).create_or_update_person(person)
+                        created_persons.append(created_person)
+                        if created_person:
+                            self.logger.debug(
+                                f"Person created successfully: {created_person}"
+                            )
+                            player_data_dict = player_with_person["player"]
+                            player_data_dict["person_id"] = created_person.id
+                            player = PlayerSchemaCreate(**player_data_dict)
+                            created_player = await self.service.create_or_update_player(
+                                player
+                            )
+                            created_players.append(created_player)
+                            self.logger.debug(
+                                f"Player created successfully: {created_player}"
+                            )
+                    self.logger.debug(f"Created parsed persons: {created_persons}")
+                    self.logger.debug(f"Created parsed players: {created_players}")
+                    return created_players, created_persons
+                else:
+                    return []
+            except Exception as ex:
+                self.logger.error(
+                    f"Error on create parsed players with person from all eesl: {ex}",
+                    exc_info=True,
+                )
 
         return router
 

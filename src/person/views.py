@@ -57,7 +57,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 if tournament is None:
                     raise HTTPException(
                         status_code=404,
-                        detail=f"Tournament eesl_id({person_eesl_id}) " f"not found",
+                        detail=f"Tournament eesl_id({person_eesl_id}) not found",
                     )
                 return tournament.__dict__
             except Exception as ex:
@@ -80,7 +80,9 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                     )
                 return update_.__dict__
             except Exception as ex:
-                self.logger.error(f"Error on update person got data: {ex}", exc_info=ex)
+                self.logger.error(
+                    f"Error on update person, got data: {ex}", exc_info=ex
+                )
 
         @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
         async def upload_person_photo_endpoint(file: UploadFile = File(...)):

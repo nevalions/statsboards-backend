@@ -54,7 +54,7 @@ class PersonServiceDB(BaseServiceDB):
         eesl_field_name: str,
         p: PersonSchemaUpdate,
     ):
-        self.logger.debug(f"Update {ITEM} {eesl_field_name}:{p.match_eesl_id}")
+        self.logger.debug(f"Update {ITEM} {eesl_field_name}:{p.person_eesl_id}")
         return await self.update_item_by_eesl_id(
             eesl_field_name,
             p.person_eesl_id,

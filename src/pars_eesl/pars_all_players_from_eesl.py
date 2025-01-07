@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import re
 from datetime import datetime
@@ -12,50 +13,71 @@ from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import ru_to_eng_datetime_month
+from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
+
+
+setup_logging()
+logger = logging.getLogger("backend_logger_parse_players_from_eesl")
+ITEM_GOT = "PLAYER"
 
 
 async def collect_players_dob_from_all_eesl(
     player_eesl_id: int, base_url: str = BASE_PLAYER
 ):
+    logger.debug(f"Collect players date of birthday from eesl")
     url = base_url + str(player_eesl_id)
-    print(url)
+    logger.debug(f"URL: {url}")
     try:
         req = get_url(url)
         soup = BeautifulSoup(req.content, "lxml")
         dob_text = soup.find("span", class_="player-promo__value").text.strip().lower()
         dob_text_eng = ru_to_eng_datetime_month(dob_text)
         return datetime.strptime(dob_text_eng, "%d %B %Y")
-        # return datetime.strptime(dob_text_eng, "%Y-%m-%d")
     except requests.exceptions.Timeout:
-        print("Timeout occurred")
+        logger.error(f"Timeout occur while parsing date of birthday form eesl")
+    except Exception as ex:
+        logger.error(
+            f"Error while parsing date of birthday from eesl: {ex}", exc_info=True
+        )
 
 
 async def collect_player_full_data_eesl(
     player_eesl_id: int, base_url: str = BASE_PLAYER
 ):
+    logger.debug(f"Collect players full data from eesl")
     url = base_url + str(player_eesl_id)
-    print(url)
+    logger.debug(f"URL: {url}")
     try:
         req = get_url(url)
         soup = BeautifulSoup(req.content, "lxml")
         dob_text = soup.find("span", class_="player-promo__value").text.strip().lower()
+
         dob_text_eng = ru_to_eng_datetime_month(dob_text)
         dob = datetime.strptime(dob_text_eng, "%d %B %Y")
+        logger.debug(f"Parsing DoB {dob}")
 
         player_full_name = (
             soup.find("p", class_="player-promo__name").text.strip().lower()
         )
+        logger.debug(f"Parsing full name {player_full_name}")
+
         player_first_name = player_full_name.split(" ")[1]
         player_second_name = player_full_name.split(" ")[0]
+        logger.debug(
+            f"Getting first and second name {player_first_name} {player_second_name}"
+        )
+
         img_url, extension = (
             soup.find("img", class_="player-promo__img").get("src").strip().split("_")
         )
         player_img_url = f"{img_url}.{extension.split('.')[1]}"
+        logger.debug(f"Parsing img url {player_img_url}")
 
         icon_image_height = 100
         web_view_image_height = 400
 
+        logger.debug(f"Getting image data for persons")
         path = urlparse(player_img_url).path
         ext = Path(path).suffix
         person_image_filename = (
@@ -64,7 +86,8 @@ async def collect_player_full_data_eesl(
         person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
         person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
 
-        image_path = os.path.join(
+        image_path = os.path.join(uploads_path, f"persons/photos/")
+        image_path_with_filename = os.path.join(
             uploads_path, f"persons/photos/{person_image_filename}"
         )
 
@@ -92,14 +115,19 @@ async def collect_player_full_data_eesl(
             person_image_filename_resized_icon,
         )
 
-        await file_service.download_and_resize_image(
-            player_img_url,
-            image_path,
-            resized_icon_image_path,
-            resized_web_image_path,
-            icon_height=icon_image_height,
-            web_view_height=web_view_image_height,
-        )
+        try:
+            logger.debug(f"Downloading person image")
+            await file_service.download_and_resize_image(
+                img_url=player_img_url,
+                original_file_path=image_path,
+                original_image_path_with_filename=image_path_with_filename,
+                icon_image_path=resized_icon_image_path,
+                web_view_image_path=resized_web_image_path,
+                icon_height=icon_image_height,
+                web_view_height=web_view_image_height,
+            )
+        except Exception as ex:
+            logger.error(f"Error while downloading person image: {ex}", exc_info=True)
 
         player_with_person = {
             "person": {
@@ -116,57 +144,82 @@ async def collect_player_full_data_eesl(
                 "player_eesl_id": player_eesl_id,
             },
         }
-
-        # pprint(player_with_person)
-
+        logger.info(f"Final player with person data parsed {player_with_person}")
         return player_with_person
     except requests.exceptions.Timeout:
-        print("Timeout occurred")
+        logger.error(f"Timeout occur while parsing player with person from eesl")
+    except Exception as ex:
+        logger.error(
+            f"Error while parsing player with person from eesl: {ex}", exc_info=True
+        )
 
 
 async def parse_all_players_from_eesl_and_create_jsons():
     try:
+        logger.debug(f"Parsing and creat json for all players from eesl")
         players = await parse_all_players_from_eesl_index_page_eesl()
-        print(len(players))
+        logger.debug(f"Number of players parsed: {len(players)}")
         return players
     except Exception as ex:
-        print(ex)
-        print(f"Something goes wrong, maybe no data")
+        logger.error(
+            f"Error while parsing and creat json for all players from eesl: {ex}",
+            exc_info=True,
+        )
 
 
 async def parse_all_players_from_eesl_index_page_eesl(
-    base_url: str = BASE_ALL_PLAYERS_URL, start_page: int = None, limit: int = None
+    base_url: str = BASE_ALL_PLAYERS_URL,
+    start_page: int = 0,
+    limit: int = None,
+    season_id: int = None,
 ):
+    logger.debug(
+        f"Parsing all players from eesl start page {start_page} and limit players {limit}"
+    )
     players_in_eesl = []
     num = 0
 
     if start_page and start_page > 0:
         num = num + start_page - 1
-
+    # players?season_id=8&page=2
     while True:
         remaining_limit = limit - len(players_in_eesl) if limit is not None else None
-
-        print(f"Parsing page: {num}")
-        url = base_url if num == 0 else f"{base_url}?page={num + 1}"
+        logger.debug(f"Parsing page: {num} Remaining limit of players to parse:{limit}")
+        url = (
+            f"{base_url}?season_id={season_id}"
+            if num == 0
+            else f"{base_url}?season_id={season_id}&page={num + 1}"
+        )
+        logger.debug(f"URL:{url}")
         req = get_url(url)
         soup = BeautifulSoup(req.content, "lxml")
         all_eesl_players = soup.find_all("tr", class_="table__row")
 
         if not all_eesl_players:
-            print("No players found on the page, stopping.")
+            logger.warning(f"No players found in eesl, stopping..")
             break
 
-        await get_player_from_eesl_participants(
-            players_in_eesl, all_eesl_players, remaining_limit
-        )
+        logger.debug(f"Parsing all players from eesl")
+
+        try:
+            await get_player_from_eesl_participants(
+                players_in_eesl, all_eesl_players, remaining_limit
+            )
+        except Exception as ex:
+            logger.error(
+                f"Error while getting player from eesl participiants: {ex}",
+                exc_info=True,
+            )
+            break
 
         if limit is not None and len(players_in_eesl) >= limit:
-            print(f"Reached the limit of {limit} players, stopping.")
+            logger.warning(f"Reached the limit of {limit} players, stopping...")
             break
 
         # Pagination logic
         pagination = soup.find("ul", {"id": "players-pagination"})
         if pagination:
+            logger.debug(f"Pagination logic")
             # Find the 'next' button. It's typically the last 'li' in the pagination 'ul'.
             next_button = pagination.find_all(
                 "li", class_="pagination-section__item--arrow"
@@ -174,48 +227,58 @@ async def parse_all_players_from_eesl_index_page_eesl(
             # Check if the 'next' button is disabled
             is_disabled = "pagination-section__item--disabled" in next_button["class"]
             if is_disabled:
-                print("Reached the last page, stopping.")
+                logger.warning(f"Reached the last page, stopping...")
                 break
 
-        # If a limit is set and we've reached it, stop the loop
         if limit is not None and len(players_in_eesl) >= limit:
-            print(f"Reached the limit of {limit} players, stopping.")
+            logger.warning(f"Reached the limit of {limit} players, stopping.")
             break
         num += 1
 
     return players_in_eesl
 
 
-# async def get_player_from_eesl_participants(players_in_eesl, all_eesl_players):
 async def get_player_from_eesl_participants(
     players_in_eesl, all_eesl_players, remaining_limit
 ):
+    logger.debug("Parsing player from eesl participants")
     for ppp in all_eesl_players:
         if remaining_limit == 0:
+            logger.debug(f"Remaining limit of players reached. Stopping...")
             break
         try:
             if ppp:
+                logger.debug(f"Parsing player from eesl")
                 player_eesl_id = int(
                     re.findall(
                         r"\d+", ppp.find("a", class_="table__player").get("href")
                     )[0]
                 )
+                logger.debug(f"Parsing player eesl_id: {player_eesl_id}")
                 player_full_name = (
                     ppp.find("span", class_="table__player-name").text.strip().lower()
                 )
+                logger.debug(f"Parsing player full name: {player_full_name}")
                 player_first_name = player_full_name.split(" ")[1]
                 player_second_name = player_full_name.split(" ")[0]
+                logger.debug(
+                    f"Parsing player first name and second name: {player_first_name} {player_second_name}"
+                )
                 img_url, extension = (
                     ppp.find("img", class_="table__player-img")
                     .get("src")
                     .strip()
                     .split("_")
                 )
+                logger.debug(
+                    f"Parsing player image url: {img_url} and extension: {extension}"
+                )
                 player_img_url = f"{img_url}.{extension.split('.')[1]}"
 
                 icon_image_height = 100
                 web_view_image_height = 400
 
+                logger.debug(f"Getting image data for persons")
                 path = urlparse(player_img_url).path
                 ext = Path(path).suffix
                 person_image_filename = (
@@ -224,7 +287,8 @@ async def get_player_from_eesl_participants(
                 person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
                 person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
 
-                image_path = os.path.join(
+                image_path = os.path.join(uploads_path, f"persons/photos/")
+                image_path_with_filename = os.path.join(
                     uploads_path, f"persons/photos/{person_image_filename}"
                 )
 
@@ -252,18 +316,22 @@ async def get_player_from_eesl_participants(
                     person_image_filename_resized_icon,
                 )
 
-                # print(image_path)
-                # print(relative_image_path)
-
-                # await file_service.download_image(player_img_url, image_path)
-                await file_service.download_and_resize_image(
-                    player_img_url,
-                    image_path,
-                    resized_icon_image_path,
-                    resized_web_image_path,
-                    icon_height=icon_image_height,
-                    web_view_height=web_view_image_height,
-                )
+                try:
+                    logger.debug(f"Downloading person image")
+                    await file_service.download_and_resize_image(
+                        img_url=player_img_url,
+                        original_file_path=image_path,
+                        original_image_path_with_filename=image_path_with_filename,
+                        icon_image_path=resized_icon_image_path,
+                        web_view_image_path=resized_web_image_path,
+                        icon_height=icon_image_height,
+                        web_view_height=web_view_image_height,
+                    )
+                except Exception as ex:
+                    logger.error(
+                        f"Error while downloading person image: {ex}", exc_info=True
+                    )
+                    break
 
                 player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
                 player_with_person = {
@@ -281,12 +349,18 @@ async def get_player_from_eesl_participants(
                         "player_eesl_id": player_eesl_id,
                     },
                 }
-
+                logger.info(
+                    f"Final player with person data parsed {player_with_person}"
+                )
                 players_in_eesl.append(player_with_person.copy())
                 if remaining_limit and remaining_limit is not float("inf"):
                     remaining_limit -= 1
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout occur while parsing player with person from eesl")
+            return False
         except Exception as ex:
-            print(ex)
+            logger.error(f"Error collecting players from eesl: {ex}", exc_info=True)
+            return False
 
 
 async def main():

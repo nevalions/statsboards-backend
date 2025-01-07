@@ -45,6 +45,10 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_text_helpers:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
   backend_logger_parser_eesl:
     level: DEBUG
     handlers: [ console, file ]
@@ -140,6 +144,14 @@ loggers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
+  backend_logger_PlayerServiceDB:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  backend_logger_PlayerAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
 
   backend_logger_MatchDataAPIRouter:
     level: DEBUG
@@ -154,6 +166,11 @@ loggers:
     handlers: [ console, file ]
     propagate: no
   backend_logger_PlayClockAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
+  backend_logger_parse_players_from_eesl:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
