@@ -364,9 +364,7 @@ class ConnectionManager:
 
     async def send_to_all(self, data: str, match_id: str = None):
         self.logger.debug(f"Sending data: {data} with match_id: {match_id}")
-        self.logger.debug(
-            f"Current match with match_id: {match_id}, subscriptions: {self.match_subscriptions[match_id]}"
-        )
+        self.logger.debug(f"Current match with match_id: {match_id}")
         if match_id:
             for client_id in self.match_subscriptions.get(match_id, []):
                 if client_id in self.queues:
