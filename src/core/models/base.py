@@ -314,6 +314,26 @@ class ConnectionManager:
                     f"Match subscription added {self.match_subscriptions[match_id]}"
                 )
 
+    async def cleanup_connection_resources(self, client_id: str):
+        """Clean up all resources associated with a client."""
+        # Clean up queue
+        if client_id in self.queues:
+            while not self.queues[client_id].empty():
+                try:
+                    self.queues[client_id].get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+            del self.queues[client_id]
+
+        # Remove from active connections
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
+
+        # Remove from match subscriptions
+        for match_id, clients in self.match_subscriptions.items():
+            if client_id in clients:
+                clients.remove(client_id)
+
     async def disconnect(self, client_id: str):
         if client_id in self.active_connections:
             self.logger.info(
