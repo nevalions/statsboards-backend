@@ -344,7 +344,7 @@ class FootballEventDB(Base):
 
     assist_tackle_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        primaryjoin="FootballEventDB.assist_tackle_player == PlayerMatchDB.id",
         back_populates="assist_tackle_player_events",
     )
 
@@ -356,13 +356,13 @@ class FootballEventDB(Base):
 
     score_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        primaryjoin="FootballEventDB.score_player == PlayerMatchDB.id",
         back_populates="score_player_events",
     )
 
     defence_score_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        primaryjoin="FootballEventDB.defence_score_player == PlayerMatchDB.id",
         back_populates="defence_score_player_events",
     )
 
@@ -374,22 +374,22 @@ class FootballEventDB(Base):
 
     kickoff_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        primaryjoin="FootballEventDB.kickoff_player == PlayerMatchDB.id",
         back_populates="kickoff_player_events",
     )
     return_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        primaryjoin="FootballEventDB.return_player == PlayerMatchDB.id",
         back_populates="return_player_events",
     )
     pat_one_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        primaryjoin="FootballEventDB.pat_one_player == PlayerMatchDB.id",
         back_populates="pat_one_player_events",
     )
     flagged_player_rel: Mapped["PlayerMatchDB"] = relationship(
         "PlayerMatchDB",
-        primaryjoin="FootballEventDB.tackle_player == PlayerMatchDB.id",
+        primaryjoin="FootballEventDB.flagged_player == PlayerMatchDB.id",
         back_populates="flagged_player_events",
     )
 
