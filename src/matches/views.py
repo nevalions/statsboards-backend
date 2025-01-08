@@ -544,7 +544,7 @@ class MatchAPIRouter(
                     try:
                         await websocket.send_json(full_match_data)
                     except ConnectionClosedOK:
-                        websocket_logger.info(
+                        websocket_logger.debug(
                             "WebSocket closed normally while sending data"
                         )
                     except ConnectionClosedError as e:
@@ -584,7 +584,7 @@ class MatchAPIRouter(
                     try:
                         await websocket.send_json(gameclock_data)
                     except ConnectionClosedOK:
-                        websocket_logger.info(
+                        websocket_logger.debug(
                             "WebSocket closed normally while sending gameclock data"
                         )
                     except ConnectionClosedError as e:
@@ -623,7 +623,7 @@ class MatchAPIRouter(
                     try:
                         await websocket.send_json(playclock_data)
                     except ConnectionClosedOK:
-                        websocket_logger.info(
+                        websocket_logger.debug(
                             "WebSocket closed normally while sending playclock data"
                         )
                     except ConnectionClosedError as e:
