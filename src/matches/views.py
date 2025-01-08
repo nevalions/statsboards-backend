@@ -340,9 +340,6 @@ class MatchAPIRouter(
             )
             return uploaded_paths
 
-        async def get_connection_manager() -> ConnectionManager:
-            return connection_manager
-
         @router.websocket("/ws/id/{match_id}/{client_id}/")
         async def websocket_endpoint(
             websocket: WebSocket,
@@ -354,7 +351,6 @@ class MatchAPIRouter(
             )
 
             await websocket.accept()
-            # connection_socket_logger.debug(f"Connection Manager {match_id}")
             await connection_manager.connect(websocket, client_id, match_id)
             await ws_manager.startup()
 

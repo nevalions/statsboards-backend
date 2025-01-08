@@ -55,11 +55,11 @@ loggers:
     propagate: no
 
   backend_logger_MatchDataWebSocketManager:
-    level: INFO
+    level: DEBUG
     handlers: [ console, file ]
     propagate: no
   backend_logger_ConnectionManager:
-    level: INFO
+    level: DEBUG
     handlers: [ console, file ]
     propagate: no
   backend_logger_ScoreboardUpdateManager:
