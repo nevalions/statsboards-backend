@@ -13,6 +13,7 @@ from typing import (
 )
 
 import asyncpg
+import pytest
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import select, update, Result, Column, TextClause, text
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
@@ -27,7 +28,7 @@ from sqlalchemy.orm import (
 )
 from starlette.websockets import WebSocket
 
-from src.core.config import settings
+from src.core.config import settings, TestDbSettings
 from src.logging_config import setup_logging, get_logger
 
 setup_logging()

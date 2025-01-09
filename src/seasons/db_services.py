@@ -1,10 +1,13 @@
 import asyncio
+
+import pytest
 from fastapi import HTTPException
 from sqlalchemy import select, and_
 
 from src.core.models import db, BaseServiceDB, SeasonDB, TournamentDB, SportDB, TeamDB
 from src.logging_config import setup_logging, get_logger
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+from ..core.models.base import Database
 
 setup_logging()
 ITEM = "SEASON"
