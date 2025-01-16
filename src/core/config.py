@@ -45,7 +45,7 @@ class DbSettings(BaseSettings):
 
     @property
     def db_url(self) -> PostgresDsn:
-        # print(self.host, self.user, self.password, self.name)
+        print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
@@ -72,14 +72,78 @@ class DbSettings(BaseSettings):
         )
         return url
 
+    @property
+    def test_db_url(self) -> PostgresDsn:
+        # print(self.host, self.user, self.password, self.name)
+        url = str(
+            PostgresDsn.build(
+                scheme="postgresql+asyncpg",
+                username="test",
+                password="test",
+                host="localhost",
+                port=5431,
+                path="test_db",
+            )
+        )
+        return url
 
-class TestDbSettings(DbSettings):
-    model_config = SettingsConfigDict(env_file=".env.test", env_prefix="DB_")
+    def test_db_url_websocket(self) -> PostgresDsn:
+        # print(self.host, self.user, self.password, self.name)
+        url = str(
+            PostgresDsn.build(
+                scheme="postgresql",
+                username="test",
+                password="test",
+                host="localhost",
+                port=5431,
+                path="test_db",
+            )
+        )
+        return url
+
+
+# class TestDbSettings(BaseSettings):
+#     model_config = SettingsConfigDict()
+#     host: str
+#     user: str
+#     password: str
+#     name: str
+#     port: int
+#
+#     @property
+#     def test_db_url(self) -> PostgresDsn:
+#         # print(self.host, self.user, self.password, self.name)
+#         url = str(
+#             PostgresDsn.build(
+#                 scheme="postgresql+asyncpg",
+#                 username="test",
+#                 password="test",
+#                 host="localhost",
+#                 port=5431,
+#                 path="test_db",
+#             )
+#         )
+#         return url
+#
+#     def test_db_url_websocket(self) -> PostgresDsn:
+#         # print(self.host, self.user, self.password, self.name)
+#         url = str(
+#             PostgresDsn.build(
+#                 scheme="postgresql",
+#                 username="test",
+#                 password="test",
+#                 host="localhost",
+#                 port=5431,
+#                 path="test_db",
+#             )
+#         )
+#         return url
 
 
 class Settings(BaseSettings):
     # api_v1_prefix: str = "/api/v1"
     db: DbSettings = DbSettings()
+    # test_db: TestDbSettings = TestDbSettings()
     db_echo: bool = False
 
 

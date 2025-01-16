@@ -2,35 +2,74 @@ import subprocess
 import pytest
 import pytest_asyncio
 
-from src.core.config import TestDbSettings
+from src.core import settings
 from src.core.models.base import Database, Base
 
 
-@pytest.fixture(scope="session", autouse=True)
+# Apply migrations before each test
+@pytest.fixture(scope="function")
 def apply_migrations():
-    """Apply Alembic migrations before tests."""
-    test_settings = TestDbSettings()
-    db_url = test_settings.db_url
+    """Apply Alembic migrations before each test."""
     subprocess.run(
-        ["alembic", "-x", f"db_url={db_url}", "upgrade", "head"],
+        ["alembic", "-x", f"db_url={settings.db.test_db_url}", "upgrade", "head"],
         check=True,
     )
+    yield
 
 
-@pytest_asyncio.fixture
-async def test_db():
-    # Create the test database instance
-    test_settings = TestDbSettings()
-    database = Database(test_settings.db_url, echo=True)
+# Database fixture that ensures a clean state using transactions, function-scoped
+@pytest_asyncio.fixture(scope="function")
+async def test_db(apply_migrations):
+    """Database fixture that ensures a clean state using transactions."""
+    assert "test" in settings.db.test_db_url, "Test DB URL must contain 'test'"
 
-    # Create tables
+    database = Database(settings.db.test_db_url, echo=True)
+
+    # Create tables at the start of each test
     async with database.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    yield database
+    # Use a transactional connection for tests
+    async with database.engine.connect() as connection:
+        transaction = await connection.begin()
+        database.async_session.configure(bind=connection)
 
-    # Drop tables and dispose of the engine
-    async with database.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        try:
+            yield database
+            if transaction.is_active:
+                await transaction.rollback()
+        finally:
+            # Cleanup after the test: drop tables or reset the state
+            async with database.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.drop_all)
 
+    # Dispose of the engine after all tests
     await database.close()
+
+
+#
+# @pytest.mark.usefixtures(scope="session")
+# def apply_migrations():
+#     """Apply Alembic migrations before tests."""
+#     subprocess.run(
+#         ["alembic", "-x", f"db_url={settings.db.test_db_url}", "upgrade", "head"],
+#         check=True,
+#     )
+#
+#
+# @pytest_asyncio.fixture
+# async def test_db():
+#     """Ensure the database URL is for testing and manage schema."""
+#     assert "test" in settings.db.test_db_url, "Test DB URL must contain 'test'"
+#
+#     database = Database(settings.db.test_db_url, echo=True)
+#
+#     async with database.engine.begin() as conn:
+#         await conn.run_sync(Base.metadata.create_all)
+#
+#     yield database
+#
+#     async with database.engine.begin() as conn:
+#         await conn.rollback()
+#
+#     await database.close()

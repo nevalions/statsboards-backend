@@ -13,10 +13,9 @@ from typing import (
 )
 
 import asyncpg
-import pytest
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import select, update, Result, Column, TextClause, text
-from sqlalchemy.exc import NoResultFound, SQLAlchemyError
+from sqlalchemy.exc import NoResultFound, SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -28,7 +27,7 @@ from sqlalchemy.orm import (
 )
 from starlette.websockets import WebSocket
 
-from src.core.config import settings, TestDbSettings
+from src.core.config import settings
 from src.logging_config import setup_logging, get_logger
 
 setup_logging()
@@ -41,7 +40,7 @@ db_logger_helper = logging.getLogger("backend_logger_base_db")
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
         self.logger = get_logger("backend_logger_base_db", self)
-        self.logger.debug(f"Initializing Database with URL: ***, Echo: {echo}")
+        self.logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
         try:
             self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
             self.async_session: AsyncSession | Any = async_sessionmaker(
@@ -449,14 +448,29 @@ class BaseServiceDB:
                     f"{self.model.__name__} created successfully: {item.__dict__}"
                 )
                 return item
-            except Exception as ex:
+            except IntegrityError as ex:
                 self.logger.error(
-                    f"Error creating {self.model.__name__}: {ex}", exc_info=True
+                    f"Integrity error creating {self.model.__name__}: {ex}",
+                    exc_info=True,
                 )
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"Error creating {self.model.__name__} Check input data. {item}",
-                )
+                await session.rollback()
+                raise
+            # except IntegrityError as ex:
+            #     self.logger.error(
+            #         f"Integrity error creating {self.model.__name__}: {ex}",
+            #         exc_info=True,
+            #     )
+            #     await session.rollback()
+            #     if isinstance(ex.orig, asyncpg.exceptions.UniqueViolationError):
+            #         raise HTTPException(
+            #             status_code=409,
+            #             detail=f"Duplicate entry detected for {self.model.__name__}. "
+            #             f"Detail: {ex.detail}",
+            #         )
+            #     raise HTTPException(
+            #         status_code=409,
+            #         detail=f"Error creating {self.model.__name__}. Check input data. {item}",
+            #     )
 
     async def get_all_elements(self):
         async with self.db.async_session() as session:
@@ -562,13 +576,13 @@ class BaseServiceDB:
                     )
                     return None
 
-                for key, value in item.dict(exclude_unset=True).items():
+                for key, value in item.model_dump(exclude_unset=True).items():
                     setattr(updated_item, key, value)
 
                 await session.execute(
                     update(self.model)
                     .where(self.model.id == item_id)
-                    .values(item.dict(exclude_unset=True))
+                    .values(item.model_dump(exclude_unset=True))
                 )
 
                 await session.commit()
