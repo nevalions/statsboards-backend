@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+from tests.test_data import TestData
 
 
 # Ensure the test_db fixture is properly used
@@ -18,7 +19,7 @@ async def season_service(test_db):
 @pytest.fixture(scope="function")
 def sample_season_data():
     """Fixture to provide sample season data."""
-    return SeasonSchemaCreate(year=2025, description="Test Season")
+    return TestData.get_season_data()
 
 
 # Fixture to create the season before each test function
@@ -33,7 +34,7 @@ async def initial_season(season_service, sample_season_data):
 @pytest.fixture(scope="function")
 def updated_season_data():
     """Fixture to provide updated season data."""
-    return SeasonSchemaUpdate(year=2026, description="Updated Test Season")
+    return TestData.get_season_data_for_update()
 
 
 # Test class for SeasonServiceDB

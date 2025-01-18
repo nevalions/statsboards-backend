@@ -74,7 +74,6 @@ class DbSettings(BaseSettings):
 
     @property
     def test_db_url(self) -> PostgresDsn:
-        # print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
@@ -88,7 +87,6 @@ class DbSettings(BaseSettings):
         return url
 
     def test_db_url_websocket(self) -> PostgresDsn:
-        # print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
                 scheme="postgresql",

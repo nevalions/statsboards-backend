@@ -1,5 +1,6 @@
 import asyncio
 
+from fastapi import HTTPException
 from sqlalchemy import select, Result
 
 from src.core.models import db, BaseServiceDB, SportDB
@@ -21,11 +22,18 @@ class SportServiceDB(BaseServiceDB):
 
     async def create_sport(self, s: SportSchemaCreate):
         self.logger.debug(f"Creat {ITEM}:{s}")
-        season = self.model(
-            title=s.title,
-            description=s.description,
-        )
-        return await super().create(season)
+        try:
+            season = self.model(
+                title=s.title,
+                description=s.description,
+            )
+            return await super().create(season)
+        except Exception as e:
+            self.logger.error(f"Error creating {ITEM} {e}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
 
     async def update_sport(
         self,
@@ -34,11 +42,18 @@ class SportServiceDB(BaseServiceDB):
         **kwargs,
     ):
         self.logger.debug(f"Update {ITEM} with id:{item_id}")
-        return await super().update(
-            item_id,
-            item,
-            **kwargs,
-        )
+        try:
+            return await super().update(
+                item_id,
+                item,
+                **kwargs,
+            )
+        except Exception as e:
+            self.logger.error(f"Error updating {ITEM} {e}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
+            )
 
     async def get_tournaments_by_sport(
         self,

@@ -228,12 +228,12 @@ class MatchDataAPIRouter(
             item_id: int,
             item_status: str = Path(
                 ...,
-                example="stopped",
+                examples=["stopped"],
             ),
             sec: int = Path(
                 ...,
                 description="Seconds",
-                example=720,
+                examples=[720],
             ),
         ):
             try:

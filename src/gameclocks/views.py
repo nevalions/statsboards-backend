@@ -174,12 +174,12 @@ class GameClockAPIRouter(
             item_id: int,
             item_status: str = Path(
                 ...,
-                example="stopped",
+                examples=["stopped"],
             ),
             sec: int = Path(
                 ...,
                 description="Seconds",
-                example=720,
+                examples=[720],
             ),
         ):
             self.logger.debug(f"Resetting gameclock endpoint with id: {item_id}")
