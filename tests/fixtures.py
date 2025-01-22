@@ -7,7 +7,7 @@ from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import SportFactorySample, SeasonFactorySample, TournamentFactory
-from tests.testhelpers import create_test_entity
+
 
 setup_logging()
 test_logger = logging.getLogger("backend_logger_tests")

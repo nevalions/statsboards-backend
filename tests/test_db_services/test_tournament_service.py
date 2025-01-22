@@ -1,7 +1,4 @@
 import pytest
-import pytest_asyncio
-
-from tests.fixtures import sport, season
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import TournamentFactory
 from tests.fixtures import (
@@ -9,6 +6,8 @@ from tests.fixtures import (
     test_sport_service,
     test_season_service,
     tournament,
+    sport,
+    season,
 )
 
 
