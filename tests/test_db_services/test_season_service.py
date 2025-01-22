@@ -167,3 +167,10 @@ class TestSeasonServiceDB:
 
         assert len(fetched_tournaments) == len(tournaments)
         assert len(fetched_tournaments) != len(tournaments) - 1
+
+        for i, fetched_tournament in enumerate(fetched_tournaments):
+            expected_title = f"Tournament {i + 1}"
+            assert fetched_tournament.title == expected_title, (
+                f"Title mismatch: expected '{expected_title}', "
+                f"got '{fetched_tournament.title}'"
+            )
