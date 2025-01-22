@@ -3,7 +3,7 @@ import pytest_asyncio
 
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate, SportSchemaUpdate
-from tests.factories import SportFactory
+from tests.factories import SportFactorySample
 from tests.test_data import TestData
 
 
@@ -22,7 +22,7 @@ async def sport_service(test_db) -> SportServiceDB:
 
 @pytest.fixture(scope="function")
 def sample_sport_data():
-    return SportFactory.build()
+    return SportFactorySample.build()
 
 
 @pytest.mark.asyncio

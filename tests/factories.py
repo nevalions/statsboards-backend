@@ -5,12 +5,22 @@ from src.core.models.tournament import TournamentDB
 from tests.test_data import TestData
 
 
-class SportFactory(factory.Factory):
+class SportFactorySample(factory.Factory):
     class Meta:
         model = SportDB
 
     title = factory.Sequence(lambda n: f"{TestData.get_sport_data().title}")
     description = factory.Sequence(lambda n: f"{TestData.get_sport_data().description}")
+
+
+class SportFactoryAny(factory.Factory):
+    class Meta:
+        model = SportDB
+
+    title = factory.Sequence(lambda n: f"{TestData.get_sport_data().title} + {n}")
+    description = factory.Sequence(
+        lambda n: f"{TestData.get_sport_data().description} + {n}"
+    )
 
 
 class SeasonFactorySample(factory.Factory):
@@ -38,6 +48,9 @@ class TournamentFactory(factory.Factory):
         model = TournamentDB
 
     tournament_eesl_id = factory.Sequence(lambda n: n + 100)
+    # tournament_eesl_id = factory.Sequence(
+    #     lambda n: TestData.get_tournament_data(season_id, sport_id).tournament_eesl_id
+    # )
     title = factory.Sequence(lambda n: f"Tournament {n}")
     description = factory.Sequence(lambda n: f"Description for Tournament {n}")
     tournament_logo_url = factory.Sequence(lambda n: f"logo_url_{n}")
@@ -45,8 +58,11 @@ class TournamentFactory(factory.Factory):
     tournament_logo_web_url = factory.Sequence(lambda n: f"web_url_{n}")
 
     # Foreign keys
-    sport = factory.SubFactory(SportFactory)
+    sport = factory.SubFactory(SportFactorySample)
     season = factory.SubFactory(SeasonFactorySample)
 
     sport_id = None
     season_id = None
+
+    sponsor_line_id = None
+    main_sponsor_id = None

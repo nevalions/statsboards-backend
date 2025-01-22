@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaUpdate
-from tests.factories import SeasonFactorySample, SeasonFactoryAny, SportFactory
+from tests.factories import SeasonFactorySample
 from tests.test_data import TestData
 
 
