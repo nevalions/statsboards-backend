@@ -4,14 +4,20 @@ import pytest_asyncio
 from tests.fixtures import sport, season
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import TournamentFactory
+from tests.fixtures import (
+    test_tournament_service,
+    test_sport_service,
+    test_season_service,
+    tournament,
+)
 
 
-# Fixture to provide an instance of TournamentServiceDB with session
-@pytest_asyncio.fixture(scope="function")
-async def tournament_service(test_db):
-    """Fixture to provide an instance of TournamentServiceDB with session."""
-    service = TournamentServiceDB(test_db)  # Pass the engine or async session
-    return service
+# # Fixture to provide an instance of TournamentServiceDB with session
+# @pytest_asyncio.fixture(scope="function")
+# async def tournament_service(test_db):
+#     """Fixture to provide an instance of TournamentServiceDB with session."""
+#     service = TournamentServiceDB(test_db)  # Pass the engine or async session
+#     return service
 
 
 @pytest.fixture(scope="function")
@@ -23,14 +29,14 @@ def tournament_sample(sport, season):
 class TestTournamentServiceDB:
     async def test_create_tournament_with_relations(
         self,
-        tournament_service: TournamentServiceDB,
+        test_tournament_service: TournamentServiceDB,
         sport,
         season,
         tournament_sample,
     ):
         """Test creating a tournament with related sport and season."""
         # Create the tournament
-        created_tournament = await tournament_service.create_new_tournament(
+        created_tournament = await test_tournament_service.create_new_tournament(
             tournament_sample
         )
 

@@ -48,14 +48,14 @@ class TournamentFactory(factory.Factory):
         model = TournamentDB
 
     tournament_eesl_id = factory.Sequence(lambda n: n + 100)
-    # tournament_eesl_id = factory.Sequence(
-    #     lambda n: TestData.get_tournament_data(season_id, sport_id).tournament_eesl_id
-    # )
     title = factory.Sequence(lambda n: f"Tournament {n}")
     description = factory.Sequence(lambda n: f"Description for Tournament {n}")
     tournament_logo_url = factory.Sequence(lambda n: f"logo_url_{n}")
     tournament_logo_icon_url = factory.Sequence(lambda n: f"icon_url_{n}")
     tournament_logo_web_url = factory.Sequence(lambda n: f"web_url_{n}")
+
+    sponsor_line_id = None
+    main_sponsor_id = None
 
     # Foreign keys
     sport = factory.SubFactory(SportFactorySample)
@@ -63,6 +63,3 @@ class TournamentFactory(factory.Factory):
 
     sport_id = None
     season_id = None
-
-    sponsor_line_id = None
-    main_sponsor_id = None

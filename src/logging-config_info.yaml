@@ -238,6 +238,11 @@ loggers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
+
+  backend_logger_tests:
+    level: WARNING
+    handlers: [ console, file ]
+    propagate: no
 root:
   level: WARNING
   handlers: [console]
