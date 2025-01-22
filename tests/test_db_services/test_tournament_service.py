@@ -56,7 +56,7 @@ class TestTournamentServiceDB:
         )
 
         # Verify the tournament was created with correct relations
-        assert created_tournament.sport_id != sport.id
+        assert created_tournament.sport_id == sport.id
         assert created_tournament.season_id == season.id
         assert created_tournament.title == tournament_data.title
 
