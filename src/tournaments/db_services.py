@@ -39,9 +39,9 @@ class TournamentServiceDB(BaseServiceDB):
                         t,
                     )
                 else:
-                    return await self.create_new_tournament(t)
+                    return await self.create_tournament(t)
             else:
-                return await self.create_new_tournament(t)
+                return await self.create_tournament(t)
         except Exception as ex:
             self.logger.error(f"{ITEM} returned an error: {ex}", exc_info=True)
             raise HTTPException(
@@ -61,7 +61,7 @@ class TournamentServiceDB(BaseServiceDB):
             t,
         )
 
-    async def create_new_tournament(
+    async def create_tournament(
         self,
         t: TournamentSchemaCreate,
     ):

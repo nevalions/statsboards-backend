@@ -14,21 +14,6 @@ from tests.fixtures import (
 )
 
 
-# # Ensure the test_db fixture is properly used
-# @pytest_asyncio.fixture(scope="function")
-# async def season_service(test_db):
-#     """Fixture to provide an instance of SeasonServiceDB with session."""
-#     service = SeasonServiceDB(test_db)
-#     return service
-
-
-# # Ensure the test_db fixture is properly used
-# @pytest_asyncio.fixture(scope="function")
-# async def season_service(test_season_service):
-#     """Fixture to provide an instance of SeasonServiceDB with session."""
-#     return test_season_service
-
-
 @pytest.fixture(scope="function")
 def season_sample():
     return SeasonFactorySample.build()
@@ -58,12 +43,8 @@ class TestSeasonServiceDB:
         self,
         test_season_service,
         season,
-        # season_sample,
     ):
         """Test successful retrieval of a season."""
-        # created_season = await test_season_service.create_season(season_sample)
-        # created_season = season
-
         got_season = await test_season_service.get_by_id(season.id)
 
         assert got_season is not None
@@ -89,7 +70,6 @@ class TestSeasonServiceDB:
         season_sample,
     ):
         """Test successful retrieval of a season."""
-        # created_season = await test_season_service.create_season(season_sample)
         got_season = await test_season_service.get_season_by_year(season.year)
 
         assert got_season is not None
@@ -111,7 +91,6 @@ class TestSeasonServiceDB:
         self,
         test_season_service,
         season,
-        # season_sample,
         updated_season_data,
     ):
         """Test successful season update."""
@@ -151,14 +130,11 @@ class TestSeasonServiceDB:
     async def test_update_season_failure(
         self,
         test_season_service,
-        # season_sample,
         season,
         updated_season_data,
     ):
         """Test failure during season update, expect HTTPException."""
         updated_season_data.year = None
-        # created_season = await season_service.create_season(season_sample)
-
         with pytest.raises(HTTPException) as exc_info:
             await test_season_service.update_season(
                 item_id=season.id, item=updated_season_data
@@ -172,11 +148,8 @@ class TestSeasonServiceDB:
         self,
         test_season_service,
         season,
-        # season_sample,
     ):
         """Test attempting to create a duplicate season."""
-        # created_season = await season_service.create_season(season_sample)
-
         with pytest.raises(HTTPException) as exc_info:
             await test_season_service.create_season(season)
 
@@ -187,15 +160,13 @@ class TestSeasonServiceDB:
         assert "Error creating" in exc_info.value.detail
         assert "Check input data" in exc_info.value.detail
 
-    async def test_get_tournaments_by_year(
+    async def test_get_one_tournament_by_year(
         self,
         test_season_service,
         tournament,
     ):
         """Test tournaments for the year."""
-        print(tournament)
         season_id = tournament.season_id
-        print(season_id)
         got_season = await test_season_service.get_by_id(season_id)
         tournaments = await test_season_service.get_tournaments_by_year(got_season.year)
 
