@@ -1,7 +1,7 @@
 import pytest
 from fastapi import HTTPException
 
-from src.seasons.schemas import SeasonSchemaUpdate
+from src.seasons.schemas import SeasonSchemaUpdate, SeasonSchemaCreate
 from tests.factories import SeasonFactorySample
 from tests.test_data import TestData
 from tests.fixtures import (
@@ -11,7 +11,9 @@ from tests.fixtures import (
     season,
     sport,
     tournament,
+    tournaments,
 )
+from tests.testhelpers import assert_season_equal
 
 
 @pytest.fixture(scope="function")
@@ -31,13 +33,10 @@ def updated_season_data():
 class TestSeasonServiceDB:
     async def test_create_season_success(self, test_season_service, season_sample):
         """Test successful season creation."""
-        created_season = await test_season_service.create_season(season_sample)
-
-        assert created_season is not None
-        assert created_season.year == season_sample.year
-        assert created_season.description == season_sample.description
-        assert created_season.year != 2020
-        assert created_season.year == TestData.get_season_data().year
+        created_season: SeasonSchemaCreate = await test_season_service.create_season(
+            season_sample
+        )
+        assert_season_equal(season_sample, created_season)
 
     async def test_get_season_by_id_success(
         self,
@@ -46,11 +45,7 @@ class TestSeasonServiceDB:
     ):
         """Test successful retrieval of a season."""
         got_season = await test_season_service.get_by_id(season.id)
-
-        assert got_season is not None
-        assert got_season.year == season.year
-        assert got_season.description == season.description
-        assert got_season.year != 2020
+        assert_season_equal(season, got_season)
 
     async def test_get_season_by_id_not_found(
         self,
@@ -71,11 +66,7 @@ class TestSeasonServiceDB:
     ):
         """Test successful retrieval of a season."""
         got_season = await test_season_service.get_season_by_year(season.year)
-
-        assert got_season is not None
-        assert got_season.year == season.year
-        assert got_season.description == season.description
-        assert got_season.year != 2020
+        assert_season_equal(season, got_season)
 
     async def test_get_season_by_year_not_found(
         self,
@@ -94,38 +85,25 @@ class TestSeasonServiceDB:
         updated_season_data,
     ):
         """Test successful season update."""
-        # created_season = await season_service.create_season(season_sample)
-
-        original_year = season.year
-        original_description = season.description
-
-        # Perform the update
         updated_season = await test_season_service.update_season(
             item_id=season.id, item=updated_season_data
         )
-
-        # Assert that the update was successful
         assert updated_season is not None
         assert updated_season.year == updated_season_data.year
         assert updated_season.description == updated_season_data.description
         assert updated_season.id == season.id
-        assert updated_season.year != original_year
+        assert updated_season.year != season.year
         assert updated_season.year == TestData.get_season_data_for_update().year
 
         # Reset the season back to its original state
         reset_season_data = SeasonSchemaUpdate(
-            year=original_year, description=original_description
+            year=season.year, description=season.description
         )
         await test_season_service.update_season(
             item_id=season.id, item=reset_season_data
         )
         reset_season = await test_season_service.get_season_by_year(season.year)
-
-        # Assert that the season is now in its original state
-        assert reset_season is not None
-        assert reset_season.year == original_year
-        assert reset_season.description == original_description
-        assert reset_season.year == TestData.get_season_data().year
+        assert_season_equal(season, reset_season)
 
     async def test_update_season_failure(
         self,
@@ -168,6 +146,24 @@ class TestSeasonServiceDB:
         """Test tournaments for the year."""
         season_id = tournament.season_id
         got_season = await test_season_service.get_by_id(season_id)
-        tournaments = await test_season_service.get_tournaments_by_year(got_season.year)
+        got_tournaments = await test_season_service.get_tournaments_by_year(
+            got_season.year
+        )
 
-        assert len(tournaments) == 1
+        assert len(got_tournaments) == 1
+
+    async def test_get_tournaments_by_year(
+        self,
+        test_season_service,
+        tournaments,
+    ):
+        """Test retrieving tournaments for a given year."""
+        season_id = tournaments[0].season_id
+        got_season = await test_season_service.get_by_id(season_id)
+
+        fetched_tournaments = await test_season_service.get_tournaments_by_year(
+            got_season.year
+        )
+
+        assert len(fetched_tournaments) == len(tournaments)
+        assert len(fetched_tournaments) != len(tournaments) - 1

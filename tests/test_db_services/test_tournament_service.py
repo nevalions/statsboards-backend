@@ -1,5 +1,9 @@
 import pytest
+
+from src.seasons.schemas import SeasonSchemaCreate
+from src.sports.schemas import SportSchemaCreate
 from src.tournaments.db_services import TournamentServiceDB
+from src.tournaments.schemas import TournamentSchemaBase
 from tests.factories import TournamentFactory
 from tests.fixtures import (
     test_tournament_service,
@@ -9,6 +13,7 @@ from tests.fixtures import (
     sport,
     season,
 )
+from tests.test_data import TestData
 
 
 @pytest.fixture(scope="function")
@@ -21,56 +26,32 @@ class TestTournamentServiceDB:
     async def test_create_tournament_with_relations(
         self,
         test_tournament_service: TournamentServiceDB,
-        sport,
-        season,
+        sport: SportSchemaCreate,
+        season: SeasonSchemaCreate,
         tournament_sample,
     ):
         """Test creating a tournament with related sport and season."""
-        # Create the tournament
-        created_tournament = await test_tournament_service.create_tournament(
-            tournament_sample
+        created_tournament: TournamentSchemaBase = (
+            await test_tournament_service.create_tournament(tournament_sample)
         )
 
-        # Verify the tournament was created with correct relations
         assert created_tournament.sport_id == sport.id
         assert created_tournament.season_id == season.id
         assert created_tournament.title == tournament_sample.title
-
-
-#
-# # Test class for TournamentServiceDB
-# @pytest.mark.asyncio
-# class TestTournamentServiceDB:
-#     async def test_create_tournament_success(
-#         self, tournament_service, sample_tournament_data
-#     ):
-#         """Test successful tournament creation."""
-#         created_tournament: TournamentSchemaBase = (
-#             await tournament_service.create_or_update_tournament(sample_tournament_data)
-#         )
-#
-#         assert created_tournament is not None
-#         assert (
-#             created_tournament.tournament_eesl_id
-#             == sample_tournament_data.tournament_eesl_id
-#         )
-#         assert created_tournament.title == sample_tournament_data.title
-#         assert created_tournament.description == sample_tournament_data.description
-#         assert (
-#             created_tournament.tournament_logo_url
-#             == sample_tournament_data.tournament_logo_url
-#         )
-#         assert (
-#             created_tournament.tournament_logo_icon_url
-#             == sample_tournament_data.tournament_logo_icon_url
-#         )
-#         assert (
-#             created_tournament.tournament_logo_web_url
-#             == sample_tournament_data.tournament_logo_web_url
-#         )
-#         assert created_tournament.season_id == sample_tournament_data.season_id
-#         assert created_tournament.sport_id == sample_tournament_data.sport_id
-#         assert (
-#             created_tournament.main_sponsor_id == sample_tournament_data.main_sponsor_id
-#         )
-#         assert created_tournament.title == "Tournament A"
+        assert created_tournament.description == tournament_sample.description
+        assert (
+            created_tournament.tournament_logo_url
+            == tournament_sample.tournament_logo_url
+        )
+        assert (
+            created_tournament.tournament_logo_icon_url
+            == tournament_sample.tournament_logo_icon_url
+        )
+        assert (
+            created_tournament.tournament_logo_web_url
+            == tournament_sample.tournament_logo_web_url
+        )
+        assert created_tournament.sponsor_line_id == tournament_sample.sponsor_line_id
+        assert created_tournament.main_sponsor_id == tournament_sample.main_sponsor_id
+        assert sport.title == TestData.get_sport_data().title
+        assert season.year == TestData.get_season_data().year

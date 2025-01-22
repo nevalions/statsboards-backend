@@ -53,13 +53,7 @@ class TournamentFactory(factory.Factory):
     tournament_logo_url = factory.Sequence(lambda n: f"logo_url_{n}")
     tournament_logo_icon_url = factory.Sequence(lambda n: f"icon_url_{n}")
     tournament_logo_web_url = factory.Sequence(lambda n: f"web_url_{n}")
-
-    sponsor_line_id = None
-    main_sponsor_id = None
-
-    # Foreign keys
-    sport = factory.SubFactory(SportFactorySample)
-    season = factory.SubFactory(SeasonFactorySample)
-
-    sport_id = None
-    season_id = None
+    sport_id = None  # NOT optional
+    season_id = None  # NOT optional
+    sponsor_line_id = None  # optional
+    main_sponsor_id = None  # optional

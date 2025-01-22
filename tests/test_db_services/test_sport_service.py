@@ -4,19 +4,6 @@ from tests.test_data import TestData
 from tests.fixtures import test_sport_service, sport
 
 
-# @pytest_asyncio.fixture(scope="function")
-# async def sport_service(test_db) -> SportServiceDB:
-#     """Fixture to provide an instance of SportServiceDB with session."""
-#     service = SportServiceDB(test_db)  # Pass the engine or async session
-#     return service
-
-
-# @pytest.fixture(scope="function")
-# def sample_sport_data():
-#     """Fixture to provide sample sport data."""
-#     return SportSchemaCreate(title="Football", description="American Football")
-
-
 @pytest.fixture(scope="function")
 def sample_sport_data():
     return SportFactorySample.build()

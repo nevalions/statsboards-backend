@@ -1,5 +1,4 @@
 import logging
-
 import pytest_asyncio
 
 from src.logging_config import setup_logging
@@ -64,3 +63,36 @@ async def tournament(test_tournament_service, sport, season):
         return tournament
     except Exception as e:
         test_logger.error(f"Error creating test tournament {e}", exc_info=True)
+
+
+async def creat_tournaments(
+    test_tournament_service,
+    sport,
+    season,
+    count=1,
+):
+    """Create and return a list of unique tournament instances."""
+    tournaments_list = []
+    for i in range(count):
+        test_logger.info(
+            f"Creating test tournament {i + 1} with sport_id: {sport.id} and season_id: {season.id}"
+        )
+        data = TournamentFactory.build(
+            sport_id=sport.id,
+            season_id=season.id,
+            title=f"Tournament {i + 1}",  # Ensure unique title
+        )
+        try:
+            tournament = await test_tournament_service.create_tournament(data)
+            tournaments_list.append(tournament)
+        except Exception as e:
+            test_logger.error(
+                f"Error creating test tournament {i + 1}: {e}", exc_info=True
+            )
+    return tournaments_list
+
+
+@pytest_asyncio.fixture
+async def tournaments(test_tournament_service, sport, season):
+    """Create and return multiple tournament instances."""
+    return await creat_tournaments(test_tournament_service, sport, season, count=5)
