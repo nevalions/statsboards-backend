@@ -10,7 +10,7 @@ class TestData:
 
     @staticmethod
     def get_season_data_for_update() -> SeasonSchemaUpdate:
-        return SeasonSchemaUpdate(year=2026, description="Updated Test Season")
+        return SeasonSchemaUpdate(year=2019, description="Updated Test Season")
 
     @staticmethod
     def get_sport_data() -> SportSchemaCreate:

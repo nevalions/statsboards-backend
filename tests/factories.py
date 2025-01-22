@@ -13,13 +13,23 @@ class SportFactory(factory.Factory):
     description = factory.Sequence(lambda n: f"{TestData.get_sport_data().description}")
 
 
-class SeasonFactory(factory.Factory):
+class SeasonFactorySample(factory.Factory):
     class Meta:
         model = SeasonDB
 
     year = factory.Sequence(lambda n: TestData.get_season_data().year)
     description = factory.Sequence(
         lambda n: f"{TestData.get_season_data().description}"
+    )
+
+
+class SeasonFactoryAny(factory.Factory):
+    class Meta:
+        model = SeasonDB
+
+    year = factory.Sequence(lambda n: TestData.get_season_data().year + 10)
+    description = factory.Sequence(
+        lambda n: f"{TestData.get_season_data().description} + {n}"
     )
 
 
@@ -36,7 +46,7 @@ class TournamentFactory(factory.Factory):
 
     # Foreign keys
     sport = factory.SubFactory(SportFactory)
-    season = factory.SubFactory(SeasonFactory)
+    season = factory.SubFactory(SeasonFactorySample)
 
     sport_id = None
     season_id = None

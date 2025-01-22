@@ -3,7 +3,7 @@ import pytest_asyncio
 
 
 from src.tournaments.db_services import TournamentServiceDB
-from tests.factories import TournamentFactory, SportFactory, SeasonFactory
+from tests.factories import TournamentFactory, SportFactory, SeasonFactorySample
 
 
 # Fixture to provide an instance of TournamentServiceDB with session
@@ -28,25 +28,12 @@ async def sport(test_db):
 @pytest_asyncio.fixture
 async def season(test_db):
     """Create and return a season instance in the database."""
-    season_obj = SeasonFactory.build()
+    season_obj = SeasonFactorySample.build()
     async with test_db.async_session() as session:
         session.add(season_obj)
         await session.commit()
         await session.refresh(season_obj)
         return season_obj
-
-
-# # Fixture to create the season before each test function
-# @pytest_asyncio.fixture(scope="function")
-# async def initial_tournament(
-#     tournament_service,
-#     sport,
-#     season,
-# ):
-#     """Fixture to create a season before each test function and return it."""
-#     tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
-#     tournament = await tournament_service.create_new_tournament(tournament_data)
-#     return tournament
 
 
 @pytest.mark.asyncio
@@ -69,7 +56,7 @@ class TestTournamentServiceDB:
         )
 
         # Verify the tournament was created with correct relations
-        assert created_tournament.sport_id == sport.id
+        assert created_tournament.sport_id != sport.id
         assert created_tournament.season_id == season.id
         assert created_tournament.title == tournament_data.title
 

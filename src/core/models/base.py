@@ -40,7 +40,9 @@ db_logger_helper = logging.getLogger("backend_logger_base_db")
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
         self.logger = get_logger("backend_logger_base_db", self)
-        self.logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
+        # self.logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
+        self.logger.debug(f"Initializing Database with URL: xxx, Echo: {echo}")
+
         try:
             self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
             self.async_session: AsyncSession | Any = async_sessionmaker(

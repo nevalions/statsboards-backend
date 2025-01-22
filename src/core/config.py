@@ -45,7 +45,7 @@ class DbSettings(BaseSettings):
 
     @property
     def db_url(self) -> PostgresDsn:
-        print(self.host, self.user, self.password, self.name)
+        # print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
