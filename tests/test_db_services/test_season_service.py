@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+from tests.factories import SeasonFactory
 from tests.test_data import TestData
 
 
@@ -11,15 +12,20 @@ from tests.test_data import TestData
 @pytest_asyncio.fixture(scope="function")
 async def season_service(test_db):
     """Fixture to provide an instance of SeasonServiceDB with session."""
-    service = SeasonServiceDB(test_db)  # Pass the engine or async session
+    service = SeasonServiceDB(test_db)
     return service
 
 
-# Fixture to provide sample season data
 @pytest.fixture(scope="function")
 def sample_season_data():
-    """Fixture to provide sample season data."""
-    return TestData.get_season_data()
+    return SeasonFactory.build()
+
+
+# # Fixture to provide sample season data
+# @pytest.fixture(scope="function")
+# def sample_season_data():
+#     """Fixture to provide sample season data."""
+#     return TestData.get_season_data()
 
 
 # Fixture to create the season before each test function
@@ -48,6 +54,7 @@ class TestSeasonServiceDB:
         assert created_season.year == sample_season_data.year
         assert created_season.description == sample_season_data.description
         assert created_season.year != 2020
+        assert created_season.year == TestData.get_season_data().year
 
     async def test_get_season_by_year_success(
         self,
@@ -80,9 +87,14 @@ class TestSeasonServiceDB:
         season_service,
         initial_season,
         updated_season_data,
+        # sample_season_data,
     ):
+        # created_season = await season_service.create_season(sample_season_data)
         """Test successful season update."""
         # Store the original values before update
+        # original_year = initial_season.year
+        # original_description = initial_season.description
+        #
         original_year = initial_season.year
         original_description = initial_season.description
 
@@ -97,6 +109,7 @@ class TestSeasonServiceDB:
         assert updated_season.description == updated_season_data.description
         assert updated_season.id == initial_season.id
         assert updated_season.year != original_year
+        assert updated_season.year == TestData.get_season_data_for_update().year
 
         # Reset the season back to its original state
         reset_season_data = SeasonSchemaUpdate(
@@ -111,6 +124,7 @@ class TestSeasonServiceDB:
         assert reset_season is not None
         assert reset_season.year == original_year
         assert reset_season.description == original_description
+        assert reset_season.year == TestData.get_season_data().year
 
     async def test_update_season_failure(
         self,

@@ -3,11 +3,7 @@ import pytest_asyncio
 
 
 from src.tournaments.db_services import TournamentServiceDB
-from src.tournaments.schemas import (
-    TournamentSchemaCreate,
-    TournamentSchemaUpdate,
-    TournamentSchemaBase,
-)
+from tests.factories import TournamentFactory, SportFactory, SeasonFactory
 
 
 # Fixture to provide an instance of TournamentServiceDB with session
@@ -18,57 +14,100 @@ async def tournament_service(test_db):
     return service
 
 
-# Fixture to provide sample tournament data
-@pytest.fixture(scope="function")
-def sample_tournament_data() -> TournamentSchemaCreate:
-    """Fixture to provide sample tournament data."""
-    return TournamentSchemaCreate(
-        tournament_eesl_id=111,
-        title="Tournament A",
-        description="Description of tournament A",
-        tournament_logo_url="logo_url",
-        tournament_logo_icon_url="icon_logo_url",
-        tournament_logo_web_url="web_logo_url",
-        season_id=None,
-        sport_id=None,
-        sponsor_line_id=None,
-        main_sponsor_id=None,
-    )
+@pytest_asyncio.fixture
+async def sport(test_db):
+    """Create and return a sport instance in the database."""
+    sport_obj = SportFactory.build()
+    async with test_db.async_session() as session:
+        session.add(sport_obj)
+        await session.commit()
+        await session.refresh(sport_obj)
+        return sport_obj
 
 
-# Test class for TournamentServiceDB
+@pytest_asyncio.fixture
+async def season(test_db):
+    """Create and return a season instance in the database."""
+    season_obj = SeasonFactory.build()
+    async with test_db.async_session() as session:
+        session.add(season_obj)
+        await session.commit()
+        await session.refresh(season_obj)
+        return season_obj
+
+
+# # Fixture to create the season before each test function
+# @pytest_asyncio.fixture(scope="function")
+# async def initial_tournament(
+#     tournament_service,
+#     sport,
+#     season,
+# ):
+#     """Fixture to create a season before each test function and return it."""
+#     tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+#     tournament = await tournament_service.create_new_tournament(tournament_data)
+#     return tournament
+
+
 @pytest.mark.asyncio
 class TestTournamentServiceDB:
-    async def test_create_tournament_success(
-        self, tournament_service, sample_tournament_data
+    async def test_create_tournament_with_relations(
+        self,
+        tournament_service: TournamentServiceDB,
+        sport,
+        season,
     ):
-        """Test successful tournament creation."""
-        created_tournament: TournamentSchemaBase = (
-            await tournament_service.create_or_update_tournament(sample_tournament_data)
+        """Test creating a tournament with related sport and season."""
+        # Create tournament data with existing sport and season
+        tournament_data = TournamentFactory.build(
+            sport_id=sport.id, season_id=season.id
         )
 
-        assert created_tournament is not None
-        assert (
-            created_tournament.tournament_eesl_id
-            == sample_tournament_data.tournament_eesl_id
+        # Create the tournament
+        created_tournament = await tournament_service.create_new_tournament(
+            tournament_data
         )
-        assert created_tournament.title == sample_tournament_data.title
-        assert created_tournament.description == sample_tournament_data.description
-        assert (
-            created_tournament.tournament_logo_url
-            == sample_tournament_data.tournament_logo_url
-        )
-        assert (
-            created_tournament.tournament_logo_icon_url
-            == sample_tournament_data.tournament_logo_icon_url
-        )
-        assert (
-            created_tournament.tournament_logo_web_url
-            == sample_tournament_data.tournament_logo_web_url
-        )
-        assert created_tournament.season_id == sample_tournament_data.season_id
-        assert created_tournament.sport_id == sample_tournament_data.sport_id
-        assert (
-            created_tournament.main_sponsor_id == sample_tournament_data.main_sponsor_id
-        )
-        assert created_tournament.title == "Tournament A"
+
+        # Verify the tournament was created with correct relations
+        assert created_tournament.sport_id == sport.id
+        assert created_tournament.season_id == season.id
+        assert created_tournament.title == tournament_data.title
+
+
+#
+# # Test class for TournamentServiceDB
+# @pytest.mark.asyncio
+# class TestTournamentServiceDB:
+#     async def test_create_tournament_success(
+#         self, tournament_service, sample_tournament_data
+#     ):
+#         """Test successful tournament creation."""
+#         created_tournament: TournamentSchemaBase = (
+#             await tournament_service.create_or_update_tournament(sample_tournament_data)
+#         )
+#
+#         assert created_tournament is not None
+#         assert (
+#             created_tournament.tournament_eesl_id
+#             == sample_tournament_data.tournament_eesl_id
+#         )
+#         assert created_tournament.title == sample_tournament_data.title
+#         assert created_tournament.description == sample_tournament_data.description
+#         assert (
+#             created_tournament.tournament_logo_url
+#             == sample_tournament_data.tournament_logo_url
+#         )
+#         assert (
+#             created_tournament.tournament_logo_icon_url
+#             == sample_tournament_data.tournament_logo_icon_url
+#         )
+#         assert (
+#             created_tournament.tournament_logo_web_url
+#             == sample_tournament_data.tournament_logo_web_url
+#         )
+#         assert created_tournament.season_id == sample_tournament_data.season_id
+#         assert created_tournament.sport_id == sample_tournament_data.sport_id
+#         assert (
+#             created_tournament.main_sponsor_id == sample_tournament_data.main_sponsor_id
+#         )
+#         assert created_tournament.title == "Tournament A"

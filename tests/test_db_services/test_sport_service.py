@@ -4,6 +4,7 @@ import pytest_asyncio
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate, SportSchemaUpdate
 from tests.factories import SportFactory
+from tests.test_data import TestData
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -21,7 +22,6 @@ async def sport_service(test_db) -> SportServiceDB:
 
 @pytest.fixture(scope="function")
 def sample_sport_data():
-    """Fixture to generate sport data using a factory."""
     return SportFactory.build()
 
 
@@ -34,6 +34,7 @@ class TestSportServiceDB:
         assert created_sport is not None
         assert created_sport.title == sample_sport_data.title
         assert created_sport.description == sample_sport_data.description
+        assert created_sport.title == TestData.get_sport_data().title
 
     async def test_get_sport_by_id(self, sport_service, sample_sport_data):
         """Test getting a sport by ID."""
