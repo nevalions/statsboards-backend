@@ -51,7 +51,6 @@ class TestTournamentServiceDB:
         tournament_sample: TournamentSchemaCreate,
     ):
         """Test that a tournament cannot be created without a sport_id."""
-        # Remove sport_id from the sample data
         invalid_tournament_sample = TournamentFactory.build(
             sport_id=None,
             season_id=tournament_sample.season_id,
@@ -62,10 +61,6 @@ class TestTournamentServiceDB:
 
         assert_http_exception(exc_info)
 
-        # assert isinstance(exc_info.value, HTTPException)
-        # assert exc_info.value.status_code == 409
-        # assert "Error creating" in exc_info.value.detail
-        # assert "Check input data" in exc_info.value.detail
 
     async def test_create_tournament_without_season_id(
         self,
@@ -82,8 +77,3 @@ class TestTournamentServiceDB:
             await test_tournament_service.create_tournament(invalid_tournament_sample)
 
         assert_http_exception(exc_info)
-
-        # assert isinstance(exc_info.value, HTTPException)
-        # assert exc_info.value.status_code == 409
-        # assert "Error creating" in exc_info.value.detail
-        # assert "Check input data" in exc_info.value.detail
