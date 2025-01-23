@@ -14,7 +14,11 @@ from tests.fixtures import (
     sport,
     season,
 )
-from tests.testhelpers import assert_tournament_equal, assert_http_exception_on_create
+from tests.testhelpers import (
+    assert_tournament_equal,
+    assert_http_exception_on_create,
+    assert_tournaments_equal,
+)
 
 
 @pytest.fixture(scope="function")
@@ -91,3 +95,16 @@ class TestTournamentServiceDB:
             await test_tournament_service.create_tournament(invalid_tournament_sample)
 
         assert_http_exception_on_create(exc_info)
+
+    async def test_get_tournament_with_eesl_id(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        tournament: TournamentSchemaCreate,
+        season: SeasonSchemaCreate,
+        sport: SportSchemaCreate,
+    ):
+        """Test that a tournament can be retrieved using its eesl_id."""
+        retrieved_tournament = await test_tournament_service.get_tournament_by_eesl_id(
+            tournament.tournament_eesl_id
+        )
+        assert_tournament_equal(tournament, retrieved_tournament, season, sport)

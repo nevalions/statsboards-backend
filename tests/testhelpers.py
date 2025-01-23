@@ -10,6 +10,7 @@ from tests.test_data import TestData
 
 
 def assert_http_exception_on_create(exc_info: ExceptionInfo):
+    assert exc_info is not None
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 409
     assert "Error creating" in exc_info.value.detail
@@ -17,6 +18,7 @@ def assert_http_exception_on_create(exc_info: ExceptionInfo):
 
 
 def assert_http_exception_on_update(exc_info: ExceptionInfo):
+    assert exc_info is not None
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 409
     assert "Error updating" in exc_info.value.detail
@@ -24,6 +26,7 @@ def assert_http_exception_on_update(exc_info: ExceptionInfo):
 
 
 def assert_http_exception_on_delete(exc_info: ExceptionInfo):
+    assert exc_info is not None
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 500
     assert "Failed to delete element" in exc_info.value.detail
@@ -32,6 +35,7 @@ def assert_http_exception_on_delete(exc_info: ExceptionInfo):
 def assert_season_equal(expected: SeasonSchemaCreate, actual: SeasonSchemaCreate):
     """Helper function to assert that two season objects are equal."""
     assert actual is not None
+    assert expected is not None
     assert actual.year == expected.year
     assert actual.description == expected.description
     assert actual.year != 2020
@@ -42,6 +46,7 @@ def assert_season_equal(expected: SeasonSchemaCreate, actual: SeasonSchemaCreate
 def assert_sport_equal(expected: SportSchemaCreate, actual: SportSchemaCreate):
     """Helper function to assert that two sport objects are equal."""
     assert actual is not None
+    assert expected is not None
     assert actual.title == expected.title
     assert actual.description == expected.description
     assert actual.title != "soccer"
@@ -56,6 +61,10 @@ def assert_tournament_equal(
     sport: SportSchemaCreate,
 ):
     """Helper function to assert that two tournament objects are equal."""
+    assert actual is not None
+    assert expected is not None
+    assert season is not None
+    assert sport is not None
     assert actual.season_id == expected.season_id
     assert actual.sport_id == expected.sport_id
     assert actual.title == expected.title
