@@ -76,3 +76,18 @@ class TestTournamentServiceDB:
             await test_tournament_service.create_tournament(invalid_tournament_sample)
 
         assert_http_exception(exc_info)
+
+    async def test_create_tournament_without_the_same_eesl_id(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        tournament_sample: TournamentSchemaCreate,
+    ):
+        """Test that a tournament cannot be created with the same tournament_eesl_id."""
+        invalid_tournament_sample: TournamentSchemaCreate = TournamentFactory.build(
+            tournament_eesl_id=tournament_sample.tournament_eesl_id,
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await test_tournament_service.create_tournament(invalid_tournament_sample)
+
+        assert_http_exception(exc_info)

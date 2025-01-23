@@ -2,6 +2,7 @@ from typing import List
 
 import pytest
 
+from src.sports.schemas import SportSchemaCreate
 from src.tournaments.schemas import TournamentSchemaCreate
 from tests.factories import SportFactorySample
 from tests.fixtures import (
@@ -28,7 +29,9 @@ class TestSportServiceDB:
         sport_sample,
     ):
         """Test successful sport creation."""
-        created_sport = await test_sport_service.create_sport(sport_sample)
+        created_sport: SportSchemaCreate = await test_sport_service.create_sport(
+            sport_sample
+        )
         assert_sport_equal(sport_sample, created_sport)
 
     async def test_get_sport_by_id(

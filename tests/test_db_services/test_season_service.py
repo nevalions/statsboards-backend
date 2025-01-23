@@ -36,12 +36,45 @@ def updated_season_data():
 # Test class for SeasonServiceDB
 @pytest.mark.asyncio
 class TestSeasonServiceDB:
-    async def test_create_season_success(self, test_season_service, season_sample):
+    async def test_create_season_success(
+        self,
+        test_season_service,
+        season_sample,
+    ):
         """Test successful season creation."""
         created_season: SeasonSchemaCreate = await test_season_service.create_season(
             season_sample
         )
         assert_season_equal(season_sample, created_season)
+
+    async def test_delete_season_success(
+        self,
+        test_season_service,
+        season,
+    ):
+        """Test successful season deletion"""
+        assert season is not None
+        await test_season_service.delete(season.id)
+        got_season = await test_season_service.get_by_id(season.id)
+        assert got_season is None
+
+    async def test_delete_season_fail(
+        self,
+        test_season_service,
+        season,
+    ):
+        """Test successful season deletion"""
+        with pytest.raises(HTTPException) as exc_info:
+            await test_season_service.delete(season.id + 1)
+
+        assert isinstance(exc_info.value, HTTPException)
+        assert exc_info.value.status_code == 500
+        assert "Failed to delete element" in exc_info.value.detail
+
+        assert season is not None
+
+        got_season = await test_season_service.get_by_id(season.id)
+        assert got_season is not None
 
     async def test_get_season_by_id_success(
         self,
