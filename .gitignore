@@ -11,3 +11,6 @@ activate.sh
 *.gz
 .env
 /.idea/misc.xml
+/.env.prod
+/.env.test
+

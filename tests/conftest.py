@@ -1,8 +1,11 @@
+# import os
 import subprocess
 import pytest
 import pytest_asyncio
 
 from src.core import settings
+
+# from src.core.config import DbSettings
 from src.core.models.base import Database, Base
 
 
@@ -15,6 +18,17 @@ def apply_migrations():
         check=True,
     )
     yield
+
+
+# # Apply migrations before each test
+# @pytest.fixture(scope="function")
+# def apply_migrations():
+#     """Apply Alembic migrations before each test."""
+#     subprocess.run(
+#         ["alembic", "-x", f"db_url={settings.db.test_db_url}", "upgrade", "head"],
+#         check=True,
+#     )
+#     yield
 
 
 # Database fixture that ensures a clean state using transactions, function-scoped

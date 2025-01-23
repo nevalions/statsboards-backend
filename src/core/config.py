@@ -80,7 +80,7 @@ class DbSettings(BaseSettings):
                 username="test",
                 password="test",
                 host="localhost",
-                port=5431,
+                port=5432,
                 path="test_db",
             )
         )
@@ -93,7 +93,7 @@ class DbSettings(BaseSettings):
                 username="test",
                 password="test",
                 host="localhost",
-                port=5431,
+                port=5432,
                 path="test_db",
             )
         )

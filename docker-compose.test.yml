@@ -1,5 +1,15 @@
-#version: '3.8'
+version: '3'
 services:
+  statsboards-backend-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    command: pytest tests/test_db_services/test_season_service.py::TestSeasonServiceDB::test_get_tournaments_by_season_id_and_sport_id -v
+    env_file:
+      - .env.test
+    depends_on:
+      - postgres_test
+
   postgres_test:
     image: postgres:latest
     environment:
@@ -7,4 +17,4 @@ services:
       POSTGRES_PASSWORD: test
       POSTGRES_DB: test_db
     ports:
-      - "5431:5432"
+      - "5432:5432"
