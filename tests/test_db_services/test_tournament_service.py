@@ -61,7 +61,6 @@ class TestTournamentServiceDB:
 
         assert_http_exception(exc_info)
 
-
     async def test_create_tournament_without_season_id(
         self,
         test_tournament_service: TournamentServiceDB,
