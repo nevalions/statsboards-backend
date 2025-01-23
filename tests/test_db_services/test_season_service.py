@@ -1,5 +1,8 @@
+from tracemalloc import get_object_traceback
+
 import pytest
 from fastapi import HTTPException
+from typing_extensions import get_origin
 
 from src.seasons.schemas import SeasonSchemaUpdate, SeasonSchemaCreate
 from tests.factories import SeasonFactorySample
@@ -13,7 +16,11 @@ from tests.fixtures import (
     tournament,
     tournaments,
 )
-from tests.testhelpers import assert_season_equal
+from tests.testhelpers import (
+    assert_season_equal,
+    assert_tournaments_equal,
+    assert_http_exception,
+)
 
 
 @pytest.fixture(scope="function")
@@ -47,7 +54,7 @@ class TestSeasonServiceDB:
         got_season = await test_season_service.get_by_id(season.id)
         assert_season_equal(season, got_season)
 
-    async def test_get_season_by_id_not_found(
+    async def test_get_season_by_id_fail(
         self,
         test_season_service,
         season_sample,
@@ -131,12 +138,13 @@ class TestSeasonServiceDB:
         with pytest.raises(HTTPException) as exc_info:
             await test_season_service.create_season(season)
 
+        assert_http_exception(exc_info)
         # Validate the raised exception
-        assert isinstance(exc_info.value, HTTPException)
-
-        assert exc_info.value.status_code == 409
-        assert "Error creating" in exc_info.value.detail
-        assert "Check input data" in exc_info.value.detail
+        # assert isinstance(exc_info.value, HTTPException)
+        #
+        # assert exc_info.value.status_code == 409
+        # assert "Error creating" in exc_info.value.detail
+        # assert "Check input data" in exc_info.value.detail
 
     async def test_get_one_tournament_by_year(
         self,
@@ -165,12 +173,39 @@ class TestSeasonServiceDB:
             got_season.year
         )
 
-        assert len(fetched_tournaments) == len(tournaments)
-        assert len(fetched_tournaments) != len(tournaments) - 1
+        assert_tournaments_equal(tournaments, fetched_tournaments)
 
-        for i, fetched_tournament in enumerate(fetched_tournaments):
-            expected_title = f"Tournament {i + 1}"
-            assert fetched_tournament.title == expected_title, (
-                f"Title mismatch: expected '{expected_title}', "
-                f"got '{fetched_tournament.title}'"
+    async def test_get_tournaments_by_year_and_sport(
+        self,
+        test_season_service,
+        tournaments,
+    ):
+        """Test retrieving tournaments for a given year and sport."""
+        season_id = tournaments[0].season_id
+        sport_id = tournaments[0].sport_id
+        got_season = await test_season_service.get_by_id(season_id)
+
+        fetched_tournaments = (
+            await test_season_service.get_tournaments_by_year_and_sport(
+                year=got_season.year,
+                sport_id=sport_id,
             )
+        )
+        assert_tournaments_equal(tournaments, fetched_tournaments)
+
+    async def test_get_tournaments_by_season_id_and_sport_id(
+        self,
+        test_season_service,
+        tournaments,
+    ):
+        """Test retrieving tournaments for a given year and sport."""
+        season_id = tournaments[0].season_id
+        sport_id = tournaments[0].sport_id
+
+        fetched_tournaments = (
+            await test_season_service.get_tournaments_by_season_and_sport_ids(
+                season_id=season_id,
+                sport_id=sport_id,
+            )
+        )
+        assert_tournaments_equal(tournaments, fetched_tournaments)

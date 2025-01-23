@@ -1,9 +1,10 @@
 import pytest
+from fastapi import HTTPException
 
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sports.schemas import SportSchemaCreate
 from src.tournaments.db_services import TournamentServiceDB
-from src.tournaments.schemas import TournamentSchemaBase
+from src.tournaments.schemas import TournamentSchemaCreate
 from tests.factories import TournamentFactory
 from tests.fixtures import (
     test_tournament_service,
@@ -13,12 +14,15 @@ from tests.fixtures import (
     sport,
     season,
 )
-from tests.test_data import TestData
+from tests.testhelpers import assert_tournament_equal, assert_http_exception
 
 
 @pytest.fixture(scope="function")
-def tournament_sample(sport, season):
-    return TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+def tournament_sample(sport, season) -> TournamentSchemaCreate:
+    return TournamentFactory.build(
+        sport_id=sport.id,
+        season_id=season.id,
+    )
 
 
 @pytest.mark.asyncio
@@ -26,32 +30,60 @@ class TestTournamentServiceDB:
     async def test_create_tournament_with_relations(
         self,
         test_tournament_service: TournamentServiceDB,
-        sport: SportSchemaCreate,
         season: SeasonSchemaCreate,
-        tournament_sample,
+        sport: SportSchemaCreate,
+        tournament_sample: TournamentSchemaCreate,
     ):
         """Test creating a tournament with related sport and season."""
-        created_tournament: TournamentSchemaBase = (
+        created_tournament: TournamentSchemaCreate = (
             await test_tournament_service.create_tournament(tournament_sample)
         )
+        assert_tournament_equal(
+            tournament_sample,
+            created_tournament,
+            season,
+            sport,
+        )
 
-        assert created_tournament.sport_id == sport.id
-        assert created_tournament.season_id == season.id
-        assert created_tournament.title == tournament_sample.title
-        assert created_tournament.description == tournament_sample.description
-        assert (
-            created_tournament.tournament_logo_url
-            == tournament_sample.tournament_logo_url
+    async def test_create_tournament_without_sport_id(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        tournament_sample: TournamentSchemaCreate,
+    ):
+        """Test that a tournament cannot be created without a sport_id."""
+        # Remove sport_id from the sample data
+        invalid_tournament_sample = TournamentFactory.build(
+            sport_id=None,
+            season_id=tournament_sample.season_id,
         )
-        assert (
-            created_tournament.tournament_logo_icon_url
-            == tournament_sample.tournament_logo_icon_url
+
+        with pytest.raises(HTTPException) as exc_info:
+            await test_tournament_service.create_tournament(invalid_tournament_sample)
+
+        assert_http_exception(exc_info)
+
+        # assert isinstance(exc_info.value, HTTPException)
+        # assert exc_info.value.status_code == 409
+        # assert "Error creating" in exc_info.value.detail
+        # assert "Check input data" in exc_info.value.detail
+
+    async def test_create_tournament_without_season_id(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        tournament_sample: TournamentSchemaCreate,
+    ):
+        """Test that a tournament cannot be created without a season_id."""
+        invalid_tournament_sample = TournamentFactory.build(
+            sport_id=tournament_sample.sport_id,
+            season_id=None,
         )
-        assert (
-            created_tournament.tournament_logo_web_url
-            == tournament_sample.tournament_logo_web_url
-        )
-        assert created_tournament.sponsor_line_id == tournament_sample.sponsor_line_id
-        assert created_tournament.main_sponsor_id == tournament_sample.main_sponsor_id
-        assert sport.title == TestData.get_sport_data().title
-        assert season.year == TestData.get_season_data().year
+
+        with pytest.raises(HTTPException) as exc_info:
+            await test_tournament_service.create_tournament(invalid_tournament_sample)
+
+        assert_http_exception(exc_info)
+
+        # assert isinstance(exc_info.value, HTTPException)
+        # assert exc_info.value.status_code == 409
+        # assert "Error creating" in exc_info.value.detail
+        # assert "Check input data" in exc_info.value.detail

@@ -65,20 +65,27 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         t: TournamentSchemaCreate,
     ):
-        tournament = self.model(
-            title=t.title,
-            description=t.description,
-            tournament_logo_url=t.tournament_logo_url,
-            tournament_logo_icon_url=t.tournament_logo_icon_url,
-            tournament_logo_web_url=t.tournament_logo_web_url,
-            season_id=t.season_id,
-            sport_id=t.sport_id,
-            main_sponsor_id=t.main_sponsor_id,
-            sponsor_line_id=t.sponsor_line_id,
-            tournament_eesl_id=t.tournament_eesl_id,
-        )
-        self.logger.debug(f"Create new {ITEM}:{tournament}")
-        return await super().create(tournament)
+        try:
+            tournament = self.model(
+                title=t.title,
+                description=t.description,
+                tournament_logo_url=t.tournament_logo_url,
+                tournament_logo_icon_url=t.tournament_logo_icon_url,
+                tournament_logo_web_url=t.tournament_logo_web_url,
+                season_id=t.season_id,
+                sport_id=t.sport_id,
+                main_sponsor_id=t.main_sponsor_id,
+                sponsor_line_id=t.sponsor_line_id,
+                tournament_eesl_id=t.tournament_eesl_id,
+            )
+            self.logger.debug(f"Create new {ITEM}:{tournament}")
+            return await super().create(tournament)
+        except Exception as ex:
+            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
 
     async def get_tournament_by_eesl_id(
         self,

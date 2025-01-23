@@ -18,7 +18,7 @@ class TournamentDB(SeasonSportRelationMixin, Base):
     __tablename__ = "tournament"
     __table_args__ = {"extend_existing": True}
     _season_id_nullable = False
-    _sport_id_nullable = True
+    _sport_id_nullable = False
     _ondelete = "CASCADE"
     _season_back_populates = "tournaments"
     _sport_back_populates = "tournaments"
@@ -91,7 +91,5 @@ class TournamentDB(SeasonSportRelationMixin, Base):
     )
 
     players_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
-        "PlayerTeamTournamentDB",
-        cascade="all",
-        back_populates="tournament"
+        "PlayerTeamTournamentDB", cascade="all", back_populates="tournament"
     )
