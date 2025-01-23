@@ -16,8 +16,10 @@ from tests.fixtures import (
 from tests.testhelpers import (
     assert_season_equal,
     assert_tournaments_equal,
-    assert_http_exception,
+    assert_http_exception_on_create,
     assert_tournament_equal,
+    assert_http_exception_on_update,
+    assert_http_exception_on_delete,
 )
 
 
@@ -67,12 +69,8 @@ class TestSeasonServiceDB:
         with pytest.raises(HTTPException) as exc_info:
             await test_season_service.delete(season.id + 1)
 
-        assert isinstance(exc_info.value, HTTPException)
-        assert exc_info.value.status_code == 500
-        assert "Failed to delete element" in exc_info.value.detail
-
+        assert_http_exception_on_delete(exc_info)
         assert season is not None
-
         got_season = await test_season_service.get_by_id(season.id)
         assert got_season is not None
 
@@ -153,12 +151,11 @@ class TestSeasonServiceDB:
         updated_season_data.year = None
         with pytest.raises(HTTPException) as exc_info:
             await test_season_service.update_season(
-                item_id=season.id, item=updated_season_data
+                item_id=season.id,
+                item=updated_season_data,
             )
 
-        assert exc_info.value.status_code == 409
-        assert "Error updating" in exc_info.value.detail
-        assert "Check input data" in exc_info.value.detail
+        assert_http_exception_on_update(exc_info)
 
     async def test_create_duplicate_season(
         self,
@@ -169,7 +166,7 @@ class TestSeasonServiceDB:
         with pytest.raises(HTTPException) as exc_info:
             await test_season_service.create_season(season)
 
-        assert_http_exception(exc_info)
+        assert_http_exception_on_create(exc_info)
 
     async def test_get_one_tournament_by_year(
         self,

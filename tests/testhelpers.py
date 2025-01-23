@@ -9,11 +9,24 @@ from src.tournaments.schemas import TournamentSchemaCreate
 from tests.test_data import TestData
 
 
-def assert_http_exception(exc_info: ExceptionInfo):
+def assert_http_exception_on_create(exc_info: ExceptionInfo):
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 409
     assert "Error creating" in exc_info.value.detail
     assert "Check input data" in exc_info.value.detail
+
+
+def assert_http_exception_on_update(exc_info: ExceptionInfo):
+    assert isinstance(exc_info.value, HTTPException)
+    assert exc_info.value.status_code == 409
+    assert "Error updating" in exc_info.value.detail
+    assert "Check input data" in exc_info.value.detail
+
+
+def assert_http_exception_on_delete(exc_info: ExceptionInfo):
+    assert isinstance(exc_info.value, HTTPException)
+    assert exc_info.value.status_code == 500
+    assert "Failed to delete element" in exc_info.value.detail
 
 
 def assert_season_equal(expected: SeasonSchemaCreate, actual: SeasonSchemaCreate):
@@ -31,6 +44,7 @@ def assert_sport_equal(expected: SportSchemaCreate, actual: SportSchemaCreate):
     assert actual is not None
     assert actual.title == expected.title
     assert actual.description == expected.description
+    assert actual.title != "soccer"
     assert actual.title == TestData.get_sport_data().title
     assert actual.description == TestData.get_sport_data().description
 

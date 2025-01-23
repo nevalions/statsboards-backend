@@ -14,7 +14,7 @@ from tests.fixtures import (
     sport,
     season,
 )
-from tests.testhelpers import assert_tournament_equal, assert_http_exception
+from tests.testhelpers import assert_tournament_equal, assert_http_exception_on_create
 
 
 @pytest.fixture(scope="function")
@@ -59,7 +59,7 @@ class TestTournamentServiceDB:
         with pytest.raises(HTTPException) as exc_info:
             await test_tournament_service.create_tournament(invalid_tournament_sample)
 
-        assert_http_exception(exc_info)
+        assert_http_exception_on_create(exc_info)
 
     async def test_create_tournament_without_season_id(
         self,
@@ -75,7 +75,7 @@ class TestTournamentServiceDB:
         with pytest.raises(HTTPException) as exc_info:
             await test_tournament_service.create_tournament(invalid_tournament_sample)
 
-        assert_http_exception(exc_info)
+        assert_http_exception_on_create(exc_info)
 
     async def test_create_tournament_without_the_same_eesl_id(
         self,
@@ -90,4 +90,4 @@ class TestTournamentServiceDB:
         with pytest.raises(HTTPException) as exc_info:
             await test_tournament_service.create_tournament(invalid_tournament_sample)
 
-        assert_http_exception(exc_info)
+        assert_http_exception_on_create(exc_info)
