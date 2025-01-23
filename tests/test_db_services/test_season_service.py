@@ -1,8 +1,5 @@
-from tracemalloc import get_object_traceback
-
 import pytest
 from fastapi import HTTPException
-from typing_extensions import get_origin
 
 from src.seasons.schemas import SeasonSchemaUpdate, SeasonSchemaCreate
 from tests.factories import SeasonFactorySample
@@ -20,6 +17,7 @@ from tests.testhelpers import (
     assert_season_equal,
     assert_tournaments_equal,
     assert_http_exception,
+    assert_tournament_equal,
 )
 
 
@@ -139,17 +137,13 @@ class TestSeasonServiceDB:
             await test_season_service.create_season(season)
 
         assert_http_exception(exc_info)
-        # Validate the raised exception
-        # assert isinstance(exc_info.value, HTTPException)
-        #
-        # assert exc_info.value.status_code == 409
-        # assert "Error creating" in exc_info.value.detail
-        # assert "Check input data" in exc_info.value.detail
 
     async def test_get_one_tournament_by_year(
         self,
         test_season_service,
         tournament,
+        season,
+        sport,
     ):
         """Test tournaments for the year."""
         season_id = tournament.season_id
@@ -159,6 +153,7 @@ class TestSeasonServiceDB:
         )
 
         assert len(got_tournaments) == 1
+        assert_tournament_equal(tournament, got_tournaments[0], season, sport)
 
     async def test_get_tournaments_by_year(
         self,
