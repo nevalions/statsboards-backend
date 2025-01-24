@@ -7,10 +7,24 @@ on:
   pull_request:
     branches:
       - master 
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres_test:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - name: Checkout code
@@ -19,13 +33,33 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.12'
+        python-version: '3.9'  # Specify the Python version you're using
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install poetry
         poetry install
+
+    - name: Create .env file
+      run: |
+        echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env
+        echo "DB_HOST=postgres_test" >> .env
+        echo "DB_USER=test" >> .env
+        echo "DB_PASSWORD=test" >> .env
+        echo "DB_NAME=test_db" >> .env
+        echo "DB_PORT=5432" >> .env
+        cat .env  # Print the .env file to verify its contents
+
+    - name: Create .env.test file
+      run: |
+        echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env.test
+        echo "DB_TEST_HOST=postgres_test" >> .env.test
+        echo "DB_TEST_USER=test" >> .env.test
+        echo "DB_TEST_PASSWORD=test" >> .env.test
+        echo "DB_TEST_NAME=test_db" >> .env.test
+        echo "DB_TEST_PORT=5432" >> .env.test
+        cat .env.test  # Print the .env.test file to verify its contents
 
     - name: Run tests
       run: |
