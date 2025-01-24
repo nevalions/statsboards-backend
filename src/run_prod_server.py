@@ -39,6 +39,10 @@ if __name__ == "__main__":
         "loglevel": "info",
         "errorlog": "-",
         "accesslog": "-",
+        # Add SSL configuration
+        "keyfile": "/etc/letsencrypt/live/statsboard.ru/privkey.pem",
+        "certfile": "/etc/letsencrypt/live/statsboard.ru/fullchain.pem",
+        "ssl": True,
     }
 
     try:
