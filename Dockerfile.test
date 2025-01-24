@@ -21,4 +21,5 @@ RUN poetry install --with test --no-interaction --no-ansi
 ENV PYTHONUNBUFFERED=1
 
 # Default command is pytest
-CMD ["pytest", "tests/test_db_services/test_season_service.py::TestSeasonServiceDB::test_get_tournaments_by_season_id_and_sport_id -v"]
+#CMD ["pytest", "tests/test_db_services/test_season_service.py::TestSeasonServiceDB::test_get_tournaments_by_season_id_and_sport_id -v"]
+CMD ["pytest", "-v"]

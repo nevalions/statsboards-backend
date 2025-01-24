@@ -4,9 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
-    command: pytest tests/test_db_services/test_season_service.py::TestSeasonServiceDB::test_get_tournaments_by_season_id_and_sport_id -v
+    command: pytest -v
+#    command: pytest tests/test_db_services/test_season_service.py::TestSeasonServiceDB::test_get_tournaments_by_season_id_and_sport_id -v
+
     env_file:
-      - .env.test
+      - .env.test.in.docker
     depends_on:
       - postgres_test
 

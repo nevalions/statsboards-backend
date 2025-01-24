@@ -9,6 +9,7 @@ venv/
 activate.sh
 *.gz
 /.idea/misc.xml
+.env*
 /.env
 /.env.prod
 /.env.dev
