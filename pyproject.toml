@@ -1,43 +1,3 @@
-#[tool.poetry]
-#name = "src"
-#version = "0.1.0"
-#description = ""
-#authors = ["linroot <linroot@bk.ru>"]
-#readme = "README.md"
-#
-#[tool.poetry.dependencies]
-#python = "^3.11"
-#fastapi = "^0.104.1"
-#uvicorn = {extras = ["standart"], version = "^0.24.0.post1"}
-#bs4 = "^0.0.1"
-#lxml = "^4.9.3"
-#pydantic-settings = "^2.1.0"
-#sqlalchemy = "^2.0.23"
-#asyncpg = "^0.29.0"
-#alembic = "^1.13.0"
-#jinja2 = "^3.1.2"
-#redis = "^5.0.1"
-#websockets = "^12.0"
-#wsproto = "^1.2.0"
-#alembic-utils = "^0.8.2"
-#python-multipart = "^0.0.9"
-#gunicorn = "^21.2.0"
-#pillow = "^10.3.0"
-#aiohttp = "^3.9.3"
-#pyyaml = "^6.0.2"
-#
-#[tool.poetry.group.dev.dependencies]
-#black = "^23.11.0"
-#
-#[tool.poetry.group.test.dependencies]
-#pytest = "^8.3.4"
-#pytest-asyncio = "^0.25.2"
-#factory-boy = "^3.3.1"
-#
-#[build-system]
-#requires = ["poetry-core"]
-#build-backend = "poetry.core.masonry.api"
-
 [tool.poetry]
 name = "src"
 version = "0.1.0"
@@ -68,6 +28,7 @@ aiohttp = "^3.9.3"
 pyyaml = "^6.0.2"
 pytest = "^8.3.4"
 factory-boy = "^3.3.1"
+requests = "^2.31.0"  # Add this line
 
 [tool.poetry.group.dev.dependencies]
 pytest-asyncio = "^0.25.2"
