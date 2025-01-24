@@ -13,6 +13,8 @@ services:
     command: poetry run python run_prod_server.py
     ports:
       - "9000:9000"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
     env_file:
       - .env.prod
     networks:
