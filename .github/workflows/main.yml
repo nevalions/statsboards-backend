@@ -33,7 +33,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.12'  # Specify the Python version you're using
+        python-version: '3.12'
 
     - name: Install dependencies
       run: |
@@ -44,13 +44,13 @@ jobs:
     - name: Create .env file
       run: |
         echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env
+        
         echo "DB_HOST=postgres_test" >> .env
         echo "DB_USER=test" >> .env
         echo "DB_PASSWORD=test" >> .env
         echo "DB_NAME=test_db" >> .env
         echo "DB_PORT=5432" >> .env
 
-        echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env
         echo "DB_TEST_HOST=postgres_test" >> .env
         echo "DB_TEST_USER=test" >> .env
         echo "DB_TEST_PASSWORD=test" >> .env
@@ -62,13 +62,13 @@ jobs:
       run: |
 
         echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env.test
+        
         echo "DB_HOST=postgres_test" >> .env.test
         echo "DB_USER=test" >> .env.test
         echo "DB_PASSWORD=test" >> .env.test
         echo "DB_NAME=test_db" >> .env.test
         echo "DB_PORT=5432" >> .env.test
         
-        echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env.test
         echo "DB_TEST_HOST=postgres_test" >> .env.test
         echo "DB_TEST_USER=test" >> .env.test
         echo "DB_TEST_PASSWORD=test" >> .env.test
