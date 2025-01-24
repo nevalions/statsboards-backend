@@ -18,6 +18,7 @@ services:
       - .env.prod
     networks:
       - custom_bridge
+    restart: always
   nginx:
     image: nginx:latest
     volumes:
@@ -31,3 +32,4 @@ services:
       - statsboards-backend
     networks:
       - custom_bridge
+    restart: always  # Add this line
