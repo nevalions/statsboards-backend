@@ -75,7 +75,7 @@ class DbSettings(BaseSettings):
 
 class TestDbSettings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env.test", env_prefix="DB_TEST_", extra="allow"
+        env_file=".env.test.local", env_prefix="DB_TEST_", extra="allow"
     )
     host: str
     user: str

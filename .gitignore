@@ -13,6 +13,6 @@ activate.sh
 /.env
 /.env.prod
 /.env.dev
-/.env.test
+/.env.test.local
 /.env.test.in.docker
 
