@@ -2,8 +2,7 @@ version: '3'
 
 networks:
   custom_bridge:
-    driver: bridge
-    # need bridge to connect to db in local network
+    driver: bridge # need bridge to connect to db in local network
 
 services:
   statsboards-backend:
