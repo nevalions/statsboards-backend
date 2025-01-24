@@ -79,3 +79,36 @@ jobs:
     - name: Run tests
       run: |
         poetry run pytest  # Assuming you're using pytest for testing
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy with Docker Compose
+      run: |
+        ssh www@89.223.66.224 << 'EOF'
+          # Navigate to the project directory
+          cd /home/www/code/statsboards-backend
+
+          # Pull the latest code
+          git pull
+
+          # Set up environment
+          export DOCKER_COMPOSE_FILE=docker-compose.prod.yml
+
+          # Rebuild and restart Docker containers
+          docker-compose -f docker-compose.prod.yml pull
+          docker-compose -f docker-compose.prod.yml up -d --build
+          
+          # Optional: Clean up old containers and images
+          docker system prune -f
+        EOF
