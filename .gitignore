@@ -1,6 +1,5 @@
 env/
 venv/
-/.env
 *__pycache__*
 *__pycache__*!/static/uploads/
 /static/uploads/
@@ -9,8 +8,10 @@ venv/
 *.log*
 activate.sh
 *.gz
-.env
 /.idea/misc.xml
+/.env
 /.env.prod
+/.env.dev
 /.env.test
+/.env.test.in.docker
 
