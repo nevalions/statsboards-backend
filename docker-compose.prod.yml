@@ -9,3 +9,4 @@ services:
       - "9000:9000"
     env_file:
       - .env.prod
+    network_mode: "host"
