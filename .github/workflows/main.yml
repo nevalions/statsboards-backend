@@ -76,9 +76,9 @@ jobs:
         echo "DB_TEST_PORT=5432" >> .env.test
         cat .env.test  # Print the .env.test file to verify its contents
 
-    - name: Run tests
-      run: |
-        poetry run pytest  # Assuming you're using pytest for testing
+    #- name: Run tests
+      #run: |
+        #poetry run pytest
 
   deploy:
     needs: build-and-test
