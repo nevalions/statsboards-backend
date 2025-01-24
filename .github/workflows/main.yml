@@ -26,14 +26,14 @@ jobs:
     #       --health-timeout 5s
     #       --health-retries 5
 
-    # steps:
-    # - name: Checkout code
-    #   uses: actions/checkout@v2
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-    # - name: Set up Python
-    #   uses: actions/setup-python@v2
-    #   with:
-    #     python-version: '3.12'
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
 
     # - name: Install dependencies
     #   run: |
