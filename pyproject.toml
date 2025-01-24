@@ -29,6 +29,7 @@ pyyaml = "^6.0.2"
 pytest = "^8.3.4"
 factory-boy = "^3.3.1"
 requests = "^2.31.0"  # Add this line
+keyring = "^25.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest-asyncio = "^0.25.2"
