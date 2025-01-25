@@ -100,6 +100,10 @@ jobs:
         echo "Host: ${{ secrets.SSH_HOST }}"
         echo "User: ${{ secrets.SSH_USER }}"
         echo "Work Dir: ${{ secrets.WORK_DIR }}"
+        if [[ -z "${{ secrets.SSH_USER }}" || -z "${{ secrets.SSH_HOST }}" || -z "${{ secrets.WORK_DIR }}" ]]; then
+          echo "Error: One or more required secrets are missing or empty!" >&2
+          exit 1
+        fi
         ls -la ~/.ssh
 
     - name: Test SSH Connection
@@ -116,7 +120,6 @@ jobs:
 
     - name: Cleanup SSH
       run: |
-        rm -rf ~/.ssh
         rm -rf ~/.ssh
 
     # - name: Deploy with Docker Compose
