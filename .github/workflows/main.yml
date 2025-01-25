@@ -8,8 +8,8 @@ on:
     branches:
       - master 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+  # build-and-test:
+  #   runs-on: ubuntu-latest
 
     # services:
     #   postgres_test:
@@ -26,14 +26,14 @@ jobs:
     #       --health-timeout 5s
     #       --health-retries 5
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    # steps:
+    # - name: Checkout code
+    #   uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
+    # - name: Set up Python
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: '3.12'
 
     # - name: Install dependencies
     #   run: |
@@ -81,34 +81,42 @@ jobs:
         #poetry run pytest
 
   deploy:
-    needs: build-and-test
+    # needs: build-and-test
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.STATSBOARDS_DEPLOY_KEY }}
+    # - name: Set up SSH
+      # uses: webfactory/ssh-agent@v0.9.0
+      # with:
+      #   ssh-private-key: ${{ secrets.STATSBOARDS_DEPLOY_KEY }}
 
     - name: Deploy with Docker Compose
       run: |
-        ssh www@89.223.66.224 << 'EOF'
-          # Navigate to the project directory
-          cd /home/www/code/statsboards-backend
+        install -m 600 -D /dev/null ~/.ssh/id_rsa
+        echo "${{  secretes.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H ${{  secrets.SSH_HOST }} > ~/.ssh/known_hosts
+    - name: connect and pull
+      run: ssh ${{ secretes.SSH.USER }}@${{ secrets.SSH_HOST } "cd ${{ sectets.WORK_DIR }} && git pull"}
+        
+        
+        
+        # ssh www@89.223.66.224 << 'EOF'
+        #   # Navigate to the project directory
+        #   cd /home/www/code/statsboards-backend
 
-          # Pull the latest code
-          git pull
+        #   # Pull the latest code
+        #   git pull
 
-          # Set up environment
-          export DOCKER_COMPOSE_FILE=docker-compose.prod.yml
+        #   # Set up environment
+        #   export DOCKER_COMPOSE_FILE=docker-compose.prod.yml
 
-          # Rebuild and restart Docker containers
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d --build
+        #   # # Rebuild and restart Docker containers
+        #   # docker-compose -f docker-compose.prod.yml pull
+        #   docker-compose -f docker-compose.prod.yml up -d --build
           
-          # Optional: Clean up old containers and images
-          docker system prune -f
-        EOF
+        #   # Optional: Clean up old containers and images
+        #   docker system prune -f
+        # EOF
