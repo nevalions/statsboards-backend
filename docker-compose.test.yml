@@ -1,6 +1,7 @@
 version: '3'
 services:
   statsboards-backend-test:
+    container_name: statsboards-backend-test-container
     build:
       context: .
       dockerfile: Dockerfile.test

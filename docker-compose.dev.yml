@@ -1,6 +1,7 @@
 version: '3'
 services:
   statsboards-backend:
+    container_name: statsboards-backend-dev-container
     build:
       context: .
       dockerfile: Dockerfile.dev
