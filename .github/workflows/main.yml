@@ -88,23 +88,26 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup SSH Key
+    - name: Setup SSH Key and Config
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+        echo "Host ${secrets.SSH_HOST}" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 
     - name: Pull Latest Code on Server
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git pull"
+        ssh -v ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git pull"
 
     - name: Docker Compose Up
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && docker-compose -f docker-compose.prod.yml up -d --build"
+        ssh -v ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && docker-compose -f docker-compose.prod.yml up -d --build"
 
-    - name: Cleanup SSH Key
-      run: rm -rf ~/.ssh
+    - name: Cleanup SSH
+      run: |
+        rm -rf ~/.ssh
 
     # - name: Deploy with Docker Compose
     #   run: |
