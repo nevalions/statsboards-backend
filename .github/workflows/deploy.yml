@@ -59,13 +59,13 @@ jobs:
           docker-compose -f docker-compose.prod.yml up -d --build || (echo 'Docker deployment failed' && exit 1)"
 
 
-    - name: Cleanup Docker Resources on Server
-      if: success()
-      run: |
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
-          docker system prune --force && \
-          docker image prune --force && \
-          docker volume prune --force"
+#    - name: Cleanup Docker Resources on Server
+#      if: success()
+#      run: |
+#        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
+#          docker system prune --force && \
+#          docker image prune --force && \
+#          docker volume prune --force"
 
     - name: Cleanup SSH Keys Locally
       if: always()  # Always run, even if previous steps failed
