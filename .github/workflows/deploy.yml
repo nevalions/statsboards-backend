@@ -4,7 +4,13 @@ on:
   workflow_run:
     workflows: ["Build and Test"] 
     types:
-      - completed 
+      - completed
+
+# Add these permissions
+permissions:
+  contents: read
+  statuses: write
+  actions: read
 
 jobs:
   deploy:
