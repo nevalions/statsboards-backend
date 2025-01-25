@@ -99,7 +99,12 @@ jobs:
         echo "${{  secretes.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
         ssh-keyscan -H ${{  secrets.SSH_HOST }} > ~/.ssh/known_hosts
     - name: connect and pull
-      run: ssh ${{ secretes.SSH.USER }}@${{ secrets.SSH_HOST } "cd ${{ sectets.WORK_DIR }} && git pull"}
+      run: ssh ${{ secretes.SSH.USER }}@${{ secrets.SSH_HOST } "cd ${{ secrets.WORK_DIR }} && git pull"}
+    - name: docer-compose up --build
+      run: docker-compose -f docker-compose.prod.yml up -d --build
+      
+    - name: cleanup
+      run: rm -rf ~/.ssh
         
         
         
