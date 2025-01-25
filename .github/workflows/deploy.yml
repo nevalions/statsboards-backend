@@ -8,6 +8,8 @@ on:
 
 jobs:
   deploy:
+    # Only run if Build and Test workflow was successful
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -33,21 +35,47 @@ jobs:
         ls -la ~/.ssh
 
     - name: Pull and Deploy on Server
+      id: deploy
       run: |
-        ssh -v ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
+        set -e  # Exit immediately if a command exits with a non-zero status
+        
+        # Attempt deployment with error handling
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
           cd ${{ secrets.WORK_DIR }} && \
-          git pull && \
-          docker-compose -f docker-compose.prod.yml up -d --build"
+          git pull || (echo 'Git pull failed' && exit 1) && \
+          docker-compose -f docker-compose.prod.yml up -d --build || (echo 'Docker deployment failed' && exit 1)"
+
 
     - name: Cleanup Docker Resources on Server
+      if: success()  # Only run if previous steps succeeded
       run: |
-        ssh -v ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
-          # Clean up unused Docker resources \
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
           docker system prune -f --volumes && \
           docker images prune -f && \
           docker volume prune -f"
 
     - name: Cleanup SSH Keys Locally
+      if: always()  # Always run, even if previous steps failed
       run: |
         echo "Cleaning up SSH keys on the runner..."
-        rm -rf ~/.ssh  # Clean up SSH keys on the GitHub Actions runner
+        rm -rf ~/.ssh
+
+    # Create GitHub Status Checks
+    - name: Create GitHub Status
+      uses: actions/github-script@v6
+      if: always()
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const commit_sha = context.payload.workflow_run.head_commit.id
+          const conclusion = context.payload.workflow_run.conclusion
+          const status = conclusion === 'success' ? 'success' : 'failure'
+          
+          github.rest.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: commit_sha,
+            state: status,
+            context: 'Deployment',
+            description: `Deployment ${status}`
+          })

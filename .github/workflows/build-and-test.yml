@@ -12,6 +12,11 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    # Add a way to cancel previous runs of the same workflow
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
     services:
       postgres_test:
         image: postgres:latest
