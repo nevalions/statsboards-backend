@@ -38,3 +38,16 @@ jobs:
           cd ${{ secrets.WORK_DIR }} && \
           git pull && \
           docker-compose -f docker-compose.prod.yml up -d --build"
+
+    - name: Cleanup Docker Resources on Server
+      run: |
+        ssh -v ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
+          # Clean up unused Docker resources \
+          docker system prune -f --volumes && \
+          docker images prune -f && \
+          docker volume prune -f"
+
+    - name: Cleanup SSH Keys Locally
+      run: |
+        echo "Cleaning up SSH keys on the runner..."
+        rm -rf ~/.ssh  # Clean up SSH keys on the GitHub Actions runner
