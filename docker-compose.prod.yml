@@ -20,9 +20,10 @@ services:
       - custom_bridge
     restart: always
   nginx:
-    image: nginx:latest
+    build:
+      context: ./  # Specify the build context
+      dockerfile: Dockerfile.nginx  # Use a custom Dockerfile for Nginx
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - /etc/letsencrypt:/etc/letsencrypt
       - /home/www/code/statsboards-angular-legacy/dist/statsboards-angular-legacy/browser:/usr/share/nginx/html
     ports:
@@ -32,4 +33,4 @@ services:
       - statsboards-backend
     networks:
       - custom_bridge
-    restart: always  # Add this line
+    restart: always
