@@ -1,0 +1,47 @@
+name: Deploy Workflow
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Test
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: build-and-test
+
+    - name: Setup SSH Key and Config
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Validate SSH Configuration
+      run: |
+        echo "Host: ${{ secrets.SSH_HOST }}"
+        echo "User: ${{ secrets.SSH_USER }}"
+        echo "Work Dir: ${{ secrets.WORK_DIR }}"
+        if [[ -z "${{ secrets.SSH_USER }}" || -z "${{ secrets.SSH_HOST }}" || -z "${{ secrets.WORK_DIR }}" ]]; then
+          echo "Error: One or more required secrets are missing or empty!" >&2
+          exit 1
+        fi
+        ls -la ~/.ssh
+
+    - name: Pull and Deploy on Server
+      run: |
+        ssh -v ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
+          cd ${{ secrets.WORK_DIR }} && \
+          git pull && \
+          docker-compose -f docker-compose.prod.yml up -d --build"
