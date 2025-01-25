@@ -19,6 +19,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Get Commit Message from Previous Workflow
+      id: get_commit_message
+      run: |
+        COMMIT_MESSAGE="${{ needs.build-and-test.outputs.commit_message }}"
+        echo "Commit Message from Build and Test: $COMMIT_MESSAGE"
+        echo "::set-output name=commit_message::$COMMIT_MESSAGE"
+
     - name: Checkout code
       uses: actions/checkout@v4
 
