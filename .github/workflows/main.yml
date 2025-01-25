@@ -94,7 +94,7 @@ jobs:
         echo "${{ secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-        echo "Host ${secrets.SSH_HOST}" >> ~/.ssh/config
+        echo "Host ${{ secrets.SSH_HOST }}" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 
     - name: Pull Latest Code on Server
