@@ -53,12 +53,12 @@ jobs:
 
 
     - name: Cleanup Docker Resources on Server
-      if: success()  # Only run if previous steps succeeded
+      if: success()
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
-          docker system prune -af --volumes && \
-          docker image prune -af && \
-          docker volume prune -af"
+          docker system prune --force && \
+          docker image prune --force && \
+          docker volume prune --force"
 
     - name: Cleanup SSH Keys Locally
       if: always()  # Always run, even if previous steps failed
