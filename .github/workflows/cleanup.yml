@@ -2,8 +2,7 @@ name: Cleanup Workflow
 
 on:
   workflow_run:
-    workflows:
-      - Deploy Workflow
+    workflows: ["Deploy"] 
     types:
       - completed
 
