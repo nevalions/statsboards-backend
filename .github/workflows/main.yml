@@ -93,18 +93,37 @@ jobs:
       # with:
       #   ssh-private-key: ${{ secrets.STATSBOARDS_DEPLOY_KEY }}
 
-    - name: Deploy with Docker Compose
+    - name: Set up SSH key
       run: |
         install -m 600 -D /dev/null ~/.ssh/id_rsa
-        echo "${{  secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
-        ssh-keyscan -H ${{  secrets.SSH_HOST }} > ~/.ssh/known_hosts
-    - name: connect and pull
-      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git pull"
-    - name: docer-compose up --build
-      run: docker-compose -f docker-compose.prod.yml up -d --build
+        echo "${{ secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Connect and pull latest code
+      run: |
+        ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git pull"
+
+    - name: Docker Compose up --build
+      run: |
+        ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && docker compose -f docker-compose.prod.yml up -d --build"
+
+    - name: Cleanup
+      run: |
+        rm -rf ~/.ssh/id_rsa
+        rm -rf ~/.ssh/known_hosts
+
+    # - name: Deploy with Docker Compose
+    #   run: |
+    #     install -m 600 -D /dev/null ~/.ssh/id_rsa
+    #     echo "${{  secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+    #     ssh-keyscan -H ${{  secrets.SSH_HOST }} > ~/.ssh/known_hosts
+    # - name: connect and pull
+    #   run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git pull"
+    # - name: docer-compose up --build
+    #   run: docker-compose -f docker-compose.prod.yml up -d --build
       
-    - name: cleanup
-      run: rm -rf ~/.ssh
+    # - name: cleanup
+    #   run: rm -rf ~/.ssh
         
         
         # ssh www@89.223.66.224 << 'EOF'
