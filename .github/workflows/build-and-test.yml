@@ -11,8 +11,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    outputs:
-      commit_message: ${{ steps.commit_message.outputs.commit }}
 
     # Add a way to cancel previous runs of the same workflow
     concurrency:
