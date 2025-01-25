@@ -87,15 +87,24 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
+      
     - name: Setup SSH Key and Config
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-        echo "Host ${{ secrets.SSH_HOST }}" >> ~/.ssh/config
-        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+
+    - name: Validate SSH Configuration
+      run: |
+        echo "Host: ${{ secrets.SSH_HOST }}"
+        echo "User: ${{ secrets.SSH_USER }}"
+        echo "Work Dir: ${{ secrets.WORK_DIR }}"
+        ls -la ~/.ssh
+
+    - name: Test SSH Connection
+      run: |
+        ssh -v ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "echo 'SSH Connection Successful'"
 
     - name: Pull Latest Code on Server
       run: |
@@ -107,6 +116,7 @@ jobs:
 
     - name: Cleanup SSH
       run: |
+        rm -rf ~/.ssh
         rm -rf ~/.ssh
 
     # - name: Deploy with Docker Compose
