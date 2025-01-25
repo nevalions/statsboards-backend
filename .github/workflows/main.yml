@@ -88,29 +88,23 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # - name: Set up SSH
-      # uses: webfactory/ssh-agent@v0.9.0
-      # with:
-      #   ssh-private-key: ${{ secrets.STATSBOARDS_DEPLOY_KEY }}
-
-    - name: Set up SSH key
+    - name: Setup SSH Key
       run: |
-        install -m 600 -D /dev/null ~/.ssh/id_rsa
+        mkdir -p ~/.ssh
         echo "${{ secrets.STATSBOARDS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Connect and pull latest code
+    - name: Pull Latest Code on Server
       run: |
-        ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git pull"
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git pull"
 
-    - name: Docker Compose up --build
+    - name: Docker Compose Up
       run: |
-        ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && docker compose -f docker-compose.prod.yml up -d --build"
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && docker-compose -f docker-compose.prod.yml up -d --build"
 
-    - name: Cleanup
-      run: |
-        rm -rf ~/.ssh/id_rsa
-        rm -rf ~/.ssh/known_hosts
+    - name: Cleanup SSH Key
+      run: rm -rf ~/.ssh
 
     # - name: Deploy with Docker Compose
     #   run: |
