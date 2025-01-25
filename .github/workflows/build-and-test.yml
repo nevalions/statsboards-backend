@@ -1,0 +1,72 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres_test:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry install
+
+    - name: Create .env file
+      run: |
+        echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env
+        echo "DB_HOST=localhost" >> .env
+        echo "DB_USER=test" >> .env
+        echo "DB_PASSWORD=test" >> .env
+        echo "DB_NAME=test_db" >> .env
+        echo "DB_PORT=5432" >> .env
+
+    - name: Create .env.test file
+      run: |
+        echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env.test
+        echo "DB_HOST=localhost" >> .env.test
+        echo "DB_USER=test" >> .env.test
+        echo "DB_PASSWORD=test" >> .env.test
+        echo "DB_NAME=test_db" >> .env.test
+        echo "DB_PORT=5432" >> .env.test
+
+    - name: Run tests
+      run: |
+        poetry run pytest
+
+    - name: Save Build Artifact
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-and-test
+        path: .
