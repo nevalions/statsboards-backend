@@ -51,6 +51,13 @@ jobs:
         echo "DB_NAME=test_db" >> .env
         echo "DB_PORT=5432" >> .env
 
+        echo "DB_TEST_HOST=localhost" >> .env
+        echo "DB_TEST_USER=test" >> .env
+        echo "DB_TEST_PASSWORD=test" >> .env
+        echo "DB_TEST_NAME=test_db" >> .env
+        echo "DB_TEST_PORT=5432" >> .env
+        cat .env  # Print the .env file to verify its contents
+
     - name: Create .env.test file
       run: |
         echo "LOGS_CONFIG=logging-config_dev.yaml" >> .env.test
@@ -59,6 +66,13 @@ jobs:
         echo "DB_PASSWORD=test" >> .env.test
         echo "DB_NAME=test_db" >> .env.test
         echo "DB_PORT=5432" >> .env.test
+        
+        echo "DB_TEST_HOST=localhost" >> .env.test
+        echo "DB_TEST_USER=test" >> .env.test
+        echo "DB_TEST_PASSWORD=test" >> .env.test
+        echo "DB_TEST_NAME=test_db" >> .env.test
+        echo "DB_TEST_PORT=5432" >> .env.test
+        cat .env.test  # Print the .env.test file to verify its contents
 
     - name: Run tests
       run: |
