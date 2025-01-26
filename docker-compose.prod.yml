@@ -45,7 +45,6 @@ services:
       dockerfile: Dockerfile.nginx
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
-#      - /home/www/code/statsboards-angular-legacy/dist/statsboards-angular-legacy/browser:/usr/share/nginx/html
       - /home/www/code/statsboards-backend/static:/usr/share/nginx/static
     ports:
       - "80:80"
@@ -58,6 +57,8 @@ services:
       - custom_bridge
     restart: always
 
+
+#      - /home/www/code/statsboards-angular-legacy/dist/statsboards-angular-legacy/browser:/usr/share/nginx/html
 
 #version: '3'
 #
