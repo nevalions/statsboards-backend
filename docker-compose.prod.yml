@@ -5,8 +5,8 @@ networks:
     driver: bridge
   frontend-network:
     external: true
-  custom_bridge:
-    driver: bridge
+#  custom_bridge:
+#    driver: bridge
 
 volumes:
   poetry-cache:
@@ -30,7 +30,7 @@ services:
     networks:
       - backend-network
       - frontend-network
-      - custom_bridge
+#      - custom_bridge
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
       interval: 30s
@@ -55,7 +55,7 @@ services:
     networks:
       - backend-network
       - frontend-network
-      - custom_bridge
+#      - custom_bridge
     restart: always
 
 
