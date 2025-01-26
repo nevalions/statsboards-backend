@@ -1,6 +1,11 @@
-version: '3'
+version: '3.8'
+
+volumes:
+  poetry-cache:
+
 services:
   statsboards-backend:
+    image: statsboards-backend-dev:latest
     container_name: statsboards-backend-dev-container
     build:
       context: .
@@ -10,3 +15,25 @@ services:
       - "9000:9000"
     env_file:
       - .env.dev
+    volumes:
+      - ./src:/app/src
+      - poetry-cache:/root/.cache/pypoetry
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+#version: '3'
+#services:
+#  statsboards-backend:
+#    image: statsboards-backend:latest
+#    container_name: statsboards-backend-dev-container
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.dev
+#    command: poetry run python runserver.py
+#    ports:
+#      - "9000:9000"
+#    env_file:
+#      - .env.dev

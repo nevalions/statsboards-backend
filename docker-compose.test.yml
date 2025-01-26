@@ -1,13 +1,19 @@
 version: '3'
+
+volumes:
+  poetry-cache:
+
 services:
   statsboards-backend-test:
+    image: statsboards-backend-test:latest
     container_name: statsboards-backend-test-container
     build:
       context: .
       dockerfile: Dockerfile.test
     command: pytest -v
 #    command: pytest tests/test_db_services/test_season_service.py::TestSeasonServiceDB::test_get_tournaments_by_season_id_and_sport_id -v
-
+    volumes:
+      - poetry-cache:/root/.cache/pypoetry  # Add Poetry cache volume
     env_file:
       - .env.test.in.docker
     depends_on:
