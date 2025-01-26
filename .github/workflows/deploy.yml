@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get Commit Message from Previous Workflow
-      id: get_commit_message
-      run: |
-        COMMIT_MESSAGE="${{ needs.build-and-test.outputs.commit_message }}"
-        echo "Commit Message from Build and Test: $COMMIT_MESSAGE"
-        echo "::set-output name=commit_message::$COMMIT_MESSAGE"
+#    - name: Get Commit Message from Previous Workflow
+#      id: get_commit_message
+#      run: |
+#        COMMIT_MESSAGE="${{ needs.build-and-test.outputs.commit_message }}"
+#        echo "Commit Message from Build and Test: $COMMIT_MESSAGE"
+#        echo "::set-output name=commit_message::$COMMIT_MESSAGE"
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -58,17 +58,8 @@ jobs:
           git pull || (echo 'Git pull failed' && exit 1) && \
           docker-compose -f docker-compose.prod.yml up -d --build || (echo 'Docker deployment failed' && exit 1)"
 
-
-#    - name: Cleanup Docker Resources on Server
-#      if: success()
-#      run: |
-#        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
-#          docker system prune --force && \
-#          docker image prune --force && \
-#          docker volume prune --force"
-
     - name: Cleanup SSH Keys Locally
-      if: always()  # Always run, even if previous steps failed
+      if: always()
       run: |
         echo "Cleaning up SSH keys on the runner..."
         rm -rf ~/.ssh
