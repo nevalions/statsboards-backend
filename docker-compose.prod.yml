@@ -38,7 +38,7 @@ services:
     restart: always
 
   nginx:
-    container_name: nginx-back-prod-container
+    container_name: statsboards-backend-prod-nginx
     build:
       context: ./
       dockerfile: Dockerfile.nginx
