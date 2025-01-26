@@ -1,6 +1,10 @@
 version: '3.8'
 
 networks:
+  backend-network:
+    driver: bridge
+  frontend-network:
+    external: true
   custom_bridge:
     driver: bridge
 
@@ -24,6 +28,7 @@ services:
     env_file:
       - .env.prod
     networks:
+      - backend-network
       - custom_bridge
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
@@ -33,13 +38,13 @@ services:
     restart: always
 
   nginx:
-    container_name: nginx-prod-container
+    container_name: nginx-back-prod-container
     build:
       context: ./
       dockerfile: Dockerfile.nginx
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
-      - /home/www/code/statsboards-angular-legacy/dist/statsboards-angular-legacy/browser:/usr/share/nginx/html
+#      - /home/www/code/statsboards-angular-legacy/dist/statsboards-angular-legacy/browser:/usr/share/nginx/html
       - /home/www/code/statsboards-backend/static:/usr/share/nginx/static
     ports:
       - "80:80"
@@ -47,6 +52,8 @@ services:
     depends_on:
       - statsboards-backend
     networks:
+      - backend-network
+      - frontend-network
       - custom_bridge
     restart: always
 
