@@ -5,6 +5,9 @@ volumes:
 
 services:
   statsboards-backend-test:
+    labels:
+      logging: "promtail"
+      logging_jobname: "backend_test_logs"
     image: statsboards-backend-test:latest
     container_name: statsboards-backend-test-container
     build:

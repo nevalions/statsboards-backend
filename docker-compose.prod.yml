@@ -6,13 +6,16 @@ networks:
   frontend-network:
     external: true
   custom_bridge:
-    driver: bridge
+    driver: bridge # need to connect to postgres on local network
 
 volumes:
   poetry-cache:
 
 services:
   statsboards-backend:
+    labels:
+      logging: "promtail"
+      logging_jobname: "backend_prod_logs"
     image: statsboards-backend-prod:latest
     container_name: statsboards-backend-prod-container
     build:
@@ -24,7 +27,7 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - /home/www/code/statsboards-backend/static:/app/static
-      - poetry-cache:/root/.cache/pypoetry  # Add Poetry cache volume
+      - poetry-cache:/root/.cache/pypoetry
     env_file:
       - .env.prod
     networks:
@@ -39,6 +42,9 @@ services:
     restart: always
 
   nginx:
+    labels:
+      logging: "promtail"
+      logging_jobname: "backend_nginx_logs"
     container_name: statsboards-backend-prod-nginx
     build:
       context: ./

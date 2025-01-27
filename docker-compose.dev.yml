@@ -1,10 +1,11 @@
-version: '3.8'
-
 volumes:
   poetry-cache:
 
 services:
   statsboards-backend:
+    labels:
+      logging: "promtail"
+      logging_jobname: "backend_dev_logs"
     image: statsboards-backend-dev:latest
     container_name: statsboards-backend-dev-container
     build:
@@ -17,6 +18,7 @@ services:
       - .env.dev
     volumes:
       - ./src:/app/src
+      - ./static:/app/static
       - poetry-cache:/root/.cache/pypoetry
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
