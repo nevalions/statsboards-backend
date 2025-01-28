@@ -14,7 +14,7 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: ${PWD}/static  # Bind to local ./static directory
+      device: ./static  # Bind to local ./static directory
       o: bind
 
 services:
