@@ -10,6 +10,12 @@ networks:
 
 volumes:
   poetry-cache:
+  static-files:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/static  # Bind to local ./static directory
+      o: bind
 
 services:
   statsboards-backend:
@@ -26,7 +32,8 @@ services:
       - "9000:9000"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
-      - /home/www/code/statsboards-backend/static:/app/static
+      - static-files:/app/static:rw  # Read-write access for backend
+#      - ./static:/app/static
       - poetry-cache:/root/.cache/pypoetry
     env_file:
       - .env.prod
@@ -41,6 +48,22 @@ services:
       retries: 3
     restart: always
 
+  nginx-static:
+    labels:
+      logging: "promtail"
+      logging_jobname: "backend_static_nginx_logs"
+    container_name: statsboards-backend-static-nginx
+    build:
+      context: ./
+      dockerfile: Dockerfile.nginx.static
+    volumes:
+      - static-files:/usr/share/nginx/static:ro  # Read-only access for nginx
+    expose:
+      - "8080"
+    networks:
+      - backend-network
+    restart: always
+
   nginx:
     labels:
       logging: "promtail"
@@ -51,17 +74,21 @@ services:
       dockerfile: Dockerfile.nginx
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
-      - /home/www/code/statsboards-backend/static:/usr/share/nginx/static
+#      - ./static:/usr/share/nginx/static
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       - statsboards-backend
+      - nginx-static
     networks:
       - backend-network
       - frontend-network
       - custom_bridge
     restart: always
+
+# - /home/www/code/statsboards-backend/static:/app/static
+#      - /home/www/code/statsboards-backend/static:/usr/share/nginx/static
 
 
 #      - /home/www/code/statsboards-angular-legacy/dist/statsboards-angular-legacy/browser:/usr/share/nginx/html

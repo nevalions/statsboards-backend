@@ -25,17 +25,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-#version: '3'
-#services:
-#  statsboards-backend:
-#    image: statsboards-backend:latest
-#    container_name: statsboards-backend-dev-container
-#    build:
-#      context: .
-#      dockerfile: Dockerfile.dev
-#    command: poetry run python runserver.py
-#    ports:
-#      - "9000:9000"
-#    env_file:
-#      - .env.dev
