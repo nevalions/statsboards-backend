@@ -1,2 +1,11 @@
+# Use the official Nginx Alpine image
 FROM nginx:alpine
-COPY nginx-static.conf /etc/nginx/conf.d/default.conf
+
+# Install curl for health checks
+RUN apk --no-cache add curl
+
+# Copy the Nginx config
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose the necessary ports
+EXPOSE 8080
