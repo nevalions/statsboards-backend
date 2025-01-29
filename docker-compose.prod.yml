@@ -56,7 +56,7 @@ services:
       context: ./
       dockerfile: Dockerfile.nginx.static
     volumes:
-#      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/letsencrypt:/etc/letsencrypt
       - static-files:/usr/share/nginx/static:ro  # Read-only access for nginx
     ports:
       - "8080"
