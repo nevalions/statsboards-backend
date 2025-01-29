@@ -33,7 +33,6 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - static-files:/app/static:rw  # Read-write access for backend
-#      - ./static:/app/static
       - poetry-cache:/root/.cache/pypoetry
     env_file:
       - .env.prod
@@ -74,7 +73,6 @@ services:
       dockerfile: Dockerfile.nginx
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
-#      - ./static:/usr/share/nginx/static
     ports:
       - "80:80"
       - "443:443"
