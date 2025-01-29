@@ -41,7 +41,7 @@ services:
       - frontend-network
       - custom_bridge
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      test: ["CMD", "curl", "-k", "https://localhost:9000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -83,6 +83,11 @@ services:
       - backend-network
       - frontend-network
       - custom_bridge
+#    healthcheck:
+#      test: [ "CMD", "curl", "-k", "https://localhost/nginx-health" ]
+#      interval: 30s
+#      timeout: 5s
+#      retries: 3
     restart: always
 
 # - /home/www/code/statsboards-backend/static:/app/static
