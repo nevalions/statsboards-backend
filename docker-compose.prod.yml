@@ -63,7 +63,7 @@ services:
     networks:
       - backend-network
     healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost/static/nginx-health" ]
+      test: [ "CMD", "curl", "-k", "https://localhost/static-health" ]
       interval: 30s
       timeout: 5s
       retries: 3
