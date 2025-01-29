@@ -41,7 +41,7 @@ services:
       - frontend-network
       - custom_bridge
     healthcheck:
-      test: ["CMD", "curl", "-k", "https://localhost:9000/health"]
+      test: [ "CMD-SHELL", "curl -ks https://localhost:9000/health | jq -e '.status == \"ok\"' > /dev/null" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -63,7 +63,7 @@ services:
     networks:
       - backend-network
     healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost/static/nginx-health" ]
+      test: [ "CMD-SHELL", "curl -ks https://localhost/static/nginx-health | grep -q 'Static Nginx is running'" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -90,7 +90,7 @@ services:
       - frontend-network
       - custom_bridge
     healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost/nginx-health" ]
+      test: [ "CMD-SHELL", "curl -ks https://localhost/nginx-health | grep -q 'Nginx is running (HTTPS)'" ]
       interval: 30s
       timeout: 5s
       retries: 3
