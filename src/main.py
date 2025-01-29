@@ -64,7 +64,11 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": "FastAPI Backend is running",
+        "timestamp": "$time_iso8601",
+    }
 
 
 app.include_router(api_sport_router)
