@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 import logging.config
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -64,10 +65,12 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/health")
 async def health_check():
+    # Get the current time in ISO 8601 format with timezone awareness
+    current_time = datetime.now(timezone.utc).isoformat()
     return {
         "status": "ok",
         "service": "FastAPI Backend is running",
-        "timestamp": "$time_iso8601",
+        "timestamp": current_time,
     }
 
 
