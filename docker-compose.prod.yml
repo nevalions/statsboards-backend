@@ -57,7 +57,7 @@ services:
       dockerfile: Dockerfile.nginx.static
     volumes:
       - static-files:/usr/share/nginx/static:ro  # Read-only access for nginx
-    expose:
+    ports:
       - "8080"
     networks:
       - backend-network
