@@ -63,7 +63,7 @@ services:
     networks:
       - backend-network
     healthcheck:
-      test: [ "CMD-SHELL", "curl -ksf https://localhost/back-static-nginx-health | grep -q 'Backend Static Nginx is running'" ]
+      test: [ "CMD-SHELL", "curl -ksf https://localhost:8080/back-static-nginx-health | jq -e '.status == \"ok\"' > /dev/null" ]
       interval: 30s
       timeout: 5s
       retries: 3
