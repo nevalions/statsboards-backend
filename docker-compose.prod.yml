@@ -20,6 +20,32 @@ volumes:
   certbot-var:
 
 services:
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot-renewal
+    environment:
+      CERTBOT_EMAIL: your-email@example.com
+      CERTBOT_DOMAINS: example.com,www.example.com
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    entrypoint: "/bin/sh -c"
+    command: >
+      "if [ ! -d /etc/letsencrypt/live ]; then
+         certbot certonly --webroot -w /var/lib/letsencrypt 
+         --email $CERTBOT_EMAIL --agree-tos --no-eff-email 
+         -d $CERTBOT_DOMAINS;
+       fi;
+       trap exit TERM; 
+       while :; do 
+         certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos && nginx -s reload; 
+         sleep 12h & wait $${!}; 
+       done"
+    depends_on:
+      - nginx
+    networks:
+      - frontend-network
+
   statsboards-backend:
     labels:
       logging: "promtail"
@@ -49,6 +75,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    depends_on:
+      - certbot
     restart: always
 
   nginx-static:
@@ -72,6 +100,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    depends_on:
+      - certbot
     restart: always
 
   nginx:
@@ -101,31 +131,6 @@ services:
       timeout: 5s
       retries: 3
     restart: always
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: certbot-renewal
-    environment:
-      CERTBOT_EMAIL: nevalions@gmail.com
-      CERTBOT_DOMAINS: statsboard.ru www.statsboard.ru statsboard.online www.statsboard.online
-    volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-    entrypoint: "/bin/sh -c"
-    command: >
-      "if [ ! -d /etc/letsencrypt/live ]; then
-         certbot certonly --webroot -w /var/lib/letsencrypt 
-         --email $CERTBOT_EMAIL --agree-tos --no-eff-email 
-         -d $CERTBOT_DOMAINS;
-       fi;
-       trap exit TERM; 
-       while :; do 
-         certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos && nginx -s reload; 
-         sleep 12h & wait $${!}; 
-       done"
-    networks:
-      - frontend-network
-      - backend-network
 
 # - /home/www/code/statsboards-backend/static:/app/static
 #      - /home/www/code/statsboards-backend/static:/usr/share/nginx/static
