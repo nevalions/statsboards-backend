@@ -1,6 +1,6 @@
-FROM alpine:latest
+FROM nginx:alpine
 
-RUN apk --no-cache add nginx curl
+RUN apk --no-cache add curl
 
 COPY ./nginx-static.conf /etc/nginx/conf.d/default.conf
 
