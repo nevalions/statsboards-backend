@@ -26,6 +26,7 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
+      - ./webroot:/var/lib/letsencrypt  # Add shared volume
     entrypoint: |
       sh -c '
       set -x
