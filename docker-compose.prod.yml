@@ -17,7 +17,7 @@ volumes:
       device: ./static  # Bind to local ./static directory
       o: bind
   certbot-etc:
-  certbot-var:
+  webroot:  # Define a named volume for webroot instead of certbot-var
 
 services:
   certbot:
@@ -25,20 +25,29 @@ services:
     container_name: certbot-renewal
     volumes:
       - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
+#      - certbot-var:/var/lib/letsencrypt
       - ./webroot:/var/lib/letsencrypt  # Add shared volume
     entrypoint: |
       sh -c '
-      set -x
-      if [ ! -d /etc/letsencrypt/live ]; then
-        certbot certonly --webroot -w /var/lib/letsencrypt \
-          --agree-tos --no-eff-email --email nevalions@gmail.com \
-          -d statsboard.ru -d www.statsboard.ru -d statsboard.online -d www.statsboard.online;
-      fi;
+      trap exit TERM;
       while :; do
-        certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos --post-hook "nginx -s reload";  
-        sleep 12h;
+        certbot renew --webroot -w /var/lib/letsencrypt --quiet \
+          --agree-tos \
+          --deploy-hook "docker kill -s HUP statsboards-backend-prod-nginx";
+        sleep 12h & wait $!;
       done'
+#    entrypoint: |
+#      sh -c '
+#      set -x
+#      if [ ! -d /etc/letsencrypt/live ]; then
+#        certbot certonly --webroot -w /var/lib/letsencrypt \
+#          --agree-tos --no-eff-email --email nevalions@gmail.com \
+#          -d statsboard.ru -d www.statsboard.ru -d statsboard.online -d www.statsboard.online;
+#      fi;
+#      while :; do
+#        certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos --post-hook "nginx -s reload";
+#        sleep 12h;
+#      done'
     networks:
       - frontend-network
       - backend-network
@@ -111,6 +120,7 @@ services:
       dockerfile: Dockerfile.nginx
     volumes:
       - certbot-etc:/etc/letsencrypt
+      - webroot:/var/lib/letsencrypt  # Use the same webroot volume
 #      - /etc/letsencrypt:/etc/letsencrypt
     ports:
       - "80:80"
