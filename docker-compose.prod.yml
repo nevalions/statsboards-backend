@@ -23,24 +23,20 @@ services:
   certbot:
     image: certbot/certbot:latest
     container_name: certbot-renewal
-#    environment:
-#      CERTBOT_EMAIL: your-email@example.com
-#      CERTBOT_DOMAINS: example.com,www.example.com
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
-    entrypoint: "/bin/sh -c"
-    command: >
-      "if [ ! -d /etc/letsencrypt/live ]; then
-         certbot certonly --webroot -w /var/lib/letsencrypt 
-         --email nevalions@gmail.com --agree-tos --no-eff-email 
-         -d statsboard.ru www.statsboard.ru statsboard.online www.statsboard.online;
-       fi;
-       trap exit TERM; 
-       while :; do 
-         certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos && nginx -s reload; 
-         sleep 12h & wait $${!}; 
-       done"
+    entrypoint: sh -c '  
+      if [ ! -d /etc/letsencrypt/live ]; then  
+        certbot certonly --webroot -w /var/lib/letsencrypt \
+        --email nevalions@gmail.com --agree-tos --no-eff-email \
+        -d statsboard.ru -d www.statsboard.ru -d statsboard.online -d www.statsboard.online;  
+      fi;  
+      while :; do  
+        certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos && \  
+        docker exec statsboards-backend-prod-nginx nginx -s reload;  
+        sleep 12h;  
+      done'
     networks:
       - frontend-network
       - backend-network
