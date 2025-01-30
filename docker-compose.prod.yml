@@ -26,9 +26,9 @@ services:
       logging_jobname: "backend_nginx_init_logs"
     container_name: statsboards-nginx-init
     volumes:
-      - webroot:/var/lib/letsencrypt  # Serve the Certbot challenge
+      - webroot:/var/lib/letsencrypt
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile.nginx.init
     ports:
       - "80:80"
@@ -36,6 +36,11 @@ services:
       - backend-network
       - frontend-network
       - custom_bridge
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs --fail http://localhost/nginx-init-health | grep -q '\"status\": \"ok\"'" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     restart: always
 
   certbot:
@@ -65,11 +70,11 @@ services:
       logging_jobname: "backend_nginx_logs"
     container_name: statsboards-backend-prod-nginx
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile.nginx
     volumes:
       - certbot-etc:/etc/letsencrypt
-      - webroot:/var/lib/letsencrypt  # Use the same webroot volume
+      - webroot:/var/lib/letsencrypt
     #      - /etc/letsencrypt:/etc/letsencrypt
     ports:
 #      - "80:80"
@@ -125,7 +130,7 @@ services:
       logging_jobname: "backend_static_nginx_logs"
     container_name: statsboards-backend-static-nginx
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile.nginx.static
     volumes:
       - certbot-etc:/etc/letsencrypt
