@@ -23,9 +23,9 @@ services:
   certbot:
     image: certbot/certbot:latest
     container_name: certbot-renewal
-    environment:
-      CERTBOT_EMAIL: your-email@example.com
-      CERTBOT_DOMAINS: example.com,www.example.com
+#    environment:
+#      CERTBOT_EMAIL: your-email@example.com
+#      CERTBOT_DOMAINS: example.com,www.example.com
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
@@ -33,8 +33,8 @@ services:
     command: >
       "if [ ! -d /etc/letsencrypt/live ]; then
          certbot certonly --webroot -w /var/lib/letsencrypt 
-         --email $CERTBOT_EMAIL --agree-tos --no-eff-email 
-         -d $CERTBOT_DOMAINS;
+         --email nevalions@gmail.com --agree-tos --no-eff-email 
+         -d statsboard.ru www.statsboard.ru statsboard.online www.statsboard.online;
        fi;
        trap exit TERM; 
        while :; do 
@@ -45,6 +45,7 @@ services:
       - nginx
     networks:
       - frontend-network
+      - backend-network
 
   statsboards-backend:
     labels:
