@@ -99,7 +99,7 @@ services:
       - frontend-network
       - custom_bridge
     healthcheck:
-      test: [ "CMD-SHELL", "curl -k --fail https://localhost:9000/health | grep -q '\"status\": \"ok\"'" ]
+      test: [ "CMD-SHELL", "curl -k https://localhost/api/health" ]
       interval: 30s
       timeout: 5s
       retries: 3
