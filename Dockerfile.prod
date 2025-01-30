@@ -30,3 +30,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Run the application
 CMD ["python", "run_prod_server.py"]
+
+# Add a non-blocking health check to the Dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+  CMD curl -k https://localhost:9000/health || exit 1

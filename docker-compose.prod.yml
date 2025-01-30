@@ -101,11 +101,11 @@ services:
       - backend-network
       - frontend-network
       - custom_bridge
-    healthcheck:
-      test: ["CMD-SHELL", "sleep 10 && curl -k https://localhost/api/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+#    healthcheck:
+#      test: ["CMD-SHELL", "sleep 10 && curl -k https://localhost/api/health"]
+#      interval: 30s
+#      timeout: 5s
+#      retries: 3
     depends_on:
       - certbot
     restart: always
