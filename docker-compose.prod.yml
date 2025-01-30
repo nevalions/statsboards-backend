@@ -20,6 +20,20 @@ volumes:
   webroot:  # Define a named volume for webroot instead of certbot-var
 
 services:
+  nginx-init:
+    image: nginx:alpine
+    container_name: nginx-init
+    volumes:
+      - webroot:/var/lib/letsencrypt
+    ports:
+      - "80:80"
+    command: >
+      /bin/sh -c "nginx -g 'daemon off;' & 
+      sleep 5 &&
+      while ! nc -z localhost 80; do sleep 1; done &&
+      echo 'Nginx is ready for certbot' &&
+      sleep infinity"
+
   certbot:
     image: certbot/certbot:latest
     container_name: certbot-renewal
@@ -27,15 +41,6 @@ services:
       - certbot-etc:/etc/letsencrypt
 #      - certbot-var:/var/lib/letsencrypt
       - webroot:/var/lib/letsencrypt:rw
-#    entrypoint: |
-#      sh -c '
-#      trap exit TERM;
-#      while :; do
-#        certbot renew --webroot -w /var/lib/letsencrypt --quiet \
-#          --agree-tos \
-#          --deploy-hook "docker kill -s HUP statsboards-backend-prod-nginx";
-#        sleep 12h & wait $!;
-#      done'
     entrypoint: |
       sh -c '
       set -x
@@ -49,7 +54,7 @@ services:
         sleep 12h;
       done'
     depends_on:
-      - nginx
+      - nginx-init
     networks:
       - frontend-network
       - backend-network
@@ -127,6 +132,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    depends_on:
+      - certbot
+
 #    depends_on:
 #      - statsboards-backend
 #      - nginx-static
