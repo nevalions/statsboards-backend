@@ -17,7 +17,7 @@ volumes:
       device: ./static  # Bind to local ./static directory
       o: bind
   certbot-etc:
-  webroot:  # Define a named volume for webroot instead of certbot-var
+  webroot:
 
 services:
   nginx-init:
@@ -68,7 +68,7 @@ services:
       context: ./
       dockerfile: Dockerfile.nginx
     volumes:
-      - certbot-etc:/etc/letsencryptd
+      - certbot-etc:/etc/letsencrypt
       - webroot:/var/lib/letsencrypt  # Use the same webroot volume
     #      - /etc/letsencrypt:/etc/letsencrypt
     ports:
