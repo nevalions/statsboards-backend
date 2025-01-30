@@ -8,6 +8,6 @@ if [ ! -d /etc/letsencrypt/live ]; then
 fi
 
 while :; do
-  certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos --post-hook "statsboards-backend-prod-nginx-ssl -s reload"
+  certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos
   sleep 12h
 done

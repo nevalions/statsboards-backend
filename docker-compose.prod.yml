@@ -53,7 +53,7 @@ services:
   nginx-ssl:
     labels:
       logging: "promtail"
-      logging_jobname: "backend_nginx_logs_443"
+      logging_jobname: "statsboards_backend_nginx_logs_443"
     container_name: statsboards-backend-prod-nginx-ssl
     build:
       context: .
@@ -79,7 +79,7 @@ services:
   statsboards-backend:
     labels:
       logging: "promtail"
-      logging_jobname: "backend_prod_logs"
+      logging_jobname: "statsboards_backend_prod_logs"
     image: statsboards-backend-prod:latest
     container_name: statsboards-backend-prod-container
     build:
@@ -110,7 +110,7 @@ services:
   nginx-static:
     labels:
       logging: "promtail"
-      logging_jobname: "backend_static_nginx_logs"
+      logging_jobname: "statsboards_backend_static_nginx_logs"
     container_name: statsboards-backend-static-nginx
     build:
       context: .
