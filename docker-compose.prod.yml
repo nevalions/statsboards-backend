@@ -16,6 +16,8 @@ volumes:
       type: none
       device: ./static  # Bind to local ./static directory
       o: bind
+  certbot-etc:
+  certbot-var:
 
 services:
   statsboards-backend:
@@ -31,7 +33,8 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot-etc:/etc/letsencrypt
+#      - /etc/letsencrypt:/etc/letsencrypt
       - static-files:/app/static:rw  # Read-write access for backend
       - poetry-cache:/root/.cache/pypoetry
     env_file:
@@ -57,7 +60,8 @@ services:
       context: ./
       dockerfile: Dockerfile.nginx.static
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot-etc:/etc/letsencrypt
+#      - /etc/letsencrypt:/etc/letsencrypt
       - static-files:/usr/share/nginx/static:ro  # Read-only access for nginx
     ports:
       - "8080:8080"
@@ -79,7 +83,8 @@ services:
       context: ./
       dockerfile: Dockerfile.nginx
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot-etc:/etc/letsencrypt
+#      - /etc/letsencrypt:/etc/letsencrypt
     ports:
       - "80:80"
       - "443:443"
@@ -96,6 +101,31 @@ services:
       timeout: 5s
       retries: 3
     restart: always
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot-renewal
+    environment:
+      CERTBOT_EMAIL: nevalions@gmail.com
+      CERTBOT_DOMAINS: statsboard.ru www.statsboard.ru statsboard.online www.statsboard.online
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    entrypoint: "/bin/sh -c"
+    command: >
+      "if [ ! -d /etc/letsencrypt/live ]; then
+         certbot certonly --webroot -w /var/lib/letsencrypt 
+         --email $CERTBOT_EMAIL --agree-tos --no-eff-email 
+         -d $CERTBOT_DOMAINS;
+       fi;
+       trap exit TERM; 
+       while :; do 
+         certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos && nginx -s reload; 
+         sleep 12h & wait $${!}; 
+       done"
+    networks:
+      - frontend-network
+      - backend-network
 
 # - /home/www/code/statsboards-backend/static:/app/static
 #      - /home/www/code/statsboards-backend/static:/usr/share/nginx/static
