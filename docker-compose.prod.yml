@@ -41,8 +41,6 @@ services:
          certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos && nginx -s reload; 
          sleep 12h & wait $${!}; 
        done"
-    depends_on:
-      - nginx
     networks:
       - frontend-network
       - backend-network
