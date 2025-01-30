@@ -26,7 +26,7 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
 #      - certbot-var:/var/lib/letsencrypt
-      - ./webroot:/var/lib/letsencrypt  # Add shared volume
+      - webroot:/var/lib/letsencrypt:rw
 #    entrypoint: |
 #      sh -c '
 #      trap exit TERM;
@@ -48,6 +48,8 @@ services:
         certbot renew --webroot -w /var/lib/letsencrypt --quiet --agree-tos --post-hook "nginx -s reload";
         sleep 12h;
       done'
+    depends_on:
+      - nginx
     networks:
       - frontend-network
       - backend-network
@@ -81,8 +83,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    depends_on:
-      - certbot
+#    depends_on:
+#      - certbot
     restart: always
 
   nginx-static:
@@ -107,7 +109,7 @@ services:
       timeout: 5s
       retries: 3
     depends_on:
-      - certbot
+      - statsboards-backend
     restart: always
 
   nginx:
@@ -125,9 +127,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    depends_on:
-      - statsboards-backend
-      - nginx-static
+#    depends_on:
+#      - statsboards-backend
+#      - nginx-static
     networks:
       - backend-network
       - frontend-network
