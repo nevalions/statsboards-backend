@@ -1,11 +1,16 @@
 # Use the official Nginx Alpine image
 FROM nginx:alpine
+# Create necessary directories
+RUN mkdir -p /etc/letsencrypt/live/statsboard.ru
 
 # Install curl for health checks
-RUN apk --no-cache add curl
+RUN apk --no-cache add curl openssl
 
-# Create empty SSL config to prevent nginx from failing
-RUN touch /etc/nginx/conf.d/ssl.conf.disabled
+# Generate a temporary self-signed certificate
+RUN openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+  -keyout /etc/letsencrypt/live/statsboard.ru/privkey.pem \
+  -out /etc/letsencrypt/live/statsboard.ru/fullchain.pem \
+  -subj "/CN=statsboard.ru" \
 
 # Copy the Nginx config
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
