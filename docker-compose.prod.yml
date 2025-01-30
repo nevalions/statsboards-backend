@@ -72,9 +72,9 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - certbot-etc:/etc/letsencrypt
+#      - certbot-etc:/etc/letsencrypt
       - /etc/letsencrypt:/etc/letsencrypt
-#      - static-files:/app/static:rw  # Read-write access for backend
+      - static-files:/app/static:rw  # Read-write access for backend
       - poetry-cache:/root/.cache/pypoetry
     env_file:
       - .env.prod
