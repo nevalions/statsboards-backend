@@ -20,6 +20,24 @@ volumes:
   webroot:  # Define a named volume for webroot instead of certbot-var
 
 services:
+  nginx-init:
+    labels:
+      logging: "promtail"
+      logging_jobname: "backend_nginx_init_logs"
+    container_name: statsboards-nginx-init
+    volumes:
+      - webroot:/var/lib/letsencrypt  # Serve the Certbot challenge
+    build:
+      context: ./
+      dockerfile: Dockerfile.nginx.init
+    ports:
+      - "80:80"
+    networks:
+      - backend-network
+      - frontend-network
+      - custom_bridge
+    restart: always
+
   certbot:
     image: certbot/certbot:latest
     container_name: certbot-renewal
@@ -40,6 +58,34 @@ services:
       done'
     depends_on:
       - nginx
+
+  nginx:
+    labels:
+      logging: "promtail"
+      logging_jobname: "backend_nginx_logs"
+    container_name: statsboards-backend-prod-nginx
+    build:
+      context: ./
+      dockerfile: Dockerfile.nginx
+    volumes:
+      - certbot-etc:/etc/letsencryptd
+      - webroot:/var/lib/letsencrypt  # Use the same webroot volume
+    #      - /etc/letsencrypt:/etc/letsencrypt
+    ports:
+#      - "80:80"
+      - "443:443"
+    depends_on:
+      - certbot
+    networks:
+      - backend-network
+      - frontend-network
+      - custom_bridge
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -ks --fail https://localhost/back-nginx-health | grep -q '\"status\": \"ok\"'" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: always
 
   statsboards-backend:
     labels:
@@ -66,7 +112,6 @@ services:
       - custom_bridge
     healthcheck:
       test: [ "CMD-SHELL", "curl -ks --fail https://localhost/api/health || exit 1" ]
-#      test: [ "CMD-SHELL", "curl -ks --fail https://localhost/api/health | grep -q '\"status\": \"ok\"'" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -99,34 +144,7 @@ services:
       - statsboards-backend
     restart: always
 
-  nginx:
-    labels:
-      logging: "promtail"
-      logging_jobname: "backend_nginx_logs"
-    container_name: statsboards-backend-prod-nginx
-    build:
-      context: ./
-      dockerfile: Dockerfile.nginx
-    volumes:
-      - certbot-etc:/etc/letsencryptd
-      - webroot:/var/lib/letsencrypt  # Use the same webroot volume
-#      - /etc/letsencrypt:/etc/letsencrypt
-    ports:
-      - "80:80"
-      - "443:443"
-#    depends_on:
-#      - statsboards-backend
-#      - nginx-static
-    networks:
-      - backend-network
-      - frontend-network
-      - custom_bridge
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -ks --fail https://localhost/back-nginx-health | grep -q '\"status\": \"ok\"'" ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    restart: always
+
 
 # - /home/www/code/statsboards-backend/static:/app/static
 #      - /home/www/code/statsboards-backend/static:/usr/share/nginx/static
