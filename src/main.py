@@ -60,8 +60,8 @@ async def lifespan(_app: FastAPI):
         await db.close()
 
 
-# app = FastAPI(lifespan=lifespan)
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
+# app = FastAPI()
 
 @app.get("/health")
 async def health_check():
