@@ -41,7 +41,7 @@ class Database:
     def __init__(self, db_url: str, echo: bool = False):
         self.logger = get_logger("backend_logger_base_db", self)
         # self.logger.debug(f"Initializing Database with URL: {db_url}, Echo: {echo}")
-        self.logger.debug(f"Initializing Database with URL: xxx, Echo: {echo}")
+        self.logger.info(f"Initializing Database with URL: {db_url}, Echo: {echo}")
 
         try:
             self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
@@ -49,9 +49,9 @@ class Database:
                 bind=self.engine, class_=AsyncSession, expire_on_commit=False
             )
         except SQLAlchemyError as e:
-            self.logger.error(f"Error initializing Database engine: {e}")
+            self.logger.error(f"Error initializing Database engine: {e}", exc_info=True)
         except Exception as e:
-            self.logger.error(f"Unexpected error initializing Database: {e}")
+            self.logger.error(f"Unexpected error initializing Database: {e}", exc_info=True)
 
     async def test_connection(self, test_query: str = "SELECT 1"):
         try:
@@ -59,14 +59,14 @@ class Database:
                 await connection.execute(text(test_query))
                 self.logger.info("Database connection successful.")
         except SQLAlchemyError as e:
-            self.logger.error(f"SQLAlchemy error during connection test: {e}")
+            self.logger.error(f"SQLAlchemy error during connection test: {e}", exc_info=True)
             raise
         except OSError as e:
-            self.logger.critical(f"OS error during connection test: {e}")
+            self.logger.critical(f"OS error during connection test: {e}", exc_info=True)
             raise
         except Exception as e:
             self.logger.critical(
-                f"Unexpected error during database connection test: {e}"
+                f"Unexpected error during database connection test: {e}", exc_info=True
             )
             raise
 

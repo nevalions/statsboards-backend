@@ -53,7 +53,7 @@ async def lifespan(_app: FastAPI):
         await db.test_connection()
         yield
     except Exception as e:
-        db_logger.critical(f"Critical error during startup: {e}")
+        db_logger.critical(f"Critical error during startup: {e}", exc_info=True)
         raise e
     finally:
         db_logger.info("Shutting down application lifespan after test connection.")
