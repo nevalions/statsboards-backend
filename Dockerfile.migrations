@@ -4,10 +4,15 @@ FROM python:3.12-slim
 # Set the working directory
 WORKDIR /app
 
+RUN pip install --no-cache-dir poetry
+
 # Copy necessary files
 COPY pyproject.toml poetry.lock ./
 COPY alembic alembic
 COPY src src
+
+# Configure Poetry to avoid creating a virtual environment inside the container
+RUN poetry config virtualenvs.create false
 
 # Install dependencies using Poetry
 RUN poetry install --without dev --no-interaction --no-ansi
