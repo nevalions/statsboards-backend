@@ -10,7 +10,7 @@ COPY alembic alembic
 COPY src src
 
 # Install dependencies using Poetry
-RUN pip install poetry && poetry install --no-dev
+RUN poetry install --without dev --no-interaction --no-ansi
 
 # Set environment variables (modify as needed)
 ENV PYTHONUNBUFFERED=1
