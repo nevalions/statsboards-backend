@@ -36,13 +36,13 @@ if __name__ == "__main__":
         "workers": 4,
         "worker_class": "uvicorn.workers.UvicornWorker",
         "timeout": 120,
-        "loglevel": "info",
+        "loglevel": "debug",
         "errorlog": "-",
         "accesslog": "-",
         # Add SSL configuration
-        # "keyfile": "/etc/letsencrypt/live/statsboard.ru/privkey.pem",
-        # "certfile": "/etc/letsencrypt/live/statsboard.ru/fullchain.pem",
-        # "ssl": True,
+        "keyfile": "/etc/letsencrypt/live/statsboard.ru/privkey.pem",
+        "certfile": "/etc/letsencrypt/live/statsboard.ru/fullchain.pem",
+        "ssl": True,
     }
 
     try:
