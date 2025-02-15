@@ -40,9 +40,9 @@ if __name__ == "__main__":
         "errorlog": "-",
         "accesslog": "-",
         # Add SSL configuration
-        # "keyfile": "/etc/letsencrypt/live/butakov.su/privkey.pem",
-        # "certfile": "/etc/letsencrypt/live/butakov.su/fullchain.pem",
-        # "ssl": True,
+        "keyfile": "/etc/letsencrypt/live/butakov.su/privkey.pem",
+        "certfile": "/etc/letsencrypt/live/butakov.su/fullchain.pem",
+        "ssl": True,
     }
 
     try:
