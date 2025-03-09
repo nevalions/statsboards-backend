@@ -15,4 +15,5 @@ activate.sh
 /.env.dev
 /.env.test.local
 /.env.test.in.docker
-
+.idea/
+.vscode/
