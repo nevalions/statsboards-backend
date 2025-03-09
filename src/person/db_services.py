@@ -1,8 +1,9 @@
 from fastapi import HTTPException
 
 from src.core.models import BaseServiceDB, PersonDB
+
+from ..logging_config import get_logger, setup_logging
 from .schemas import PersonSchemaCreate, PersonSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 ITEM = "PERSON"
@@ -15,7 +16,7 @@ class PersonServiceDB(BaseServiceDB):
     ):
         super().__init__(database, PersonDB)
         self.logger = get_logger("backend_logger_PersonServiceDB", self)
-        self.logger.debug(f"Initialized PersonServiceDB")
+        self.logger.debug("Initialized PersonServiceDB")
 
     async def create_or_update_person(
         self,
