@@ -1151,14 +1151,36 @@ class BaseServiceDB:
                         order_column_two.asc() if ascending else order_column_two.desc()
                     )
 
-                    # Create a query that directly fetches only the paginated related items
-                    foreign_key_name = (
-                        f"{self.model.__tablename__}_id"  # e.g., "tournament_id"
-                    )
+                    # Find the correct foreign key column in the related model
+                    foreign_keys = [
+                        col
+                        for col in related_model.__table__.columns
+                        if col.foreign_keys
+                        and self.model.__tablename__
+                        in [fk.column.table.name for fk in col.foreign_keys]
+                    ]
+
+                    if not foreign_keys:
+                        self.logger.error(
+                            f"No valid foreign key found for relationship {related_property}"
+                        )
+                        return 0
+
+                    # Get the first column from the set
+                    foreign_key_column = foreign_keys[0]
+
+                    self.logger.debug(f"Foreign Key Column: {foreign_key_column.name}")
+
+                    # # Create a query that directly fetches only the paginated related items
+                    # foreign_key_name = (
+                    #     f"{self.model.__tablename__}_id"  # e.g., "tournament_id"
+                    # )
 
                     query = (
                         select(related_model)
-                        .where(getattr(related_model, foreign_key_name) == item_id)
+                        .where(
+                            getattr(related_model, foreign_key_column.name) == item_id
+                        )
                         .order_by(order_expr)
                         .order_by(order_expr_two)
                         .offset(skip)
