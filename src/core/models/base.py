@@ -28,6 +28,7 @@ from sqlalchemy.orm import (
     mapped_column,
     selectinload,
 )
+from sqlalchemy.sql import func
 from starlette.websockets import WebSocket
 
 from src.core.config import settings
@@ -1023,6 +1024,77 @@ class BaseServiceDB:
     #             return getattr(item.scalars().one(), related_property)
     #         except NoResultFound:
     #             return None
+    async def get_count_of_items_level_one_by_id(
+        self,
+        item_id: int,
+        related_property: str,
+    ):
+        async with self.db.async_session() as session:
+            self.logger.debug(
+                f"Getting item first with id {item_id} and property {related_property}"
+            )
+
+        # Get the item first
+        query = select(self.model).where(self.model.id == item_id)
+        item_result = await session.execute(query)
+        item = item_result.scalars().one_or_none()
+
+        if not item:
+            return 0
+        try:
+            self.logger.debug(
+                f"Fetching count of related items for {item_id} and property {related_property}"
+            )
+
+            # Validate relationship property
+            if not hasattr(self.model, related_property):
+                self.logger.error(
+                    f"Invalid relationship: {related_property} does not exist"
+                )
+                return 0
+
+            relationship = getattr(self.model, related_property)
+
+            # Ensure it's a relationship
+            if not hasattr(relationship.property, "mapper"):
+                self.logger.error(f"{related_property} is not a valid relationship")
+                return 0
+
+            related_model = relationship.property.mapper.class_
+
+            # Find the correct foreign key column in the related model
+            foreign_keys = [
+                col
+                for col in related_model.__table__.columns
+                if col.foreign_keys
+                and self.model.__tablename__
+                in [fk.column.table.name for fk in col.foreign_keys]
+            ]
+
+            if not foreign_keys:
+                self.logger.error(
+                    f"No valid foreign key found for relationship {related_property}"
+                )
+                return 0
+
+            # Get the first column from the set
+            foreign_key_column = foreign_keys[0]
+            # foreign_key_column = next(iter(fk_columns))
+
+            self.logger.debug(f"Foreign Key Column: {foreign_key_column.name}")
+
+            # Correct query to count related items
+            query_count = select(func.count()).where(
+                getattr(related_model, foreign_key_column.name) == item_id
+            )
+
+            self.logger.debug(f"Generated Query: {query_count}")
+
+            result = await session.execute(query_count)
+            return result.scalar() or 0  # Ensure an integer return value
+
+        except NoResultFound:
+            return 0
 
     async def get_related_item_level_one_by_id(
         self,
@@ -1041,11 +1113,11 @@ class BaseServiceDB:
                     f"for model {self.model.__name__}"
                 )
 
-                # Get the tournament first (without pagination)
+                # Get the item first (without pagination)
                 query = select(self.model).where(self.model.id == item_id)
 
                 item_result = await session.execute(query)
-                item = item_result.scalars().one()
+                item = item_result.scalars().one_or_none()
 
                 # Now get the related items with pagination
                 if skip is not None and limit is not None:

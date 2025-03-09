@@ -92,6 +92,13 @@ class TournamentAPIRouter(
             self.logger.debug(f"Get players by tournament id:{tournament_id} endpoint")
             return await self.service.get_players_by_tournament(tournament_id)
 
+        @router.get("/id/{tournament_id}/matches/count")
+        async def get_count_of_matches_by_tournament_id_endpoint(tournament_id: int):
+            self.logger.debug(
+                f"Get count of matches by tournament id:{tournament_id} endpoint"
+            )
+            return await self.service.get_count_of_matches_by_tournament(tournament_id)
+
         @router.get("/id/{tournament_id}/matches/")
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get matches by tournament id:{tournament_id} endpoint")
@@ -107,6 +114,9 @@ class TournamentAPIRouter(
             order_exp: str = "id",
             order_exp_two: str = "id",
         ):
+            self.logger.debug(
+                f"Get matches by tournament id:{tournament_id} with pagination and order endpoint"
+            )
             skip = (page - 1) * items_per_page
             matches = await self.service.get_matches_by_tournament_with_pagination(
                 tournament_id=tournament_id,

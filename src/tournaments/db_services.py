@@ -150,6 +150,16 @@ class TournamentServiceDB(BaseServiceDB):
                 f"Error on get_players_by_tournament: {ex}", exc_info=True
             )
 
+    async def get_count_of_matches_by_tournament(
+        self,
+        tournament_id: int,
+    ):
+        self.logger.debug(f"Get matches by {ITEM} id:{tournament_id}")
+        return await self.get_count_of_items_level_one_by_id(
+            tournament_id,
+            "matches",
+        )
+
     async def get_matches_by_tournament(
         self,
         tournament_id: int,
