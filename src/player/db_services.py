@@ -1,8 +1,9 @@
 from fastapi import HTTPException
 
 from src.core.models import BaseServiceDB, PlayerDB
-from .schemas import PlayerSchemaCreate, PlayerSchemaUpdate, PlayerSchema
+
 from ..logging_config import get_logger, setup_logging
+from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
 
 setup_logging()
 ITEM = "PLAYER"
@@ -15,7 +16,7 @@ class PlayerServiceDB(BaseServiceDB):
     ):
         super().__init__(database, PlayerDB)
         self.logger = get_logger("backend_logger_PlayerServiceDB", self)
-        self.logger.debug(f"Initialized PlayerServiceDB")
+        self.logger.debug("Initialized PlayerServiceDB")
 
     async def create_or_update_player(
         self,

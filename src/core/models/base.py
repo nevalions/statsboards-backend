@@ -7,20 +7,23 @@ from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
-    List,
-    Dict,
     Coroutine,
+    Dict,
+    List,
 )
 
 import asyncpg
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import select, update, Result, Column, TextClause, text
-from sqlalchemy.exc import NoResultFound, SQLAlchemyError, IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import Column, Result, TextClause, select, text, update
+from sqlalchemy.exc import IntegrityError, NoResultFound, SQLAlchemyError
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import (
+    DeclarativeBase,
     Mapped,
     mapped_column,
     selectinload,
@@ -28,7 +31,7 @@ from sqlalchemy.orm import (
 from starlette.websockets import WebSocket
 
 from src.core.config import settings
-from src.logging_config import setup_logging, get_logger
+from src.logging_config import get_logger, setup_logging
 
 setup_logging()
 connection_socket_logger_helper = logging.getLogger("backend_logger_ConnectionManager")
@@ -51,7 +54,9 @@ class Database:
         except SQLAlchemyError as e:
             self.logger.error(f"Error initializing Database engine: {e}", exc_info=True)
         except Exception as e:
-            self.logger.error(f"Unexpected error initializing Database: {e}", exc_info=True)
+            self.logger.error(
+                f"Unexpected error initializing Database: {e}", exc_info=True
+            )
 
     async def test_connection(self, test_query: str = "SELECT 1"):
         try:
@@ -59,7 +64,9 @@ class Database:
                 await connection.execute(text(test_query))
                 self.logger.info("Database connection successful.")
         except SQLAlchemyError as e:
-            self.logger.error(f"SQLAlchemy error during connection test: {e}", exc_info=True)
+            self.logger.error(
+                f"SQLAlchemy error during connection test: {e}", exc_info=True
+            )
             raise
         except OSError as e:
             self.logger.critical(f"OS error during connection test: {e}", exc_info=True)
@@ -1021,6 +1028,11 @@ class BaseServiceDB:
         self,
         item_id: int,
         related_property: str,
+        skip: int = None,
+        limit: int = None,
+        order_by: str = "id",
+        order_by_two: str = "id",
+        ascending: bool = True,
     ):
         async with self.db.async_session() as session:
             try:
@@ -1028,30 +1040,133 @@ class BaseServiceDB:
                     f"Fetching related items for item id one level: {item_id} and property: {related_property} "
                     f"for model {self.model.__name__}"
                 )
-                item = await session.execute(
-                    select(self.model)
-                    .where(self.model.id == item_id)
-                    .options(selectinload(getattr(self.model, related_property)))
-                    # .options(joinedload(getattr(self.model, related_property)))
-                )
-                result = getattr(item.scalars().one(), related_property)
-                if result:
-                    self.logger.debug(
-                        f"Related item {result} found for property: {related_property} "
-                        f"for model {self.model.__name__}"
+
+                # Get the tournament first (without pagination)
+                query = select(self.model).where(self.model.id == item_id)
+
+                item_result = await session.execute(query)
+                item = item_result.scalars().one()
+
+                # Now get the related items with pagination
+                if skip is not None and limit is not None:
+                    # Get the related model class
+                    relationship = getattr(self.model, related_property)
+                    related_model = relationship.property.mapper.class_
+
+                    # Get the order column
+                    try:
+                        order_column = getattr(related_model, order_by)
+                    except AttributeError:
+                        self.logger.warning(
+                            f"Order column {order_by} not found, defaulting to id"
+                        )
+                        order_column = related_model.id
+
+                    try:
+                        order_column_two = getattr(related_model, order_by_two)
+                    except AttributeError:
+                        self.logger.warning(
+                            f"Order column {order_by_two} not found, defaulting to id"
+                        )
+                        order_column_two = related_model.id
+
+                    # Apply sorting direction
+                    order_expr = (
+                        order_column.asc() if ascending else order_column.desc()
                     )
+
+                    order_expr_two = (
+                        order_column_two.asc() if ascending else order_column_two.desc()
+                    )
+
+                    # Create a query that directly fetches only the paginated related items
+                    foreign_key_name = (
+                        f"{self.model.__tablename__}_id"  # e.g., "tournament_id"
+                    )
+
+                    query = (
+                        select(related_model)
+                        .where(getattr(related_model, foreign_key_name) == item_id)
+                        .order_by(order_expr)
+                        .order_by(order_expr_two)
+                        .offset(skip)
+                        .limit(limit)
+                    )
+
+                    result = await session.execute(query)
+                    related_items = result.scalars().all()
+
+                    self.logger.debug(
+                        f"Returning paginated results ({len(related_items)} items) for property: {related_property} "
+                        f"(skip={skip}, limit={limit})"
+                    )
+                    return related_items
                 else:
-                    self.logger.debug(
-                        f"No related item found one level for property: {related_property} "
-                        f"for model {self.model.__name__}"
+                    # Return all related items
+                    query = (
+                        select(self.model)
+                        .where(self.model.id == item_id)
+                        .options(selectinload(getattr(self.model, related_property)))
                     )
-                return result
+
+                    item = await session.execute(query)
+                    all_related_items = getattr(item.scalars().one(), related_property)
+
+                    if all_related_items:
+                        self.logger.debug(
+                            f"Related items ({len(all_related_items)}) found for property: {related_property} "
+                            f"for model {self.model.__name__}"
+                        )
+                    else:
+                        self.logger.debug(
+                            f"No related item found one level for property: {related_property} "
+                            f"for model {self.model.__name__}"
+                        )
+                    return all_related_items
+
             except NoResultFound:
                 self.logger.warning(
                     f"No result found for item id one level: {item_id} and property: {related_property} "
                     f"for model {self.model.__name__}"
                 )
                 return None
+
+    #
+    # async def get_related_item_level_one_by_id(
+    #     self,
+    #     item_id: int,
+    #     related_property: str,
+    # ):
+    #     async with self.db.async_session() as session:
+    #         try:
+    #             self.logger.debug(
+    #                 f"Fetching related items for item id one level: {item_id} and property: {related_property} "
+    #                 f"for model {self.model.__name__}"
+    #             )
+    #             item = await session.execute(
+    #                 select(self.model)
+    #                 .where(self.model.id == item_id)
+    #                 .options(selectinload(getattr(self.model, related_property)))
+    #                 # .options(joinedload(getattr(self.model, related_property)))
+    #             )
+    #             result = getattr(item.scalars().one(), related_property)
+    #             if result:
+    #                 self.logger.debug(
+    #                     f"Related item {result} found for property: {related_property} "
+    #                     f"for model {self.model.__name__}"
+    #                 )
+    #             else:
+    #                 self.logger.debug(
+    #                     f"No related item found one level for property: {related_property} "
+    #                     f"for model {self.model.__name__}"
+    #                 )
+    #             return result
+    #         except NoResultFound:
+    #             self.logger.warning(
+    #                 f"No result found for item id one level: {item_id} and property: {related_property} "
+    #                 f"for model {self.model.__name__}"
+    #             )
+    #             return None
 
     async def get_nested_related_item_by_id(
         self,

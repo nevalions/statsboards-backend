@@ -1,14 +1,14 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import BaseServiceDB, MatchDB, TeamDB, PlayerMatchDB
-from src.logging_config import setup_logging, get_logger
+from src.core.models import BaseServiceDB, MatchDB, PlayerMatchDB, TeamDB
+from src.logging_config import get_logger, setup_logging
 from src.player_match.db_services import PlayerMatchServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
-from .shemas import MatchSchemaCreate, MatchSchemaUpdate
 
+from .shemas import MatchSchemaCreate, MatchSchemaUpdate
 
 setup_logging()
 ITEM = "MATCH"
@@ -18,7 +18,7 @@ class MatchServiceDB(BaseServiceDB):
     def __init__(self, database):
         super().__init__(database, MatchDB)
         self.logger = get_logger("backend_logger_MatchServiceDB", self)
-        self.logger.debug(f"Initialized MatchServiceDB")
+        self.logger.debug("Initialized MatchServiceDB")
 
     async def create_or_update_match(self, m: MatchSchemaCreate):
         try:

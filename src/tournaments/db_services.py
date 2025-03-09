@@ -1,10 +1,11 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import BaseServiceDB, TournamentDB, PlayerTeamTournamentDB
-from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
-from ..logging_config import setup_logging, get_logger
+from src.core.models import BaseServiceDB, PlayerTeamTournamentDB, TournamentDB
+
+from ..logging_config import get_logger, setup_logging
 from ..sponsor_lines.db_services import SponsorLineServiceDB
+from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 
 setup_logging()
 ITEM = "TOURNAMENT"
@@ -17,7 +18,7 @@ class TournamentServiceDB(BaseServiceDB):
             TournamentDB,
         )
         self.logger = get_logger("backend_logger_TournamentServiceDB", self)
-        self.logger.debug(f"Initialized TournamentServiceDB")
+        self.logger.debug("Initialized TournamentServiceDB")
 
     async def create_or_update_tournament(
         self,
@@ -157,6 +158,26 @@ class TournamentServiceDB(BaseServiceDB):
         return await self.get_related_item_level_one_by_id(
             tournament_id,
             "matches",
+        )
+
+    async def get_matches_by_tournament_with_pagination(
+        self,
+        tournament_id: int,
+        skip: int = 0,
+        limit: int = 20,
+        order_exp: str = "id",
+        order_exp_two: str = "id",
+    ):
+        self.logger.debug(
+            f"Get matches by {ITEM} id:{tournament_id} with pagination: skip={skip}, limit={limit}"
+        )
+        return await self.get_related_item_level_one_by_id(
+            tournament_id,
+            "matches",
+            skip=skip,
+            limit=limit,
+            order_by=order_exp,
+            order_by_two=order_exp_two,
         )
 
     async def get_main_tournament_sponsor(self, tournament_id: int):

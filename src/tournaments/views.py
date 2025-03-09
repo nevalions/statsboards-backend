@@ -1,27 +1,27 @@
 import json
 from typing import List, Optional
 
-from fastapi import HTTPException, Request, Depends, UploadFile, File
-
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi import Depends, File, HTTPException, Path, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.core import BaseRouter, MinimalBaseRouter, db
-from src.core.config import templates, uploads_path
+from src.core.config import templates
+from src.helpers.fetch_helpers import fetch_list_of_matches_data
+from src.pars_eesl.pars_season import parse_season_and_create_jsons
+from src.seasons.db_services import SeasonServiceDB
+
+from ..helpers.file_service import file_service
+from ..logging_config import get_logger, setup_logging
+from ..sponsor_lines.schemas import SponsorLineSchema
+from ..sponsors.schemas import SponsorSchema
 from .db_services import TournamentServiceDB
 from .schemas import (
     TournamentSchema,
     TournamentSchemaCreate,
     TournamentSchemaUpdate,
-    UploadTournamentLogoResponse,
     UploadResizeTournamentLogoResponse,
+    UploadTournamentLogoResponse,
 )
-from src.helpers.fetch_helpers import fetch_list_of_matches_data
-from src.seasons.db_services import SeasonServiceDB
-from src.pars_eesl.pars_season import parse_season_and_create_jsons
-from ..helpers.file_service import file_service
-from ..logging_config import get_logger, setup_logging
-from ..sponsor_lines.schemas import SponsorLineSchema
-from ..sponsors.schemas import SponsorSchema
 
 setup_logging()
 
@@ -36,7 +36,7 @@ class TournamentAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_TournamentAPIRouter", self)
-        self.logger.debug(f"Initialized TournamentAPIRouter")
+        self.logger.debug("Initialized TournamentAPIRouter")
 
     def route(self):
         router = super().route()
@@ -78,7 +78,7 @@ class TournamentAPIRouter(
             if tournament is None:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Tournament eesl_id({eesl_id}) " f"not found",
+                    detail=f"Tournament eesl_id({eesl_id}) not found",
                 )
             return tournament.__dict__
 
@@ -96,6 +96,26 @@ class TournamentAPIRouter(
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get matches by tournament id:{tournament_id} endpoint")
             return await self.service.get_matches_by_tournament(tournament_id)
+
+        @router.get(
+            "/id/{tournament_id}/matches/{page}/{items_per_page}/order/{order_exp/order_two/{order_exp_two}"
+        )
+        async def get_tournament_matches_with_pagination_endpoint(
+            tournament_id: int,
+            page: int = Path(..., ge=1),
+            items_per_page: int = Path(..., ge=1, le=100),
+            order_exp: str = "id",
+            order_exp_two: str = "id",
+        ):
+            skip = (page - 1) * items_per_page
+            matches = await self.service.get_matches_by_tournament_with_pagination(
+                tournament_id=tournament_id,
+                skip=skip,
+                limit=items_per_page,
+                order_exp=order_exp,
+                order_exp_two=order_exp_two,
+            )
+            return matches
 
         @router.get(
             "/id/{tournament_id}/main_sponsor/", response_model=Optional[SponsorSchema]
@@ -205,7 +225,7 @@ class TournamentAPIRouter(
                     )
                     return created_tournaments
                 else:
-                    self.logger.warning(f"Teams list is empty")
+                    self.logger.warning("Teams list is empty")
                     return []
             except Exception as ex:
                 self.logger.error(
