@@ -17,3 +17,4 @@ activate.sh
 /.env.test.in.docker
 .idea/
 .vscode/
+.ropeproject
