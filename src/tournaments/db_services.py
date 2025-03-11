@@ -10,7 +10,6 @@ from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 setup_logging()
 ITEM = "TOURNAMENT"
 
-
 class TournamentServiceDB(BaseServiceDB):
     def __init__(self, database):
         super().__init__(
@@ -53,18 +52,25 @@ class TournamentServiceDB(BaseServiceDB):
     async def update_tournament_by_eesl(
         self,
         eesl_field_name: str,
-        t: TournamentSchemaUpdate,
+        t: TournamentSchemaUpdate | TournamentSchemaCreate,
     ):
         self.logger.debug(f"Update {ITEM} {eesl_field_name}:{t.tournament_eesl_id}")
-        return await self.update_item_by_eesl_id(
-            eesl_field_name,
-            t.tournament_eesl_id,
-            t,
-        )
+        if t.tournament_eesl_id:
+            return await self.update_item_by_eesl_id(
+                eesl_field_name,
+                t.tournament_eesl_id,
+                t,
+            )
+        else:
+            self.logger.error(f"Error updating {ITEM} with eesl_id")
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
+            )
 
     async def create_tournament(
         self,
-        t: TournamentSchemaCreate,
+        t: TournamentSchemaCreate | TournamentSchemaUpdate,
     ):
         try:
             tournament = self.model(
