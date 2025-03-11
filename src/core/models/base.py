@@ -40,7 +40,6 @@ db_logger_helper = logging.getLogger("backend_logger_base_db")
 
 # DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
 
-
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
         self.logger = get_logger("backend_logger_base_db", self)
@@ -49,7 +48,7 @@ class Database:
 
         try:
             self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
-            self.async_session: AsyncSession | Any = async_sessionmaker(
+            self.async_session: Any = async_sessionmaker(
                 bind=self.engine, class_=AsyncSession, expire_on_commit=False
             )
         except SQLAlchemyError as e:
@@ -83,7 +82,7 @@ class Database:
         self.logger.info("Database connection closed.")
 
 
-db = Database(db_url=settings.db.db_url, echo=settings.db_echo)
+db = Database(db_url=str(settings.db.db_url), echo=settings.db_echo)
 
 
 class MatchDataWebSocketManager:
@@ -277,7 +276,7 @@ class ConnectionManager:
         self.logger = logging.getLogger("backend_logger_ConnectionManager")
         self.logger.info("ConnectionManager initialized")
 
-    async def connect(self, websocket: WebSocket, client_id: str, match_id: int = None):
+    async def connect(self, websocket: WebSocket, client_id: str, match_id: int | None = None):
         self.logger.info(f"Active Connections len: {len(self.active_connections)}")
         self.logger.info(f"Active Connections {self.active_connections}")
         self.logger.info(
@@ -372,7 +371,7 @@ class ConnectionManager:
         # self.logger.debug(f"Queue: {queue}")
         return queue
 
-    async def send_to_all(self, data: str, match_id: str = None):
+    async def send_to_all(self, data: str, match_id: str | None = None):
         self.logger.debug(f"Sending data: {data} with match_id: {match_id}")
         self.logger.debug(f"Current match with match_id: {match_id}")
         if match_id:
@@ -1100,8 +1099,8 @@ class BaseServiceDB:
         self,
         item_id: int,
         related_property: str,
-        skip: int = None,
-        limit: int = None,
+        skip: int | None = None,
+        limit: int | None = None,
         order_by: str = "id",
         order_by_two: str = "id",
         ascending: bool = True,
@@ -1274,19 +1273,20 @@ class BaseServiceDB:
         )
 
         if related_item is not None:
-            _id = related_item.id
-            self.logger.debug(
-                f"Fetching nested related items for item id: {_id} and property: {related_property} "
-                f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
-            )
-            item = await service.get_related_item_level_one_by_id(
-                _id, nested_related_property
-            )
-            self.logger.debug(
-                f"Related item {item} found for item id: {_id} "
-                f"and nested_related_property: {nested_related_property} for model {self.model.__name__}"
-            )
-            return item
+            if related_item.id:
+                _id = related_item.id
+                self.logger.debug(
+                    f"Fetching nested related items for item id: {_id} and property: {related_property} "
+                    f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
+                )
+                item = await service.get_related_item_level_one_by_id(
+                    _id, nested_related_property
+                )
+                self.logger.debug(
+                    f"Related item {item} found for item id: {_id} "
+                    f"and nested_related_property: {nested_related_property} for model {self.model.__name__}"
+                )
+                return item
         self.logger.warning(
             f"No result found for item id: {item_id} and property: {related_property} "
             f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
@@ -1451,7 +1451,7 @@ class BaseServiceDB:
             )
             return None
 
-    @staticmethod
+    # @staticmethod
     async def upload_file(self, upload_file: UploadFile):
         self.logger.debug(f"Current Working Directory for uploading: {os.getcwd()}")
 
@@ -1461,6 +1461,8 @@ class BaseServiceDB:
         self.logger.debug(
             f"Upload Directory: {upload_dir.resolve()} and file name {upload_file.filename}"
         )
+        if not upload_file.filename:
+            raise
 
         try:
             upload_dir.mkdir(parents=True, exist_ok=True)
