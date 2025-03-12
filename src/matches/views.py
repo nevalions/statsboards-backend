@@ -1,46 +1,44 @@
 import asyncio
 import logging
-from asyncio import timeout
 from typing import List
 
-from fastapi import HTTPException, Request, Depends, status, WebSocket, UploadFile, File
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi import Depends, File, HTTPException, Request, UploadFile, WebSocket, status
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.websockets import WebSocketDisconnect, WebSocketState
-from websockets import ConnectionClosedOK, ConnectionClosedError
+from websockets import ConnectionClosedError, ConnectionClosedOK
 
-from src.core import BaseRouter, db, MinimalBaseRouter
+from src.core import BaseRouter, MinimalBaseRouter, db
 from src.core.config import templates
 from src.matchdata.db_services import MatchDataServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
-from .db_services import MatchServiceDB
-from .shemas import (
-    MatchSchemaCreate,
-    MatchSchemaUpdate,
-    MatchSchema,
-)
+
 from ..core.models.base import (
-    ws_manager,
     connection_manager,
-    ConnectionManager,
+    ws_manager,
 )
 from ..gameclocks.db_services import GameClockServiceDB
 from ..gameclocks.schemas import GameClockSchemaCreate
 from ..helpers.file_service import file_service
-from ..logging_config import setup_logging, get_logger
+from ..logging_config import get_logger, setup_logging
 from ..matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 from ..pars_eesl.pars_tournament import (
-    parse_tournament_matches_index_page_eesl,
     ParsedMatchData,
+    parse_tournament_matches_index_page_eesl,
 )
 from ..playclocks.db_services import PlayClockServiceDB
 from ..playclocks.schemas import PlayClockSchemaCreate
 from ..scoreboards.shemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from ..sponsors.db_services import SponsorServiceDB
 from ..teams.db_services import TeamServiceDB
-from ..teams.schemas import UploadTeamLogoResponse, UploadResizeTeamLogoResponse
+from ..teams.schemas import UploadResizeTeamLogoResponse, UploadTeamLogoResponse
 from ..tournaments.db_services import TournamentServiceDB
-
+from .db_services import MatchServiceDB
+from .shemas import (
+    MatchSchema,
+    MatchSchemaCreate,
+    MatchSchemaUpdate,
+)
 
 setup_logging()
 websocket_logger = logging.getLogger("backend_logger_MatchDataWebSocketManager")
@@ -62,7 +60,7 @@ class MatchAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_MatchAPIRouter", self)
-        self.logger.debug(f"Initialized MatchAPIRouter")
+        self.logger.debug("Initialized MatchAPIRouter")
 
     def route(self):
         router = super().route()
@@ -80,7 +78,7 @@ class MatchAPIRouter(
                 return new_match.__dict__
             else:
                 self.logger.error(f"Error creating match with data: {match}")
-                raise HTTPException(status_code=409, detail=f"Match creation fail")
+                raise HTTPException(status_code=409, detail="Match creation fail")
 
         @router.post(
             "/create_with_full_data/",
@@ -175,7 +173,7 @@ class MatchAPIRouter(
 
             if match_update is None:
                 raise HTTPException(
-                    status_code=404, detail=f"Match id({item_id}) " f"not found"
+                    status_code=404, detail=f"Match id({item_id}) not found"
                 )
             return match_update.__dict__
 
@@ -189,7 +187,7 @@ class MatchAPIRouter(
             if match is None:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Match eesl_id({eesl_id}) " f"not found",
+                    detail=f"Match eesl_id({eesl_id}) not found",
                 )
             return match.__dict__
 
@@ -272,7 +270,7 @@ class MatchAPIRouter(
         ):
             from src.helpers.fetch_helpers import fetch_list_of_matches_data
 
-            self.logger.debug(f"Get all match data by match endpoint")
+            self.logger.debug("Get all match data by match endpoint")
             return await fetch_list_of_matches_data(all_matches)
 
         @router.get(
@@ -283,7 +281,7 @@ class MatchAPIRouter(
             match_teams_data=Depends(get_match_teams_by_match_id_endpoint),
             match_data=Depends(get_match_data_by_match_id_endpoint),
         ):
-            self.logger.debug(f"Get teams and match data by match endpoint")
+            self.logger.debug("Get teams and match data by match endpoint")
             return (
                 {
                     "status_code": status.HTTP_200_OK,
@@ -299,7 +297,7 @@ class MatchAPIRouter(
         async def full_match_data_endpoint(match_id: int):
             from src.helpers.fetch_helpers import fetch_match_data
 
-            self.logger.debug(f"Get full_match_data by match endpoint")
+            self.logger.debug("Get full_match_data by match endpoint")
             return await fetch_match_data(match_id)
 
         @router.get(
@@ -307,7 +305,7 @@ class MatchAPIRouter(
             response_class=JSONResponse,
         )
         async def full_match_data_with_scoreboard_endpoint(match_id: int):
-            self.logger.debug(f"Get full_match_data_with_scoreboard by match endpoint")
+            self.logger.debug("Get full_match_data_with_scoreboard by match endpoint")
             from src.helpers.fetch_helpers import fetch_with_scoreboard_data
 
             return await fetch_with_scoreboard_data(match_id)
@@ -356,9 +354,9 @@ class MatchAPIRouter(
 
             try:
                 from src.helpers.fetch_helpers import (
-                    fetch_with_scoreboard_data,
-                    fetch_playclock,
                     fetch_gameclock,
+                    fetch_playclock,
+                    fetch_with_scoreboard_data,
                 )
 
                 type_message_update = "message-update"
@@ -819,19 +817,17 @@ class MatchAPIRouter(
                 self.logger.debug(f"Creating simple match: {data}")
                 new_match = await self.service.create_or_update_match(data)
 
-                self.logger.debug(
-                    f"Creating default matchdata, playclock and gameclock"
-                )
+                self.logger.debug("Creating default matchdata, playclock and gameclock")
                 default_match_data = MatchDataSchemaCreate(match_id=new_match.id)
                 default_playclock = PlayClockSchemaCreate(match_id=new_match.id)
                 default_gameclock = GameClockSchemaCreate(match_id=new_match.id)
 
-                self.logger.debug(f"Get tournament and tournament main sponsor")
+                self.logger.debug("Get tournament and tournament main sponsor")
                 tournament = await tournament_service.get_by_id(new_match.tournament_id)
                 tournament_main_sponsor = await sponsor_service.get_by_id(
                     tournament.main_sponsor_id
                 )
-                self.logger.debug(f"Get teams for match")
+                self.logger.debug("Get teams for match")
                 team_a = await teams_service.get_by_id(new_match.team_a_id)
                 team_b = await teams_service.get_by_id(new_match.team_b_id)
 
@@ -840,7 +836,7 @@ class MatchAPIRouter(
                     if tournament_main_sponsor
                     else 2.0
                 )
-                self.logger.debug(f"If scoreboard exist")
+                self.logger.debug("If scoreboard exist")
                 existing_scoreboard = (
                     await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
                 )
@@ -916,7 +912,7 @@ class MatchAPIRouter(
                 eesl_tournament_id
             )
             try:
-                self.logger.debug(f"Start parsing tournament for matches")
+                self.logger.debug("Start parsing tournament for matches")
                 matches_list: List[
                     ParsedMatchData
                 ] = await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
@@ -934,7 +930,7 @@ class MatchAPIRouter(
                             if team_a:
                                 self.logger.debug(f"team_a: {team_a}")
                             else:
-                                self.logger.error(f"Home team(a) not found")
+                                self.logger.error("Home team(a) not found")
                                 raise
                             team_b = await teams_service.get_team_by_eesl_id(
                                 m["team_b_eesl_id"]
@@ -942,7 +938,7 @@ class MatchAPIRouter(
                             if team_b:
                                 self.logger.debug(f"team_a: {team_b}")
                             else:
-                                self.logger.error(f"Away team(b) not found")
+                                self.logger.error("Away team(b) not found")
                                 raise
                             match = {
                                 "week": m["week"],
@@ -1060,7 +1056,7 @@ class MatchAPIRouter(
 
                     return created_matches_full_data
                 else:
-                    self.logger.warning(f"Matches list is empty")
+                    self.logger.warning("Matches list is empty")
                     return []
             except Exception as ex:
                 self.logger.error(

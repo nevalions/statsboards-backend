@@ -1,14 +1,15 @@
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
-from .db_services import PlayerServiceDB
-from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
 from src.pars_eesl.pars_all_players_from_eesl import (
     parse_all_players_from_eesl_index_page_eesl,
 )
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate
-from ..logging_config import setup_logging, get_logger
+
+from ..logging_config import get_logger, setup_logging
+from .db_services import PlayerServiceDB
+from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
 
 setup_logging()
 
@@ -17,7 +18,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
     def __init__(self, service: PlayerServiceDB):
         super().__init__("/api/players", ["players"], service)
         self.logger = get_logger("backend_logger_PlayerAPIRouter", self)
-        self.logger.debug(f"Initialized PlayerAPIRouter")
+        self.logger.debug("Initialized PlayerAPIRouter")
 
     def route(self):
         router = super().route()
@@ -37,12 +38,11 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 self.logger.error(
                     f"Error on create or update player, got data: {player}"
                 )
-                raise HTTPException(status_code=409, detail=f"Player creation fail")
+                raise HTTPException(
+                    status_code=409, detail=f"Player creation fail {player}"
+                )
 
-        @router.get(
-            "/eesl_id/{eesl_id}",
-            response_model=PlayerSchema,
-        )
+        @router.get("/eesl_id/{eesl_id}", response_model=PlayerSchema)
         async def get_player_by_eesl_id_endpoint(
             player_eesl_id: int,
         ):
@@ -90,7 +90,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         )
         async def get_parse_player_with_person_endpoint():
             self.logger.debug(
-                f"Get parsed players with person endpoint limit 2 and season 8"
+                "Get parsed players with person endpoint limit 2 and season 8"
             )
             return await parse_all_players_from_eesl_index_page_eesl(
                 start_page=0, limit=2, season_id=8
@@ -104,7 +104,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         ):
             try:
                 self.logger.debug(
-                    f"Create parsed players with person from all eesl endpoint"
+                    "Create parsed players with person from all eesl endpoint"
                 )
                 players = await parse_all_players_from_eesl_index_page_eesl(
                     start_page=start_page, limit=None, season_id=season_id

@@ -10,6 +10,7 @@ from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 setup_logging()
 ITEM = "TOURNAMENT"
 
+
 class TournamentServiceDB(BaseServiceDB):
     def __init__(self, database):
         super().__init__(

@@ -1,12 +1,13 @@
 import asyncio
 import time
 
-from fastapi import HTTPException, BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, GameClockDB
-from .schemas import GameClockSchemaCreate, GameClockSchemaUpdate, GameClockSchemaBase
-from ..logging_config import setup_logging, get_logger
+
+from ..logging_config import get_logger, setup_logging
+from .schemas import GameClockSchemaBase, GameClockSchemaCreate, GameClockSchemaUpdate
 
 setup_logging()
 
@@ -15,7 +16,7 @@ class ClockManager:
     def __init__(self):
         self.active_gameclock_matches = {}
         self.logger = get_logger("backend_logger_ClockManager", self)
-        self.logger.debug(f"Initialized ClockManager")
+        self.logger.debug("Initialized ClockManager")
 
     async def start_clock(self, match_id):
         self.logger.debug("Start clock in clock manager")
@@ -39,7 +40,7 @@ class GameClockServiceDB(BaseServiceDB):
         super().__init__(database, GameClockDB)
         self.clock_manager = ClockManager()
         self.logger = get_logger("backend_logger_GameClockServiceDB", self)
-        self.logger.debug(f"Initialized GameClockServiceDB")
+        self.logger.debug("Initialized GameClockServiceDB")
 
     async def create_gameclock(self, gameclock: GameClockSchemaCreate):
         self.logger.debug(f"Create gameclock: {gameclock}")
@@ -52,7 +53,7 @@ class GameClockServiceDB(BaseServiceDB):
                     match_id=gameclock.match_id,
                 )
 
-                self.logger.debug(f"Is gameclock exist")
+                self.logger.debug("Is gameclock exist")
                 is_exist = await self.get_gameclock_by_match_id(gameclock.match_id)
                 if is_exist:
                     self.logger.info(f"gameclock already exists: {gameclock_result}")
@@ -71,9 +72,7 @@ class GameClockServiceDB(BaseServiceDB):
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"While creating gameclock "
-                    f"for match)"
-                    f"returned some error",
+                    detail="While creating gameclock for match)returned some error",
                 )
 
     async def enable_match_data_gameclock_queues(
@@ -184,7 +183,7 @@ class GameClockServiceDB(BaseServiceDB):
                     GameClockSchemaUpdate(gameclock=updated_gameclock),
                 )
             else:
-                self.logger.debug(f"Stopping gameclock")
+                self.logger.debug("Stopping gameclock")
                 await self.update(
                     gameclock_id,
                     GameClockSchemaUpdate(
@@ -192,7 +191,7 @@ class GameClockServiceDB(BaseServiceDB):
                         gameclock_status="stopped",
                     ),
                 )
-        self.logger.debug(f"Returning gameclock")
+        self.logger.debug("Returning gameclock")
         return await self.get_by_id(gameclock_id)
 
     async def trigger_update_gameclock(
