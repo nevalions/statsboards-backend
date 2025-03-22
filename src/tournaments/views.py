@@ -105,7 +105,7 @@ class TournamentAPIRouter(
             return await self.service.get_matches_by_tournament(tournament_id)
 
         @router.get(
-            "/id/{tournament_id}/matches/{page}/{items_per_page}/order/{order_exp/order_two/{order_exp_two}"
+            "/id/{tournament_id}/matches/page/{page}/items_per_page/{items_per_page}/order_one/{order_exp}/order_two/{order_exp_two}"
         )
         async def get_tournament_matches_with_pagination_endpoint(
             tournament_id: int,

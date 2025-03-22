@@ -40,6 +40,7 @@ db_logger_helper = logging.getLogger("backend_logger_base_db")
 
 # DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}:{str(port)}/{db_name}"
 
+
 class Database:
     def __init__(self, db_url: str, echo: bool = False):
         self.logger = get_logger("backend_logger_base_db", self)
@@ -276,7 +277,9 @@ class ConnectionManager:
         self.logger = logging.getLogger("backend_logger_ConnectionManager")
         self.logger.info("ConnectionManager initialized")
 
-    async def connect(self, websocket: WebSocket, client_id: str, match_id: int | None = None):
+    async def connect(
+        self, websocket: WebSocket, client_id: str, match_id: int | None = None
+    ):
         self.logger.info(f"Active Connections len: {len(self.active_connections)}")
         self.logger.info(f"Active Connections {self.active_connections}")
         self.logger.info(
@@ -1207,7 +1210,7 @@ class BaseServiceDB:
 
                     if all_related_items:
                         self.logger.debug(
-                            f"Related items ({len(all_related_items)}) found for property: {related_property} "
+                            f"Related items ({len(all_related_items.__dict__)}) found for property: {related_property} "
                             f"for model {self.model.__name__}"
                         )
                     else:
