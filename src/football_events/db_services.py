@@ -2,8 +2,9 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, FootballEventDB
+
+from ..logging_config import get_logger, setup_logging
 from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 ITEM = "FOOTBALL_EVENT"
@@ -16,7 +17,7 @@ class FootballEventServiceDB(BaseServiceDB):
     ):
         super().__init__(database, FootballEventDB)
         self.logger = get_logger("backend_logger_FootballEventServiceDB", self)
-        self.logger.debug(f"Initialized FootballEventServiceDB")
+        self.logger.debug("Initialized FootballEventServiceDB")
 
     async def create_match_football_event(
         self, football_event: FootballEventSchemaCreate
