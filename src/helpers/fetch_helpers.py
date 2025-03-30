@@ -14,6 +14,7 @@ from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.shemas import ScoreboardSchemaCreate
+from src.tournaments.db_services import TournamentServiceDB
 
 setup_logging()
 logger = logging.getLogger("backend_logger_helpers")
@@ -220,6 +221,58 @@ async def fetch_playclock(match_id: int):
             }
     except Exception as e:
         fetch_data_logger.error(f"Error while fetching playclock: {e}", exc_info=True)
+
+
+async def fetch_matches_with_data_by_tournament_paginated(
+    tournament_id: int,
+    skip: int = 0,
+    limit: int = 7,
+    order_exp: str = "id",
+    order_exp_two: str = "id",
+):
+    fetch_data_logger.debug("Fetching list of matches with full data")
+
+    tournament_service_db = TournamentServiceDB(db)
+
+    try:
+        # Fetch matches with pagination
+        paginated_matches = (
+            await tournament_service_db.get_matches_by_tournament_with_pagination(
+                tournament_id, skip, limit, order_exp, order_exp_two
+            )
+        )
+
+        match_ids = [match.id for match in paginated_matches]
+        fetch_data_logger.debug(f"Fetched match_ids {match_ids}")
+
+        full_match_data_list = []
+        fetch_data_logger.debug(f"Fetched {len(match_ids)} of matches")
+
+        if len(match_ids) == 0:
+            fetch_data_logger.info(
+                f"No matches in tournament id:{tournament_id} on page:{skip} with limit:{limit}"
+            )
+            return []
+
+        # Fetch full match details for each match
+        for match_id in match_ids:
+            match_data = await fetch_with_scoreboard_data(match_id)
+            full_match_data_list.append(match_data)
+
+        fetch_data_logger.debug(
+            f"Fetched matches with fulldata: {full_match_data_list}"
+        )
+
+        return full_match_data_list
+
+    except Exception as e:
+        fetch_data_logger.error(
+            f"Error fetching tournament matches data: {e}", exc_info=True
+        )
+        return {
+            "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }
 
 
 def instance_to_dict(instance):

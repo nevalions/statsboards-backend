@@ -6,7 +6,10 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.core import BaseRouter, MinimalBaseRouter, db
 from src.core.config import templates
-from src.helpers.fetch_helpers import fetch_list_of_matches_data
+from src.helpers.fetch_helpers import (
+    fetch_list_of_matches_data,
+    fetch_matches_with_data_by_tournament_paginated,
+)
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
 from src.seasons.db_services import SeasonServiceDB
 
@@ -171,6 +174,26 @@ class TournamentAPIRouter(
             if not all_matches:
                 return []
             return await fetch_list_of_matches_data(all_matches)
+
+        @router.get(
+            "/id/{tournament_id}/matches_full_data/page/{page}/items_per_page/{items_per_page}/order_one/{order_exp}/order_two/{order_exp_two}",
+            response_class=JSONResponse,
+        )
+        async def all_tournament_matches_data_paginated_endpoint(
+            tournament_id: int,
+            page: int = Path(..., ge=1),
+            items_per_page: int = Path(..., ge=1, le=100),
+            order_exp: str = "id",
+            order_exp_two: str = "id",
+        ):
+            skip = (page - 1) * items_per_page
+            return await fetch_matches_with_data_by_tournament_paginated(
+                tournament_id=tournament_id,
+                skip=skip,
+                limit=items_per_page,
+                order_exp=order_exp,
+                order_exp_two=order_exp_two,
+            )
 
         @router.post("/upload_logo", response_model=UploadTournamentLogoResponse)
         async def upload_tournament_logo_endpoint(file: UploadFile = File(...)):
