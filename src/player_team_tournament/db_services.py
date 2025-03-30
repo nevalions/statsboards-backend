@@ -2,9 +2,13 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, PlayerTeamTournamentDB
-from .schemas import PlayerTeamTournamentSchemaCreate, PlayerTeamTournamentSchemaUpdate
 from src.player.db_services import PlayerServiceDB
-from ..logging_config import setup_logging, get_logger
+
+from ..logging_config import get_logger, setup_logging
+from .schemas import (
+    PlayerTeamTournamentSchemaCreate,
+    PlayerTeamTournamentSchemaUpdate,
+)
 
 setup_logging()
 ITEM = "PLAYER_TEAM_TOURNAMENT"
@@ -17,7 +21,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
     ):
         super().__init__(database, PlayerTeamTournamentDB)
         self.logger = get_logger("backend_logger_PlayerTeamTournamentServiceDB")
-        self.logger.debug(f"Initialized PlayerTeamTournamentServiceDB")
+        self.logger.debug("Initialized PlayerTeamTournamentServiceDB")
 
     async def create_or_update_player_team_tournament(
         self,

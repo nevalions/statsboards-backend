@@ -3,13 +3,8 @@ from typing import List
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
-from .db_services import PlayerTeamTournamentServiceDB
-from .schemas import (
-    PlayerTeamTournamentSchema,
-    PlayerTeamTournamentSchemaCreate,
-    PlayerTeamTournamentSchemaUpdate,
-)
-from ..logging_config import setup_logging, get_logger
+
+from ..logging_config import get_logger, setup_logging
 from ..pars_eesl.pars_all_players_from_eesl import collect_player_full_data_eesl
 from ..pars_eesl.parse_player_team_tournament import (
     parse_players_from_team_tournament_eesl_and_create_jsons,
@@ -22,6 +17,12 @@ from ..positions.db_services import PositionServiceDB
 from ..positions.schemas import PositionSchemaCreate
 from ..teams.db_services import TeamServiceDB
 from ..tournaments.db_services import TournamentServiceDB
+from .db_services import PlayerTeamTournamentServiceDB
+from .schemas import (
+    PlayerTeamTournamentSchema,
+    PlayerTeamTournamentSchemaCreate,
+    PlayerTeamTournamentSchemaUpdate,
+)
 
 setup_logging()
 
@@ -38,7 +39,7 @@ class PlayerTeamTournamentAPIRouter(
             "/api/players_team_tournament", ["players_team_tournament"], service
         )
         self.logger = get_logger("backend_logger_PlayerTeamTournamentAPIRouter", self)
-        self.logger.debug(f"Initialized PlayerTeamTournamentAPIRouter")
+        self.logger.debug("Initialized PlayerTeamTournamentAPIRouter")
 
     def route(self):
         router = super().route()
@@ -63,7 +64,7 @@ class PlayerTeamTournamentAPIRouter(
                     return new_player_team_tournament.__dict__
                 else:
                     raise HTTPException(
-                        status_code=409, detail=f"Player_team_tournament creation fail"
+                        status_code=409, detail="Player_team_tournament creation fail"
                     )
             except Exception as e:
                 self.logger.error(
@@ -124,12 +125,19 @@ class PlayerTeamTournamentAPIRouter(
                     exc_info=True,
                 )
 
+        # @router.get(
+        #     "/tournament/{tournament_id}/players",
+        #     # response_model=List[PlayerTeamTournamentSchema],
+        # )
+        # async def get_all_players_by_tournament_endpoint(tournament_id: int):
+        #     return await self.service.get_all_players_by_tournament(tournament_id)
+
         @router.get(
             "/id/{player_id}/person/",
             response_model=PersonSchema,
         )
         async def get_player_team_tournament_with_person_endpoint(player_id: int):
-            return await self.service.get_player_team_tournament_with_person(player_id)
+            return await self.get_player_team_tournament_with_person(player_id)
 
         @router.get(
             "/pars/tournament/{tournament_id}/team/{team_id}",
@@ -137,7 +145,7 @@ class PlayerTeamTournamentAPIRouter(
         async def get_parse_player_to_team_tournament_endpoint(
             tournament_id: int, team_id: int
         ):
-            self.logger.debug(f"Get parse_player_to_team_tournament endpoint")
+            self.logger.debug("Get parse_player_to_team_tournament endpoint")
             return await parse_players_from_team_tournament_eesl_and_create_jsons(
                 tournament_id, team_id
             )
