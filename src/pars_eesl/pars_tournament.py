@@ -1,9 +1,7 @@
-import asyncio
 import logging
 import re
 from datetime import datetime
-from pprint import pprint
-from typing import TypedDict, List, Optional
+from typing import List, Optional, TypedDict
 
 from bs4 import BeautifulSoup
 
@@ -12,7 +10,6 @@ from src.helpers.file_service import file_service
 from src.helpers.text_helpers import months, safe_int_conversion
 from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
-
 
 setup_logging()
 logger = logging.getLogger("backend_logger_parser_eesl")
@@ -296,13 +293,20 @@ async def parse_tournament_matches_index_page_eesl(
                                     logger.debug(
                                         f"Split date_formatted:{date_formatted.split()}"
                                     )
+                                    # (
+                                    #     date,
+                                    #     month,
+                                    #     year,
+                                    #     day,
+                                    #     time,
+                                    # ) = date_formatted.split()
                                     (
                                         date,
                                         month,
-                                        year,
                                         day,
                                         time,
                                     ) = date_formatted.split()
+
                                     logger.debug(
                                         f"{ITEM_GOT_MATCH} date:{date}, month:{month}, day:{day}, time:{time}"
                                     )
@@ -315,9 +319,14 @@ async def parse_tournament_matches_index_page_eesl(
                                     year = 2024
                                     time = "12:00"
                                 month = months[month]
+                                # date_ = datetime.strptime(
+                                #     f"{date} {month} {year} {time}", "%d %B %Y %H:%M"
+                                # )
                                 date_ = datetime.strptime(
-                                    f"{date} {month} {year} {time}", "%d %B %Y %H:%M"
+                                    f"{date} {month} {time}", "%d %B %H:%M"
                                 )
+                                YEAR = 2025
+                                date_ = date_.replace(year=YEAR)
                                 formatted_date = date_.strftime("%Y-%m-%d %H:%M:%S.%f")
 
                                 (
