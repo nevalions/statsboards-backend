@@ -1,10 +1,10 @@
-import os
 import logging
+import os
 
 from dotenv import load_dotenv
+from fastapi.templating import Jinja2Templates
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from fastapi.templating import Jinja2Templates
 
 from src.logging_config import setup_logging
 
@@ -12,6 +12,10 @@ load_dotenv()
 setup_logging()
 logger = logging.getLogger("backend_logger_config")
 
+SSL_KEY = os.getenv("SSL_KEYFILE")
+SSL_CER = os.getenv("SSL_CERTFILE")
+print("SSL_KEY:", SSL_KEY)
+print("SSL_CER:", SSL_CER)
 # Set the template and static folders
 parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 more_parent_path = os.path.dirname(parent_path)

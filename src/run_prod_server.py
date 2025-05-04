@@ -1,6 +1,8 @@
 import logging
+
 from gunicorn.app.base import BaseApplication
 
+from src.core.config import SSL_CER, SSL_KEY
 from src.logging_config import setup_logging
 
 
@@ -31,6 +33,8 @@ if __name__ == "__main__":
     logger = logging.getLogger("backend_logger_server")
     logger.info("Production Server Started!")
 
+    print(f"{SSL_CER} ### {SSL_KEY}")
+
     options = {
         "bind": "0.0.0.0:9000",
         "workers": 4,
@@ -40,8 +44,8 @@ if __name__ == "__main__":
         "errorlog": "-",
         "accesslog": "-",
         # Add SSL configuration
-        "keyfile": "/etc/letsencrypt/live/butakov.su/privkey.pem",
-        "certfile": "/etc/letsencrypt/live/butakov.su/fullchain.pem",
+        "keyfile": f"{SSL_KEY}",
+        "certfile": f"{SSL_CER}",
         "ssl": True,
     }
 
