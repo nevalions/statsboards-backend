@@ -18,3 +18,5 @@ activate.sh
 .idea/
 .vscode/
 .ropeproject
+
+CLAUDE.md
