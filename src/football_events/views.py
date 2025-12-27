@@ -5,13 +5,14 @@ from fastapi import (
 )
 
 from src.core import BaseRouter, db
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import FootballEventServiceDB
 from .schemas import (
+    FootballEventSchema,
     FootballEventSchemaCreate,
     FootballEventSchemaUpdate,
-    FootballEventSchema,
 )
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 ITEM = "FOOTBALL_EVENT"
@@ -31,7 +32,7 @@ class FootballEventAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_FootballEventAPIRouter", self)
-        self.logger.debug(f"Initialized FootballEventAPIRouter")
+        self.logger.debug("Initialized FootballEventAPIRouter")
 
     def route(self):
         router = super().route()
@@ -68,7 +69,7 @@ class FootballEventAPIRouter(
                 if football_event_update is None:
                     raise HTTPException(
                         status_code=404,
-                        detail=f"Match event " f"id({item_id}) " f"not found",
+                        detail=f"Match event id({item_id}) not found",
                     )
                 return football_event_update
             except Exception as e:
