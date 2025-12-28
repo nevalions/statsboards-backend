@@ -96,3 +96,14 @@ async def creat_tournaments(
 async def tournaments(test_tournament_service, sport, season):
     """Create and return multiple tournament instances."""
     return await creat_tournaments(test_tournament_service, sport, season, count=5)
+
+@pytest.fixture(scope="function")
+def season_sample():
+    """Return a season schema sample for testing."""
+    return SeasonFactorySample.build()
+
+
+@pytest.fixture(scope="function")
+def sport_sample():
+    """Return a sport schema sample for testing."""
+    return SportFactorySample.build()

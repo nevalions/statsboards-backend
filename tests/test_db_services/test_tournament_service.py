@@ -55,7 +55,8 @@ class TestTournamentServiceDB:
         tournament_sample: TournamentSchemaCreate,
     ):
         """Test that a tournament cannot be created without a sport_id."""
-        invalid_tournament_sample = TournamentFactory.build(
+        from src.tournaments.schemas import TournamentSchemaCreate
+        invalid_tournament_sample = TournamentSchemaCreate.model_construct(
             sport_id=None,
             season_id=tournament_sample.season_id,
         )
@@ -71,7 +72,7 @@ class TestTournamentServiceDB:
         tournament_sample: TournamentSchemaCreate,
     ):
         """Test that a tournament cannot be created without a season_id."""
-        invalid_tournament_sample = TournamentFactory.build(
+        invalid_tournament_sample = TournamentSchemaCreate.model_construct(
             sport_id=tournament_sample.sport_id,
             season_id=None,
         )
@@ -86,8 +87,8 @@ class TestTournamentServiceDB:
         test_tournament_service: TournamentServiceDB,
         tournament_sample: TournamentSchemaCreate,
     ):
-        """Test that a tournament cannot be created with the same tournament_eesl_id."""
-        invalid_tournament_sample: TournamentSchemaCreate = TournamentFactory.build(
+        """Test that a tournament cannot be created with same tournament_eesl_id."""
+        invalid_tournament_sample = TournamentSchemaCreate.model_construct(
             tournament_eesl_id=tournament_sample.tournament_eesl_id,
         )
 
