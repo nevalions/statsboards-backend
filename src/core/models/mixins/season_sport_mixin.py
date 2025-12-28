@@ -1,18 +1,17 @@
 from typing import TYPE_CHECKING
-
-from sqlalchemy import ForeignKey
 from sqlalchemy.orm import declared_attr, Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey
 
 if TYPE_CHECKING:
-    from .season import SeasonDB
-    from .sport import SportDB
+    from ..season import SeasonDB
+    from ..sport import SportDB
 
 class SeasonSportRelationMixin:
     _season_id_nullable: bool = False
     _season_id_unique: bool = False
     _sport_id_nullable: bool = False
     _sport_id_unique: bool = False
-    _ondelete: str | None = None  # "CASCADE"
+    _ondelete: str | None = None
     _season_back_populates: str | None
     _sport_back_populates: str | None
 

@@ -127,7 +127,7 @@ class RelationshipMixin:
     async def get_related_items(
         self,
         item_id: int,
-        related_property: str,
+        related_property: str | None = None,
         skip: int | None = None,
         limit: int | None = None,
     ):
@@ -136,56 +136,31 @@ class RelationshipMixin:
                 f"Fetching related items for id: {item_id} and property: {related_property} for model {self.model.__name__}"
             )
             try:
-                if skip is not None and limit is not None:
-                    relationship = getattr(self.model, related_property)
-                    related_model = relationship.property.mapper.class_
+                query = (
+                    select(self.model)
+                    .where(self.model.id == item_id)
+                    .options(selectinload(getattr(self.model, related_property)))
+                    if related_property
+                    else select(self.model).where(self.model.id == item_id)
+                )
 
-                    query = (
-                        select(related_model)
-                        .join(getattr(self.model, related_property))
-                        .where(self.model.id == item_id)
-                        .offset(skip)
-                        .limit(limit)
+                item = await session.execute(query)
+                result = item.scalars().one()
+
+                if result:
+                    self.logger.debug(
+                        f"Item found with related items for property: {related_property} for model {self.model.__name__}"
                     )
-
-                    result = await session.execute(query)
-                    related_items = result.scalars().all()
-
-                    if related_items:
-                        self.logger.debug(
-                            f"Related items found for property: {related_property} for model {self.model.__name__}"
-                        )
-                    else:
-                        self.logger.debug(
-                            f"No related item found for property: {related_property} for model {self.model.__name__}"
-                        )
-                    return list(related_items)
+                    return result
                 else:
-                    query = (
-                        select(self.model)
-                        .where(self.model.id == item_id)
-                        .options(selectinload(getattr(self.model, related_property)))
+                    self.logger.warning(
+                        f"No result found for id: {item_id} for model {self.model.__name__}"
                     )
-
-                    item = await session.execute(query)
-                    all_related_items = getattr(item.scalars().one(), related_property)
-
-                    if all_related_items:
-                        self.logger.debug(
-                            f"Related items ({len(all_related_items)}) found for property: {related_property} "
-                            f"for model {self.model.__name__}"
-                        )
-                    else:
-                        self.logger.debug(
-                            f"No related item found for property: {related_property} "
-                            f"for model {self.model.__name__}"
-                        )
-                    return all_related_items
+                    return None
 
             except NoResultFound:
                 self.logger.warning(
-                    f"No result found for id: {item_id} and property: {related_property} "
-                    f"for model {self.model.__name__}"
+                    f"No result found for id: {item_id} for model {self.model.__name__}"
                 )
                 return None
 
@@ -271,8 +246,13 @@ class RelationshipMixin:
                     all_related_items = getattr(item.scalars().one(), related_property)
 
                     if all_related_items:
+                        item_count = (
+                            len(all_related_items)
+                            if hasattr(all_related_items, "__len__")
+                            else 1
+                        )
                         self.logger.debug(
-                            f"Related items ({len(all_related_items)}) found for property: {related_property} "
+                            f"Related items ({item_count}) found for property: {related_property} "
                             f"for model {self.model.__name__}"
                         )
                     else:
