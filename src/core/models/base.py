@@ -7,9 +7,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
+    Callable,
     Coroutine,
     Dict,
     List,
+    Optional,
 )
 
 import asyncpg
@@ -457,6 +459,85 @@ class BaseServiceDB(
         self.logger = get_logger("backend_logger_base_db", self)
         self.db = database
         self.model = model
+
+    async def create_or_update(
+        self,
+        item_schema,
+        eesl_field_name: Optional[str] = None,
+        unique_field_name: Optional[str] = None,
+        unique_field_value: Optional[Any] = None,
+        model_factory: Optional[Callable] = None,
+        **create_kwargs,
+    ):
+        """
+        Generic create or update method for upsert operations.
+
+        Args:
+            item_schema: The schema containing the data (Create or Update schema)
+            eesl_field_name: Name of the eesl_id field to use for upsert (e.g., "team_eesl_id")
+            unique_field_name: Alternative unique field name for upsert (e.g., "match_id")
+            unique_field_value: Value for the unique field if different from schema value
+            model_factory: Optional factory function to create the model instance from schema
+            **create_kwargs: Additional keyword arguments for model factory
+
+        Returns:
+            The created or updated model instance
+        """
+        try:
+            self.logger.debug(f"Create or update {self.model.__name__}:{item_schema}")
+
+            field_name = eesl_field_name or unique_field_name
+            if not field_name:
+                raise ValueError(
+                    "Either eesl_field_name or unique_field_name must be provided"
+                )
+
+            field_value = unique_field_value or getattr(item_schema, field_name, None)
+
+            if field_value:
+                self.logger.debug(f"Get {self.model.__name__} {field_name}:{field_value}")
+                existing_item = await self.get_item_by_field_value(field_value, field_name)
+
+                if existing_item:
+                    self.logger.debug(
+                        f"{self.model.__name__} {field_name}:{field_value} already exists, updating"
+                    )
+                    return await self._update_item(
+                        existing_item, item_schema, field_name, field_value
+                    )
+                else:
+                    self.logger.debug(f"No {self.model.__name__} in DB, create new")
+                    return await self._create_item(
+                        item_schema, model_factory, **create_kwargs
+                    )
+            else:
+                self.logger.debug(f"No {field_name} in schema, create new")
+                return await self._create_item(item_schema, model_factory, **create_kwargs)
+        except Exception as ex:
+            self.logger.error(
+                f"{self.model.__name__} returned an error: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=409,
+                detail=f"{self.model.__name__} ({item_schema}) returned some error",
+            )
+
+    async def _update_item(
+        self, existing_item, item_schema, field_name: str, field_value: Any
+    ):
+        """Internal method to update an existing item."""
+        if field_name.endswith("_eesl_id"):
+            return await self.update_item_by_eesl_id(field_name, field_value, item_schema)
+        else:
+            return await self.update(existing_item.id, item_schema)
+
+    async def _create_item(self, item_schema, model_factory, **create_kwargs):
+        """Internal method to create a new item."""
+        if model_factory:
+            return await self.create(model_factory(item_schema, **create_kwargs))
+        else:
+            model = self.model(**item_schema.model_dump())
+            return await self.create(model)
 
 
 class Base(DeclarativeBase):

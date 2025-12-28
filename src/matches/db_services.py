@@ -21,55 +21,7 @@ class MatchServiceDB(BaseServiceDB):
         self.logger.debug("Initialized MatchServiceDB")
 
     async def create_or_update_match(self, m: MatchSchemaCreate):
-        try:
-            self.logger.debug(f"Creat or update {ITEM}:{m}")
-            if m.match_eesl_id:
-                self.logger.debug(f"Get {ITEM} eesl_id:{m.match_eesl_id}")
-                match_from_db = await self.get_match_by_eesl_id(m.match_eesl_id)
-                if match_from_db:
-                    self.logger.debug(
-                        f"{ITEM} eesl_id:{m.match_eesl_id} already exists updating"
-                    )
-                    return await self.update_match_by_eesl(
-                        "match_eesl_id",
-                        m,
-                    )
-                else:
-                    return await self.create_new_match(m)
-            else:
-                return await self.create_new_match(m)
-        except Exception as ex:
-            self.logger.error(f"{ITEM} {m} returned an error: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"{ITEM} ({m}) returned some error",
-            )
-
-    async def update_match_by_eesl(
-        self,
-        eesl_field_name: str,
-        m: MatchSchemaCreate,
-    ):
-        self.logger.debug(f"Update {ITEM} {eesl_field_name}:{m.match_eesl_id}")
-        return await self.update_item_by_eesl_id(
-            eesl_field_name,
-            m.match_eesl_id,
-            m,
-        )
-
-    async def create_new_match(self, m: MatchSchemaCreate):
-        match = MatchDB(
-            match_date=m.match_date,
-            week=m.week,
-            match_eesl_id=m.match_eesl_id,
-            team_a_id=m.team_a_id,
-            team_b_id=m.team_b_id,
-            tournament_id=m.tournament_id,
-            sponsor_line_id=m.sponsor_line_id,
-            main_sponsor_id=m.main_sponsor_id,
-        )
-        self.logger.debug(f"Create new {ITEM}:{match}")
-        return await super().create(match)
+        return await super().create_or_update(m, eesl_field_name="match_eesl_id")
 
     async def get_match_by_eesl_id(
         self,

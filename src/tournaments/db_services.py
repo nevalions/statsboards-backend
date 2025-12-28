@@ -20,55 +20,6 @@ class TournamentServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_TournamentServiceDB", self)
         self.logger.debug("Initialized TournamentServiceDB")
 
-    async def create_or_update_tournament(
-        self,
-        t: TournamentSchemaCreate | TournamentSchemaUpdate,
-    ):
-        try:
-            self.logger.debug(f"Creat or update {ITEM}:{t}")
-            if t.tournament_eesl_id:
-                self.logger.debug(f"Get {ITEM} eesl_id:{t.tournament_eesl_id}")
-                tournament_from_db = await self.get_tournament_by_eesl_id(
-                    t.tournament_eesl_id
-                )
-                if tournament_from_db:
-                    self.logger.debug(
-                        f"{ITEM} eesl_id:{t.tournament_eesl_id} already exists updating"
-                    )
-                    return await self.update_tournament_by_eesl(
-                        "tournament_eesl_id",
-                        t,
-                    )
-                else:
-                    return await self.create_tournament(t)
-            else:
-                return await self.create_tournament(t)
-        except Exception as ex:
-            self.logger.error(f"{ITEM} returned an error: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"{ITEM} ({t}) returned some error",
-            )
-
-    async def update_tournament_by_eesl(
-        self,
-        eesl_field_name: str,
-        t: TournamentSchemaUpdate | TournamentSchemaCreate,
-    ):
-        self.logger.debug(f"Update {ITEM} {eesl_field_name}:{t.tournament_eesl_id}")
-        if t.tournament_eesl_id:
-            return await self.update_item_by_eesl_id(
-                eesl_field_name,
-                t.tournament_eesl_id,
-                t,
-            )
-        else:
-            self.logger.error(f"Error updating {ITEM} with eesl_id")
-            raise HTTPException(
-                status_code=409,
-                detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
-            )
-
     async def create_tournament(
         self,
         t: TournamentSchemaCreate | TournamentSchemaUpdate,
@@ -94,6 +45,12 @@ class TournamentServiceDB(BaseServiceDB):
                 status_code=409,
                 detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
             )
+
+    async def create_or_update_tournament(
+        self,
+        t: TournamentSchemaCreate | TournamentSchemaUpdate,
+    ):
+        return await super().create_or_update(t, eesl_field_name="tournament_eesl_id")
 
     async def get_tournament_by_eesl_id(
         self,

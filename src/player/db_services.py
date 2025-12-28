@@ -22,57 +22,7 @@ class PlayerServiceDB(BaseServiceDB):
         self,
         p: PlayerSchemaCreate | PlayerSchemaUpdate,
     ):
-        try:
-            self.logger.debug(f"Creat or update {ITEM}:{p}")
-            if p.player_eesl_id:
-                player_from_db = await self.get_player_by_eesl_id(p.player_eesl_id)
-                if player_from_db:
-                    self.logger.debug(
-                        f"{ITEM} eesl_id:{p.player_eesl_id} already exists updating"
-                    )
-                    self.logger.debug(f"Get {ITEM} eesl_id:{p.player_eesl_id}")
-                    return await self.update_player_by_eesl(
-                        "player_eesl_id",
-                        p,
-                    )
-                else:
-                    return await self.create_new_player(
-                        p,
-                    )
-            else:
-                return await self.create_new_player(
-                    p,
-                )
-        except Exception as ex:
-            self.logger.error(f"{ITEM} {p} returned an error: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"{ITEM} ({p}) returned some error",
-            )
-
-    async def update_player_by_eesl(
-        self,
-        eesl_field_name: str,
-        p: PlayerSchemaUpdate,
-    ):
-        self.logger.debug(f"Update {ITEM} {eesl_field_name}:{p.player_eesl_id}")
-        return await self.update_item_by_eesl_id(
-            eesl_field_name,
-            p.player_eesl_id,
-            p,
-        )
-
-    async def create_new_player(
-        self,
-        p: PlayerSchemaCreate,
-    ):
-        player = self.model(
-            sport_id=p.sport_id,
-            person_id=p.person_id,
-            player_eesl_id=p.player_eesl_id,
-        )
-        self.logger.debug(f"Create new {ITEM}:{p}")
-        return await super().create(player)
+        return await super().create_or_update(p, eesl_field_name="player_eesl_id")
 
     async def get_player_by_eesl_id(
         self,

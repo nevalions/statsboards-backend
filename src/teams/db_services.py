@@ -23,64 +23,7 @@ class TeamServiceDB(BaseServiceDB):
         self,
         t: TeamSchemaCreate | TeamSchemaUpdate,
     ):
-        try:
-            self.logger.debug(f"Creat or update {ITEM}:{t}")
-            if t.team_eesl_id:
-                self.logger.debug(f"Get {ITEM} eesl_id:{t.team_eesl_id}")
-                team_from_db = await self.get_team_by_eesl_id(t.team_eesl_id)
-                if team_from_db:
-                    self.logger.debug(
-                        f"{ITEM} eesl_id:{t.team_eesl_id} already exists updating"
-                    )
-                    return await self.update_team_by_eesl(
-                        "team_eesl_id",
-                        t,
-                    )
-                else:
-                    self.logger.debug(f"No team in DB, create new")
-                    return await self.create_new_team(t)
-            else:
-                self.logger.debug(f"No eesl team in DB, create new")
-                return await self.create_new_team(t)
-        except Exception as ex:
-            self.logger.error(f"{ITEM} returned an error: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"{ITEM} ({t}) returned some error",
-            )
-
-    async def update_team_by_eesl(
-        self,
-        eesl_field_name: str,
-        t: TeamSchemaUpdate,
-    ):
-        self.logger.debug(f"Update {ITEM} {eesl_field_name}:{t.team_eesl_id}")
-        return await self.update_item_by_eesl_id(
-            eesl_field_name,
-            t.team_eesl_id,
-            t,
-        )
-
-    async def create_new_team(
-        self,
-        t: TeamSchemaCreate,
-    ):
-        team = self.model(
-            sport_id=t.sport_id,
-            city=t.city,
-            team_eesl_id=t.team_eesl_id,
-            title=t.title,
-            description=t.description,
-            team_logo_url=t.team_logo_url,
-            team_logo_icon_url=t.team_logo_icon_url,
-            team_logo_web_url=t.team_logo_web_url,
-            team_color=t.team_color,
-            sponsor_line_id=t.sponsor_line_id,
-            main_sponsor_id=t.main_sponsor_id,
-        )
-
-        self.logger.debug(f"Create new {ITEM}:{t}")
-        return await super().create(team)
+        return await super().create_or_update(t, eesl_field_name="team_eesl_id")
 
     async def get_team_by_eesl_id(
         self,
