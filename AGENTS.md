@@ -15,12 +15,42 @@ source venv/bin/activate
 
 ### Testing
 
-**Important: Before running tests, start the test database:**
+**Important: Before running tests, start test database:**
 
 ```bash
 # Start test database (for running selective tests locally)
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
+
+Then run tests:
+
+```bash
+# Run all tests
+pytest
+
+# Run tests for specific directory
+pytest tests/test_db_services/
+pytest tests/test_views/
+
+# Run a single test file
+pytest tests/test_db_services/test_tournament_service.py
+
+# Run a specific test function
+poetry run pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations
+
+# Run tests with coverage
+poetry run pytest --cov=src
+
+# Run async tests only
+poetry run pytest tests/ -k "async"
+```
+
+**Note:** The `pytest.ini` file includes performance optimizations (`-x -v --tb=short`) for faster test execution:
+- `-x`: Stop on first failure
+- `-v`: Verbose output
+- `--tb=short`: Shortened traceback format
+
+**Note:** Database echo is disabled in test fixtures for faster test execution.
 
 Then run tests:
 
