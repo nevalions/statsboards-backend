@@ -107,9 +107,10 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
 
                 await session.delete(item)
                 await session.commit()
-                raise HTTPException(
-                    status_code=200,
-                    detail=f"Connection sponsor id: {sponsor_id} and sponsor_line id {sponsor_line_id} deleted",
+                self.logger.info(
+                    f"Deleted {ITEM}: sponsor_id={sponsor_id}, sponsor_line_id={sponsor_line_id}"
                 )
+                return item
             except Exception as e:
                 self.logger.error(f"Error deleting {ITEM}: {e}", exc_info=True)
+                raise

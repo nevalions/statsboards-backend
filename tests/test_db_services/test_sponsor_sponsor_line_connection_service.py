@@ -93,24 +93,30 @@ class TestSponsorSponsorLineServiceDB:
 
     async def test_delete_relation_by_sponsor_and_sponsor_line_id(self, test_db):
         from fastapi import HTTPException
-        
+
         sponsor_service = SponsorServiceDB(test_db)
         sponsor = await sponsor_service.create(SponsorFactory.build())
-        
+
         sponsor_line_service = SponsorLineServiceDB(test_db)
         sponsor_line = await sponsor_line_service.create(SponsorLineFactory.build())
-        
+
         connection_service = SponsorSponsorLineServiceDB(test_db)
         await connection_service.create(SponsorSponsorLineSchemaCreate(
             sponsor_id=sponsor.id,
             sponsor_line_id=sponsor_line.id,
             position=1
         ))
-        
+
+        deleted_item = await connection_service.delete_relation_by_sponsor_and_sponsor_line_id(sponsor.id, sponsor_line.id)
+
+        assert deleted_item is not None
+        assert deleted_item.sponsor_id == sponsor.id
+        assert deleted_item.sponsor_line_id == sponsor_line.id
+
         with pytest.raises(HTTPException) as exc_info:
             await connection_service.delete_relation_by_sponsor_and_sponsor_line_id(sponsor.id, sponsor_line.id)
-        
-        assert exc_info.value.status_code == 200
+
+        assert exc_info.value.status_code == 404
 
     async def test_delete_relation_not_found(self, test_db):
         from fastapi import HTTPException
