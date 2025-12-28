@@ -39,15 +39,15 @@ class TestQueryMixin:
     @pytest.mark.asyncio
     async def test_update_item_by_eesl_id_success(self, test_db):
         """Test successful update of an item by eesl field."""
-        from src.seasons.schemas import SeasonSchemaCreate
+        from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+        from src.core.models.season import SeasonDB
 
         service = SeasonServiceDB(test_db)
         season_data = SeasonSchemaCreate(year=2023, description="Original")
-        created = await service.create(season_data)
+        season_model = SeasonDB(year=season_data.year, description=season_data.description)
+        created = await service.create(season_model)
 
-        update_data = SeasonSchemaCreate(
-            year=2023, description="Updated description"
-        )
+        update_data = SeasonSchemaUpdate(description="Updated description")
         updated = await service.update_item_by_eesl_id(
             "year", created.year, update_data
         )
@@ -57,10 +57,10 @@ class TestQueryMixin:
     @pytest.mark.asyncio
     async def test_update_item_by_eesl_id_not_found(self, test_db):
         """Test update of non-existent item by eesl field."""
-        from src.seasons.schemas import SeasonSchemaCreate
+        from src.seasons.schemas import SeasonSchemaUpdate
 
         service = SeasonServiceDB(test_db)
-        update_data = SeasonSchemaCreate(year=2025, description="Test")
+        update_data = SeasonSchemaUpdate(year=2025, description="Test")
         updated = await service.update_item_by_eesl_id("year", 99999, update_data)
         assert updated is None
 
@@ -74,7 +74,7 @@ class TestQueryMixin:
         tournament_service = TournamentServiceDB(test_db)
 
         sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build())
+        season = await season_service.create_season(SeasonFactorySample.build(year=2024))
 
         from tests.factories import TournamentFactory
 
@@ -98,7 +98,7 @@ class TestQueryMixin:
         tournament_service = TournamentServiceDB(test_db)
 
         sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build())
+        season = await season_service.create_season(SeasonFactorySample.build(year=2024))
 
         from tests.factories import TournamentFactory
 

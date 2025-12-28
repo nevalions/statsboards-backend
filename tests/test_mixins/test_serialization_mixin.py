@@ -41,9 +41,9 @@ class TestSerializationMixin:
         result = SerializationMixin.default_serializer({"key": "value"})
         assert result is None
 
-    def test_to_dict_model_instance(self, test_db, season_sample):
+    def test_to_dict_model_instance(self, test_db, season_db_model):
         """Test to_dict with SQLAlchemy model instance."""
-        result = SerializationMixin.to_dict(season_sample)
+        result = SerializationMixin.to_dict(season_db_model)
         assert isinstance(result, dict)
         assert "year" in result
         assert "description" in result

@@ -36,10 +36,10 @@ class TestTournamentServiceDBCreateOrUpdate:
     ):
         """Test creating a tournament with eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
         tournament_data = TournamentFactory.build(
@@ -64,10 +64,10 @@ class TestTournamentServiceDBCreateOrUpdate:
     ):
         """Test creating a tournament without eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
         tournament_data = TournamentFactory.build(
@@ -92,10 +92,10 @@ class TestTournamentServiceDBCreateOrUpdate:
     ):
         """Test updating an existing tournament by eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
 
@@ -125,10 +125,10 @@ class TestTournamentServiceDBCreateOrUpdate:
     ):
         """Test creating multiple tournaments."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
 
@@ -154,10 +154,10 @@ class TestTournamentServiceDBCreateOrUpdate:
     ):
         """Test updating only some tournament fields."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
 
@@ -188,10 +188,10 @@ class TestTournamentServiceDBCreateOrUpdate:
     ):
         """Test creating then updating same tournament in sequence."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
 
@@ -218,10 +218,10 @@ class TestTournamentServiceDBCreateOrUpdate:
     ):
         """Test retrieving tournament by eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
 

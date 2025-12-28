@@ -42,11 +42,11 @@ class TestCreateOrUpdateGeneric:
         """Test creating new record when eesl_id doesn't exist in DB."""
         sport = SportFactorySample.build()
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season = SeasonFactorySample.build()
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
         tournament_data = TournamentFactory.build(
@@ -71,6 +71,8 @@ class TestCreateOrUpdateGeneric:
         """Test successful creation with all fields."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2025)
+        from src.core.models.season import SeasonDB
+        season_model = SeasonDB(year=season_data.year, description=season_data.description)
 
         result = await season_service.create_or_update(
             season_data,
@@ -87,11 +89,11 @@ class TestCreateOrUpdateGeneric:
         """Test updating existing record by eesl_id."""
         sport = SportFactorySample.build()
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         season = SeasonFactorySample.build()
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create(season)
+        created_season = await season_service.create_season(season)
 
         tournament_service = TournamentServiceDB(test_db)
         tournament_data = TournamentFactory.build(
@@ -127,7 +129,9 @@ class TestCreateOrUpdateGeneric:
         """Test updating only specific fields."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2030)
-        created = await season_service.create(season_data)
+        from src.core.models.season import SeasonDB
+        season_db_model = SeasonDB(year=season_data.year, description=season_data.description)
+        created = await season_service.create(season_db_model)
 
         update_data = SeasonSchemaUpdate(year=2031)
 
@@ -146,7 +150,9 @@ class TestCreateOrUpdateGeneric:
         """Test sequential updates to the same record."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2040)
-        created = await season_service.create(season_data)
+        from src.core.models.season import SeasonDB
+        season_db_model = SeasonDB(year=season_data.year, description=season_data.description)
+        created = await season_service.create(season_db_model)
 
         update1 = SeasonSchemaUpdate(year=2041)
         updated1 = await season_service.create_or_update(
@@ -172,6 +178,7 @@ class TestCreateOrUpdateGeneric:
         """Test using custom unique_field_name instead of eesl_id."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2050)
+        from src.core.models.season import SeasonDB
 
         result = await season_service.create_or_update(
             season_data,
@@ -204,7 +211,9 @@ class TestCreateOrUpdateGeneric:
         """Test update when custom field value exists."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2070)
-        created = await season_service.create(season_data)
+        from src.core.models.season import SeasonDB
+        season_db_model = SeasonDB(year=season_data.year, description=season_data.description)
+        created = await season_service.create(season_db_model)
 
         retrieved = await season_service.get_by_id(created.id)
         assert retrieved is not None
@@ -229,6 +238,7 @@ class TestCreateOrUpdateGeneric:
         """Test creating with a custom model_factory function."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2090)
+        from src.core.models.season import SeasonDB
 
         def factory(schema, **kwargs):
             return SeasonDB(year=schema.year)

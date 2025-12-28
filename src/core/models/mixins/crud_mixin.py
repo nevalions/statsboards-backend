@@ -158,6 +158,8 @@ class CRUDMixin:
                     f"Deleted element with ID: {item_id}: {db_item.__dict__}"
                 )
                 return db_item
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error deleting element with ID: {item_id} for model {self.model.__name__}: {ex}",
