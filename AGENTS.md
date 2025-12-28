@@ -9,10 +9,7 @@ This file provides guidance for agentic coding assistants working in this reposi
 Before running any commands, ensure the virtual environment is activated:
 
 ```bash
-# Activate virtual environment (if using poetry)
-poetry shell
-
-# Or activate venv directly (if using venv)
+# activate venv directly (if using venv)
 source venv/bin/activate
 ```
 
@@ -21,8 +18,8 @@ source venv/bin/activate
 **Important: Before running tests, start the test database:**
 
 ```bash
-# Start test database
-docker-compose -f docker-compose.test.db.yml up -d
+# Start test database (for running selective tests locally)
+docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
 Then run tests:
@@ -47,18 +44,15 @@ poetry run pytest tests/ -k "async"
 #### Running Tests with Docker
 
 ```bash
-# Start test database
-docker-compose -f docker-compose.test.db.yml up -d
+# Option 1: Start test database only (for running selective tests locally)
+docker-compose -f docker-compose.test-db-only.yml up -d
+pytest tests/test_db_services/test_tournament_service.py
+docker-compose -f docker-compose.test-db-only.yml down
 
-# Run tests locally against Docker database
-pytest
-
-# Or run tests in Docker container
-docker-compose -f docker-compose.test.db.yml build
-docker-compose -f docker-compose.test.db.yml run --rm test_app
-
-# Stop test database when done
-docker-compose -f docker-compose.test.db.yml down
+# Option 2: Run all tests in Docker container
+docker-compose -f docker-compose.test.yml build
+docker-compose -f docker-compose.test.yml run --rm statsboards-backend-test
+docker-compose -f docker-compose.test.yml down
 ```
 
 **Note:** Ensure environment variables point to test database: `postgresql://test:test@localhost:5432/test_db`
