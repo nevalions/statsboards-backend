@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, ScoreboardDB, MatchDataDB
-from .shemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
+from .schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from ..logging_config import setup_logging, get_logger
 
 setup_logging()

@@ -13,7 +13,7 @@ from src.matchdata.schemas import MatchDataSchemaCreate
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate
 from src.scoreboards.db_services import ScoreboardServiceDB
-from src.scoreboards.shemas import ScoreboardSchemaCreate
+from src.scoreboards.schemas import ScoreboardSchemaCreate
 from src.tournaments.db_services import TournamentServiceDB
 
 setup_logging()

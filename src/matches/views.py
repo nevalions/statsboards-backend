@@ -28,13 +28,13 @@ from ..pars_eesl.pars_tournament import (
 )
 from ..playclocks.db_services import PlayClockServiceDB
 from ..playclocks.schemas import PlayClockSchemaCreate
-from ..scoreboards.shemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
+from ..scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from ..sponsors.db_services import SponsorServiceDB
 from ..teams.db_services import TeamServiceDB
 from ..teams.schemas import UploadResizeTeamLogoResponse, UploadTeamLogoResponse
 from ..tournaments.db_services import TournamentServiceDB
 from .db_services import MatchServiceDB
-from .shemas import (
+from .schemas import (
     MatchSchema,
     MatchSchemaCreate,
     MatchSchemaUpdate,

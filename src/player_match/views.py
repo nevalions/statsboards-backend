@@ -4,7 +4,7 @@ from src.core import BaseRouter, db
 from .db_services import PlayerMatchServiceDB
 from .schemas import PlayerMatchSchema, PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 from ..logging_config import setup_logging, get_logger
-from ..matches.shemas import MatchSchemaBase
+from ..matches.schemas import MatchSchemaBase
 from ..pars_eesl.pars_all_players_from_eesl import collect_player_full_data_eesl
 from ..pars_eesl.pars_match import parse_match_and_create_jsons, ParsedMatch, logger
 from ..person.schemas import PersonSchemaCreate

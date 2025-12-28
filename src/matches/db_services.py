@@ -8,7 +8,7 @@ from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 
-from .shemas import MatchSchemaCreate, MatchSchemaUpdate
+from .schemas import MatchSchemaCreate, MatchSchemaUpdate
 
 setup_logging()
 ITEM = "MATCH"

@@ -4,7 +4,7 @@ from datetime import datetime as date_type
 from pydantic import BaseModel
 
 from src.matchdata.schemas import MatchDataSchemaCreate
-from src.scoreboards.shemas import ScoreboardSchemaCreate
+from src.scoreboards.schemas import ScoreboardSchemaCreate
 
 
 class MatchSchemaBase(BaseModel):

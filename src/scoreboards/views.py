@@ -2,7 +2,7 @@ from fastapi import Depends, status
 
 from src.core import BaseRouter, db
 from .db_services import ScoreboardServiceDB
-from .shemas import ScoreboardSchema, ScoreboardSchemaCreate, ScoreboardSchemaUpdate
+from .schemas import ScoreboardSchema, ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Response
 from fastapi.responses import JSONResponse, StreamingResponse
