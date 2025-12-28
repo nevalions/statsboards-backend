@@ -1,6 +1,6 @@
 services:
   postgres_test:
-    image: postgres:15
+    image: postgres:17
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
@@ -15,6 +15,10 @@ services:
     depends_on:
       - postgres_test
     environment:
-      - DATABASE_URL=postgresql://test:test@postgres_test:5432/test_db
+      - DB_TEST_HOST=postgres_test
+      - DB_TEST_USER=test
+      - DB_TEST_PASSWORD=test
+      - DB_TEST_NAME=test_db
+      - DB_TEST_PORT=5432
     volumes:
       - .:/app
