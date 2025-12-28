@@ -34,10 +34,10 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test creating a player with eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         person_service = PersonServiceDB(test_db)
-        created_person = await person_service.create(person)
+        created_person = await person_service.create_or_update_person(person)
 
         player_service = PlayerServiceDB(test_db)
         player_data = PlayerFactory.build(
@@ -58,10 +58,10 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test creating a player without eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         person_service = PersonServiceDB(test_db)
-        created_person = await person_service.create(person)
+        created_person = await person_service.create_or_update_person(person)
 
         player_service = PlayerServiceDB(test_db)
         player_data = PlayerFactory.build(
@@ -79,10 +79,10 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test updating an existing player by eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         person_service = PersonServiceDB(test_db)
-        created_person = await person_service.create(person)
+        created_person = await person_service.create_or_update_person(person)
 
         player_service = PlayerServiceDB(test_db)
 
@@ -102,10 +102,10 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test creating multiple players."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         person_service = PersonServiceDB(test_db)
-        created_person = await person_service.create(person)
+        created_person = await person_service.create_or_update_person(person)
 
         player_service = PlayerServiceDB(test_db)
 
@@ -128,10 +128,10 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test retrieving player by eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         person_service = PersonServiceDB(test_db)
-        created_person = await person_service.create(person)
+        created_person = await person_service.create_or_update_person(person)
 
         player_service = PlayerServiceDB(test_db)
 

@@ -26,7 +26,7 @@ class TestTeamServiceDBCreateOrUpdate:
     ):
         """Test creating a team with eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         team_service = TeamServiceDB(test_db)
         team_data = TeamFactory.build(
@@ -47,7 +47,7 @@ class TestTeamServiceDBCreateOrUpdate:
     ):
         """Test creating a team without eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         team_service = TeamServiceDB(test_db)
         team_data = TeamFactory.build(
@@ -67,7 +67,7 @@ class TestTeamServiceDBCreateOrUpdate:
     ):
         """Test updating an existing team by eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         team_service = TeamServiceDB(test_db)
 
@@ -95,7 +95,7 @@ class TestTeamServiceDBCreateOrUpdate:
     ):
         """Test creating multiple teams for the same sport."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         team_service = TeamServiceDB(test_db)
 
@@ -123,7 +123,7 @@ class TestTeamServiceDBCreateOrUpdate:
     ):
         """Test updating only some team fields."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create(sport)
+        created_sport = await sport_service.create_sport(sport)
 
         team_service = TeamServiceDB(test_db)
 
