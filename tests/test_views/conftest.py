@@ -14,6 +14,7 @@ async def test_db():
     database = Database(db_url, echo=False)
 
     async with database.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     async with database.engine.connect() as connection:
@@ -83,8 +84,8 @@ async def test_app(test_db):
     app.include_router(SponsorAPIRouter(SponsorServiceDB(test_db)).route())
     app.include_router(SponsorLineAPIRouter(SponsorLineServiceDB(test_db)).route())
     app.include_router(SponsorSponsorLineAPIRouter(SponsorSponsorLineServiceDB(test_db)).route())
-    app.include_router(GameClockAPIRouter(GameClockServiceDB(test_db)).route())
-    app.include_router(PlayClockAPIRouter(PlayClockServiceDB(test_db)).route())
+    app.include_router(GameClockAPIRouter(GameClockServiceDB(test_db, disable_background_tasks=True)).route())
+    app.include_router(PlayClockAPIRouter(PlayClockServiceDB(test_db, disable_background_tasks=True)).route())
     app.include_router(MatchDataAPIRouter(MatchDataServiceDB(test_db)).route())
     app.include_router(PersonAPIRouter(PersonServiceDB(test_db)).route())
     app.include_router(PlayerAPIRouter(PlayerServiceDB(test_db)).route())

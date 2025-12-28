@@ -35,7 +35,7 @@ class TestMatchViews:
             week=1
         )
         
-        response = await client.post("/api/matches/", json=match_data.model_dump())
+        response = await client.post("/api/matches/", json=match_data.model_dump(mode='json'))
         
         assert response.status_code == 200
         assert response.json()["id"] > 0

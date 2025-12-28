@@ -5,7 +5,7 @@ from starlette import status
 from src.core.response_schemas import ResponseModel
 
 
-class TestSchema(BaseModel):
+class DummySchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -18,7 +18,7 @@ class TestResponseModel:
 
     def test_success_response(self):
         """Test creating a success response."""
-        content = TestSchema(id=1, name="Test", value=100)
+        content = DummySchema(id=1, name="Test", value=100)
         response = ResponseModel.success_response(content, "Operation successful")
 
         assert response.success is True
@@ -32,7 +32,7 @@ class TestResponseModel:
 
     def test_success_response_default_message(self):
         """Test creating a success response with default message."""
-        content = TestSchema(id=2, name="Test2", value=200)
+        content = DummySchema(id=2, name="Test2", value=200)
         response = ResponseModel.success_response(content)
 
         assert response.message == "Operation successful"
@@ -40,7 +40,7 @@ class TestResponseModel:
 
     def test_created_response(self):
         """Test creating a created response."""
-        content = TestSchema(id=3, name="Test3", value=300)
+        content = DummySchema(id=3, name="Test3", value=300)
         response = ResponseModel.created_response(content, "Resource created")
 
         assert response.success is True
@@ -51,7 +51,7 @@ class TestResponseModel:
 
     def test_created_response_default_message(self):
         """Test creating a created response with default message."""
-        content = TestSchema(id=4, name="Test4", value=400)
+        content = DummySchema(id=4, name="Test4", value=400)
         response = ResponseModel.created_response(content)
 
         assert response.message == "Resource created"
@@ -74,7 +74,7 @@ class TestResponseModel:
 
     def test_response_model_serialization(self):
         """Test that ResponseModel can be serialized to dict."""
-        content = TestSchema(id=5, name="Test5", value=500)
+        content = DummySchema(id=5, name="Test5", value=500)
         response = ResponseModel.success_response(content)
 
         response_dict = response.model_dump()

@@ -135,13 +135,15 @@ class PlayClockAPIRouter(
                             playclock_status=item_status,
                         ),
                     )
-                    self.logger.debug(
-                        f"Start playclock background task, loop decrement"
-                    )
-                    await self.service.decrement_playclock(
-                        background_tasks,
-                        item_id,
-                    )
+
+                    if not self.service.disable_background_tasks:
+                        self.logger.debug(
+                            f"Start playclock background task, loop decrement"
+                        )
+                        await self.service.decrement_playclock(
+                            background_tasks,
+                            item_id,
+                        )
 
                     return self.create_response(
                         item,

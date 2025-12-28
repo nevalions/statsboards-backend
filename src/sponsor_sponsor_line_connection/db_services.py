@@ -32,7 +32,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
             )
             if is_relation_exist:
                 self.logger.debug(f"Relation {ITEM} already exists")
-                return is_relation_exist
+                return None
             new_sponsor_sponsor_line = self.model(
                 sponsor_line_id=item.sponsor_line_id,
                 sponsor_id=item.sponsor_id,

@@ -13,7 +13,7 @@ class TestPersonViews:
         person_service = PersonServiceDB(test_db)
         person_data = PersonFactory.build(person_eesl_id=100)
         
-        response = await client.post("/api/persons/", json=person_data.model_dump())
+        response = await client.post("/api/persons/", json=person_data.model_dump(mode='json'))
         
         assert response.status_code == 200
         assert response.json()["id"] > 0

@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy import select
 
 from src.core.models import BaseServiceDB, MatchDataDB
@@ -78,6 +78,8 @@ class MatchDataServiceDB(BaseServiceDB):
                 f"Matchdata updated  successfully. Updated: {updated_.__dict__}"
             )
             return updated_
+        except HTTPException:
+            raise
         except Exception as ex:
             self.logger.error(f"Error creating new match data: {ex}", exc_info=True)
             raise HTTPException(
@@ -111,3 +113,13 @@ class MatchDataServiceDB(BaseServiceDB):
                     status_code=404,
                     detail=f"Error creating new matchdata with match id: {match_id}",
                 )
+
+    async def enable_match_data_clock_queues(self, match_data_id: int, clock_type: str):
+        self.logger.debug(f"Enable matchdata clock queues for id: {match_data_id}, type: {clock_type}")
+        await self.get_by_id(match_data_id)
+
+    async def decrement_gameclock(self, background_tasks: BackgroundTasks, match_data_id: int):
+        self.logger.debug(f"Decrement gameclock for matchdata id: {match_data_id}")
+
+    async def decrement_playclock(self, background_tasks: BackgroundTasks, match_data_id: int):
+        self.logger.debug(f"Decrement playclock for matchdata id: {match_data_id}")

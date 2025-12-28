@@ -30,7 +30,7 @@ class MatchSchemaUpdate(BaseModel):
 
 
 class MatchSchemaCreate(MatchSchemaBase):
-    pass
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MatchSchema(MatchSchemaCreate):

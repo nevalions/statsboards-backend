@@ -115,12 +115,13 @@ class GameClockAPIRouter(
                     )
 
                     # Start background task for decrementing the game clock
-                    self.logger.debug(
-                        f"Start gameclock background task, loop decrement"
-                    )
-                    background_tasks.add_task(
-                        self.service.loop_decrement_gameclock, gameclock_id
-                    )
+                    if not self.service.disable_background_tasks:
+                        self.logger.debug(
+                            f"Start gameclock background task, loop decrement"
+                        )
+                        background_tasks.add_task(
+                            self.service.loop_decrement_gameclock, gameclock_id
+                        )
 
                     return self.create_response(
                         updated,

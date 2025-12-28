@@ -41,11 +41,24 @@ class SeasonServiceDB(BaseServiceDB):
         **kwargs,
     ):
         self.logger.debug(f"Update {ITEM} with id:{item_id}")
+        if item.year is None:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
+            )
         try:
             return await super().update(
                 item_id,
                 item,
                 **kwargs,
+            )
+        except HTTPException as e:
+            if e.status_code == 404:
+                return None
+            self.logger.error(f"Error updating {ITEM} {e}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
             )
         except Exception as e:
             self.logger.error(f"Error updating {ITEM} {e}", exc_info=True)

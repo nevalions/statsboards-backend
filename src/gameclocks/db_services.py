@@ -36,9 +36,10 @@ class ClockManager:
 
 
 class GameClockServiceDB(BaseServiceDB):
-    def __init__(self, database):
+    def __init__(self, database, disable_background_tasks=False):
         super().__init__(database, GameClockDB)
         self.clock_manager = ClockManager()
+        self.disable_background_tasks = disable_background_tasks
         self.logger = get_logger("backend_logger_GameClockServiceDB", self)
         self.logger.debug("Initialized GameClockServiceDB")
 
@@ -145,6 +146,10 @@ class GameClockServiceDB(BaseServiceDB):
         gameclock_id: int,
     ):
         self.logger.debug(f"Decrement gameclock by id:{gameclock_id}")
+
+        if self.disable_background_tasks:
+            self.logger.debug(f"Background tasks disabled, skipping gameclock decrement")
+            return
 
         if gameclock_id in self.clock_manager.active_gameclock_matches:
             background_tasks.add_task(

@@ -23,6 +23,7 @@ async def test_db():
 
     # Create tables at start of each test (faster than migrations)
     async with database.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     # Use a transactional connection for tests

@@ -168,7 +168,7 @@ class MatchAPIRouter(
         ):
             self.logger.debug(f"Update match endpoint id:{item_id} data: {item}")
             try:
-                match_update = await self.service.update_match(item_id, item)
+                match_update = await self.service.update(item_id, item)
                 return MatchSchema.model_validate(match_update)
             except HTTPException:
                 raise
