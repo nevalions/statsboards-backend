@@ -7,6 +7,13 @@ from src.core.models.person import PersonDB
 from src.core.models.player import PlayerDB
 from src.core.models.match import MatchDB
 from tests.test_data import TestData
+from src.sports.schemas import SportSchemaCreate
+from src.seasons.schemas import SeasonSchemaCreate
+from src.tournaments.schemas import TournamentSchemaCreate
+from src.teams.schemas import TeamSchemaCreate
+from src.person.schemas import PersonSchemaCreate
+from src.player.schemas import PlayerSchemaCreate
+from src.matches.schemas import MatchSchemaCreate
 
 
 class SportFactorySample(factory.Factory):
@@ -65,7 +72,7 @@ class TournamentFactory(factory.Factory):
 
 class TeamFactory(factory.Factory):
     class Meta:
-        model = TeamDB
+        model = TeamSchemaCreate
 
     team_eesl_id = factory.Sequence(lambda n: n + 1000)
     title = factory.Sequence(lambda n: f"Team {n}")
@@ -82,7 +89,7 @@ class TeamFactory(factory.Factory):
 
 class PersonFactory(factory.Factory):
     class Meta:
-        model = PersonDB
+        model = PersonSchemaCreate
 
     person_eesl_id = factory.Sequence(lambda n: n + 2000)
     first_name = factory.Sequence(lambda n: f"First{n}")
@@ -95,7 +102,7 @@ class PersonFactory(factory.Factory):
 
 class PlayerFactory(factory.Factory):
     class Meta:
-        model = PlayerDB
+        model = PlayerSchemaCreate
 
     player_eesl_id = factory.Sequence(lambda n: n + 3000)
     sport_id = None
@@ -104,7 +111,7 @@ class PlayerFactory(factory.Factory):
 
 class MatchFactory(factory.Factory):
     class Meta:
-        model = MatchDB
+        model = MatchSchemaCreate
 
     match_eesl_id = factory.Sequence(lambda n: n + 4000)
     match_date = factory.LazyFunction(lambda: "2025-01-01")
