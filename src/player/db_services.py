@@ -18,6 +18,25 @@ class PlayerServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_PlayerServiceDB", self)
         self.logger.debug("Initialized PlayerServiceDB")
 
+    async def create(
+        self,
+        item: PlayerSchemaCreate | PlayerSchemaUpdate,
+    ):
+        try:
+            player = self.model(
+                player_eesl_id=item.player_eesl_id,
+                sport_id=item.sport_id,
+                person_id=item.person_id,
+            )
+            self.logger.debug(f"Starting to create PlayerDB with data: {player.__dict__}")
+            return await super().create(player)
+        except Exception as ex:
+            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
+
     async def create_or_update_player(
         self,
         p: PlayerSchemaCreate | PlayerSchemaUpdate,

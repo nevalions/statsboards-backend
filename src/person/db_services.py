@@ -18,6 +18,29 @@ class PersonServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_PersonServiceDB", self)
         self.logger.debug("Initialized PersonServiceDB")
 
+    async def create(
+        self,
+        item: PersonSchemaCreate | PersonSchemaUpdate,
+    ):
+        try:
+            person = self.model(
+                person_eesl_id=item.person_eesl_id,
+                first_name=item.first_name,
+                second_name=item.second_name,
+                person_photo_url=item.person_photo_url,
+                person_photo_icon_url=item.person_photo_icon_url,
+                person_photo_web_url=item.person_photo_web_url,
+                person_dob=item.person_dob,
+            )
+            self.logger.debug(f"Starting to create PersonDB with data: {person.__dict__}")
+            return await super().create(person)
+        except Exception as ex:
+            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
+
     async def create_or_update_person(
         self,
         p: PersonSchemaCreate | PersonSchemaUpdate,

@@ -19,6 +19,33 @@ class TeamServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_TeamServiceDB", self)
         self.logger.debug(f"Initialized TeamServiceDB")
 
+    async def create(
+        self,
+        item: TeamSchemaCreate | TeamSchemaUpdate,
+    ):
+        try:
+            team = self.model(
+                team_eesl_id=item.team_eesl_id,
+                title=item.title,
+                city=item.city,
+                description=item.description,
+                team_logo_url=item.team_logo_url,
+                team_logo_icon_url=item.team_logo_icon_url,
+                team_logo_web_url=item.team_logo_web_url,
+                team_color=item.team_color,
+                sponsor_line_id=item.sponsor_line_id,
+                main_sponsor_id=item.main_sponsor_id,
+                sport_id=item.sport_id,
+            )
+            self.logger.debug(f"Starting to create TeamDB with data: {team.__dict__}")
+            return await super().create(team)
+        except Exception as ex:
+            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
+
     async def create_or_update_team(
         self,
         t: TeamSchemaCreate | TeamSchemaUpdate,

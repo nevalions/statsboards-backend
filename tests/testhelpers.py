@@ -28,8 +28,8 @@ def assert_http_exception_on_update(exc_info: ExceptionInfo):
 def assert_http_exception_on_delete(exc_info: ExceptionInfo):
     assert exc_info is not None
     assert isinstance(exc_info.value, HTTPException)
-    assert exc_info.value.status_code == 500
-    assert "Failed to delete element" in exc_info.value.detail
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail.lower()
 
 
 def assert_season_equal(expected: SeasonSchemaCreate, actual: SeasonSchemaCreate):

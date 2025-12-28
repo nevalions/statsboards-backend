@@ -121,7 +121,7 @@ class TestSeasonServiceDB:
         updated_season_data,
     ):
         """Test successful season update."""
-        updated_season = await test_season_service.update_season(
+        updated_season = await test_season_service.update(
             item_id=season.id, item=updated_season_data
         )
         assert updated_season is not None
@@ -131,11 +131,11 @@ class TestSeasonServiceDB:
         assert updated_season.year != season.year
         assert updated_season.year == TestData.get_season_data_for_update().year
 
-        # Reset the season back to its original state
+        # Reset season back to its original state
         reset_season_data = SeasonSchemaUpdate(
             year=season.year, description=season.description
         )
-        await test_season_service.update_season(
+        await test_season_service.update(
             item_id=season.id, item=reset_season_data
         )
         reset_season = await test_season_service.get_season_by_year(season.year)
@@ -150,7 +150,7 @@ class TestSeasonServiceDB:
         """Test failure during season update, expect HTTPException."""
         updated_season_data.year = None
         with pytest.raises(HTTPException) as exc_info:
-            await test_season_service.update_season(
+            await test_season_service.update(
                 item_id=season.id,
                 item=updated_season_data,
             )

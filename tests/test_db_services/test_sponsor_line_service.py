@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 from src.sponsor_lines.schemas import SponsorLineSchemaCreate, SponsorLineSchemaUpdate
 from tests.factories import SponsorLineFactory
 from tests.fixtures import (
@@ -85,6 +86,6 @@ class TestSponsorLineServiceDB:
         sponsor_line,
     ):
         """Test fail sponsor line deletion"""
-        assert_http_exception_on_delete(
+        with pytest.raises(HTTPException) as exc_info:
             await test_sponsor_line_service.delete(sponsor_line.id + 1)
-        )
+        assert_http_exception_on_delete(exc_info)

@@ -23,6 +23,28 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_PlayerTeamTournamentServiceDB")
         self.logger.debug("Initialized PlayerTeamTournamentServiceDB")
 
+    async def create(
+        self,
+        item: PlayerTeamTournamentSchemaCreate | PlayerTeamTournamentSchemaUpdate,
+    ):
+        try:
+            player_team_tournament = self.model(
+                player_team_tournament_eesl_id=item.player_team_tournament_eesl_id,
+                player_id=item.player_id,
+                position_id=item.position_id,
+                team_id=item.team_id,
+                tournament_id=item.tournament_id,
+                player_number=item.player_number,
+            )
+            self.logger.debug(f"Starting to create PlayerTeamTournamentDB with data: {player_team_tournament.__dict__}")
+            return await super().create(player_team_tournament)
+        except Exception as ex:
+            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
+
     async def create_or_update_player_team_tournament(
         self,
         p: PlayerTeamTournamentSchemaCreate | PlayerTeamTournamentSchemaUpdate,

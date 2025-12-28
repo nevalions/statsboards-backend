@@ -20,6 +20,30 @@ class MatchServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_MatchServiceDB", self)
         self.logger.debug("Initialized MatchServiceDB")
 
+    async def create(
+        self,
+        item: MatchSchemaCreate | MatchSchemaUpdate,
+    ):
+        try:
+            match = self.model(
+                match_date=item.match_date,
+                week=item.week,
+                match_eesl_id=item.match_eesl_id,
+                team_a_id=item.team_a_id,
+                team_b_id=item.team_b_id,
+                tournament_id=item.tournament_id,
+                sponsor_line_id=item.sponsor_line_id,
+                main_sponsor_id=item.main_sponsor_id,
+            )
+            self.logger.debug(f"Starting to create MatchDB with data: {match.__dict__}")
+            return await super().create(match)
+        except Exception as ex:
+            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
+
     async def create_or_update_match(self, m: MatchSchemaCreate):
         return await super().create_or_update(m, eesl_field_name="match_eesl_id")
 
