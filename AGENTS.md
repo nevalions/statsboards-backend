@@ -209,6 +209,26 @@ python src/run_prod_server.py
 - Use helper functions from `tests/testhelpers.py` for assertions
 - Test both success and error paths
 
+**Important:** Do NOT use SQLite for tests. Tests must use PostgreSQL because:
+- WebSocket functionality requires PostgreSQL LISTEN/NOTIFY features
+- Tests use PostgreSQL-specific data types and functions
+- Full compatibility with production database behavior is required
+- Connection pooling and transaction isolation behavior differs
+
+### PostgreSQL Test Performance Optimization
+
+Current optimizations already implemented:
+- Database echo disabled in test fixtures (tests/conftest.py:22)
+- Transaction rollback per test (fast cleanup without table drops)
+- No Alembic migrations (direct table creation)
+
+Additional optimization opportunities:
+- Session-scoped database engine (create tables once per session)
+- PostgreSQL connection pool tuning (pool_size, max_overflow)
+- PostgreSQL performance tuning (fsync=off, synchronous_commit=off)
+- Parallel test execution with pytest-xdist (`-n auto`)
+- Docker PostgreSQL performance settings in docker-compose.test-db-only.yml
+
 ### File Structure Per Domain
 
 Each domain module must contain:
