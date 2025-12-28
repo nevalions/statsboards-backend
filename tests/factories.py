@@ -6,6 +6,9 @@ from src.core.models.team import TeamDB
 from src.core.models.person import PersonDB
 from src.core.models.player import PlayerDB
 from src.core.models.match import MatchDB
+from src.core.models.position import PositionDB
+from src.core.models.sponsor import SponsorDB
+from src.core.models.sponsor_line import SponsorLineDB
 from tests.test_data import TestData
 from src.sports.schemas import SportSchemaCreate
 from src.seasons.schemas import SeasonSchemaCreate
@@ -14,6 +17,9 @@ from src.teams.schemas import TeamSchemaCreate
 from src.person.schemas import PersonSchemaCreate
 from src.player.schemas import PlayerSchemaCreate
 from src.matches.schemas import MatchSchemaCreate
+from src.positions.schemas import PositionSchemaCreate
+from src.sponsors.schemas import SponsorSchemaCreate
+from src.sponsor_lines.schemas import SponsorLineSchemaCreate
 
 
 class SportFactorySample(factory.Factory):
@@ -121,3 +127,28 @@ class MatchFactory(factory.Factory):
     team_b_id = None
     sponsor_line_id = None
     main_sponsor_id = None
+
+
+class PositionFactory(factory.Factory):
+    class Meta:
+        model = PositionSchemaCreate
+
+    title = factory.Sequence(lambda n: f"Position {n}")
+    sport_id = 1
+
+
+class SponsorFactory(factory.Factory):
+    class Meta:
+        model = SponsorSchemaCreate
+
+    title = factory.Sequence(lambda n: f"Sponsor {n}")
+    logo_url = factory.Sequence(lambda n: f"logo_url_{n}")
+    scale_logo = 1.0
+
+
+class SponsorLineFactory(factory.Factory):
+    class Meta:
+        model = SponsorLineSchemaCreate
+
+    title = factory.Sequence(lambda n: f"Sponsor Line {n}")
+    is_visible = False

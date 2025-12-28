@@ -1,6 +1,9 @@
 from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 from src.sports.schemas import SportSchemaCreate
 from src.tournaments.schemas import TournamentSchemaCreate
+from src.positions.schemas import PositionSchemaCreate, PositionSchemaUpdate
+from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
+from src.sponsor_lines.schemas import SponsorLineSchemaCreate, SponsorLineSchemaUpdate
 
 
 class TestData:
@@ -48,3 +51,23 @@ class TestData:
             sponsor_line_id=None,
             main_sponsor_id=None,
         )
+
+    @staticmethod
+    def get_position_data(sport_id=None) -> PositionSchemaCreate:
+        return PositionSchemaCreate(title="Quarterback", sport_id=sport_id)
+
+    @staticmethod
+    def get_position_data_for_update() -> PositionSchemaUpdate:
+        return PositionSchemaUpdate(title="Wide Receiver")
+
+    @staticmethod
+    def get_sponsor_data() -> SponsorSchemaCreate:
+        return SponsorSchemaCreate(title="Test Sponsor", logo_url="logo_url", scale_logo=1.0)
+
+    @staticmethod
+    def get_sponsor_data_for_update() -> SponsorSchemaUpdate:
+        return SponsorSchemaUpdate(title="Updated Sponsor", logo_url="updated_logo")
+
+    @staticmethod
+    def get_sponsor_line_data() -> SponsorLineSchemaCreate:
+        return SponsorLineSchemaCreate(title="Test Sponsor Line")

@@ -7,7 +7,10 @@ from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
-from tests.factories import SportFactorySample, SeasonFactorySample, TournamentFactory
+from src.positions.db_services import PositionServiceDB
+from src.sponsors.db_services import SponsorServiceDB
+from src.sponsor_lines.db_services import SponsorLineServiceDB
+from tests.factories import SportFactorySample, SeasonFactorySample, TournamentFactory, PositionFactory, SponsorFactory, SponsorLineFactory
 
 
 setup_logging()
@@ -116,3 +119,54 @@ def season_db_model():
     """Return a SeasonDB model instance for testing (not a schema)."""
     from src.core.models.season import SeasonDB
     return SeasonDB(year=2024, description="Test Season")
+
+
+@pytest_asyncio.fixture()
+async def test_position_service(test_db) -> PositionServiceDB:
+    return PositionServiceDB(test_db)
+
+
+@pytest_asyncio.fixture()
+async def test_sponsor_service(test_db) -> SponsorServiceDB:
+    return SponsorServiceDB(test_db)
+
+
+@pytest_asyncio.fixture()
+async def test_sponsor_line_service(test_db) -> SponsorLineServiceDB:
+    return SponsorLineServiceDB(test_db)
+
+
+@pytest_asyncio.fixture
+async def position(test_position_service, sport):
+    """Create and return a position instance in database."""
+    try:
+        test_logger.info(f"Creating test position")
+        data = PositionFactory.build(sport_id=sport.id)
+        position = await test_position_service.create(data)
+        return position
+    except Exception as e:
+        test_logger.error(f"Error creating test position {e}", exc_info=True)
+
+
+@pytest_asyncio.fixture
+async def sponsor(test_sponsor_service):
+    """Create and return a sponsor instance in database."""
+    try:
+        test_logger.info(f"Creating test sponsor")
+        data = SponsorFactory.build()
+        sponsor = await test_sponsor_service.create(data)
+        return sponsor
+    except Exception as e:
+        test_logger.error(f"Error creating test sponsor {e}", exc_info=True)
+
+
+@pytest_asyncio.fixture
+async def sponsor_line(test_sponsor_line_service):
+    """Create and return a sponsor line instance in database."""
+    try:
+        test_logger.info(f"Creating test sponsor line")
+        data = SponsorLineFactory.build()
+        sponsor_line = await test_sponsor_line_service.create(data)
+        return sponsor_line
+    except Exception as e:
+        test_logger.error(f"Error creating test sponsor line {e}", exc_info=True)
