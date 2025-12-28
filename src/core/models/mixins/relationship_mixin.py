@@ -140,7 +140,8 @@ class RelationshipMixin:
                     select(self.model)
                     .where(self.model.id == item_id)
                     .options(selectinload(getattr(self.model, related_property)))
-                    if related_property else None
+                    if related_property
+                    else select(self.model).where(self.model.id == item_id)
                 )
 
                 item = await session.execute(query)
@@ -245,8 +246,13 @@ class RelationshipMixin:
                     all_related_items = getattr(item.scalars().one(), related_property)
 
                     if all_related_items:
+                        item_count = (
+                            len(all_related_items)
+                            if hasattr(all_related_items, "__len__")
+                            else 1
+                        )
                         self.logger.debug(
-                            f"Related items ({len(all_related_items)}) found for property: {related_property} "
+                            f"Related items ({item_count}) found for property: {related_property} "
                             f"for model {self.model.__name__}"
                         )
                     else:
