@@ -30,9 +30,10 @@ def apply_migrations():
 @pytest_asyncio.fixture(scope="function")
 async def test_db(apply_migrations):
     """Database fixture that ensures a clean state using transactions."""
-    assert "test" in db_url, "Test DB URL must contain 'test'"
+    db_url_str = str(db_url)
+    assert "test" in db_url_str, "Test DB URL must contain 'test'"
 
-    database = Database(db_url, echo=True)
+    database = Database(db_url_str, echo=False)  # Disable echo for speed
 
     # Create tables at the start of each test
     async with database.engine.begin() as conn:
