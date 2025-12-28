@@ -35,9 +35,5 @@ async def test_db():
             if transaction.is_active:
                 await transaction.rollback()
         finally:
-            # Cleanup after test: drop tables
-            async with database.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.drop_all)
-
-    # Dispose of engine after test
-    await database.close()
+            # No need to drop tables - transaction rollback cleans up
+            pass
