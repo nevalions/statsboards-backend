@@ -35,7 +35,7 @@ class ScoreboardAPIRouter(
             self.logger.debug(f"Create scoreboard endpoint got data: {scoreboard_data}")
             try:
                 new_scoreboard = await self.service.create_scoreboard(scoreboard_data)
-                return new_scoreboard.__dict__
+                return ScoreboardSchema.model_validate(new_scoreboard)
             except Exception as ex:
                 self.logger.error(
                     f"Error creating scoreboard with data: {scoreboard_data} {ex}",
@@ -84,7 +84,7 @@ class ScoreboardAPIRouter(
             self.logger.debug(f"Update scoreboard endpoint by ID")
             if item:
                 return {
-                    "content": item.__dict__,
+                    "content": ScoreboardSchema.model_validate(item).model_dump(),
                     "status_code": status.HTTP_200_OK,
                     "success": True,
                 }
@@ -107,7 +107,7 @@ class ScoreboardAPIRouter(
                     status_code=404,
                     detail=f"Scoreboard match id({match_id}) not found",
                 )
-            return scoreboard.__dict__
+            return ScoreboardSchema.model_validate(scoreboard)
 
         @router.get(
             "/matchdata/id/{matchdata_id}",
@@ -126,7 +126,7 @@ class ScoreboardAPIRouter(
                     status_code=404,
                     detail=f"Scoreboard match id({matchdata_id}) not found",
                 )
-            return scoreboard.__dict__
+            return ScoreboardSchema.model_validate(scoreboard)
 
         """triggers for sse process, now we use websocket"""
         # @router.get("/matchdata/id/{match_data_id}/events/scoreboard_data/")

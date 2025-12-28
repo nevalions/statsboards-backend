@@ -36,7 +36,7 @@ class SponsorLineAPIRouter(
             try:
                 self.logger.debug(f"Create sponsor line endpoint")
                 new_ = await self.service.create_sponsor_line(item)
-                return new_.__dict__
+                return SponsorLineSchema.model_validate(new_)
             except Exception as e:
                 self.logger.error(
                     f"Error creating sponsor line endpoint {e}", exc_info=True
@@ -61,7 +61,7 @@ class SponsorLineAPIRouter(
                         status_code=404,
                         detail=f"SponsorLine id:{item_id} not found",
                     )
-                return update_.__dict__
+                return SponsorLineSchema.model_validate(update_)
             except Exception as e:
                 self.logger.error(
                     f"Error updating sponsor line endpoint {e}", exc_info=True

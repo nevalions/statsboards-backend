@@ -42,7 +42,7 @@ class PlayClockAPIRouter(
             self.logger.debug(f"Create playclock endpoint got data: {playclock_data}")
             try:
                 new_playclock = await self.service.create_playclock(playclock_data)
-                return new_playclock.__dict__
+                return PlayClockSchema.model_validate(new_playclock)
             except Exception as ex:
                 self.logger.error(
                     f"Error creating playclock with data: {playclock_data} {ex}",
@@ -91,7 +91,7 @@ class PlayClockAPIRouter(
             self.logger.debug(f"Update playclock endpoint by ID")
             if item:
                 return {
-                    "content": item.__dict__,
+                    "content": PlayClockSchema.model_validate(item).model_dump(),
                     "status_code": status.HTTP_200_OK,
                     "success": True,
                 }

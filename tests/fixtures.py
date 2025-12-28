@@ -1,4 +1,6 @@
 import logging
+
+import pytest
 import pytest_asyncio
 
 from src.logging_config import setup_logging

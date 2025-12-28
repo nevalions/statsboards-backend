@@ -61,7 +61,7 @@ class PlayerTeamTournamentAPIRouter(
                     )
                 )
                 if new_player_team_tournament:
-                    return new_player_team_tournament.__dict__
+                    return PlayerTeamTournamentSchema.model_validate(new_player_team_tournament)
                 else:
                     raise HTTPException(
                         status_code=409, detail="Player_team_tournament creation fail"
@@ -91,7 +91,7 @@ class PlayerTeamTournamentAPIRouter(
                         status_code=404,
                         detail=f"player_team_tournament by eesl_id({eesl_id}) not found",
                     )
-                return tournament.__dict__
+                return PlayerTeamTournamentSchema.model_validate(tournament)
             except Exception as e:
                 self.logger.error(
                     f"Error getting player_team_tournament by eesl_id {eesl_id} {e}",
@@ -118,7 +118,7 @@ class PlayerTeamTournamentAPIRouter(
                         status_code=404,
                         detail=f"Player team tournament id {item_id} not found",
                     )
-                return update_.__dict__
+                return PlayerTeamTournamentSchema.model_validate(update_)
             except Exception as e:
                 self.logger.error(
                     f"Error updating player_team_tournament with data {item_id} {e}",

@@ -61,7 +61,7 @@ class TeamTournamentRouter(
                 raise HTTPException(
                     status_code=404, detail=f"Team Tournament id {item_id} not found"
                 )
-            return update_.__dict__
+            return TeamTournamentSchema.model_validate(update_)
 
         @router.get("/{team_id}in{tournament_id}")
         async def get_team_tournament_relation_endpoint(team_id: int, tournament_id: int):

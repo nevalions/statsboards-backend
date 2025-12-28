@@ -35,7 +35,7 @@ class SportAPIRouter(
         async def create_sport_endpoint(item: SportSchemaCreate):
             self.logger.debug(f"Create sport endpoint got data: {item}")
             new_ = await self.service.create_sport(item)
-            return new_.__dict__
+            return SportSchema.model_validate(new_)
 
         @router.put(
             "/",
@@ -55,7 +55,7 @@ class SportAPIRouter(
                     status_code=404,
                     detail=f"Sport id:{item_id} not found",
                 )
-            return update_.__dict__
+            return SportSchema.model_validate(update_)
 
         @router.get(
             "/id/{item_id}/",

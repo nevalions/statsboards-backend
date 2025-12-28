@@ -76,7 +76,7 @@ class SponsorSponsorLineAPIRouter(
                         status_code=404,
                         detail=f"Team Tournament id {item_id} not found",
                     )
-                return update_.__dict__
+                return SponsorSponsorLineSchema.model_validate(update_)
             except Exception as e:
                 self.logger.error(
                     f"Error updating sponsor sponsor line endpoint: {e}", exc_info=True

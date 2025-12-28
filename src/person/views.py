@@ -35,7 +35,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             self.logger.debug(f"Create or update person endpoint got data: {person}")
             new_person = await self.service.create_or_update_person(person)
             if new_person:
-                return new_person.__dict__
+                return PersonSchema.model_validate(new_person)
             else:
                 self.logger.error(
                     f"Error on create or update person got data: {person}"
@@ -59,7 +59,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                         status_code=404,
                         detail=f"Tournament eesl_id({person_eesl_id}) not found",
                     )
-                return tournament.__dict__
+                return PersonSchema.model_validate(tournament)
             except Exception as ex:
                 self.logger.error(f"Error on get person by eesl_id: {ex}", exc_info=ex)
 
@@ -78,7 +78,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                     raise HTTPException(
                         status_code=404, detail=f"Person id {item_id} not found"
                     )
-                return update_.__dict__
+                return PersonSchema.model_validate(update_)
             except Exception as ex:
                 self.logger.error(
                     f"Error on update person, got data: {ex}", exc_info=ex

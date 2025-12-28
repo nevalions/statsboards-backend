@@ -45,7 +45,7 @@ class MatchDataAPIRouter(
             self.logger.debug(f"Create matchdata endpoint got data: {match_data}")
             try:
                 new_match_data = await self.service.create_match_data(match_data)
-                return new_match_data.__dict__
+                return MatchDataSchema.model_validate(new_match_data)
             except Exception as ex:
                 self.logger.error(
                     f"Error creating matchdata with data: {match_data} {ex}",
@@ -96,7 +96,7 @@ class MatchDataAPIRouter(
             self.logger.debug(f"Update matchdata by ID")
             if item:
                 return {
-                    "content": item.__dict__,
+                    "content": MatchDataSchema.model_validate(item).model_dump(),
                     "status_code": status.HTTP_200_OK,
                     "success": True,
                 }

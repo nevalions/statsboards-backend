@@ -1,7 +1,9 @@
 from typing import TypeVar, Generic, Optional, Any
-
 from fastapi import APIRouter, HTTPException
 from starlette import status
+from pydantic import BaseModel
+
+from .response_schemas import ResponseModel
 
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType")
@@ -24,6 +26,18 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 "status_code": status.HTTP_200_OK,
                 "success": True,
             }
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"'{message}' ELEMENT NOT FOUND",
+        )
+
+    @staticmethod
+    def create_pydantic_response(
+        item: Optional[BaseModel], message: str, _type: str = "text"
+    ) -> ResponseModel[BaseModel]:
+        if item:
+            return ResponseModel.success_response(item, message)
 
         raise HTTPException(
             status_code=404,

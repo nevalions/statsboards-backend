@@ -29,7 +29,7 @@ class PositionAPIRouter(
                 )
                 new_position = await self.service.create_new_position(position)
                 if new_position:
-                    return new_position.__dict__
+                    return PositionSchema.model_validate(new_position)
                 else:
                     self.logger.error(f"Error on create position got data: {position}")
                     raise HTTPException(
@@ -55,7 +55,7 @@ class PositionAPIRouter(
                     raise HTTPException(
                         status_code=404, detail=f"Position id {item_id} not found"
                     )
-                return update_.__dict__
+                return PositionSchema.model_validate(update_)
             except Exception as ex:
                 self.logger.error(
                     f"Error on update postion, got data: {ex}", exc_info=ex

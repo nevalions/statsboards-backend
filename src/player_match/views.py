@@ -50,7 +50,7 @@ class PlayerMatchAPIRouter(
                     player_match
                 )
                 if new_player_match:
-                    return new_player_match.__dict__
+                    return PlayerMatchSchema.model_validate(new_player_match)
                 else:
                     raise HTTPException(
                         status_code=409, detail=f"Player in match creation fail"
@@ -80,7 +80,7 @@ class PlayerMatchAPIRouter(
                         status_code=404,
                         detail=f"Tournament eesl_id({player_match_eesl_id}) not found",
                     )
-                return tournament.__dict__
+                return PlayerMatchSchema.model_validate(tournament)
             except Exception as ex:
                 self.logger.error(
                     f"Error getting player in match with match eesl_id {player_match_eesl_id} {ex}",
@@ -103,7 +103,7 @@ class PlayerMatchAPIRouter(
                         status_code=404,
                         detail=f"Player team tournament id {item_id} not found",
                     )
-                return update_.__dict__
+                return PlayerMatchSchema.model_validate(update_)
             except Exception as ex:
                 self.logger.error(
                     f"Error updating player in match with data: {item}", exc_info=ex

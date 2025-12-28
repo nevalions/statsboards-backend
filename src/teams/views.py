@@ -66,7 +66,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     status_code=400,
                     detail=f"Error creating new team",
                 )
-            return new_team.__dict__
+            return TeamSchema.model_validate(new_team)
 
         @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)
         async def get_team_by_eesl_id_endpoint(
@@ -80,7 +80,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     status_code=404,
                     detail=f"Tournament eesl_id({eesl_id}) " f"not found",
                 )
-            return team.__dict__
+            return TeamSchema.model_validate(team)
 
         @router.put(
             "/{item_id}/",
@@ -96,7 +96,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 raise HTTPException(
                     status_code=404, detail=f"Team id {item_id} not found"
                 )
-            return update_.__dict__
+            return TeamSchema.model_validate(update_)
 
         @router.get("/id/{team_id}/matches/")
         async def get_matches_by_team_endpoint(team_id: int):

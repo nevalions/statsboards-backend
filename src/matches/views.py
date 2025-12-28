@@ -75,7 +75,7 @@ class MatchAPIRouter(
             self.logger.debug(f"Create or update match endpoint got data: {match}")
             new_match = await self.service.create_or_update_match(match)
             if new_match:
-                return new_match.__dict__
+                return MatchSchema.model_validate(new_match)
             else:
                 self.logger.error(f"Error creating match with data: {match}")
                 raise HTTPException(status_code=409, detail="Match creation fail")
@@ -175,7 +175,7 @@ class MatchAPIRouter(
                 raise HTTPException(
                     status_code=404, detail=f"Match id({item_id}) not found"
                 )
-            return match_update.__dict__
+            return MatchSchema.model_validate(match_update)
 
         @router.get(
             "/eesl_id/{eesl_id}/",
@@ -189,7 +189,7 @@ class MatchAPIRouter(
                     status_code=404,
                     detail=f"Match eesl_id({eesl_id}) not found",
                 )
-            return match.__dict__
+            return MatchSchema.model_validate(match)
 
         @router.get(
             "/id/{match_id}/sport/",
@@ -887,9 +887,9 @@ class MatchAPIRouter(
                     default_gameclock
                 )
                 self.logger.info(
-                    f"Created match with full data and scoreboard {new_match.__dict__}"
+                    f"Created match with full data and scoreboard {MatchSchema.model_validate(new_match)}"
                 )
-                return new_match.__dict__
+                return MatchSchema.model_validate(new_match)
             except Exception as e:
                 self.logger.error(
                     f"Error creating match with full data and scoreboard: {str(e)}",

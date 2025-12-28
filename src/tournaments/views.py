@@ -51,7 +51,7 @@ class TournamentAPIRouter(
         async def create_tournament_endpoint(item: TournamentSchemaCreate):
             self.logger.debug(f"Create or update tournament endpoint got data: {item}")
             new_ = await self.service.create_or_update_tournament(item)
-            return new_.__dict__
+            return TournamentSchema.model_validate(new_)
 
         @router.put(
             "/{item_id}/",
@@ -67,7 +67,7 @@ class TournamentAPIRouter(
                 raise HTTPException(
                     status_code=404, detail=f"Tournament id {item_id} not found"
                 )
-            return update_.__dict__
+            return TournamentSchema.model_validate(update_)
 
         @router.get(
             "/eesl_id/{eesl_id}",
@@ -83,7 +83,7 @@ class TournamentAPIRouter(
                     status_code=404,
                     detail=f"Tournament eesl_id({eesl_id}) not found",
                 )
-            return tournament.__dict__
+            return TournamentSchema.model_validate(tournament)
 
         @router.get("/id/{tournament_id}/teams/")
         async def get_teams_by_tournament_id_endpoint(tournament_id: int):

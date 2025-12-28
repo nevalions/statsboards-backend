@@ -34,7 +34,7 @@ class SeasonAPIRouter(
             try:
                 new_ = await self.service.create_season(item)
                 if new_:
-                    return new_.__dict__
+                    return SeasonSchema.model_validate(new_)
                 else:
                     raise HTTPException(
                         status_code=400,
@@ -61,7 +61,7 @@ class SeasonAPIRouter(
                     status_code=404,
                     detail="Season not found",
                 )
-            return update_.__dict__
+            return SeasonSchema.model_validate(update_)
 
         @router.get(
             "/id/{item_id}/",
@@ -97,7 +97,7 @@ class SeasonAPIRouter(
                     status_code=404,
                     detail=f"Season {season_year} not found",
                 )
-            return season.__dict__
+            return SeasonSchema.model_validate(season)
 
         @router.get("/year/{year}/tournaments")
         async def tournaments_by_year_endpoint(year: int):

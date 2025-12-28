@@ -39,7 +39,7 @@ class GameClockAPIRouter(
             self.logger.debug(f"Create gameclock endpoint got data: {gameclock_data}")
             try:
                 new_gameclock = await self.service.create_gameclock(gameclock_data)
-                return new_gameclock.__dict__
+                return GameClockSchema.model_validate(new_gameclock)
             except Exception as ex:
                 self.logger.error(
                     f"Error creating gameclock with data: {gameclock_data} {ex}",
@@ -88,7 +88,7 @@ class GameClockAPIRouter(
             self.logger.debug(f"Update gameclock endpoint by ID")
             if item:
                 return {
-                    "content": item.__dict__,
+                    "content": GameClockSchema.model_validate(item).model_dump(),
                     "status_code": status.HTTP_200_OK,
                     "success": True,
                 }

@@ -33,7 +33,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             self.logger.debug(f"Create or update player endpoint got data: {player}")
             new_player = await self.service.create_or_update_player(player)
             if new_player:
-                return new_player.__dict__
+                return PlayerSchema.model_validate(new_player)
             else:
                 self.logger.error(
                     f"Error on create or update player, got data: {player}"
@@ -54,7 +54,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                         status_code=404,
                         detail=f"Player eesl_id({player_eesl_id}) not found",
                     )
-                return player.__dict__
+                return PlayerSchema.model_validate(player)
             except Exception as ex:
                 self.logger.error(
                     f"Error on get player by eesl_id: {player_eesl_id} {ex}",
@@ -76,7 +76,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                     raise HTTPException(
                         status_code=404, detail=f"Player id {item_id} not found"
                     )
-                return update_.__dict__
+                return PlayerSchema.model_validate(update_)
             except Exception as ex:
                 self.logger.error(f"Error on update player: {item} {ex}", exc_info=True)
 
