@@ -42,19 +42,19 @@ class GameClockServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_GameClockServiceDB", self)
         self.logger.debug("Initialized GameClockServiceDB")
 
-    async def create_gameclock(self, gameclock: GameClockSchemaCreate):
-        self.logger.debug(f"Create gameclock: {gameclock}")
+    async def create(self, item: GameClockSchemaCreate):
+        self.logger.debug(f"Create gameclock: {item}")
         async with self.db.async_session() as session:
             try:
                 gameclock_result = GameClockDB(
-                    gameclock=gameclock.gameclock,
-                    gameclock_max=gameclock.gameclock_max,
-                    gameclock_status=gameclock.gameclock_status,
-                    match_id=gameclock.match_id,
+                    gameclock=item.gameclock,
+                    gameclock_max=item.gameclock_max,
+                    gameclock_status=item.gameclock_status,
+                    match_id=item.match_id,
                 )
 
                 self.logger.debug("Is gameclock exist")
-                is_exist = await self.get_gameclock_by_match_id(gameclock.match_id)
+                is_exist = await self.get_gameclock_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"gameclock already exists: {gameclock_result}")
                     return gameclock_result
@@ -67,7 +67,7 @@ class GameClockServiceDB(BaseServiceDB):
                 return gameclock_result
             except Exception as ex:
                 self.logger.error(
-                    f"Error creating gameclock with data: {gameclock} {ex}",
+                    f"Error creating gameclock with data: {item} {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
@@ -97,7 +97,7 @@ class GameClockServiceDB(BaseServiceDB):
         self.logger.info(f"Gameclock enabled successfully {gameclock}")
         return match_queue
 
-    async def update_gameclock(
+    async def update(
         self,
         item_id: int,
         item: GameClockSchemaUpdate,

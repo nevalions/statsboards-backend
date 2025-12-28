@@ -18,7 +18,7 @@ class PositionServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_PositionServiceDB", self)
         self.logger.debug(f"Initialized PositionServiceDB")
 
-    async def create_new_position(
+    async def create(
         self,
         p: PositionSchemaCreate,
     ):
@@ -32,7 +32,7 @@ class PositionServiceDB(BaseServiceDB):
         except Exception as ex:
             self.logger.error(f"Error creating new position {p} {ex}", exc_info=True)
 
-    async def update_position(
+    async def update(
         self,
         item_id: int,
         item: PositionSchemaUpdate,

@@ -32,7 +32,7 @@ class SeasonAPIRouter(
         async def create_season_endpoint(item: SeasonSchemaCreate):
             self.logger.debug(f"Create season endpoint got data: {item}")
             try:
-                new_ = await self.service.create_season(item)
+                new_ = await self.service.create(item)
                 if new_:
                     return SeasonSchema.model_validate(new_)
                 else:
@@ -52,7 +52,7 @@ class SeasonAPIRouter(
             item: SeasonSchemaUpdate,
         ):
             self.logger.debug(f"Update season endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update_season(
+            update_ = await self.service.update(
                 item_id,
                 item,
             )

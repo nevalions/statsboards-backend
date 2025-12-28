@@ -42,11 +42,11 @@ class TestCreateOrUpdateGeneric:
         """Test creating new record when eesl_id doesn't exist in DB."""
         sport = SportFactorySample.build()
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create_sport(sport)
+        created_sport = await sport_service.create(sport)
 
         season = SeasonFactorySample.build()
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create_season(season)
+        created_season = await season_service.create(season)
 
         tournament_service = TournamentServiceDB(test_db)
         tournament_data = TournamentFactory.build(
@@ -89,11 +89,11 @@ class TestCreateOrUpdateGeneric:
         """Test updating existing record by eesl_id."""
         sport = SportFactorySample.build()
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create_sport(sport)
+        created_sport = await sport_service.create(sport)
 
         season = SeasonFactorySample.build()
         season_service = SeasonServiceDB(test_db)
-        created_season = await season_service.create_season(season)
+        created_season = await season_service.create(season)
 
         tournament_service = TournamentServiceDB(test_db)
         tournament_data = TournamentFactory.build(

@@ -41,17 +41,17 @@ class PlayClockServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_PlayClockServiceDB", self)
         self.logger.debug(f"Initialized PlayClockServiceDB")
 
-    async def create_playclock(self, playclock: PlayClockSchemaCreate):
-        self.logger.debug(f"Create playclock: {playclock}")
+    async def create(self, item: PlayClockSchemaCreate):
+        self.logger.debug(f"Create playclock: {item}")
         async with self.db.async_session() as session:
             try:
                 playclock_result = PlayClockDB(
-                    playclock=playclock.playclock,
-                    playclock_status=playclock.playclock_status,
-                    match_id=playclock.match_id,
+                    playclock=item.playclock,
+                    playclock_status=item.playclock_status,
+                    match_id=item.match_id,
                 )
                 self.logger.debug(f"Is playclock exist")
-                is_exist = await self.get_playclock_by_match_id(playclock.match_id)
+                is_exist = await self.get_playclock_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"Playclock already exists: {playclock_result}")
                     return playclock_result
@@ -64,13 +64,13 @@ class PlayClockServiceDB(BaseServiceDB):
                 return playclock_result
             except Exception as ex:
                 self.logger.error(
-                    f"Error creating playclock with data: {playclock} {ex}",
+                    f"Error creating playclock with data: {item} {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating playclock "
-                    f"for match id({playclock.match_id})"
+                    f"for match id({item.match_id})"
                     f"returned some error",
                 )
 
@@ -96,7 +96,7 @@ class PlayClockServiceDB(BaseServiceDB):
         self.logger.info(f"Playclock enabled successfully {playclock}")
         return match_queue
 
-    async def update_playclock(
+    async def update(
         self,
         item_id: int,
         item: PlayClockSchemaUpdate,

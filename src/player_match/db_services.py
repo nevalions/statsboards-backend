@@ -221,7 +221,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 f"Error getting {ITEM} with full data {ex}", exc_info=True
             )
 
-    async def update_player_match(
+    async def update(
         self,
         item_id: int,
         item: PlayerMatchSchemaUpdate,

@@ -113,7 +113,7 @@ class TeamServiceDB(BaseServiceDB):
                 exc_info=True,
             )
 
-    async def update_team(
+    async def update(
         self,
         item_id: int,
         item: TeamSchemaUpdate,

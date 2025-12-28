@@ -97,7 +97,7 @@ class PlayerMatchAPIRouter(
         ):
             try:
                 self.logger.debug(f"Update player in match endpoint with data: {item}")
-                update_ = await self.service.update_player_match(item_id, item)
+                update_ = await self.service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,
@@ -199,7 +199,7 @@ class PlayerMatchAPIRouter(
                                 "sport_id": 1,
                             }
                             self.logger.debug(f"Creating new position for home player")
-                            position = await PositionServiceDB(db).create_new_position(
+                            position = await PositionServiceDB(db).create(
                                 PositionSchemaCreate(**position_schema)
                             )
                         person = await PersonServiceDB(db).get_person_by_eesl_id(
@@ -365,7 +365,7 @@ class PlayerMatchAPIRouter(
                                 "sport_id": 1,
                             }
                             self.logger.debug(f"Creating new position for away player")
-                            position = await PositionServiceDB(db).create_new_position(
+                            position = await PositionServiceDB(db).create(
                                 PositionSchemaCreate(**position_schema)
                             )
                         person = await PersonServiceDB(db).get_person_by_eesl_id(

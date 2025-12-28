@@ -44,7 +44,7 @@ class TestSeasonServiceDB:
         season_sample,
     ):
         """Test successful season creation."""
-        created_season: SeasonSchemaCreate = await test_season_service.create_season(
+        created_season: SeasonSchemaCreate = await test_season_service.create(
             season_sample
         )
         assert_season_equal(season_sample, created_season)
@@ -89,7 +89,7 @@ class TestSeasonServiceDB:
         season_sample,
     ):
         """Test season not found by year."""
-        await test_season_service.create_season(season_sample)
+        await test_season_service.create(season_sample)
         got_season = await test_season_service.get_by_id(0)
 
         assert got_season is None
@@ -164,7 +164,7 @@ class TestSeasonServiceDB:
     ):
         """Test attempting to create a duplicate season."""
         with pytest.raises(HTTPException) as exc_info:
-            await test_season_service.create_season(season)
+            await test_season_service.create(season)
 
         assert_http_exception_on_create(exc_info)
 

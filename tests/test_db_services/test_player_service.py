@@ -34,7 +34,7 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test creating a player with eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create_sport(sport)
+        created_sport = await sport_service.create(sport)
 
         person_service = PersonServiceDB(test_db)
         created_person = await person_service.create_or_update_person(person)
@@ -58,7 +58,7 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test creating a player without eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create_sport(sport)
+        created_sport = await sport_service.create(sport)
 
         person_service = PersonServiceDB(test_db)
         created_person = await person_service.create_or_update_person(person)
@@ -79,7 +79,7 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test updating an existing player by eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create_sport(sport)
+        created_sport = await sport_service.create(sport)
 
         person_service = PersonServiceDB(test_db)
         created_person = await person_service.create_or_update_person(person)
@@ -102,7 +102,7 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test creating multiple players."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create_sport(sport)
+        created_sport = await sport_service.create(sport)
 
         person_service = PersonServiceDB(test_db)
         created_person = await person_service.create_or_update_person(person)
@@ -128,7 +128,7 @@ class TestPlayerServiceDBCreateOrUpdate:
     ):
         """Test retrieving player by eesl_id."""
         sport_service = SportServiceDB(test_db)
-        created_sport = await sport_service.create_sport(sport)
+        created_sport = await sport_service.create(sport)
 
         person_service = PersonServiceDB(test_db)
         created_person = await person_service.create_or_update_person(person)

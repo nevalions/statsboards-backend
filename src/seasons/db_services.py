@@ -19,12 +19,12 @@ class SeasonServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_SeasonServiceDB", self)
         self.logger.debug(f"Initialized SeasonServiceDB")
 
-    async def create_season(self, s: SeasonSchemaCreate):
-        self.logger.debug(f"Creat {ITEM}:{s}")
+    async def create(self, item: SeasonSchemaCreate):
+        self.logger.debug(f"Creat {ITEM}:{item}")
         try:
             season = self.model(
-                year=s.year,
-                description=s.description,
+                year=item.year,
+                description=item.description,
             )
             return await super().create(season)
         except Exception as e:
@@ -34,7 +34,7 @@ class SeasonServiceDB(BaseServiceDB):
                 detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
             )
 
-    async def update_season(
+    async def update(
         self,
         item_id: int,
         item: SeasonSchemaUpdate,

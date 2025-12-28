@@ -19,13 +19,13 @@ class TestRelationshipMixin:
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
 
-        sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build())
+        sport = await sport_service.create(SportFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build())
 
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create_tournament(tournament_data)
+        tournament = await tournament_service.create(tournament_data)
 
         result = await tournament_service.get_related_items(
             tournament.id, related_property="sport"
@@ -40,13 +40,13 @@ class TestRelationshipMixin:
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
 
-        sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build())
+        sport = await sport_service.create(SportFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build())
 
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create_tournament(tournament_data)
+        tournament = await tournament_service.create(tournament_data)
 
         result = await tournament_service.get_related_items(tournament.id)
         assert result is not None
@@ -88,13 +88,13 @@ class TestRelationshipMixin:
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
 
-        sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build())
+        sport = await sport_service.create(SportFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build())
 
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create_tournament(tournament_data)
+        tournament = await tournament_service.create(tournament_data)
 
         result = await tournament_service.get_nested_related_item_by_id(
             tournament.id,
@@ -108,7 +108,7 @@ class TestRelationshipMixin:
     async def test_get_related_item_level_one_by_key_and_value(self, test_db):
         """Test get_related_item_level_one_by_key_and_value."""
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create_season(SeasonFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build())
 
         result = await season_service.get_related_item_level_one_by_key_and_value(
             "id", season.id, "tournaments"
@@ -122,13 +122,13 @@ class TestRelationshipMixin:
         sport_service = SportServiceDB(test_db)
         tournament_service = TournamentServiceDB(test_db)
 
-        sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build())
+        sport = await sport_service.create(SportFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build())
 
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create_tournament(tournament_data)
+        tournament = await tournament_service.create(tournament_data)
 
         result = await season_service.get_related_items_by_two(
             "id",

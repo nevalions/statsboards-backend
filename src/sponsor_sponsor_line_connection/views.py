@@ -42,7 +42,7 @@ class SponsorSponsorLineAPIRouter(
                     sponsor_line_id=sponsor_line_id,
                     sponsor_id=sponsor_id,
                 )
-                new_ = await self.service.create_sponsor_sponsor_line_relation(
+                new_ = await self.service.create(
                     sponsor_sponsor_line_schema_create
                 )
                 if new_:
@@ -70,7 +70,7 @@ class SponsorSponsorLineAPIRouter(
         ):
             try:
                 self.logger.debug(f"Updating sponsor sponsor line endpoint")
-                update_ = await self.service.update_sponsor_sponsor_line(item_id, item)
+                update_ = await self.service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,

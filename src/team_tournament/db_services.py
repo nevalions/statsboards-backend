@@ -17,20 +17,20 @@ class TeamTournamentServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_TeamTournamentServiceDB", self)
         self.logger.debug(f"Initialized TeamTournamentServiceDB")
 
-    async def create_team_tournament_relation(
+    async def create(
         self,
-        team_tournament: TeamTournamentSchemaCreate,
+        item: TeamTournamentSchemaCreate,
     ):
-        self.logger.debug(f"Creat {ITEM} relation:{team_tournament}")
+        self.logger.debug(f"Creat {ITEM} relation:{item}")
         is_relation_exist = await self.get_team_tournament_relation(
-            team_tournament.team_id,
-            team_tournament.tournament_id,
+            item.team_id,
+            item.tournament_id,
         )
         if is_relation_exist:
             return is_relation_exist
         new_team_tournament = self.model(
-            team_id=team_tournament.team_id,
-            tournament_id=team_tournament.tournament_id,
+            team_id=item.team_id,
+            tournament_id=item.tournament_id,
         )
         return await super().create(new_team_tournament)
 

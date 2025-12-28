@@ -16,23 +16,23 @@ class SponsorServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_SponsorServiceDB", self)
         self.logger.debug(f"Initialized SponsorServiceDB")
 
-    async def create_sponsor(
+    async def create(
         self,
-        t: SponsorSchemaCreate,
+        item: SponsorSchemaCreate,
     ):
         try:
-            self.logger.debug(f"Creating {ITEM} {t}")
+            self.logger.debug(f"Creating {ITEM} {item}")
             sponsor = self.model(
-                title=t.title,
-                logo_url=t.logo_url,
-                scale_logo=t.scale_logo,
+                title=item.title,
+                logo_url=item.logo_url,
+                scale_logo=item.scale_logo,
             )
 
             return await super().create(sponsor)
         except Exception as e:
             self.logger.error(f"Error creating {ITEM}: {e}", exc_info=True)
 
-    async def update_sponsor(
+    async def update(
         self,
         item_id: int,
         item: SponsorSchemaUpdate,

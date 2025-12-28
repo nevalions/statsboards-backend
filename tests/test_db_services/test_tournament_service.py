@@ -40,7 +40,7 @@ class TestTournamentServiceDB:
     ):
         """Test creating a tournament with related sport and season."""
         created_tournament: TournamentSchemaCreate = (
-            await test_tournament_service.create_tournament(tournament_sample)
+            await test_tournament_service.create(tournament_sample)
         )
         assert created_tournament.season_id == season.id
         assert created_tournament.sport_id == sport.id
@@ -60,7 +60,7 @@ class TestTournamentServiceDB:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await test_tournament_service.create_tournament(invalid_tournament_sample)
+            await test_tournament_service.create(invalid_tournament_sample)
 
         assert_http_exception_on_create(exc_info)
 
@@ -76,7 +76,7 @@ class TestTournamentServiceDB:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await test_tournament_service.create_tournament(invalid_tournament_sample)
+            await test_tournament_service.create(invalid_tournament_sample)
 
         assert_http_exception_on_create(exc_info)
 
@@ -91,7 +91,7 @@ class TestTournamentServiceDB:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await test_tournament_service.create_tournament(invalid_tournament_sample)
+            await test_tournament_service.create(invalid_tournament_sample)
 
         assert_http_exception_on_create(exc_info)
 

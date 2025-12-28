@@ -169,7 +169,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         except Exception as ex:
             self.logger.error(f"Error getting {ITEM} with person {ex}", exc_info=True)
 
-    async def update_player_team_tournament(
+    async def update(
         self,
         item_id: int,
         item: PlayerTeamTournamentSchemaUpdate,

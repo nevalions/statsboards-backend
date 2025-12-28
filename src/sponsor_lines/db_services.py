@@ -15,20 +15,20 @@ class SponsorLineServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_SponsorLineServiceDB", self)
         self.logger.debug(f"Initialized SponsorLineServiceDB")
 
-    async def create_sponsor_line(
+    async def create(
         self,
-        sponsor_line: SponsorLineSchemaCreate,
+        item: SponsorLineSchemaCreate,
     ):
         try:
             self.logger.debug(f"Creating {ITEM}")
             result = self.model(
-                title=sponsor_line.title,
+                title=item.title,
             )
             return await super().create(result)
         except Exception as e:
             self.logger.error(f"Error creating {ITEM}: {e}")
 
-    async def update_sponsor_line(
+    async def update(
         self,
         item_id: int,
         item: SponsorLineSchemaUpdate,

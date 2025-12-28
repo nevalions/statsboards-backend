@@ -20,23 +20,23 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_SponsorSponsorLineServiceDB", self)
         self.logger.debug(f"Initialized SponsorSponsorLineServiceDB")
 
-    async def create_sponsor_sponsor_line_relation(
+    async def create(
         self,
-        sponsor_sponsor_line: SponsorSponsorLineSchemaCreate,
+        item: SponsorSponsorLineSchemaCreate,
     ):
         try:
             self.logger.debug(f"Creating {ITEM}")
             is_relation_exist = await self.get_sponsor_sponsor_line_relation(
-                sponsor_sponsor_line.sponsor_line_id,
-                sponsor_sponsor_line.sponsor_id,
+                item.sponsor_line_id,
+                item.sponsor_id,
             )
             if is_relation_exist:
                 self.logger.debug(f"Relation {ITEM} already exists")
                 return is_relation_exist
             new_sponsor_sponsor_line = self.model(
-                sponsor_line_id=sponsor_sponsor_line.sponsor_line_id,
-                sponsor_id=sponsor_sponsor_line.sponsor_id,
-                position=sponsor_sponsor_line.position,
+                sponsor_line_id=item.sponsor_line_id,
+                sponsor_id=item.sponsor_id,
+                position=item.position,
             )
             return await super().create(new_sponsor_sponsor_line)
         except Exception as e:

@@ -35,10 +35,10 @@ async def tournament_data(
     test_db: Database, sport: SportSchemaCreate, season: SeasonSchemaCreate
 ):
     sport_service = SportServiceDB(test_db)
-    created_sport = await sport_service.create_sport(sport)
+    created_sport = await sport_service.create(sport)
 
     season_service = SeasonServiceDB(test_db)
-    created_season = await season_service.create_season(season)
+    created_season = await season_service.create(season)
 
     return TournamentFactory.build(
         sport_id=created_sport.id, season_id=created_season.id, tournament_eesl_id=900
@@ -50,7 +50,7 @@ async def teams_data(
     test_db: Database, sport: SportSchemaCreate
 ):
     sport_service = SportServiceDB(test_db)
-    created_sport = await sport_service.create_sport(sport)
+    created_sport = await sport_service.create(sport)
 
     team_service = TeamServiceDB(test_db)
 

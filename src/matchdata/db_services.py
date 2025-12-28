@@ -17,23 +17,23 @@ class MatchDataServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_MatchDataServiceDB", self)
         self.logger.debug(f"Initialized MatchDataServiceDB")
 
-    async def create_match_data(self, matchdata: MatchDataSchemaCreate):
-        self.logger.debug(f"Creat {ITEM}:{matchdata}")
+    async def create(self, item: MatchDataSchemaCreate):
+        self.logger.debug(f"Creat {ITEM}:{item}")
 
         async with self.db.async_session() as session:
             try:
                 match_data = MatchDataDB(
-                    field_length=matchdata.field_length,
-                    game_status=matchdata.game_status,
-                    score_team_a=matchdata.score_team_a,
-                    score_team_b=matchdata.score_team_b,
-                    timeout_team_a=matchdata.timeout_team_a,
-                    timeout_team_b=matchdata.timeout_team_b,
-                    qtr=matchdata.qtr,
-                    ball_on=matchdata.ball_on,
-                    down=matchdata.down,
-                    distance=matchdata.distance,
-                    match_id=matchdata.match_id,
+                    field_length=item.field_length,
+                    game_status=item.game_status,
+                    score_team_a=item.score_team_a,
+                    score_team_b=item.score_team_b,
+                    timeout_team_a=item.timeout_team_a,
+                    timeout_team_b=item.timeout_team_b,
+                    qtr=item.qtr,
+                    ball_on=item.ball_on,
+                    down=item.down,
+                    distance=item.distance,
+                    match_id=item.match_id,
                 )
 
                 session.add(match_data)
@@ -51,11 +51,11 @@ class MatchDataServiceDB(BaseServiceDB):
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating result "
-                    f"for matchdata data({matchdata})"
+                    f"for matchdata data({item})"
                     f"returned some error",
                 )
 
-    async def update_match_data(
+    async def update(
         self,
         item_id: int,
         item: MatchDataSchemaUpdate,

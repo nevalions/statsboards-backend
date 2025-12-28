@@ -62,7 +62,7 @@ class TournamentAPIRouter(
             item: TournamentSchemaUpdate,
         ):
             self.logger.debug(f"Update tournament endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update_tournament(item_id, item)
+            update_ = await self.service.update(item_id, item)
             if update_ is None:
                 raise HTTPException(
                     status_code=404, detail=f"Tournament id {item_id} not found"

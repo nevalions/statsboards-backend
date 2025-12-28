@@ -73,15 +73,15 @@ class TestQueryMixin:
         season_service = SeasonServiceDB(test_db)
         tournament_service = TournamentServiceDB(test_db)
 
-        sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build(year=2024))
+        sport = await sport_service.create(SportFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build(year=2024))
 
         from tests.factories import TournamentFactory
 
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create_tournament(tournament_data)
+        tournament = await tournament_service.create(tournament_data)
 
         count = await tournament_service.get_count_of_items_level_one_by_id(
             tournament.id, "teams"
@@ -97,15 +97,15 @@ class TestQueryMixin:
         season_service = SeasonServiceDB(test_db)
         tournament_service = TournamentServiceDB(test_db)
 
-        sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build(year=2024))
+        sport = await sport_service.create(SportFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build(year=2024))
 
         from tests.factories import TournamentFactory
 
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create_tournament(tournament_data)
+        tournament = await tournament_service.create(tournament_data)
 
         count = await tournament_service.get_count_of_items_level_one_by_id(
             tournament.id, "teams"

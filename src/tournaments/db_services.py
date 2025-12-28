@@ -20,22 +20,22 @@ class TournamentServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_TournamentServiceDB", self)
         self.logger.debug("Initialized TournamentServiceDB")
 
-    async def create_tournament(
+    async def create(
         self,
-        t: TournamentSchemaCreate | TournamentSchemaUpdate,
+        item: TournamentSchemaCreate | TournamentSchemaUpdate,
     ):
         try:
             tournament = self.model(
-                title=t.title,
-                description=t.description,
-                tournament_logo_url=t.tournament_logo_url,
-                tournament_logo_icon_url=t.tournament_logo_icon_url,
-                tournament_logo_web_url=t.tournament_logo_web_url,
-                season_id=t.season_id,
-                sport_id=t.sport_id,
-                main_sponsor_id=t.main_sponsor_id,
-                sponsor_line_id=t.sponsor_line_id,
-                tournament_eesl_id=t.tournament_eesl_id,
+                title=item.title,
+                description=item.description,
+                tournament_logo_url=item.tournament_logo_url,
+                tournament_logo_icon_url=item.tournament_logo_icon_url,
+                tournament_logo_web_url=item.tournament_logo_web_url,
+                season_id=item.season_id,
+                sport_id=item.sport_id,
+                main_sponsor_id=item.main_sponsor_id,
+                sponsor_line_id=item.sponsor_line_id,
+                tournament_eesl_id=item.tournament_eesl_id,
             )
             self.logger.debug(f"Create new {ITEM}:{tournament}")
             return await super().create(tournament)
@@ -63,7 +63,7 @@ class TournamentServiceDB(BaseServiceDB):
             field_name=field_name,
         )
 
-    async def update_tournament(
+    async def update(
         self,
         item_id: int,
         item: TournamentSchemaUpdate,

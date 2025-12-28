@@ -44,7 +44,7 @@ class FootballEventAPIRouter(
         async def create_football_event(football_event: FootballEventSchemaCreate):
             try:
                 self.logger.debug(f"Creating {ITEM} endpoint")
-                new_football_event = await self.service.create_match_football_event(
+                new_football_event = await self.service.create(
                     football_event
                 )
                 return FootballEventSchema.model_validate(new_football_event)
@@ -61,7 +61,7 @@ class FootballEventAPIRouter(
         ):
             try:
                 self.logger.debug(f"Updating {ITEM} endpoint")
-                football_event_update = await self.service.update_match_football_event(
+                football_event_update = await self.service.update(
                     item_id,
                     football_event,
                 )

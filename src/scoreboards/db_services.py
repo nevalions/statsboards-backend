@@ -37,55 +37,55 @@ class ScoreboardServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_ScoreboardServiceDB", self)
         self.logger.debug(f"Initialized ScoreboardServiceDB")
 
-    async def create_scoreboard(self, scoreboard: ScoreboardSchemaCreate):
-        self.logger.debug(f"Create scoreboard: {scoreboard}")
+    async def create(self, item: ScoreboardSchemaCreate):
+        self.logger.debug(f"Create scoreboard: {item}")
         async with self.db.async_session() as session:
             try:
                 scoreboard_result = ScoreboardDB(
-                    is_qtr=scoreboard.is_qtr,
-                    is_time=scoreboard.is_time,
-                    is_playclock=scoreboard.is_playclock,
-                    is_downdistance=scoreboard.is_downdistance,
-                    is_tournament_logo=scoreboard.is_tournament_logo,
-                    is_main_sponsor=scoreboard.is_main_sponsor,
-                    is_sponsor_line=scoreboard.is_sponsor_line,
-                    is_match_sponsor_line=scoreboard.is_match_sponsor_line,
-                    is_team_a_start_offense=scoreboard.is_team_a_start_offense,
-                    is_team_b_start_offense=scoreboard.is_team_b_start_offense,
-                    is_team_a_start_defense=scoreboard.is_team_a_start_defense,
-                    is_team_b_start_defense=scoreboard.is_team_b_start_defense,
-                    is_home_match_team_lower=scoreboard.is_home_match_team_lower,
-                    is_away_match_team_lower=scoreboard.is_away_match_team_lower,
-                    is_football_qb_full_stats_lower=scoreboard.is_football_qb_full_stats_lower,
-                    football_qb_full_stats_match_lower_id=scoreboard.football_qb_full_stats_match_lower_id,
-                    is_match_player_lower=scoreboard.is_match_player_lower,
-                    player_match_lower_id=scoreboard.player_match_lower_id,
-                    team_a_game_color=scoreboard.team_a_game_color,
-                    team_b_game_color=scoreboard.team_b_game_color,
-                    team_a_game_title=scoreboard.team_a_game_title,
-                    team_b_game_title=scoreboard.team_b_game_title,
-                    team_a_game_logo=scoreboard.team_a_game_logo,
-                    team_b_game_logo=scoreboard.team_b_game_logo,
-                    use_team_a_game_color=scoreboard.use_team_a_game_color,
-                    use_team_b_game_color=scoreboard.use_team_b_game_color,
-                    use_team_a_game_title=scoreboard.use_team_a_game_title,
-                    use_team_b_game_title=scoreboard.use_team_b_game_title,
-                    use_team_a_game_logo=scoreboard.use_team_a_game_logo,
-                    use_team_b_game_logo=scoreboard.use_team_b_game_logo,
-                    scale_tournament_logo=scoreboard.scale_tournament_logo,
-                    scale_main_sponsor=scoreboard.scale_main_sponsor,
-                    scale_logo_a=scoreboard.scale_logo_a,
-                    scale_logo_b=scoreboard.scale_logo_b,
-                    is_flag=scoreboard.is_flag,
-                    is_goal_team_a=scoreboard.is_goal_team_a,
-                    is_goal_team_b=scoreboard.is_goal_team_b,
-                    is_timeout_team_a=scoreboard.is_timeout_team_a,
-                    is_timeout_team_b=scoreboard.is_timeout_team_b,
-                    match_id=scoreboard.match_id,
+                    is_qtr=item.is_qtr,
+                    is_time=item.is_time,
+                    is_playclock=item.is_playclock,
+                    is_downdistance=item.is_downdistance,
+                    is_tournament_logo=item.is_tournament_logo,
+                    is_main_sponsor=item.is_main_sponsor,
+                    is_sponsor_line=item.is_sponsor_line,
+                    is_match_sponsor_line=item.is_match_sponsor_line,
+                    is_team_a_start_offense=item.is_team_a_start_offense,
+                    is_team_b_start_offense=item.is_team_b_start_offense,
+                    is_team_a_start_defense=item.is_team_a_start_defense,
+                    is_team_b_start_defense=item.is_team_b_start_defense,
+                    is_home_match_team_lower=item.is_home_match_team_lower,
+                    is_away_match_team_lower=item.is_away_match_team_lower,
+                    is_football_qb_full_stats_lower=item.is_football_qb_full_stats_lower,
+                    football_qb_full_stats_match_lower_id=item.football_qb_full_stats_match_lower_id,
+                    is_match_player_lower=item.is_match_player_lower,
+                    player_match_lower_id=item.player_match_lower_id,
+                    team_a_game_color=item.team_a_game_color,
+                    team_b_game_color=item.team_b_game_color,
+                    team_a_game_title=item.team_a_game_title,
+                    team_b_game_title=item.team_b_game_title,
+                    team_a_game_logo=item.team_a_game_logo,
+                    team_b_game_logo=item.team_b_game_logo,
+                    use_team_a_game_color=item.use_team_a_game_color,
+                    use_team_b_game_color=item.use_team_b_game_color,
+                    use_team_a_game_title=item.use_team_a_game_title,
+                    use_team_b_game_title=item.use_team_b_game_title,
+                    use_team_a_game_logo=item.use_team_a_game_logo,
+                    use_team_b_game_logo=item.use_team_b_game_logo,
+                    scale_tournament_logo=item.scale_tournament_logo,
+                    scale_main_sponsor=item.scale_main_sponsor,
+                    scale_logo_a=item.scale_logo_a,
+                    scale_logo_b=item.scale_logo_b,
+                    is_flag=item.is_flag,
+                    is_goal_team_a=item.is_goal_team_a,
+                    is_goal_team_b=item.is_goal_team_b,
+                    is_timeout_team_a=item.is_timeout_team_a,
+                    is_timeout_team_b=item.is_timeout_team_b,
+                    match_id=item.match_id,
                 )
 
                 self.logger.debug(f"Is scoreboard exist")
-                is_exist = await self.get_scoreboard_by_match_id(scoreboard.match_id)
+                is_exist = await self.get_scoreboard_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"Scoreboard already exists: {scoreboard_result}")
                     return scoreboard_result
@@ -98,13 +98,13 @@ class ScoreboardServiceDB(BaseServiceDB):
                 return scoreboard_result
             except Exception as ex:
                 self.logger.error(
-                    f"Error creating scoreboard with data: {scoreboard} {ex}",
+                    f"Error creating scoreboard with data: {item} {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=409,
                     detail=f"While creating playclock "
-                    f"for match id({scoreboard.match_id})"
+                    f"for match id({item.match_id})"
                     f"returned some error",
                 )
 
@@ -121,7 +121,7 @@ class ScoreboardServiceDB(BaseServiceDB):
             #         f"returned some error",
             #     )
 
-    async def update_scoreboard(
+    async def update(
         self,
         item_id: int,
         item: ScoreboardSchemaUpdate,
@@ -158,7 +158,7 @@ class ScoreboardServiceDB(BaseServiceDB):
         if existing_scoreboard:
             self.logger.info(f"Scoreboard already exists")
             if isinstance(scoreboard, ScoreboardSchemaUpdate):
-                updated_scoreboard = await self.update_scoreboard(
+                updated_scoreboard = await self.update(
                     existing_scoreboard.id, scoreboard
                 )
                 self.logger.debug(f"Updated scoreboard")
@@ -170,7 +170,7 @@ class ScoreboardServiceDB(BaseServiceDB):
         else:
             self.logger.debug(f"Scoreboard does not exist")
             if isinstance(scoreboard, ScoreboardSchemaCreate):
-                new_scoreboard = await self.create_scoreboard(scoreboard)
+                new_scoreboard = await self.create(scoreboard)
                 self.logger.info(f"Scoreboard created")
             else:
                 self.logger.error(f"Wrong Schema for creating scoreboard")

@@ -41,7 +41,7 @@ class PlayClockAPIRouter(
         async def create_playclock_endpoint(playclock_data: PlayClockSchemaCreate):
             self.logger.debug(f"Create playclock endpoint got data: {playclock_data}")
             try:
-                new_playclock = await self.service.create_playclock(playclock_data)
+                new_playclock = await self.service.create(playclock_data)
                 return PlayClockSchema.model_validate(new_playclock)
             except Exception as ex:
                 self.logger.error(
@@ -59,7 +59,7 @@ class PlayClockAPIRouter(
         ):
             self.logger.debug(f"Update playclock endpoint id:{item_id} data: {item}")
             try:
-                playclock_update = await self.service.update_playclock(
+                playclock_update = await self.service.update(
                     item_id,
                     item,
                 )

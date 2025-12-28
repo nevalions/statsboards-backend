@@ -110,7 +110,7 @@ class PlayerTeamTournamentAPIRouter(
                 self.logger.debug(
                     f"Update player_team_tournament endpoint got data {item}"
                 )
-                update_ = await self.service.update_player_team_tournament(
+                update_ = await self.service.update(
                     item_id, item
                 )
                 if update_ is None:
@@ -209,7 +209,7 @@ class PlayerTeamTournamentAPIRouter(
                                 )
                                 new_position_created = await PositionServiceDB(
                                     db
-                                ).create_new_position(new_position)
+                                ).create(new_position)
                                 if ptt and team and tournament:
                                     p = {
                                         "player_team_tournament_eesl_id": ptt[

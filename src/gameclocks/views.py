@@ -38,7 +38,7 @@ class GameClockAPIRouter(
         async def create_gameclock_endpoint(gameclock_data: GameClockSchemaCreate):
             self.logger.debug(f"Create gameclock endpoint got data: {gameclock_data}")
             try:
-                new_gameclock = await self.service.create_gameclock(gameclock_data)
+                new_gameclock = await self.service.create(gameclock_data)
                 return GameClockSchema.model_validate(new_gameclock)
             except Exception as ex:
                 self.logger.error(
@@ -56,7 +56,7 @@ class GameClockAPIRouter(
         ):
             self.logger.debug(f"Update gameclock endpoint id:{item_id} data: {item}")
             try:
-                gameclock_update = await self.service.update_gameclock(
+                gameclock_update = await self.service.update(
                     item_id,
                     item,
                 )

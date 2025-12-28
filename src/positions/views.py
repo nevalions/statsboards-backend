@@ -27,7 +27,7 @@ class PositionAPIRouter(
                 self.logger.debug(
                     f"Create or update position endpoint got data: {position}"
                 )
-                new_position = await self.service.create_new_position(position)
+                new_position = await self.service.create(position)
                 if new_position:
                     return PositionSchema.model_validate(new_position)
                 else:
@@ -50,7 +50,7 @@ class PositionAPIRouter(
         ):
             try:
                 self.logger.debug(f"Update position endpoint got data: {item}")
-                update_ = await self.service.update_position(item_id, item)
+                update_ = await self.service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404, detail=f"Position id {item_id} not found"

@@ -42,7 +42,7 @@ class SponsorAPIRouter(
         async def create_sponsor_endpoint(item: SponsorSchemaCreate):
             try:
                 self.logger.debug(f"Creating sponsor endpoint")
-                new_ = await self.service.create_sponsor(item)
+                new_ = await self.service.create(item)
                 return SponsorSchema.model_validate(new_)
             except Exception as e:
                 self.logger.error(
@@ -59,7 +59,7 @@ class SponsorAPIRouter(
         ):
             try:
                 self.logger.debug(f"Updating sponsor endpoint")
-                update_ = await self.service.update_sponsor(
+                update_ = await self.service.update(
                     item_id,
                     item,
                 )

@@ -33,7 +33,7 @@ class TestBaseServiceDBIntegration:
         service = SeasonServiceDB(test_db)
 
         season_data = SeasonFactorySample.build()
-        created = await service.create_season(season_data)
+        created = await service.create(season_data)
         assert created.id is not None
 
         retrieved = await service.get_by_id(created.id)
@@ -45,7 +45,7 @@ class TestBaseServiceDBIntegration:
         assert retrieved_by_year.id == created.id
 
         update_data = SeasonSchemaUpdate(year=created.year + 1)
-        updated = await service.update_season(created.id, update_data)
+        updated = await service.update(created.id, update_data)
         assert updated.year == created.year + 1
 
         deleted = await service.delete(created.id)
@@ -61,13 +61,13 @@ class TestBaseServiceDBIntegration:
         season_service = SeasonServiceDB(test_db)
         tournament_service = TournamentServiceDB(test_db)
 
-        sport = await sport_service.create_sport(SportFactorySample.build())
-        season = await season_service.create_season(SeasonFactorySample.build())
+        sport = await sport_service.create(SportFactorySample.build())
+        season = await season_service.create(SeasonFactorySample.build())
 
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create_tournament(tournament_data)
+        tournament = await tournament_service.create(tournament_data)
 
         retrieved_tournament = await tournament_service.get_related_items(
             tournament.id, "sport"

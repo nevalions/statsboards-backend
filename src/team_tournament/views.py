@@ -34,7 +34,7 @@ class TeamTournamentRouter(
                 tournament_id=tournament_id,
                 team_id=team_id,
             )
-            new_ = await self.service.create_team_tournament_relation(
+            new_ = await self.service.create(
                 team_tournament_schema_create
             )
             print(new_)
@@ -56,7 +56,7 @@ class TeamTournamentRouter(
                 item_id: int,
                 item: TeamTournamentSchemaUpdate,
         ):
-            update_ = await self.service.update_team_tournament(item_id, item)
+            update_ = await self.service.update(item_id, item)
             if update_ is None:
                 raise HTTPException(
                     status_code=404, detail=f"Team Tournament id {item_id} not found"

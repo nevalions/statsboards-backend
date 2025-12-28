@@ -52,7 +52,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     self.logger.debug(
                         f"Try creating team_tournament connection team_id: {new_team.id} to tour_id: {tour_id}"
                     )
-                    await TeamTournamentServiceDB(db).create_team_tournament_relation(
+                    await TeamTournamentServiceDB(db).create(
                         dict_conv
                     )
                 except Exception as ex:
@@ -91,7 +91,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             item: TeamSchemaUpdate,
         ):
             self.logger.debug(f"Update team endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update_team(item_id, item)
+            update_ = await self.service.update(item_id, item)
             if update_ is None:
                 raise HTTPException(
                     status_code=404, detail=f"Team id {item_id} not found"
@@ -211,7 +211,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                                     team_tournament_connection = (
                                         await TeamTournamentServiceDB(
                                             db
-                                        ).create_team_tournament_relation(dict_conv)
+                                        ).create(dict_conv)
                                     )
                                     created_team_tournament_ids.append(
                                         team_tournament_connection

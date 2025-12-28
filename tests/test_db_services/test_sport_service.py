@@ -29,7 +29,7 @@ class TestSportServiceDB:
         sport_sample,
     ):
         """Test successful sport creation."""
-        created_sport: SportSchemaCreate = await test_sport_service.create_sport(
+        created_sport: SportSchemaCreate = await test_sport_service.create(
             sport_sample
         )
         assert_sport_equal(sport_sample, created_sport)
@@ -50,7 +50,7 @@ class TestSportServiceDB:
         sport_sample,
     ):
         """Test fail getting a sport by ID."""
-        await test_sport_service.create_sport(sport_sample)
+        await test_sport_service.create(sport_sample)
         got_sport = await test_sport_service.get_by_id(0)
 
         assert got_sport is None

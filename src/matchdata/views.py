@@ -44,7 +44,7 @@ class MatchDataAPIRouter(
         async def create_match_data(match_data: MatchDataSchemaCreate):
             self.logger.debug(f"Create matchdata endpoint got data: {match_data}")
             try:
-                new_match_data = await self.service.create_match_data(match_data)
+                new_match_data = await self.service.create(match_data)
                 return MatchDataSchema.model_validate(new_match_data)
             except Exception as ex:
                 self.logger.error(
@@ -64,7 +64,7 @@ class MatchDataAPIRouter(
                 f"Update matchdata endpoint id:{item_id} data: {match_data}"
             )
             try:
-                match_data_update = await self.service.update_match_data(
+                match_data_update = await self.service.update(
                     item_id,
                     match_data,
                 )

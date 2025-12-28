@@ -57,7 +57,7 @@ class PlayerServiceDB(BaseServiceDB):
                 exc_info=True,
             )
 
-    async def update_player(
+    async def update(
         self,
         item_id: int,
         item: PlayerSchemaUpdate,

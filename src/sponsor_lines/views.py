@@ -35,7 +35,7 @@ class SponsorLineAPIRouter(
         async def create_sponsor_line_endpoint(item: SponsorLineSchemaCreate):
             try:
                 self.logger.debug(f"Create sponsor line endpoint")
-                new_ = await self.service.create_sponsor_line(item)
+                new_ = await self.service.create(item)
                 return SponsorLineSchema.model_validate(new_)
             except Exception as e:
                 self.logger.error(

@@ -34,7 +34,7 @@ class ScoreboardAPIRouter(
         async def create_scoreboard(scoreboard_data: ScoreboardSchemaCreate):
             self.logger.debug(f"Create scoreboard endpoint got data: {scoreboard_data}")
             try:
-                new_scoreboard = await self.service.create_scoreboard(scoreboard_data)
+                new_scoreboard = await self.service.create(scoreboard_data)
                 return ScoreboardSchema.model_validate(new_scoreboard)
             except Exception as ex:
                 self.logger.error(
@@ -52,7 +52,7 @@ class ScoreboardAPIRouter(
         ):
             self.logger.debug(f"Update scoreboard endpoint id:{item_id} data: {item}")
             try:
-                scoreboard_update = await self.service.update_scoreboard(
+                scoreboard_update = await self.service.update(
                     item_id,
                     item,
                 )

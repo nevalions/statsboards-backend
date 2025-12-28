@@ -34,7 +34,7 @@ class SportAPIRouter(
         )
         async def create_sport_endpoint(item: SportSchemaCreate):
             self.logger.debug(f"Create sport endpoint got data: {item}")
-            new_ = await self.service.create_sport(item)
+            new_ = await self.service.create(item)
             return SportSchema.model_validate(new_)
 
         @router.put(
@@ -46,7 +46,7 @@ class SportAPIRouter(
             item: SportSchemaUpdate,
         ):
             self.logger.debug(f"Update sport endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update_sport(
+            update_ = await self.service.update(
                 item_id,
                 item,
             )

@@ -34,7 +34,7 @@ class MatchServiceDB(BaseServiceDB):
             field_name=field_name,
         )
 
-    async def update_match(
+    async def update(
         self,
         item_id: int,
         item: MatchSchemaUpdate,

@@ -35,7 +35,7 @@ async def season(test_season_service):
     try:
         test_logger.info(f"Creating test season")
         data = SeasonFactorySample.build()
-        season = await test_season_service.create_season(data)
+        season = await test_season_service.create(data)
         return season
     except Exception as e:
         test_logger.error(f"Error creating test season {e}", exc_info=True)
@@ -47,7 +47,7 @@ async def sport(test_sport_service):
     try:
         test_logger.info(f"Creating test sport")
         data = SportFactorySample.build()
-        sport = await test_sport_service.create_sport(data)
+        sport = await test_sport_service.create(data)
         return sport
     except Exception as e:
         test_logger.error(f"Error creating test sport {e}", exc_info=True)
@@ -61,7 +61,7 @@ async def tournament(test_tournament_service, sport, season):
             f"Creating test tournament with sport_id: {sport.id} and season_id: {season.id}"
         )
         data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
-        tournament = await test_tournament_service.create_tournament(data)
+        tournament = await test_tournament_service.create(data)
         return tournament
     except Exception as e:
         test_logger.error(f"Error creating test tournament {e}", exc_info=True)
@@ -85,7 +85,7 @@ async def creat_tournaments(
             title=f"Tournament {i + 1}",  # Ensure unique title
         )
         try:
-            tournament = await test_tournament_service.create_tournament(data)
+            tournament = await test_tournament_service.create(data)
             tournaments_list.append(tournament)
         except Exception as e:
             test_logger.error(
