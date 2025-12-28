@@ -1,0 +1,119 @@
+import pytest
+from sqlalchemy import Column, Integer
+from sqlalchemy.orm import Mapped, mapped_column
+from fastapi import HTTPException
+from src.core.models.base import Base, Database, BaseServiceDB
+from src.logging_config import setup_logging
+from tests.factories import SeasonFactorySample
+from src.seasons.db_services import SeasonServiceDB
+from src.core.models.season import SeasonDB
+
+setup_logging()
+
+
+class TestCRUDMixin:
+    """Test suite for CRUDMixin methods."""
+
+    @pytest.mark.asyncio
+    async def test_create_success(self, test_db, season_sample):
+        """Test successful creation of an item."""
+        service = SeasonServiceDB(test_db)
+        created_item = await service.create(season_sample)
+        assert created_item.id is not None
+        assert created_item.year == season_sample.year
+        assert created_item.description == season_sample.description
+
+    @pytest.mark.asyncio
+    async def test_create_integrity_error(self, test_db, season_sample):
+        """Test that creating a duplicate item raises IntegrityError."""
+        service = SeasonServiceDB(test_db)
+        await service.create(season_sample)
+        with pytest.raises(Exception):
+            await service.create(season_sample)
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_success(self, test_db, season_sample):
+        """Test successful retrieval of an item by ID."""
+        service = SeasonServiceDB(test_db)
+        created = await service.create(season_sample)
+        retrieved = await service.get_by_id(created.id)
+        assert retrieved is not None
+        assert retrieved.id == created.id
+        assert retrieved.year == season_sample.year
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_not_found(self, test_db):
+        """Test retrieval of non-existent item by ID."""
+        service = SeasonServiceDB(test_db)
+        retrieved = await service.get_by_id(99999)
+        assert retrieved is None
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_and_model_success(self, test_db, season_sample):
+        """Test successful retrieval of an item by ID and model."""
+        service = SeasonServiceDB(test_db)
+        created = await service.create(season_sample)
+        retrieved = await service.get_by_id_and_model(SeasonDB, created.id)
+        assert retrieved is not None
+        assert retrieved.id == created.id
+        assert retrieved.year == season_sample.year
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_and_model_not_found(self, test_db):
+        """Test retrieval of non-existent item by ID and model."""
+        service = SeasonServiceDB(test_db)
+        retrieved = await service.get_by_id_and_model(SeasonDB, 99999)
+        assert retrieved is None
+
+    @pytest.mark.asyncio
+    async def test_update_success(self, test_db, season_sample):
+        """Test successful update of an item."""
+        service = SeasonServiceDB(test_db)
+        from src.seasons.schemas import SeasonSchemaUpdate
+
+        created = await service.create(season_sample)
+        update_data = SeasonSchemaUpdate(
+            year=created.year + 1, description="Updated description"
+        )
+        updated = await service.update(created.id, update_data)
+        assert updated is not None
+        assert updated.year == created.year + 1
+        assert updated.description == "Updated description"
+
+    @pytest.mark.asyncio
+    async def test_update_non_existent(self, test_db):
+        """Test update of non-existent item."""
+        service = SeasonServiceDB(test_db)
+        from src.seasons.schemas import SeasonSchemaUpdate
+
+        update_data = SeasonSchemaUpdate(year=2025, description="Test")
+        updated = await service.update(99999, update_data)
+        assert updated is None
+
+    @pytest.mark.asyncio
+    async def test_delete_success(self, test_db, season_sample):
+        """Test successful deletion of an item."""
+        service = SeasonServiceDB(test_db)
+        created = await service.create(season_sample)
+        deleted = await service.delete(created.id)
+        assert deleted.id == created.id
+        retrieved = await service.get_by_id(created.id)
+        assert retrieved is None
+
+    @pytest.mark.asyncio
+    async def test_delete_not_found(self, test_db):
+        """Test deletion of non-existent item."""
+        service = SeasonServiceDB(test_db)
+        with pytest.raises(HTTPException) as exc_info:
+            await service.delete(99999)
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_get_all_elements(self, test_db, season_sample):
+        """Test retrieval of all elements."""
+        service = SeasonServiceDB(test_db)
+        season_sample2 = SeasonFactorySample.build(year=2025)
+        await service.create(season_sample)
+        await service.create(season_sample2)
+        all_items = await service.get_all_elements()
+        assert len(all_items) >= 2
