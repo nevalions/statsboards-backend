@@ -441,7 +441,12 @@ async def process_client_queue(
                 break
 
 
-class BaseServiceDB:
+class BaseServiceDB(
+    CRUDMixin,
+    QueryMixin,
+    RelationshipMixin,
+    SerializationMixin,
+):
     def __init__(self, database: Database, model: type):
         self.logger = get_logger("backend_logger_base_db", self)
         self.db = database
