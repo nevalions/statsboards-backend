@@ -14,8 +14,6 @@ logger = logging.getLogger("backend_logger_config")
 
 SSL_KEY = os.getenv("SSL_KEYFILE")
 SSL_CER = os.getenv("SSL_CERTFILE")
-print("SSL_KEY:", SSL_KEY)
-print("SSL_CER:", SSL_CER)
 # Set the template and static folders
 parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 more_parent_path = os.path.dirname(parent_path)
@@ -30,13 +28,6 @@ static_path = os.path.join(template_path, "static")
 # static_path_scoreboard = os.path.join(static_path, "scoreboards")
 
 templates = Jinja2Templates(directory=template_path)
-
-logger.info(f"parent_path: {parent_path}")
-logger.info(f"one_more_parent_path: {one_more_parent_path}")
-logger.info(f"template_path: {template_path}")
-logger.info(f"static_path: {static_path}")
-logger.info(f"static_main_path: {static_main_path}")
-logger.info(f"uploads_path: {uploads_path}")
 
 
 class DbSettings(BaseSettings):

@@ -33,8 +33,6 @@ if __name__ == "__main__":
     logger = logging.getLogger("backend_logger_server")
     logger.info("Production Server Started!")
 
-    print(f"{SSL_CER} ### {SSL_KEY}")
-
     options = {
         "bind": "0.0.0.0:9000",
         "workers": 4,

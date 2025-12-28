@@ -45,7 +45,6 @@ class PlayerMatchServiceDB(BaseServiceDB):
                         self.logger.warning(f"{ITEM} is in start, skipping...")
                         return player_match_from_db
                 else:
-                    print("player creating no eesl")
                     self.logger.debug(f"{ITEM} does not exist, creating...")
                     return await self.create_new_player_match(
                         p,

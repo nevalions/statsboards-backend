@@ -42,7 +42,6 @@ class PlayerMatchAPIRouter(
         async def create_player_match_endpoint(
             player_match: PlayerMatchSchemaCreate,
         ):
-            print(f"Received player_match: {player_match}")
             try:
                 self.logger.debug(
                     f"Create player in match endpoint with data: {player_match}"

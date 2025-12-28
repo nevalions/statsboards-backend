@@ -12,10 +12,8 @@ class RedisService:
             redis_connection = await aioredis.from_url(
                 self.redis_url, decode_responses=True
             )
-            print("Successfully connected to Redis")
             return redis_connection
         except Exception as e:
-            print(f"Error connecting to Redis: {e}")
             raise
 
     async def create_match_event_queue(self, match_data_id) -> MatchEventQueue:
@@ -29,16 +27,11 @@ class RedisService:
         # Create a new MatchEventQueue instance
         match_queue = await self.create_match_event_queue(match_data_id)
         # Check if the queue already exists in Redis
-        if await match_queue.get_redis():
-            print("Queue exists, reusing the existing queue.")
-        else:
-            print("Queue does not exist. Creating a new Queue")
+        if not await match_queue.get_redis():
             await match_queue.put_redis(match_data)
         return match_queue
 
 
-# import json
-#
 # import aioredis
 #
 # from src.core.models import BaseServiceDB, MatchDataDB

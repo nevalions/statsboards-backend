@@ -9,9 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Create log directory and resolve paths
-print(f"Absolute parent path: {Path(__file__).parent.absolute()}")
 logs_config = os.environ["LOGS_CONFIG"]
-print(f"Logs config: {logs_config}")
 logs_dir = Path(__file__).parent / "logs"
 logs_config_yaml = Path(__file__).parent / logs_config
 logs_dir.mkdir(parents=True, exist_ok=True)

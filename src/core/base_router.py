@@ -46,7 +46,6 @@ class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType
         @router.get("/id/{model_id}")
         async def get_by_id(model_id: int):
             model = await self.service.get_by_id(model_id)
-            print(f"Content of model: {model}")
             if model is None:
                 raise HTTPException(
                     status_code=404,
