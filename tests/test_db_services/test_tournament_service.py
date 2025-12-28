@@ -11,8 +11,8 @@ from tests.fixtures import (
     test_sport_service,
     test_season_service,
     tournament,
-    sport,
-    season,
+    sport_sample,
+    season_sample,
 )
 from tests.testhelpers import (
     assert_tournament_equal,
@@ -22,10 +22,10 @@ from tests.testhelpers import (
 
 
 @pytest.fixture(scope="function")
-def tournament_sample(sport, season) -> TournamentSchemaCreate:
+def tournament_sample(sport_sample, season_sample) -> TournamentSchemaCreate:
     return TournamentFactory.build(
-        sport_id=sport.id,
-        season_id=season.id,
+        sport_id=sport_sample.id,
+        season_id=season_sample.id,
     )
 
 
