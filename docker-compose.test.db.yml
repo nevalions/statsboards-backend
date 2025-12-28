@@ -1,9 +1,20 @@
 services:
   postgres_test:
-    image: postgres:latest
+    image: postgres:15
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: test_db
     ports:
       - "5432:5432"
+
+  test_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - postgres_test
+    environment:
+      - DATABASE_URL=postgresql://test:test@postgres_test:5432/test_db
+    volumes:
+      - .:/app

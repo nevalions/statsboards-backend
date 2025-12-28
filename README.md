@@ -84,6 +84,25 @@ poetry run pytest --cov=src
 poetry run pytest tests/test_example.py
 ```
 
+#### Running Tests with Docker
+
+```bash
+# Start test database
+docker-compose -f docker-compose.test.db.yml up -d
+
+# Run tests locally against Docker database
+poetry run pytest
+
+# Or run tests in Docker container
+docker-compose -f docker-compose.test.db.yml build
+docker-compose -f docker-compose.test.db.yml run --rm test_app
+
+# Stop test database when done
+docker-compose -f docker-compose.test.db.yml down
+```
+
+**Note:** Ensure environment variables point to test database: `postgresql://test:test@localhost:5432/test_db`
+
 ### Code Quality
 
 ```bash
