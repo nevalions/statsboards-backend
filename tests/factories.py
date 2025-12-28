@@ -18,7 +18,7 @@ from src.matches.schemas import MatchSchemaCreate
 
 class SportFactorySample(factory.Factory):
     class Meta:
-        model = SportDB
+        model = SportSchemaCreate
 
     title = factory.Sequence(lambda n: f"{TestData.get_sport_data().title}")
     description = factory.Sequence(lambda n: f"{TestData.get_sport_data().description}")
@@ -26,7 +26,7 @@ class SportFactorySample(factory.Factory):
 
 class SportFactoryAny(factory.Factory):
     class Meta:
-        model = SportDB
+        model = SportSchemaCreate
 
     title = factory.Sequence(lambda n: f"{TestData.get_sport_data().title} + {n}")
     description = factory.Sequence(
@@ -36,7 +36,7 @@ class SportFactoryAny(factory.Factory):
 
 class SeasonFactorySample(factory.Factory):
     class Meta:
-        model = SeasonDB
+        model = SeasonSchemaCreate
 
     year = factory.Sequence(lambda n: TestData.get_season_data().year)
     description = factory.Sequence(
@@ -46,7 +46,7 @@ class SeasonFactorySample(factory.Factory):
 
 class SeasonFactoryAny(factory.Factory):
     class Meta:
-        model = SeasonDB
+        model = SeasonSchemaCreate
 
     year = factory.Sequence(lambda n: TestData.get_season_data().year + 10)
     description = factory.Sequence(

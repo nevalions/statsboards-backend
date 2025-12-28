@@ -1,5 +1,6 @@
-# import os
+import os
 import subprocess
+import sys
 import pytest
 import pytest_asyncio
 
@@ -9,13 +10,17 @@ from src.core.models.base import Database, Base
 
 db_url = settings.test_db.test_db_url
 
+# Import fixtures from fixtures.py
+pytest_plugins = ["tests.fixtures"]
+
 
 # Apply migrations before each test
 @pytest.fixture(scope="function")
 def apply_migrations():
     """Apply Alembic migrations before each test."""
+    alembic_path = os.path.join(os.path.dirname(sys.executable), "alembic")
     subprocess.run(
-        ["alembic", "-x", f"db_url={db_url}", "upgrade", "head"],
+        [alembic_path, "-x", f"db_url={db_url}", "upgrade", "head"],
         check=True,
     )
     yield

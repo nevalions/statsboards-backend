@@ -12,11 +12,10 @@ class TestQueryMixin:
     """Test suite for QueryMixin methods."""
 
     @pytest.mark.asyncio
-    async def test_get_item_by_field_value_success(self, test_db):
+    async def test_get_item_by_field_value_success(self, test_db, season_db_model):
         """Test successful retrieval of an item by field value."""
         service = SeasonServiceDB(test_db)
-        season_data = SeasonFactorySample.build()
-        created = await service.create(season_data)
+        created = await service.create(season_db_model)
         retrieved = await service.get_item_by_field_value(created.year, "year")
         assert retrieved is not None
         assert retrieved.id == created.id

@@ -22,10 +22,10 @@ from tests.testhelpers import (
 
 
 @pytest.fixture(scope="function")
-def tournament_sample(sport_sample, season_sample) -> TournamentSchemaCreate:
+def tournament_sample(sport, season) -> TournamentSchemaCreate:
     return TournamentFactory.build(
-        sport_id=sport_sample.id,
-        season_id=season_sample.id,
+        sport_id=sport.id,
+        season_id=season.id,
     )
 
 
@@ -34,20 +34,18 @@ class TestTournamentServiceDB:
     async def test_create_tournament_with_relations(
         self,
         test_tournament_service: TournamentServiceDB,
-        season: SeasonSchemaCreate,
-        sport: SportSchemaCreate,
+        season,
+        sport,
         tournament_sample: TournamentSchemaCreate,
     ):
         """Test creating a tournament with related sport and season."""
         created_tournament: TournamentSchemaCreate = (
             await test_tournament_service.create_tournament(tournament_sample)
         )
-        assert_tournament_equal(
-            tournament_sample,
-            created_tournament,
-            season,
-            sport,
-        )
+        assert created_tournament.season_id == season.id
+        assert created_tournament.sport_id == sport.id
+        assert created_tournament.title == tournament_sample.title
+        assert created_tournament.description == tournament_sample.description
 
     async def test_create_tournament_without_sport_id(
         self,

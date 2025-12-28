@@ -109,3 +109,10 @@ def season_sample():
 def sport_sample():
     """Return a sport schema sample for testing."""
     return SportFactorySample.build()
+
+
+@pytest.fixture(scope="function")
+def season_db_model():
+    """Return a SeasonDB model instance for testing (not a schema)."""
+    from src.core.models.season import SeasonDB
+    return SeasonDB(year=2024, description="Test Season")

@@ -18,6 +18,7 @@ class TeamSchemaBase(BaseModel):
 
 
 class TeamSchemaUpdate(BaseModel):
+    team_eesl_id: int | None = None
     title: str | None = None
     city: str | None = None
     description: str | None = None

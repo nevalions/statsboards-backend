@@ -536,7 +536,8 @@ class BaseServiceDB(
         if model_factory:
             return await self.create(model_factory(item_schema, **create_kwargs))
         else:
-            model = self.model(**item_schema.model_dump())
+            schema_data = item_schema.model_dump(exclude_unset=True)
+            model = self.model(**schema_data)
             return await self.create(model)
 
 

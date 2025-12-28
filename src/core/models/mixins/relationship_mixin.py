@@ -368,8 +368,12 @@ class RelationshipMixin:
                     related_items = getattr(item, related_property)
                     items = []
                     for related_item in related_items:
-                        for final_point in getattr(related_item, second_level_property):
-                            items.append(final_point)
+                        second_level = getattr(related_item, second_level_property)
+                        if hasattr(second_level, '__iter__') and not isinstance(second_level, (str, bytes)):
+                            for final_point in second_level:
+                                items.append(final_point)
+                        else:
+                            items.append(second_level)
                     return items
                 else:
                     self.logger.warning(
