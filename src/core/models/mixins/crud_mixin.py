@@ -110,28 +110,35 @@ class CRUDMixin:
         self.logger.debug(f"Starting to update element with ID: {item_id}")
         async with self.db.async_session() as session:
             try:
-                updated_item = await self.get_by_id(item_id)
+                result = await session.execute(
+                    select(self.model).where(self.model.id == item_id)
+                )
+                updated_item = result.scalars().one_or_none()
+                
                 if not updated_item:
                     self.logger.warning(
                         f"No element found with ID: {item_id} for model {self.model.__name__}"
                     )
-                    return None
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"{self.model.__name__} with id {item_id} not found",
+                    )
 
-                for key, value in item.model_dump(exclude_unset=True).items():
+                update_data = item.model_dump(exclude_unset=True, exclude_none=True)
+                
+                for key, value in update_data.items():
                     setattr(updated_item, key, value)
 
-                await session.execute(
-                    update(self.model)
-                    .where(self.model.id == item_id)
-                    .values(item.model_dump(exclude_unset=True))
-                )
-
+                await session.flush()
                 await session.commit()
-                updated_item = await self.get_by_id(item_id)
+                await session.refresh(updated_item)
+                
                 self.logger.debug(
                     f"Updated element with ID: {item_id}: {updated_item.__dict__}"
                 )
                 return updated_item
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error updating element with ID: {item_id} for model {self.model.__name__}: {ex}",
@@ -141,7 +148,6 @@ class CRUDMixin:
                     status_code=500,
                     detail=f"Failed to update element for model id:{item_id} {self.model.__name__}.",
                 )
-
     async def delete(self, item_id: int):
         self.logger.debug(f"Starting to delete element with ID: {item_id}")
         async with self.db.async_session() as session:

@@ -63,13 +63,9 @@ class PlayClockAPIRouter(
                     item_id,
                     item,
                 )
-
-                if playclock_update is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Playclock id({item_id}) not found",
-                    )
                 return playclock_update
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error updating playclock with data: {item} {ex}",

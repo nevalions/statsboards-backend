@@ -40,6 +40,8 @@ class SeasonAPIRouter(
                         status_code=400,
                         detail=f"Error creating new season",
                     )
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error creating season with data: {item} {ex}",

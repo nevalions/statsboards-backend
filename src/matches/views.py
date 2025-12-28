@@ -167,13 +167,11 @@ class MatchAPIRouter(
             item: MatchSchemaUpdate,
         ):
             self.logger.debug(f"Update match endpoint id:{item_id} data: {item}")
-            match_update = await self.service.update_match(item_id, item)
-
-            if match_update is None:
-                raise HTTPException(
-                    status_code=404, detail=f"Match id({item_id}) not found"
-                )
-            return MatchSchema.model_validate(match_update)
+            try:
+                match_update = await self.service.update_match(item_id, item)
+                return MatchSchema.model_validate(match_update)
+            except HTTPException:
+                raise
 
         @router.get(
             "/eesl_id/{eesl_id}/",

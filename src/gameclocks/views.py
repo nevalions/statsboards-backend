@@ -60,13 +60,9 @@ class GameClockAPIRouter(
                     item_id,
                     item,
                 )
-
-                if gameclock_update is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Gameclock id({item_id}) not found",
-                    )
                 return gameclock_update
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error updating gameclock with data: {item} {ex}",

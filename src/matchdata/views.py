@@ -68,13 +68,9 @@ class MatchDataAPIRouter(
                     item_id,
                     match_data,
                 )
-
-                if match_data_update is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Matchdata id({item_id}) not found",
-                    )
                 return match_data_update
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error updating matchdata with data: {match_data} {ex}",

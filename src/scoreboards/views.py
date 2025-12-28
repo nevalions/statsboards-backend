@@ -56,13 +56,9 @@ class ScoreboardAPIRouter(
                     item_id,
                     item,
                 )
-
-                if scoreboard_update is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Scoreboard id({item_id}) not found",
-                    )
                 return scoreboard_update
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error updating scoreboard with data: {item} {ex}",

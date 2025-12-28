@@ -99,8 +99,11 @@ class FootballEventServiceDB(BaseServiceDB):
             )
 
             return updated_
+        except HTTPException:
+            raise
         except Exception as ex:
             self.logger.error(f"Error updating {ITEM} {ex}", exc_info=True)
+            raise
 
     async def get_match_football_events_by_match_id(self, match_id: int):
         async with self.db.async_session() as session:
