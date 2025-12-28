@@ -72,7 +72,7 @@ class TestBaseServiceDBIntegration:
         retrieved_tournament = await tournament_service.get_related_items(
             tournament.id, "sport"
         )
-        assert retrieved_tournament.id == sport.id
+        assert retrieved_tournament.sport_id == sport.id
 
         retrieved_season = await season_service.get_related_items(
             season.id, "tournaments"

@@ -41,6 +41,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
             return await super().create(new_sponsor_sponsor_line)
         except Exception as e:
             self.logger.error(f"Error creating {ITEM}: {e}", exc_info=True)
+            return None
 
     async def get_sponsor_sponsor_line_relation(
         self, sponsor_id: int, sponsor_line_id: int

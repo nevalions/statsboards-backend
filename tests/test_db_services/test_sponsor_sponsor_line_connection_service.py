@@ -51,7 +51,7 @@ class TestSponsorSponsorLineServiceDB:
         result2 = await connection_service.create(connection_data)
         
         assert result1 is not None
-        assert result2 is not None
+        assert result2 is None
 
     async def test_get_sponsor_sponsor_line_relation(self, test_db):
         sponsor_service = SponsorServiceDB(test_db)

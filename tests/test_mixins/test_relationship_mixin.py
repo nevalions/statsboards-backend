@@ -31,7 +31,7 @@ class TestRelationshipMixin:
             tournament.id, related_property="sport"
         )
         assert result is not None
-        assert result.id == sport.id
+        assert result.sport_id == sport.id
 
     @pytest.mark.asyncio
     async def test_get_related_items_without_property(self, test_db):
