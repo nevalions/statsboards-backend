@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.playclocks.views import api_playclock_router
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -14,18 +11,6 @@ from tests.factories import MatchFactory, TeamFactory, TournamentFactory, Season
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_playclock_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -49,7 +34,7 @@ class TestPlayClockViews:
         
         playclock_data = PlayClockSchemaCreate(match_id=match.id, playclock=60, playclock_status="stopped")
         
-        response = client.post("/api/playclock/", json=playclock_data.model_dump())
+        response = await client.post("/api/playclock/", json=playclock_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -77,14 +62,14 @@ class TestPlayClockViews:
         
         update_data = PlayClockSchemaUpdate(playclock=120)
         
-        response = client.put(f"/api/playclock/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/playclock/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_playclock_not_found(self, client):
         update_data = PlayClockSchemaUpdate(playclock=120)
         
-        response = client.put("/api/playclock/99999/", json=update_data.model_dump())
+        response = await client.put("/api/playclock/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -109,13 +94,13 @@ class TestPlayClockViews:
         playclock_data = PlayClockSchemaCreate(match_id=match.id, playclock=60, playclock_status="stopped")
         created = await playclock_service.create(playclock_data)
         
-        response = client.get(f"/api/playclock/id/{created.id}/")
+        response = await client.get(f"/api/playclock/id/{created.id}/")
         
         assert response.status_code == 200
         assert response.json()["content"]["id"] == created.id
 
     async def test_get_playclock_by_id_not_found(self, client):
-        response = client.get("/api/playclock/id/99999/")
+        response = await client.get("/api/playclock/id/99999/")
         
         assert response.status_code == 404
 
@@ -140,7 +125,7 @@ class TestPlayClockViews:
         await playclock_service.create(PlayClockSchemaCreate(match_id=match.id, playclock=60, playclock_status="stopped"))
         await playclock_service.create(PlayClockSchemaCreate(match_id=match.id, playclock=90, playclock_status="stopped"))
         
-        response = client.get("/api/playclock/")
+        response = await client.get("/api/playclock/")
         
         assert response.status_code == 200
         assert len(response.json()) == 2

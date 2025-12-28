@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.matchdata.views import api_matchdata_router
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -14,18 +11,6 @@ from tests.factories import MatchFactory, TeamFactory, TournamentFactory, Season
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_matchdata_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -49,7 +34,7 @@ class TestMatchDataViews:
         
         match_data = MatchDataSchemaCreate(match_id=match.id, score_team_a=0, score_team_b=0)
         
-        response = client.post("/api/matchdata/", json=match_data.model_dump())
+        response = await client.post("/api/matchdata/", json=match_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -77,14 +62,14 @@ class TestMatchDataViews:
         
         update_data = MatchDataSchemaUpdate(score_team_a=7, score_team_b=3)
         
-        response = client.put(f"/api/matchdata/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/matchdata/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_match_data_not_found(self, client):
         update_data = MatchDataSchemaUpdate(score_team_a=7)
         
-        response = client.put("/api/matchdata/99999/", json=update_data.model_dump())
+        response = await client.put("/api/matchdata/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -111,7 +96,7 @@ class TestMatchDataViews:
         
         update_data = MatchDataSchemaUpdate(score_team_a=7)
         
-        response = client.put(f"/api/matchdata/id/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/matchdata/id/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["success"] == True
@@ -137,7 +122,7 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
         
-        response = client.get(f"/api/matchdata/id/{created.id}/")
+        response = await client.get(f"/api/matchdata/id/{created.id}/")
         
         assert response.status_code == 200
 
@@ -162,7 +147,7 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
         
-        response = client.put(f"/api/matchdata/id/{created.id}/gameclock/running/")
+        response = await client.put(f"/api/matchdata/id/{created.id}/gameclock/running/")
         
         assert response.status_code == 200
 
@@ -187,7 +172,7 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
         
-        response = client.put(f"/api/matchdata/id/{created.id}/gameclock/paused/")
+        response = await client.put(f"/api/matchdata/id/{created.id}/gameclock/paused/")
         
         assert response.status_code == 200
 
@@ -212,7 +197,7 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
         
-        response = client.put(f"/api/matchdata/id/{created.id}/gameclock/stopped/720/")
+        response = await client.put(f"/api/matchdata/id/{created.id}/gameclock/stopped/720/")
         
         assert response.status_code == 200
 
@@ -237,7 +222,7 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
         
-        response = client.put(f"/api/matchdata/id/{created.id}/playclock/running/40/")
+        response = await client.put(f"/api/matchdata/id/{created.id}/playclock/running/40/")
         
         assert response.status_code == 200
 
@@ -262,6 +247,6 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
         
-        response = client.put(f"/api/matchdata/id/{created.id}/playclock/stopped/")
+        response = await client.put(f"/api/matchdata/id/{created.id}/playclock/stopped/")
         
         assert response.status_code == 200

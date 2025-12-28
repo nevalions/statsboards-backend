@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.matches.views import api_match_router
 from src.matches.db_services import MatchServiceDB
 from src.matches.schemas import MatchSchemaCreate, MatchSchemaUpdate
 from src.teams.db_services import TeamServiceDB
@@ -12,18 +9,6 @@ from tests.factories import TeamFactory, TournamentFactory, SeasonFactorySample,
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_match_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -50,7 +35,7 @@ class TestMatchViews:
             week=1
         )
         
-        response = client.post("/api/matches/", json=match_data.model_dump())
+        response = await client.post("/api/matches/", json=match_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -81,14 +66,14 @@ class TestMatchViews:
         
         update_data = MatchSchemaUpdate(week=2)
         
-        response = client.put(f"/api/matches/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/matches/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_match_not_found(self, client):
         update_data = MatchSchemaUpdate(week=2)
         
-        response = client.put("/api/matches/99999/", json=update_data.model_dump())
+        response = await client.put("/api/matches/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -114,7 +99,7 @@ class TestMatchViews:
             MatchSchemaCreate(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id)
         )
         
-        response = client.get("/api/matches/")
+        response = await client.get("/api/matches/")
         
         assert response.status_code == 200
         assert len(response.json()) == 2
@@ -141,12 +126,12 @@ class TestMatchViews:
         )
         created = await match_service.create_or_update_match(match_data)
         
-        response = client.get(f"/api/matches/id/{created.id}")
+        response = await client.get(f"/api/matches/id/{created.id}")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_match_by_id_not_found(self, client):
-        response = client.get("/api/matches/id/99999")
+        response = await client.get("/api/matches/id/99999")
         
         assert response.status_code == 404

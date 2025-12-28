@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.person.views import api_person_router
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate, PersonSchemaUpdate
 from tests.factories import PersonFactory
@@ -10,25 +7,13 @@ from src.logging_config import setup_logging
 setup_logging()
 
 
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_person_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
-
-
 @pytest.mark.asyncio
 class TestPersonViews:
     async def test_create_person_endpoint(self, client, test_db):
         person_service = PersonServiceDB(test_db)
         person_data = PersonFactory.build(person_eesl_id=100)
         
-        response = client.post("/api/persons/", json=person_data.model_dump())
+        response = await client.post("/api/persons/", json=person_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -38,13 +23,13 @@ class TestPersonViews:
         person_data = PersonFactory.build(person_eesl_id=100)
         created = await person_service.create_or_update_person(person_data)
         
-        response = client.get("/api/persons/eesl_id/100")
+        response = await client.get("/api/persons/eesl_id/100")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_person_by_eesl_id_not_found(self, client):
-        response = client.get("/api/persons/eesl_id/99999")
+        response = await client.get("/api/persons/eesl_id/99999")
         
         assert response.status_code == 404
 
@@ -55,7 +40,7 @@ class TestPersonViews:
         
         update_data = PersonSchemaUpdate(first_name="Updated Name")
         
-        response = client.put(f"/api/persons/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/persons/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["first_name"] == "Updated Name"
@@ -65,7 +50,7 @@ class TestPersonViews:
         await person_service.create_or_update_person(PersonFactory.build())
         await person_service.create_or_update_person(PersonFactory.build())
         
-        response = client.get("/api/persons/")
+        response = await client.get("/api/persons/")
         
         assert response.status_code == 200
         assert len(response.json()) >= 2
@@ -75,12 +60,12 @@ class TestPersonViews:
         person_data = PersonFactory.build()
         created = await person_service.create_or_update_person(person_data)
         
-        response = client.get(f"/api/persons/id/{created.id}")
+        response = await client.get(f"/api/persons/id/{created.id}")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_person_by_id_not_found(self, client):
-        response = client.get("/api/persons/id/99999")
+        response = await client.get("/api/persons/id/99999")
         
         assert response.status_code == 404

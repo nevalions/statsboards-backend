@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.football_events.views import api_football_event_router
 from src.football_events.db_services import FootballEventServiceDB
 from src.football_events.schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -14,18 +11,6 @@ from tests.factories import MatchFactory, TeamFactory, TournamentFactory, Season
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_football_event_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -49,7 +34,7 @@ class TestFootballEventViews:
         
         football_event_data = FootballEventSchemaCreate(match_id=match.id, event_number=1, event_qtr=1, event_down=1, event_distance=10)
         
-        response = client.post("/api/football_event/", json=football_event_data.model_dump())
+        response = await client.post("/api/football_event/", json=football_event_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -77,14 +62,14 @@ class TestFootballEventViews:
         
         update_data = FootballEventSchemaUpdate(event_distance=20)
         
-        response = client.put(f"/api/football_event/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/football_event/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_football_event_not_found(self, client):
         update_data = FootballEventSchemaUpdate(event_distance=20)
         
-        response = client.put("/api/football_event/99999/", json=update_data.model_dump())
+        response = await client.put("/api/football_event/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -109,7 +94,7 @@ class TestFootballEventViews:
         await football_event_service.create(FootballEventSchemaCreate(match_id=match.id, event_number=1, event_qtr=1))
         await football_event_service.create(FootballEventSchemaCreate(match_id=match.id, event_number=2, event_qtr=1))
         
-        response = client.get(f"/api/football_event/match_id/{match.id}/")
+        response = await client.get(f"/api/football_event/match_id/{match.id}/")
         
         assert response.status_code == 200
         assert len(response.json()) == 2
@@ -131,7 +116,7 @@ class TestFootballEventViews:
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id))
         
-        response = client.get(f"/api/football_event/match_id/{match.id}/")
+        response = await client.get(f"/api/football_event/match_id/{match.id}/")
         
         assert response.status_code == 200
         assert len(response.json()) == 0

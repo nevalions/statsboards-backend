@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.player_team_tournament.views import api_player_team_tournament_router
 from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 from src.player_team_tournament.schemas import PlayerTeamTournamentSchemaCreate, PlayerTeamTournamentSchemaUpdate
 from src.sports.db_services import SportServiceDB
@@ -14,18 +11,6 @@ from tests.factories import TeamFactory, TournamentFactory, SeasonFactorySample,
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_player_team_tournament_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -48,7 +33,7 @@ class TestPlayerTeamTournamentViews:
         
         ptt_data = PlayerTeamTournamentSchemaCreate(player_id=1, position_id=position.id, team_id=team.id, tournament_id=tournament.id, player_team_tournament_eesl_id=100)
         
-        response = client.post("/api/players_team_tournament/", json=ptt_data.model_dump())
+        response = await client.post("/api/players_team_tournament/", json=ptt_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -73,13 +58,13 @@ class TestPlayerTeamTournamentViews:
         ptt_data = PlayerTeamTournamentSchemaCreate(player_id=1, position_id=position.id, team_id=team.id, tournament_id=tournament.id, player_team_tournament_eesl_id=100)
         created = await ptt_service.create_or_update_player_team_tournament(ptt_data)
         
-        response = client.get("/api/players_team_tournament/eesl_id/100")
+        response = await client.get("/api/players_team_tournament/eesl_id/100")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_player_team_tournament_by_eesl_id_not_found(self, client):
-        response = client.get("/api/players_team_tournament/eesl_id/99999")
+        response = await client.get("/api/players_team_tournament/eesl_id/99999")
         
         assert response.status_code == 404
 
@@ -105,7 +90,7 @@ class TestPlayerTeamTournamentViews:
         
         update_data = PlayerTeamTournamentSchemaUpdate(player_number="99")
         
-        response = client.put(f"/api/players_team_tournament/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/players_team_tournament/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
@@ -129,7 +114,7 @@ class TestPlayerTeamTournamentViews:
         await ptt_service.create(PlayerTeamTournamentSchemaCreate(player_id=1, position_id=position.id, team_id=team.id, tournament_id=tournament.id))
         await ptt_service.create(PlayerTeamTournamentSchemaCreate(player_id=2, position_id=position.id, team_id=team.id, tournament_id=tournament.id))
         
-        response = client.get("/api/players_team_tournament/")
+        response = await client.get("/api/players_team_tournament/")
         
         assert response.status_code == 200
         assert len(response.json()) >= 2
@@ -154,12 +139,12 @@ class TestPlayerTeamTournamentViews:
         ptt_data = PlayerTeamTournamentSchemaCreate(player_id=1, position_id=position.id, team_id=team.id, tournament_id=tournament.id)
         created = await ptt_service.create_or_update_player_team_tournament(ptt_data)
         
-        response = client.get(f"/api/players_team_tournament/id/{created.id}")
+        response = await client.get(f"/api/players_team_tournament/id/{created.id}")
         
         assert response.status_code == 200
 
     async def test_get_player_team_tournament_by_id_not_found(self, client):
-        response = client.get("/api/players_team_tournament/id/99999")
+        response = await client.get("/api/players_team_tournament/id/99999")
         
         assert response.status_code == 404
 
@@ -183,6 +168,6 @@ class TestPlayerTeamTournamentViews:
         ptt_data = PlayerTeamTournamentSchemaCreate(player_id=1, position_id=position.id, team_id=team.id, tournament_id=tournament.id)
         created = await ptt_service.create_or_update_player_team_tournament(ptt_data)
         
-        response = client.get(f"/api/players_team_tournament/id/{created.id}/person")
+        response = await client.get(f"/api/players_team_tournament/id/{created.id}/person")
         
         assert response.status_code == 200

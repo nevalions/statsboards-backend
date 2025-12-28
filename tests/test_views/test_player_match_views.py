@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.player_match.views import api_player_match_router
 from src.player_match.db_services import PlayerMatchServiceDB
 from src.player_match.schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -18,18 +15,6 @@ from tests.factories import MatchFactory, TeamFactory, TournamentFactory, Season
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_player_match_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -58,7 +43,7 @@ class TestPlayerMatchViews:
         
         player_match_data = PlayerMatchSchemaCreate(player_match_eesl_id=100, player_team_tournament_id=ptt.id, match_position_id=position.id, match_id=match.id, team_id=team.id)
         
-        response = client.post("/api/players_match/", json=player_match_data.model_dump())
+        response = await client.post("/api/players_match/", json=player_match_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -89,13 +74,13 @@ class TestPlayerMatchViews:
         player_match_data = PlayerMatchSchemaCreate(player_match_eesl_id=100, player_team_tournament_id=ptt.id, match_position_id=position.id, match_id=match.id, team_id=team.id)
         created = await player_match_service.create_or_update_player_match(player_match_data)
         
-        response = client.get("/api/players_match/eesl_id/100")
+        response = await client.get("/api/players_match/eesl_id/100")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_player_match_by_eesl_id_not_found(self, client):
-        response = client.get("/api/players_match/eesl_id/99999")
+        response = await client.get("/api/players_match/eesl_id/99999")
         
         assert response.status_code == 404
 
@@ -127,7 +112,7 @@ class TestPlayerMatchViews:
         
         update_data = PlayerMatchSchemaUpdate(match_number="99")
         
-        response = client.put(f"/api/players_match/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/players_match/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
@@ -157,7 +142,7 @@ class TestPlayerMatchViews:
         await player_match_service.create_or_update_player_match(PlayerMatchSchemaCreate(player_match_eesl_id=100, player_team_tournament_id=ptt.id, match_position_id=position.id, match_id=match.id, team_id=team.id))
         await player_match_service.create_or_update_player_match(PlayerMatchSchemaCreate(player_match_eesl_id=101, player_team_tournament_id=ptt.id, match_position_id=position.id, match_id=match.id, team_id=team.id))
         
-        response = client.get("/api/players_match/")
+        response = await client.get("/api/players_match/")
         
         assert response.status_code == 200
         assert len(response.json()) >= 2
@@ -188,11 +173,11 @@ class TestPlayerMatchViews:
         player_match_data = PlayerMatchSchemaCreate(player_match_eesl_id=100, player_team_tournament_id=ptt.id, match_position_id=position.id, match_id=match.id, team_id=team.id)
         created = await player_match_service.create_or_update_player_match(player_match_data)
         
-        response = client.get(f"/api/players_match/id/{created.id}")
+        response = await client.get(f"/api/players_match/id/{created.id}")
         
         assert response.status_code == 200
 
     async def test_get_player_match_by_id_not_found(self, client):
-        response = client.get("/api/players_match/id/99999")
+        response = await client.get("/api/players_match/id/99999")
         
         assert response.status_code == 404

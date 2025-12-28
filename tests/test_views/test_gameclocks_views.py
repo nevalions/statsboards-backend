@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.gameclocks.views import api_gameclock_router
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate, GameClockSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -14,18 +11,6 @@ from tests.factories import MatchFactory, TeamFactory, TournamentFactory, Season
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_gameclock_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -49,7 +34,7 @@ class TestGameClockViews:
         
         gameclock_data = GameClockSchemaCreate(match_id=match.id, gameclock=600)
         
-        response = client.post("/api/gameclock/", json=gameclock_data.model_dump())
+        response = await client.post("/api/gameclock/", json=gameclock_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -77,14 +62,14 @@ class TestGameClockViews:
         
         update_data = GameClockSchemaUpdate(gameclock=500)
         
-        response = client.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_gameclock_not_found(self, client):
         update_data = GameClockSchemaUpdate(gameclock=500)
         
-        response = client.put("/api/gameclock/99999/", json=update_data.model_dump())
+        response = await client.put("/api/gameclock/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -111,7 +96,7 @@ class TestGameClockViews:
         
         update_data = GameClockSchemaUpdate(gameclock=500)
         
-        response = client.put(f"/api/gameclock/id/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/gameclock/id/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["success"] == True
@@ -137,7 +122,7 @@ class TestGameClockViews:
         gameclock_data = GameClockSchemaCreate(match_id=match.id, gameclock=600, gameclock_status="stopped")
         created = await gameclock_service.create(gameclock_data)
         
-        response = client.put(f"/api/gameclock/id/{created.id}/running/")
+        response = await client.put(f"/api/gameclock/id/{created.id}/running/")
         
         assert response.status_code == 200
 
@@ -162,7 +147,7 @@ class TestGameClockViews:
         gameclock_data = GameClockSchemaCreate(match_id=match.id, gameclock=600, gameclock_status="running")
         created = await gameclock_service.create(gameclock_data)
         
-        response = client.put(f"/api/gameclock/id/{created.id}/paused/")
+        response = await client.put(f"/api/gameclock/id/{created.id}/paused/")
         
         assert response.status_code == 200
 
@@ -187,6 +172,6 @@ class TestGameClockViews:
         gameclock_data = GameClockSchemaCreate(match_id=match.id, gameclock=300)
         created = await gameclock_service.create(gameclock_data)
         
-        response = client.put(f"/api/gameclock/id/{created.id}/stopped/720/")
+        response = await client.put(f"/api/gameclock/id/{created.id}/stopped/720/")
         
         assert response.status_code == 200

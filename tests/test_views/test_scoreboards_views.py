@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.scoreboards.views import api_scoreboards_router
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -14,18 +11,6 @@ from tests.factories import MatchFactory, TeamFactory, TournamentFactory, Season
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_scoreboards_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -49,7 +34,7 @@ class TestScoreboardViews:
         
         scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True)
         
-        response = client.post("/api/scoreboards/", json=scoreboard_data.model_dump())
+        response = await client.post("/api/scoreboards/", json=scoreboard_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -77,14 +62,14 @@ class TestScoreboardViews:
         
         update_data = ScoreboardSchemaUpdate(is_qtr=False)
         
-        response = client.put(f"/api/scoreboards/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/scoreboards/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_scoreboard_not_found(self, client):
         update_data = ScoreboardSchemaUpdate(is_qtr=False)
         
-        response = client.put("/api/scoreboards/99999/", json=update_data.model_dump())
+        response = await client.put("/api/scoreboards/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -109,13 +94,13 @@ class TestScoreboardViews:
         scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True)
         created = await scoreboard_service.create(scoreboard_data)
         
-        response = client.get(f"/api/scoreboards/match/id/{match.id}")
+        response = await client.get(f"/api/scoreboards/match/id/{match.id}")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_scoreboard_by_match_id_not_found(self, client):
-        response = client.get("/api/scoreboards/match/id/99999")
+        response = await client.get("/api/scoreboards/match/id/99999")
         
         assert response.status_code == 404
 
@@ -140,7 +125,7 @@ class TestScoreboardViews:
         await scoreboard_service.create(ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True))
         await scoreboard_service.create(ScoreboardSchemaCreate(match_id=match.id, is_qtr=False, is_time=False))
         
-        response = client.get("/api/scoreboards/")
+        response = await client.get("/api/scoreboards/")
         
         assert response.status_code == 200
         assert len(response.json()) >= 2
@@ -166,12 +151,12 @@ class TestScoreboardViews:
         scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True)
         created = await scoreboard_service.create(scoreboard_data)
         
-        response = client.get(f"/api/scoreboards/id/{created.id}/")
+        response = await client.get(f"/api/scoreboards/id/{created.id}/")
         
         assert response.status_code == 200
         assert response.json()["content"]["id"] == created.id
 
     async def test_get_scoreboard_by_id_not_found(self, client):
-        response = client.get("/api/scoreboards/id/99999/")
+        response = await client.get("/api/scoreboards/id/99999/")
         
         assert response.status_code == 404

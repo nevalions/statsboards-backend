@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.team_tournament.views import api_team_tournament_router
 from src.team_tournament.db_services import TeamTournamentServiceDB
 from src.team_tournament.schemas import TeamTournamentSchemaCreate, TeamTournamentSchemaUpdate
 from src.teams.db_services import TeamServiceDB
@@ -12,18 +9,6 @@ from tests.factories import TeamFactory, TournamentFactory, SeasonFactorySample,
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_team_tournament_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -41,7 +26,7 @@ class TestTeamTournamentViews:
         team_service = TeamServiceDB(test_db)
         team = await team_service.create(TeamFactory.build(sport_id=sport.id))
         
-        response = client.post(f"/api/team_in_tournament/{team.id}in{tournament.id}")
+        response = await client.post(f"/api/team_in_tournament/{team.id}in{tournament.id}")
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -63,13 +48,13 @@ class TestTeamTournamentViews:
         relation_data = TeamTournamentSchemaCreate(team_id=team.id, tournament_id=tournament.id)
         created = await tt_service.create(relation_data)
         
-        response = client.get(f"/api/team_in_tournament/{team.id}in{tournament.id}")
+        response = await client.get(f"/api/team_in_tournament/{team.id}in{tournament.id}")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_team_tournament_relation_not_found(self, client):
-        response = client.get("/api/team_in_tournament/99999in99999")
+        response = await client.get("/api/team_in_tournament/99999in99999")
         
         assert response.status_code == 404
 
@@ -92,14 +77,14 @@ class TestTeamTournamentViews:
         
         update_data = TeamTournamentSchemaUpdate(team_id=team.id, tournament_id=tournament.id)
         
-        response = client.put(f"/api/team_in_tournament/", params={"item_id": created.id}, json=update_data.model_dump())
+        response = await client.put(f"/api/team_in_tournament/", params={"item_id": created.id}, json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_team_tournament_not_found(self, client):
         update_data = TeamTournamentSchemaUpdate(team_id=1, tournament_id=1)
         
-        response = client.put(f"/api/team_in_tournament/", params={"item_id": 99999}, json=update_data.model_dump())
+        response = await client.put(f"/api/team_in_tournament/", params={"item_id": 99999}, json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -121,7 +106,7 @@ class TestTeamTournamentViews:
         await tt_service.create(TeamTournamentSchemaCreate(team_id=team1.id, tournament_id=tournament.id))
         await tt_service.create(TeamTournamentSchemaCreate(team_id=team2.id, tournament_id=tournament.id))
         
-        response = client.get(f"/api/team_in_tournament/tournament/id/{tournament.id}/teams")
+        response = await client.get(f"/api/team_in_tournament/tournament/id/{tournament.id}/teams")
         
         assert response.status_code == 200
         assert len(response.json()) >= 2
@@ -143,6 +128,6 @@ class TestTeamTournamentViews:
         relation_data = TeamTournamentSchemaCreate(team_id=team.id, tournament_id=tournament.id)
         await tt_service.create(relation_data)
         
-        response = client.delete(f"/api/team_in_tournament/{team.id}in{tournament.id}")
+        response = await client.delete(f"/api/team_in_tournament/{team.id}in{tournament.id}")
         
         assert response.status_code == 200

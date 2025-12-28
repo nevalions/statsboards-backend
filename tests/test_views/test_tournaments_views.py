@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.tournaments.views import api_tournament_router
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 from src.sports.db_services import SportServiceDB
@@ -10,18 +7,6 @@ from tests.factories import TournamentFactory, SeasonFactorySample, SportFactory
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_tournament_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -35,7 +20,7 @@ class TestTournamentViews:
         
         tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         
-        response = client.post("/api/tournaments/", json=tournament_data.model_dump())
+        response = await client.post("/api/tournaments/", json=tournament_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -53,14 +38,14 @@ class TestTournamentViews:
         
         update_data = TournamentSchemaUpdate(title="Updated Title")
         
-        response = client.put(f"/api/tournaments/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/tournaments/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
 
     async def test_update_tournament_not_found(self, client):
         update_data = TournamentSchemaUpdate(title="Updated Title")
         
-        response = client.put("/api/tournaments/99999/", json=update_data.model_dump())
+        response = await client.put("/api/tournaments/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -75,13 +60,13 @@ class TestTournamentViews:
         tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id, tournament_eesl_id=100)
         created = await tournament_service.create_or_update_tournament(tournament_data)
         
-        response = client.get("/api/tournaments/eesl_id/100")
+        response = await client.get("/api/tournaments/eesl_id/100")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_tournament_by_eesl_id_not_found(self, client):
-        response = client.get("/api/tournaments/eesl_id/99999")
+        response = await client.get("/api/tournaments/eesl_id/99999")
         
         assert response.status_code == 404
 
@@ -95,7 +80,7 @@ class TestTournamentViews:
         tournament_service = TournamentServiceDB(test_db)
         tournament = await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
         
-        response = client.get(f"/api/tournaments/id/{tournament.id}/teams/")
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/teams/")
         
         assert response.status_code == 200
 
@@ -109,7 +94,7 @@ class TestTournamentViews:
         tournament_service = TournamentServiceDB(test_db)
         tournament = await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
         
-        response = client.get(f"/api/tournaments/id/{tournament.id}/players/")
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/players/")
         
         assert response.status_code == 200
 
@@ -123,7 +108,7 @@ class TestTournamentViews:
         tournament_service = TournamentServiceDB(test_db)
         tournament = await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
         
-        response = client.get(f"/api/tournaments/id/{tournament.id}/matches/count")
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/matches/count")
         
         assert response.status_code == 200
 
@@ -137,7 +122,7 @@ class TestTournamentViews:
         tournament_service = TournamentServiceDB(test_db)
         tournament = await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
         
-        response = client.get(f"/api/tournaments/id/{tournament.id}/matches/")
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/matches/")
         
         assert response.status_code == 200
 
@@ -152,7 +137,7 @@ class TestTournamentViews:
         await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
         await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
         
-        response = client.get("/api/tournaments/")
+        response = await client.get("/api/tournaments/")
         
         assert response.status_code == 200
         assert len(response.json()) >= 2
@@ -168,12 +153,12 @@ class TestTournamentViews:
         tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         created = await tournament_service.create_or_update_tournament(tournament_data)
         
-        response = client.get(f"/api/tournaments/id/{created.id}")
+        response = await client.get(f"/api/tournaments/id/{created.id}")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_tournament_by_id_not_found(self, client):
-        response = client.get("/api/tournaments/id/99999")
+        response = await client.get("/api/tournaments/id/99999")
         
         assert response.status_code == 404

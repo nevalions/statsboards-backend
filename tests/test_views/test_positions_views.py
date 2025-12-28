@@ -1,7 +1,4 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from src.positions.views import api_position_router
 from src.positions.db_services import PositionServiceDB
 from src.positions.schemas import PositionSchemaCreate, PositionSchemaUpdate
 from src.sports.db_services import SportServiceDB
@@ -9,18 +6,6 @@ from tests.factories import SportFactorySample
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
-@pytest.fixture
-def test_app():
-    app = FastAPI()
-    app.include_router(api_position_router)
-    return app
-
-
-@pytest.fixture
-def client(test_app):
-    return TestClient(test_app)
 
 
 @pytest.mark.asyncio
@@ -31,7 +16,7 @@ class TestPositionViews:
         
         position_data = PositionSchemaCreate(title="Quarterback", sport_id=sport.id)
         
-        response = client.post("/api/positions/", json=position_data.model_dump())
+        response = await client.post("/api/positions/", json=position_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -46,7 +31,7 @@ class TestPositionViews:
         
         update_data = PositionSchemaUpdate(title="Updated Position")
         
-        response = client.put(f"/api/positions/{created.id}/", json=update_data.model_dump())
+        response = await client.put(f"/api/positions/{created.id}/", json=update_data.model_dump())
         
         assert response.status_code == 200
         assert response.json()["title"] == "Updated Position"
@@ -54,7 +39,7 @@ class TestPositionViews:
     async def test_update_position_not_found(self, client):
         update_data = PositionSchemaUpdate(title="Updated Position")
         
-        response = client.put("/api/positions/99999/", json=update_data.model_dump())
+        response = await client.put("/api/positions/99999/", json=update_data.model_dump())
         
         assert response.status_code == 404
 
@@ -66,7 +51,7 @@ class TestPositionViews:
         position_data = PositionSchemaCreate(title="Quarterback", sport_id=sport.id)
         created = await position_service.create(position_data)
         
-        response = client.get("/api/positions/title/Quarterback/")
+        response = await client.get("/api/positions/title/Quarterback/")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
@@ -79,7 +64,7 @@ class TestPositionViews:
         await position_service.create(PositionSchemaCreate(title="Quarterback", sport_id=sport.id))
         await position_service.create(PositionSchemaCreate(title="Running Back", sport_id=sport.id))
         
-        response = client.get("/api/positions/")
+        response = await client.get("/api/positions/")
         
         assert response.status_code == 200
         assert len(response.json()) >= 2
@@ -92,12 +77,12 @@ class TestPositionViews:
         position_data = PositionSchemaCreate(title="Quarterback", sport_id=sport.id)
         created = await position_service.create(position_data)
         
-        response = client.get(f"/api/positions/id/{created.id}")
+        response = await client.get(f"/api/positions/id/{created.id}")
         
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_position_by_id_not_found(self, client):
-        response = client.get("/api/positions/id/99999")
+        response = await client.get("/api/positions/id/99999")
         
         assert response.status_code == 404
