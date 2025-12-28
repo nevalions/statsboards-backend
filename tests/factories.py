@@ -56,7 +56,7 @@ class SeasonFactoryAny(factory.Factory):
 
 class TournamentFactory(factory.Factory):
     class Meta:
-        model = TournamentDB
+        model = TournamentSchemaCreate
 
     tournament_eesl_id = factory.Sequence(lambda n: n + 100)
     title = factory.Sequence(lambda n: f"Tournament {n}")

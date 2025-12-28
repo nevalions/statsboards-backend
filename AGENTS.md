@@ -4,14 +4,35 @@ This file provides guidance for agentic coding assistants working in this reposi
 
 ## Essential Commands
 
+### Prerequisites
+
+Before running any commands, ensure the virtual environment is activated:
+
+```bash
+# Activate virtual environment (if using poetry)
+poetry shell
+
+# Or activate venv directly (if using venv)
+source venv/bin/activate
+```
+
 ### Testing
+
+**Important: Before running tests, start the test database:**
+
+```bash
+# Start test database
+docker-compose -f docker-compose.test.db.yml up -d
+```
+
+Then run tests:
 
 ```bash
 # Run all tests
-poetry run pytest
+pytest
 
 # Run a single test file
-poetry run pytest tests/test_db_services/test_tournament_service.py
+pytest tests/test_db_services/test_tournament_service.py
 
 # Run a specific test function
 poetry run pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations
@@ -30,7 +51,7 @@ poetry run pytest tests/ -k "async"
 docker-compose -f docker-compose.test.db.yml up -d
 
 # Run tests locally against Docker database
-poetry run pytest
+pytest
 
 # Or run tests in Docker container
 docker-compose -f docker-compose.test.db.yml build
@@ -46,33 +67,33 @@ docker-compose -f docker-compose.test.db.yml down
 
 ```bash
 # Format code with Black
-poetry run black src/ tests/
+black src/ tests/
 
 # Lint with PyLint
-poetry run pylint src/
+pylint src/
 ```
 
 ### Database
 
 ```bash
 # Generate migration
-poetry run alembic revision --autogenerate -m "description"
+alembic revision --autogenerate -m "description"
 
 # Apply migrations
-poetry run alembic upgrade head
+alembic upgrade head
 
 # Downgrade migration
-poetry run alembic downgrade -1
+alembic downgrade -1
 ```
 
 ### Running the Application
 
 ```bash
 # Development server with hot reload
-poetry run python src/runserver.py
+python src/runserver.py
 
 # Production server
-poetry run python src/run_prod_server.py
+python src/run_prod_server.py
 ```
 
 ## Code Style Guidelines

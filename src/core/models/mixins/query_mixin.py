@@ -56,7 +56,7 @@ class QueryMixin:
                 )
                 update_dict = {}
                 for key, value in new_item.__dict__.items():
-                    if not key.startswith("_"):
+                    if not key.startswith("_") and value is not None:
                         update_dict[key] = value
                 await session.execute(
                     update(self.model)
