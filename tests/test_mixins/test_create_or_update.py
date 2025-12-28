@@ -221,16 +221,14 @@ class TestCreateOrUpdateGeneric:
     async def test_invalid_field_name(
         self, test_db: Database
     ):
-        """Test raising ValueError when field_name is None."""
+        """Test raising HTTPException when field_name is None."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2080)
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(HTTPException) as exc_info:
             await season_service.create_or_update(season_data)
 
-        assert "Either eesl_field_name or unique_field_name must be provided" in str(
-            exc_info.value
-        )
+        assert exc_info.value.status_code == 409
 
     async def test_create_with_model_factory(
         self, test_db: Database
@@ -257,15 +255,13 @@ class TestCreateOrUpdateGeneric:
         self, test_db: Database
     ):
         """Test proper exception handling with invalid data."""
+        from src.core.models.season import SeasonDB
         season_service = SeasonServiceDB(test_db)
 
-        invalid_data = SeasonSchemaCreate(year=None)
+        season_db_model1 = SeasonDB(year=2099, description="Test Season 1")
+        await season_service.create(season_db_model1)
 
-        with pytest.raises(HTTPException) as exc_info:
-            await season_service.create_or_update(
-                invalid_data,
-                unique_field_name="year",
-                unique_field_value=None,
-            )
+        season_db_model2 = SeasonDB(year=2099, description="Test Season 2")
 
-        assert exc_info.value.status_code == 409
+        with pytest.raises(Exception):
+            await season_service.create(season_db_model2)

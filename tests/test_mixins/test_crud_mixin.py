@@ -24,12 +24,14 @@ class TestCRUDMixin:
         assert created_item.description == season_db_model.description
 
     @pytest.mark.asyncio
-    async def test_create_integrity_error(self, test_db, season_db_model):
+    async def test_create_integrity_error(self, test_db):
         """Test that creating a duplicate item raises IntegrityError."""
         service = SeasonServiceDB(test_db)
-        await service.create(season_db_model)
+        season1 = SeasonDB(year=2024, description="Test Season")
+        season2 = SeasonDB(year=2024, description="Test Season 2")
+        await service.create(season1)
         with pytest.raises(Exception):
-            await service.create(season_db_model)
+            await service.create(season2)
 
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, test_db, season_db_model):

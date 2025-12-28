@@ -33,7 +33,7 @@ class TestBaseServiceDBIntegration:
         service = SeasonServiceDB(test_db)
 
         season_data = SeasonFactorySample.build()
-        created = await service.create(season_data)
+        created = await service.create_season(season_data)
         assert created.id is not None
 
         retrieved = await service.get_by_id(created.id)
@@ -45,7 +45,7 @@ class TestBaseServiceDBIntegration:
         assert retrieved_by_year.id == created.id
 
         update_data = SeasonSchemaUpdate(year=created.year + 1)
-        updated = await service.update(created.id, update_data)
+        updated = await service.update_season(created.id, update_data)
         assert updated.year == created.year + 1
 
         deleted = await service.delete(created.id)
