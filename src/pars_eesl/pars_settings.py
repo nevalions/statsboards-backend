@@ -1,6 +1,6 @@
 import os
 
-BASE_URL = "https://eesl.pro/"
+BASE_URL = "https://fafr.su/"
 BASE_ALL_PLAYERS_URL = BASE_URL + "participants/players"
 BASE_PLAYER = BASE_URL + "player/"
 BASE_SEASON_URL = BASE_URL + "tournaments?season_id="

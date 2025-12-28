@@ -37,9 +37,7 @@ async def fetch_list_of_matches_data(matches: List):
 
             if match_data is None:
                 match_data_schema = MatchDataSchemaCreate(match_id=match_id)
-                match_data = await match_data_service_db.create_match_data(
-                    match_data_schema
-                )
+                match_data = await match_data_service_db.create(match_data_schema)
 
             all_match_data.append(
                 {
@@ -74,9 +72,7 @@ async def fetch_match_data(match_id: int):
         if match:
             if match_data is None:
                 match_data_schema = MatchDataSchemaCreate(match_id=match_id)
-                match_data = await match_data_service_db.create_match_data(
-                    match_data_schema
-                )
+                match_data = await match_data_service_db.create(match_data_schema)
 
             return {
                 "match_id": match_id,
@@ -124,9 +120,7 @@ async def fetch_with_scoreboard_data(match_id: int):
                 )
                 match_data_schema = MatchDataSchemaCreate(match_id=match_id)
                 fetch_data_logger.debug(f"Schema for match data {match_data_schema}")
-                match_data = await match_data_service_db.create_match_data(
-                    match_data_schema
-                )
+                match_data = await match_data_service_db.create(match_data_schema)
             if scoreboard_data is None:
                 fetch_data_logger.debug(
                     f"Scoreboard Data not found for match_id:{match_id}, creating new..."
@@ -135,7 +129,7 @@ async def fetch_with_scoreboard_data(match_id: int):
                 fetch_data_logger.debug(
                     f"Schema for scoreboard data {scoreboard_data_schema}"
                 )
-                scoreboard_data = await scoreboard_data_service.create_scoreboard(
+                scoreboard_data = await scoreboard_data_service.create(
                     scoreboard_data_schema
                 )
 
@@ -180,7 +174,7 @@ async def fetch_gameclock(match_id: int):
         if match:
             if gameclock is None:
                 gameclock_schema = GameClockSchemaCreate(match_id=match_id)
-                gameclock = await gameclock_service.create_gameclock(gameclock_schema)
+                gameclock = await gameclock_service.create(gameclock_schema)
             return {
                 "match_id": match_id,
                 "id": match_id,
@@ -208,7 +202,7 @@ async def fetch_playclock(match_id: int):
         if match:
             if playclock is None:
                 playclock_schema = PlayClockSchemaCreate(match_id=match_id)
-                playclock = await playclock_service.create_playclock(playclock_schema)
+                playclock = await playclock_service.create(playclock_schema)
             return {
                 "match_id": match_id,
                 "id": match_id,

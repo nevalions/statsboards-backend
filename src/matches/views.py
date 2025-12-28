@@ -143,9 +143,7 @@ class MatchAPIRouter(
                 scoreboard_schema
             )
 
-            new_match_data = await match_db_service.create_match_data(
-                default_match_data
-            )
+            new_match_data = await match_db_service.create(default_match_data)
             teams_data = await self.service.get_teams_by_match(new_match_data.match_id)
             # new_scoreboard = await scoreboard_db_service.create_scoreboard(
             #     default_scoreboard
@@ -874,18 +872,12 @@ class MatchAPIRouter(
                     f"Scoreboard created or updated: {new_scoreboard.__dict__}"
                 )
 
-                new_match_data = await match_db_service.create_match_data(
-                    default_match_data
-                )
+                new_match_data = await match_db_service.create(default_match_data)
                 teams_data = await self.service.get_teams_by_match(
                     new_match_data.match_id
                 )
-                new_playclock = await playclock_service.create_playclock(
-                    default_playclock
-                )
-                new_gameclock = await gameclock_service.create_gameclock(
-                    default_gameclock
-                )
+                new_playclock = await playclock_service.create(default_playclock)
+                new_gameclock = await gameclock_service.create(default_gameclock)
                 self.logger.info(
                     f"Created match with full data and scoreboard {MatchSchema.model_validate(new_match)}"
                 )
@@ -956,7 +948,7 @@ class MatchAPIRouter(
                             playclock_schema = PlayClockSchemaCreate(
                                 match_id=created_match.id
                             )
-                            await playclock_service.create_playclock(playclock_schema)
+                            await playclock_service.create(playclock_schema)
 
                             gameclock_schema = GameClockSchemaCreate(
                                 match_id=created_match.id
@@ -975,7 +967,7 @@ class MatchAPIRouter(
                                     score_team_a=m["score_team_a"],
                                     score_team_b=m["score_team_b"],
                                 )
-                                match_data = await match_data_service.create_match_data(
+                                match_data = await match_data_service.create(
                                     match_data_schema_create
                                 )
                                 # print("match_data", match_data)
@@ -985,7 +977,7 @@ class MatchAPIRouter(
                                     score_team_a=m["score_team_a"],
                                     score_team_b=m["score_team_b"],
                                 )
-                                match_data = await match_data_service.update_match_data(
+                                match_data = await match_data_service.update(
                                     existing_match_data.id, match_data_schema_update
                                 )
                                 # print("match_data", match_data)
