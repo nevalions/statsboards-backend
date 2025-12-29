@@ -61,7 +61,9 @@ class PlayerTeamTournamentAPIRouter(
                     )
                 )
                 if new_player_team_tournament:
-                    return PlayerTeamTournamentSchema.model_validate(new_player_team_tournament)
+                    return PlayerTeamTournamentSchema.model_validate(
+                        new_player_team_tournament
+                    )
                 else:
                     raise HTTPException(
                         status_code=409, detail="Player_team_tournament creation fail"
@@ -112,9 +114,7 @@ class PlayerTeamTournamentAPIRouter(
                 self.logger.debug(
                     f"Update player_team_tournament endpoint got data {item}"
                 )
-                update_ = await self.service.update(
-                    item_id, item
-                )
+                update_ = await self.service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,
@@ -139,7 +139,24 @@ class PlayerTeamTournamentAPIRouter(
             response_model=PersonSchema,
         )
         async def get_player_team_tournament_with_person_endpoint(player_id: int):
-            return await self.service.get_player_team_tournament_with_person(player_id)
+            try:
+                person = await self.service.get_player_team_tournament_with_person(
+                    player_id
+                )
+                if person is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Person not found for player_team_tournament id {player_id}",
+                    )
+                return PersonSchema.model_validate(person)
+            except HTTPException:
+                raise
+            except Exception as e:
+                self.logger.error(
+                    f"Error getting person for player_team_tournament id {player_id}: {e}",
+                    exc_info=True,
+                )
+                raise HTTPException(status_code=500, detail="Internal server error")
 
         @router.get(
             "/pars/tournament/{tournament_id}/team/{team_id}",
