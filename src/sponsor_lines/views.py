@@ -52,31 +52,32 @@ class SponsorLineAPIRouter(
         ):
             self.logger.debug(f"Update sponsor line endpoint")
             try:
-                update_ = await self.service.update_sponsor_line(
-                    item_id,
-                    item,
-                )
+                update_ = await self.service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,
                         detail=f"SponsorLine id:{item_id} not found",
                     )
                 return SponsorLineSchema.model_validate(update_)
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error updating sponsor line endpoint {e}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Error updating sponsor line",
                 )
 
         @router.get(
             "/id/{item_id}/",
             response_class=JSONResponse,
         )
-        async def get_sponsor_line_by_id_endpoint(
-            item_id,
-            item=Depends(self.service.get_by_id),
-        ):
+        async def get_sponsor_line_by_id_endpoint(item_id: int):
             try:
                 self.logger.debug(f"Get sponsor line endpoint by id {item_id}")
+                item = await self.service.get_by_id(item_id)
                 if item:
                     return self.create_response(
                         item,
@@ -88,10 +89,16 @@ class SponsorLineAPIRouter(
                         status_code=404,
                         detail=f"SponsorLine id:{item_id} not found",
                     )
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error getting sponsor line endpoint {e} by id:{item_id}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error retrieving sponsor line",
                 )
 
         return router

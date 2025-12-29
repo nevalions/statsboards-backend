@@ -69,10 +69,14 @@ class SeasonAPIRouter(
             "/id/{item_id}/",
             response_class=JSONResponse,
         )
-        async def get_season_by_id_endpoint(
-            item=Depends(self.service.get_by_id),
-        ):
+        async def get_season_by_id_endpoint(item_id: int):
             self.logger.debug(f"Get season by id endpoint")
+            item = await self.service.get_by_id(item_id)
+            if item is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Season with id {item_id} not found",
+                )
             return self.create_response(
                 item,
                 f"Season ID:{item.id}",

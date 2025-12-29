@@ -77,9 +77,15 @@ class SponsorSponsorLineAPIRouter(
                         detail=f"Team Tournament id {item_id} not found",
                     )
                 return SponsorSponsorLineSchema.model_validate(update_)
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error updating sponsor sponsor line endpoint: {e}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=409,
+                    detail="Error updating sponsor sponsor line relation",
                 )
 
         @router.get("/{sponsor_id}in{sponsor_line_id}")
@@ -98,9 +104,15 @@ class SponsorSponsorLineAPIRouter(
                         status_code=404, detail="sponsor_sponsor_line not found"
                     )
                 return sponsor_sponsor_line
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error getting sponsor sponsor line endpoint: {e}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error retrieving sponsor sponsor line relation",
                 )
 
         @router.get("/sponsor_line/id/{sponsor_line_id}/sponsors")

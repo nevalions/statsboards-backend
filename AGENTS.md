@@ -15,6 +15,12 @@ source venv/bin/activate
 
 ### Testing
 
+**Important: When running in agent mode, use non-verbose until error or fail catched**
+
+```bash
+docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activate && pytest 2>&1 | tail -20
+```
+
 **Important: Before running tests, start test database:**
 
 ```bash
@@ -46,6 +52,7 @@ poetry run pytest tests/ -k "async"
 ```
 
 **Note:** The `pytest.ini` file includes performance optimizations (`-x -v --tb=short`) for faster test execution:
+
 - `-x`: Stop on first failure
 - `-v`: Verbose output
 - `--tb=short`: Shortened traceback format
@@ -210,6 +217,7 @@ python src/run_prod_server.py
 - Test both success and error paths
 
 **Important:** Do NOT use SQLite for tests. Tests must use PostgreSQL because:
+
 - WebSocket functionality requires PostgreSQL LISTEN/NOTIFY features
 - Tests use PostgreSQL-specific data types and functions
 - Full compatibility with production database behavior is required
@@ -218,11 +226,13 @@ python src/run_prod_server.py
 ### PostgreSQL Test Performance Optimization
 
 Current optimizations already implemented:
+
 - Database echo disabled in test fixtures (tests/conftest.py:22)
 - Transaction rollback per test (fast cleanup without table drops)
 - No Alembic migrations (direct table creation)
 
 Additional optimization opportunities:
+
 - Session-scoped database engine (create tables once per session)
 - PostgreSQL connection pool tuning (pool_size, max_overflow)
 - PostgreSQL performance tuning (fsync=off, synchronous_commit=off)

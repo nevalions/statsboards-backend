@@ -50,22 +50,15 @@ class SportAPIRouter(
                 item_id,
                 item,
             )
-            if update_ is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Sport id:{item_id} not found",
-                )
             return SportSchema.model_validate(update_)
 
         @router.get(
             "/id/{item_id}/",
             response_class=JSONResponse,
         )
-        async def get_sport_by_id_endpoint(
-            item_id,
-            item=Depends(self.service.get_by_id),
-        ):
-            self.logger.debug(f"Update sport by id:{item_id} endpoint")
+        async def get_sport_by_id_endpoint(item_id: int):
+            self.logger.debug(f"Getting sport by id: {item_id} endpoint")
+            item = await self.service.get_by_id(item_id)
             if item:
                 return self.create_response(
                     item,

@@ -119,11 +119,12 @@ class TestScoreboardViews:
         team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
         
         match_service = MatchServiceDB(test_db)
-        match = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id))
+        match1 = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id))
+        match2 = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id))
         
         scoreboard_service = ScoreboardServiceDB(test_db)
-        await scoreboard_service.create(ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True))
-        await scoreboard_service.create(ScoreboardSchemaCreate(match_id=match.id, is_qtr=False, is_time=False))
+        await scoreboard_service.create(ScoreboardSchemaCreate(match_id=match1.id, is_qtr=True, is_time=True))
+        await scoreboard_service.create(ScoreboardSchemaCreate(match_id=match2.id, is_qtr=False, is_time=False))
         
         response = await client.get("/api/scoreboards/")
         
@@ -152,9 +153,9 @@ class TestScoreboardViews:
         created = await scoreboard_service.create(scoreboard_data)
         
         response = await client.get(f"/api/scoreboards/id/{created.id}/")
-        
+
         assert response.status_code == 200
-        assert response.json()["content"]["id"] == created.id
+        assert response.json()["id"] == created.id
 
     async def test_get_scoreboard_by_id_not_found(self, client):
         response = await client.get("/api/scoreboards/id/99999/")

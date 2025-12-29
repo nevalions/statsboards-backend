@@ -57,33 +57,21 @@ class SponsorAPIRouter(
             item_id: int,
             item: SponsorSchemaUpdate,
         ):
-            try:
-                self.logger.debug(f"Updating sponsor endpoint")
-                update_ = await self.service.update(
-                    item_id,
-                    item,
-                )
-                if update_ is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Sponsor id:{item_id} not found",
-                    )
-                return SponsorSchema.model_validate(update_)
-            except Exception as e:
-                self.logger.error(
-                    f"Error updating sponsor endpoint: {e}", exc_info=True
-                )
+            self.logger.debug(f"Updating sponsor endpoint")
+            update_ = await self.service.update(
+                item_id,
+                item,
+            )
+            return SponsorSchema.model_validate(update_)
 
         @router.get(
             "/id/{item_id}/",
             response_class=JSONResponse,
         )
-        async def get_sponsor_by_id_endpoint(
-            item_id,
-            item=Depends(self.service.get_by_id),
-        ):
+        async def get_sponsor_by_id_endpoint(item_id: int):
             try:
                 self.logger.debug(f"Getting sponsor endpoint by id: {item_id}")
+                item = await self.service.get_by_id(item_id)
                 if item:
                     return self.create_response(
                         item,
@@ -95,9 +83,16 @@ class SponsorAPIRouter(
                         status_code=404,
                         detail=f"Sponsor id:{item_id} not found",
                     )
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
-                    f"Error getting sponsor endpoint by id:{item_id} {e}", exc_info=True
+                    f"Error getting sponsor endpoint {e} by id:{item_id}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error retrieving sponsor",
                 )
 
         @router.post("/upload_logo", response_model=UploadSponsorLogoResponse)

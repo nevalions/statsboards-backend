@@ -32,8 +32,8 @@ class ScoreboardSchemaBase(BaseModel):
     use_team_a_game_color: bool = False
     use_team_b_game_color: bool = False
 
-    team_a_game_title: Annotated[str, Path(max_length=50)] = None
-    team_b_game_title: Annotated[str, Path(max_length=50)] = None
+    team_a_game_title: Annotated[str, Path(max_length=50)] | None = None
+    team_b_game_title: Annotated[str, Path(max_length=50)] | None = None
     use_team_a_game_title: bool = False
     use_team_b_game_title: bool = False
 

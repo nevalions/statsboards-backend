@@ -106,6 +106,21 @@ class ScoreboardAPIRouter(
             return ScoreboardSchema.model_validate(scoreboard)
 
         @router.get(
+            "/id/{item_id}/",
+            response_model=ScoreboardSchema,
+        )
+        async def get_scoreboard_by_id(item_id: int):
+            self.logger.debug(f"Get scoreboard by id: {item_id} endpoint")
+            scoreboard = await self.service.get_by_id(item_id)
+            if scoreboard is None:
+                self.logger.warning(f"No scoreboard found for id: {item_id}")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Scoreboard id({item_id}) not found",
+                )
+            return ScoreboardSchema.model_validate(scoreboard)
+
+        @router.get(
             "/matchdata/id/{matchdata_id}",
             response_model=ScoreboardSchema,
         )

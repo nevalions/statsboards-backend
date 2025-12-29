@@ -1,7 +1,7 @@
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from src.core.config import settings
 from src.core.models.base import Database, Base
 
@@ -99,5 +99,6 @@ async def test_app(test_db):
 
 @pytest_asyncio.fixture(scope="function")
 async def client(test_app):
-    async with AsyncClient(app=test_app, base_url="http://test") as ac:
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

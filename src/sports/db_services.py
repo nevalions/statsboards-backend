@@ -48,6 +48,8 @@ class SportServiceDB(BaseServiceDB):
                 item,
                 **kwargs,
             )
+        except HTTPException:
+            raise
         except Exception as e:
             self.logger.error(f"Error updating {ITEM} {e}", exc_info=True)
             raise HTTPException(
