@@ -67,6 +67,7 @@ def test_downloads_dir():
 @pytest.fixture
 def test_uploads_path(test_downloads_dir, monkeypatch):
     """Fixture to patch uploads_path for integration tests."""
-    import src.core.config
-    monkeypatch.setattr(src.core.config, "uploads_path", test_downloads_dir)
+    # Patch the config module's uploads_path directly
+    import src.core.config as config_module
+    monkeypatch.setattr(config_module, "uploads_path", test_downloads_dir)
     return test_downloads_dir
