@@ -66,6 +66,29 @@ class PlayerMatchAPIRouter(
             response_model=PlayerMatchSchema,
         )
         async def get_player_match_by_eesl_id_endpoint(
+            eesl_id: int,
+        ):
+            try:
+                self.logger.debug(
+                    f"Get player in match endpoint with eesl_id:{eesl_id}"
+                )
+                player_match = await self.service.get_player_match_by_eesl_id(
+                    value=eesl_id
+                )
+                if player_match is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Player match eesl_id({eesl_id}) not found",
+                    )
+                return PlayerMatchSchema.model_validate(player_match)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting player in match with match eesl_id {eesl_id} {ex}",
+                    exc_info=True,
+                )
+        async def get_player_match_by_eesl_id_endpoint(
             player_match_eesl_id: int,
         ):
             try:

@@ -188,6 +188,8 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 "player",
                 "person",
             )
+        except HTTPException:
+            raise
         except Exception as ex:
             self.logger.error(f"Error getting {ITEM} with person {ex}", exc_info=True)
 

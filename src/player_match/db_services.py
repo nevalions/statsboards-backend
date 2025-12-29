@@ -221,6 +221,17 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 f"Error getting {ITEM} with full data {ex}", exc_info=True
             )
 
+    async def get_player_match_by_eesl_id(
+        self,
+        value,
+        field_name="player_match_eesl_id",
+    ):
+        self.logger.debug(f"Get {ITEM} {field_name}:{value}")
+        return await self.get_item_by_field_value(
+            value=value,
+            field_name=field_name,
+        )
+
     async def update(
         self,
         item_id: int,

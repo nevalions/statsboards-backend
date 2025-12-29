@@ -92,6 +92,8 @@ class PlayerTeamTournamentAPIRouter(
                         detail=f"player_team_tournament by eesl_id({eesl_id}) not found",
                     )
                 return PlayerTeamTournamentSchema.model_validate(tournament)
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error getting player_team_tournament by eesl_id {eesl_id} {e}",
@@ -137,7 +139,7 @@ class PlayerTeamTournamentAPIRouter(
             response_model=PersonSchema,
         )
         async def get_player_team_tournament_with_person_endpoint(player_id: int):
-            return await self.get_player_team_tournament_with_person(player_id)
+            return await self.service.get_player_team_tournament_with_person(player_id)
 
         @router.get(
             "/pars/tournament/{tournament_id}/team/{team_id}",
