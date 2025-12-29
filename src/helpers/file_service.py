@@ -147,24 +147,26 @@ class FileService:
         file_data = await self.download_service.open_file(image_path)
         image = await self.image_service.open_image_from_file(file_data["data"])
 
-        created_icon_path = await self.fs_service.create_path(icon_image_path)
-        self.logger.debug(f"Created icon path: {created_icon_path}")
+        icon_dir = str(Path(icon_image_path).parent)
+        await self.fs_service.create_path(icon_dir)
+        self.logger.debug(f"Created icon directory: {icon_dir}")
         await self.image_service.resize_and_save_image(
             icon_height,
             image,
             None,
-            Path(created_icon_path),
+            Path(icon_dir),
             file_data["filename"],
             "icon",
         )
 
-        created_web_view_path = await self.fs_service.create_path(web_view_image_path)
-        self.logger.debug(f"Created webview path: {created_web_view_path}")
+        webview_dir = str(Path(web_view_image_path).parent)
+        await self.fs_service.create_path(webview_dir)
+        self.logger.debug(f"Created webview directory: {webview_dir}")
         await self.image_service.resize_and_save_image(
             web_view_height,
             image,
             None,
-            Path(created_web_view_path),
+            Path(webview_dir),
             file_data["filename"],
             "webview",
         )

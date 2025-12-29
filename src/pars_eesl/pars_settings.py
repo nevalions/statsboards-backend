@@ -12,3 +12,4 @@ BASE_TEAM_TOURNAMENT_URL = (
 BASE_MATCH_URL = BASE_URL + "match/"
 SEASON_ID = os.getenv("CURRENT_SEASON_ID")
 match_id = "29"
+TEST_DOWNLOADS_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "test_downloads")
