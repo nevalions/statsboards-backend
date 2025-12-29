@@ -197,13 +197,24 @@ class TournamentAPIRouter(
 
         @router.post("/upload_logo", response_model=UploadTournamentLogoResponse)
         async def upload_tournament_logo_endpoint(file: UploadFile = File(...)):
-            file_location = await file_service.save_upload_image(
-                file, sub_folder="tournaments/logos"
-            )
-            self.logger.debug(
-                f"Upload and resize tournament logo endpoint file location: {file_location}"
-            )
-            return {"logoUrl": file_location}
+            try:
+                file_location = await file_service.save_upload_image(
+                    file, sub_folder="tournaments/logos"
+                )
+                self.logger.debug(
+                    f"Upload tournament logo endpoint file location: {file_location}"
+                )
+                return {"logoUrl": file_location}
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error uploading tournament logo: {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error uploading tournament logo",
+                )
 
         @router.post(
             "/upload_resize_logo", response_model=UploadResizeTournamentLogoResponse
@@ -211,16 +222,27 @@ class TournamentAPIRouter(
         async def upload_and_resize_tournament_logo_endpoint(
             file: UploadFile = File(...),
         ):
-            uploaded_paths = await file_service.save_and_resize_upload_image(
-                file,
-                sub_folder="tournaments/logos",
-                icon_height=100,
-                web_view_height=400,
-            )
-            self.logger.debug(
-                f"Upload and resize tournament logo endpoint file location: {uploaded_paths}"
-            )
-            return uploaded_paths
+            try:
+                uploaded_paths = await file_service.save_and_resize_upload_image(
+                    file,
+                    sub_folder="tournaments/logos",
+                    icon_height=100,
+                    web_view_height=400,
+                )
+                self.logger.debug(
+                    f"Upload and resize tournament logo endpoint file location: {uploaded_paths}"
+                )
+                return uploaded_paths
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error uploading and resizing tournament logo: {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error uploading and resizing tournament logo",
+                )
 
         @router.get(
             "/pars/season/{eesl_season_id}",

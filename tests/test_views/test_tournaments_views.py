@@ -1,5 +1,6 @@
 import pytest
 from io import BytesIO
+from PIL import Image
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 from src.sports.db_services import SportServiceDB
@@ -8,6 +9,14 @@ from tests.factories import TournamentFactory, SeasonFactorySample, SportFactory
 from src.logging_config import setup_logging
 
 setup_logging()
+
+
+def create_test_image():
+    img = Image.new('RGB', (100, 100), color='red')
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf.getvalue()
 
 
 @pytest.mark.asyncio
@@ -165,7 +174,7 @@ class TestTournamentViews:
         assert response.status_code == 404
 
     async def test_upload_tournament_logo_endpoint(self, client):
-        file_content = b"fake image content"
+        file_content = create_test_image()
         files = {"file": ("test_logo.png", BytesIO(file_content), "image/png")}
         response = await client.post("/api/tournaments/upload_logo", files=files)
 
@@ -178,10 +187,10 @@ class TestTournamentViews:
         files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
         response = await client.post("/api/tournaments/upload_logo", files=files)
 
-        assert response.status_code == 500
+        assert response.status_code == 400
 
     async def test_upload_and_resize_tournament_logo_endpoint(self, client):
-        file_content = b"fake image content"
+        file_content = create_test_image()
         files = {"file": ("test_logo.png", BytesIO(file_content), "image/png")}
         response = await client.post("/api/tournaments/upload_resize_logo", files=files)
 
@@ -199,4 +208,4 @@ class TestTournamentViews:
         files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
         response = await client.post("/api/tournaments/upload_resize_logo", files=files)
 
-        assert response.status_code == 500
+        assert response.status_code == 400

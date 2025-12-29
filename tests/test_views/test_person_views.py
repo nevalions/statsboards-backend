@@ -1,11 +1,20 @@
 import pytest
 from io import BytesIO
+from PIL import Image
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate, PersonSchemaUpdate
 from tests.factories import PersonFactory
 from src.logging_config import setup_logging
 
 setup_logging()
+
+
+def create_test_image():
+    img = Image.new('RGB', (100, 100), color='red')
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf.getvalue()
 
 
 @pytest.mark.asyncio
@@ -72,7 +81,7 @@ class TestPersonViews:
         assert response.status_code == 404
 
     async def test_upload_person_photo_endpoint(self, client):
-        file_content = b"fake image content"
+        file_content = create_test_image()
         files = {"file": ("test_photo.png", BytesIO(file_content), "image/png")}
         response = await client.post("/api/persons/upload_photo", files=files)
 
@@ -85,10 +94,10 @@ class TestPersonViews:
         files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
         response = await client.post("/api/persons/upload_photo", files=files)
 
-        assert response.status_code == 500
+        assert response.status_code == 400
 
     async def test_upload_and_resize_person_photo_endpoint(self, client):
-        file_content = b"fake image content"
+        file_content = create_test_image()
         files = {"file": ("test_photo.png", BytesIO(file_content), "image/png")}
         response = await client.post("/api/persons/upload_resize_photo", files=files)
 
@@ -106,4 +115,4 @@ class TestPersonViews:
         files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
         response = await client.post("/api/persons/upload_resize_photo", files=files)
 
-        assert response.status_code == 500
+        assert response.status_code == 400

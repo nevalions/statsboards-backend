@@ -87,9 +87,15 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                     file, sub_folder="persons/photos"
                 )
                 return {"photoUrl": file_location}
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error on upload person photo got data: {ex}", exc_info=ex
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error uploading person photo",
                 )
 
         @router.post(
@@ -105,9 +111,15 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                     web_view_height=400,
                 )
                 return uploaded_paths
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error on upload and resize photo: {ex}", exc_info=ex
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error uploading and resizing person photo",
                 )
 
         return router

@@ -135,8 +135,14 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     f"Upload team logo endpoint file location: {file_location}"
                 )
                 return {"logoUrl": file_location}
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(f"Error saving team logo file: {ex}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error uploading team logo",
+                )
 
         @router.post("/upload_resize_logo", response_model=UploadResizeTeamLogoResponse)
         async def upload_and_resize_team_logo_endpoint(file: UploadFile = File(...)):
@@ -151,9 +157,15 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     f"Upload and resize team logo endpoint file location: {uploaded_paths}"
                 )
                 return uploaded_paths
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error saving and resizing team logo file: {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error uploading and resizing team logo",
                 )
 
         @router.get(

@@ -103,8 +103,14 @@ class SponsorAPIRouter(
                     file, sub_folder="sponsors/logos"
                 )
                 return {"logoUrl": file_location}
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(f"Error saving sponsor logo: {e}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error uploading sponsor logo",
+                )
 
         return router
 

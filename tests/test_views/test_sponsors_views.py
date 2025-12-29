@@ -1,11 +1,20 @@
 import pytest
 from io import BytesIO
+from PIL import Image
 from src.sponsors.db_services import SponsorServiceDB
 from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
 from tests.factories import SponsorFactory
 from src.logging_config import setup_logging
 
 setup_logging()
+
+
+def create_test_image():
+    img = Image.new('RGB', (100, 100), color='red')
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf.getvalue()
 
 
 @pytest.mark.asyncio
@@ -67,7 +76,7 @@ class TestSponsorViews:
         assert response.status_code == 404
 
     async def test_upload_sponsor_logo_endpoint(self, client):
-        file_content = b"fake image content"
+        file_content = create_test_image()
         files = {"file": ("test_logo.png", BytesIO(file_content), "image/png")}
         response = await client.post("/api/sponsors/upload_logo", files=files)
 
@@ -80,4 +89,4 @@ class TestSponsorViews:
         files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
         response = await client.post("/api/sponsors/upload_logo", files=files)
 
-        assert response.status_code == 500
+        assert response.status_code == 400
