@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import BaseServiceDB, PlayerTeamTournamentDB
 from src.player.db_services import PlayerServiceDB
@@ -79,16 +80,30 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     )
                     if player_team_tournament_from_db:
                         self.logger.debug(f"{ITEM} exist, updating...")
-                        return await self.update_player_team_tournament(
+                        return await self.update(
                             player_team_tournament_from_db.id, p
                         )
                 self.logger.debug(f"{ITEM} does not exist, creating...")
                 return await self.create_new_player_team_tournament(
                     p,
                 )
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error creating or updating {ITEM}:{p} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error creating or updating player team tournament",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error creating or updating {ITEM}:{p} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error creating or updating player team tournament",
             )
 
     async def update_player_team_tournament_by_eesl(
@@ -110,9 +125,23 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 status_code=400,
                 detail=f"Invalid player team tournament {eesl_field_name}",
             )
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error updating {ITEM} by {eesl_field_name} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error updating player team tournament",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error updating {ITEM} by {eesl_field_name} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error updating player team tournament",
             )
 
     async def create_new_player_team_tournament(
@@ -131,8 +160,20 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
 
             return await super().create(player_team_tournament)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Error creating {ITEM}{ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error creating player team tournament",
+            )
         except Exception as ex:
             self.logger.error(f"Error creating {ITEM}{ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error creating player team tournament",
+            )
 
     async def get_player_team_tournament_by_eesl_id(
         self,
@@ -145,9 +186,13 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 value=value,
                 field_name=field_name,
             )
-        except Exception as ex:
+        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
                 f"Error getting {ITEM} by {field_name}:{value} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching player team tournament",
             )
 
     async def get_player_team_tournaments_by_tournament_id(
@@ -190,8 +235,18 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
         except HTTPException:
             raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Error getting {ITEM} with person {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching player team tournament with person",
+            )
         except Exception as ex:
             self.logger.error(f"Error getting {ITEM} with person {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching player team tournament with person",
+            )
 
     async def update(
         self,
