@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import BaseServiceDB, PlayerMatchDB
 from src.positions.db_services import PositionServiceDB
@@ -166,8 +167,20 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 "player_team_tournament",
                 "player",
             )
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Error getting player in sport {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching player in sport",
+            )
         except Exception as ex:
             self.logger.error(f"Error getting player in sport {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching player in sport",
+            )
 
     async def get_player_person_in_match(self, player_id: int):
         player_service = PlayerServiceDB(self.db)
@@ -178,9 +191,24 @@ class PlayerMatchServiceDB(BaseServiceDB):
             p = await self.get_player_in_sport(player_id)
             if p:
                 return await player_service.get_player_with_person(p.id)
+            return None
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error getting {ITEM} in sport with person {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching player person in match",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error getting {ITEM} in sport with person {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching player person in match",
             )
 
     async def get_player_in_team_tournament(
@@ -193,9 +221,23 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 match_id,
                 "player_team_tournament",
             )
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error getting player_team_tournament {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching player team tournament",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error getting player_team_tournament {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching player team tournament",
             )
 
     async def get_player_in_match_full_data(self, match_player_id: int):
@@ -216,9 +258,23 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 "person": person,
                 "position": position,
             }
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error getting {ITEM} with full data {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching player with full data",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error getting {ITEM} with full data {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching player with full data",
             )
 
     async def get_player_match_by_eesl_id(
