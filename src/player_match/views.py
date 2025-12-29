@@ -78,9 +78,11 @@ class PlayerMatchAPIRouter(
                 if tournament is None:
                     raise HTTPException(
                         status_code=404,
-                        detail=f"Tournament eesl_id({player_match_eesl_id}) not found",
+                        detail=f"Player match eesl_id({player_match_eesl_id}) not found",
                     )
                 return PlayerMatchSchema.model_validate(tournament)
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error getting player in match with match eesl_id {player_match_eesl_id} {ex}",

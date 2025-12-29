@@ -113,17 +113,18 @@ class TestPlayClockViews:
         
         tournament_service = TournamentServiceDB(test_db)
         tournament = await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
-        
+         
         team_service = TeamServiceDB(test_db)
         team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
         team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
         
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id))
+        match2 = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id))
         
         playclock_service = PlayClockServiceDB(test_db)
         await playclock_service.create(PlayClockSchemaCreate(match_id=match.id, playclock=60, playclock_status="stopped"))
-        await playclock_service.create(PlayClockSchemaCreate(match_id=match.id, playclock=90, playclock_status="stopped"))
+        await playclock_service.create(PlayClockSchemaCreate(match_id=match2.id, playclock=90, playclock_status="stopped"))
         
         response = await client.get("/api/playclock/")
         

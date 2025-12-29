@@ -105,6 +105,11 @@ class PlayClockAPIRouter(
             item=Depends(self.service.get_by_id),
         ):
             self.logger.debug(f"Get playclock endpoint by ID")
+            if item is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Playclock not found"
+                )
             return self.create_response(
                 item,
                 f"Playclock ID:{item.id}",

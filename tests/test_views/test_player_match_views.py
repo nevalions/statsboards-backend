@@ -35,8 +35,11 @@ class TestPlayerMatchViews:
         position_service = PositionServiceDB(test_db)
         position = await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         
+        player_service = PlayerServiceDB(test_db)
+        player = await player_service.create_or_update_player(PlayerFactory.build())
+        
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
-        ptt = await ptt_service.create(PlayerTeamTournamentSchemaCreate(player_id=1, position_id=position.id, team_id=team.id, tournament_id=tournament.id))
+        ptt = await ptt_service.create(PlayerTeamTournamentSchemaCreate(player_id=player.id, position_id=position.id, team_id=team.id, tournament_id=tournament.id))
         
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id))

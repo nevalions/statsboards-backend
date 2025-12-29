@@ -47,21 +47,18 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             response_model=PersonSchema,
         )
         async def get_person_by_eesl_id_endpoint(
-            person_eesl_id: int,
+            eesl_id: int,
         ):
-            self.logger.debug(f"Get person by eesl_id: {person_eesl_id}")
-            try:
-                tournament = await self.service.get_person_by_eesl_id(
-                    value=person_eesl_id
+            self.logger.debug(f"Get person by eesl_id: {eesl_id}")
+            person = await self.service.get_person_by_eesl_id(
+                value=eesl_id
+            )
+            if person is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Person eesl_id({eesl_id}) not found",
                 )
-                if tournament is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Tournament eesl_id({person_eesl_id}) not found",
-                    )
-                return PersonSchema.model_validate(tournament)
-            except Exception as ex:
-                self.logger.error(f"Error on get person by eesl_id: {ex}", exc_info=ex)
+            return PersonSchema.model_validate(person)
 
         @router.put(
             "/{item_id}/",
@@ -71,18 +68,16 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             item_id: int,
             item: PersonSchemaUpdate,
         ):
+            self.logger.debug(f"Update person endpoint got data: {item}")
             try:
-                self.logger.debug(f"Update person endpoint got data: {item}")
-                update_ = await self.service.update_person(item_id, item)
-                if update_ is None:
-                    raise HTTPException(
-                        status_code=404, detail=f"Person id {item_id} not found"
-                    )
-                return PersonSchema.model_validate(update_)
-            except Exception as ex:
-                self.logger.error(
-                    f"Error on update person, got data: {ex}", exc_info=ex
+                update_ = await self.service.update(item_id, item)
+            except HTTPException:
+                raise
+            if update_ is None:
+                raise HTTPException(
+                    status_code=404, detail=f"Person id {item_id} not found"
                 )
+            return PersonSchema.model_validate(update_)
 
         @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
         async def upload_person_photo_endpoint(file: UploadFile = File(...)):
