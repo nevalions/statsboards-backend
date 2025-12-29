@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from src.core.models import BaseServiceDB, PositionDB
 
 from .schemas import PositionSchemaCreate, PositionSchemaUpdate
@@ -57,7 +58,21 @@ class PositionServiceDB(BaseServiceDB):
                 if not position:
                     raise HTTPException(status_code=404, detail="Position not found")
                 return position
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Database error getting position by title: {title} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error fetching position by title: {title}",
+                )
             except Exception as ex:
                 self.logger.error(
                     f"Error getting position by title: {title} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error fetching position by title: {title}",
                 )
