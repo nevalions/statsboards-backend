@@ -44,22 +44,16 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
 
         @router.get("/eesl_id/{eesl_id}", response_model=PlayerSchema)
         async def get_player_by_eesl_id_endpoint(
-            player_eesl_id: int,
+            eesl_id: int,
         ):
-            try:
-                self.logger.debug(f"Get player by eesl_id: {player_eesl_id} endpoint")
-                player = await self.service.get_player_by_eesl_id(value=player_eesl_id)
-                if player is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Player eesl_id({player_eesl_id}) not found",
-                    )
-                return PlayerSchema.model_validate(player)
-            except Exception as ex:
-                self.logger.error(
-                    f"Error on get player by eesl_id: {player_eesl_id} {ex}",
-                    exc_info=True,
+            self.logger.debug(f"Get player by eesl_id: {eesl_id} endpoint")
+            player = await self.service.get_player_by_eesl_id(value=eesl_id)
+            if player is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Player eesl_id({eesl_id}) not found",
                 )
+            return PlayerSchema.model_validate(player)
 
         @router.put(
             "/{item_id}/",
@@ -71,7 +65,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         ):
             try:
                 self.logger.debug(f"Update player endpoint got data: {item}")
-                update_ = await self.service.update_player(item_id, item)
+                update_ = await self.service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404, detail=f"Player id {item_id} not found"
@@ -79,6 +73,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 return PlayerSchema.model_validate(update_)
             except Exception as ex:
                 self.logger.error(f"Error on update player: {item} {ex}", exc_info=True)
+                raise
 
         @router.get("/id/{player_id}/person")
         async def person_by_player_id(player_id: int):

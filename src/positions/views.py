@@ -39,6 +39,7 @@ class PositionAPIRouter(
                 self.logger.error(
                     f"Error on create position got data: {position} {e}", exc_info=True
                 )
+                raise
 
         @router.put(
             "/{item_id}/",
@@ -60,6 +61,7 @@ class PositionAPIRouter(
                 self.logger.error(
                     f"Error on update postion, got data: {ex}", exc_info=ex
                 )
+                raise
 
         @router.get(
             "/title/{item_title}/",
@@ -72,6 +74,7 @@ class PositionAPIRouter(
                 self.logger.error(
                     f"Error on get position by title: {item_title}", exc_info=ex
                 )
+                raise
 
         return router
 
