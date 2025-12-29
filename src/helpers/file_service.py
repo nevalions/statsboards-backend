@@ -68,7 +68,7 @@ class FileService:
         timestamp = data["timestamp"]
         upload_dir = data["upload_dir"]
 
-        image = await self.image_service.open_image_from_path(original_dest)
+        image = await self.image_service.open_image_from_path(str(original_dest))
 
         icon_filename = await self.image_service.resize_and_save_image(
             icon_height,
@@ -150,25 +150,27 @@ class FileService:
         icon_dir = str(Path(icon_image_path).parent)
         await self.fs_service.create_path(icon_dir)
         self.logger.debug(f"Created icon directory: {icon_dir}")
+        icon_filename = Path(icon_image_path).name
         await self.image_service.resize_and_save_image(
             icon_height,
             image,
             None,
             Path(icon_dir),
-            file_data["filename"],
-            "icon",
+            icon_filename,
+            "",
         )
 
         webview_dir = str(Path(web_view_image_path).parent)
         await self.fs_service.create_path(webview_dir)
         self.logger.debug(f"Created webview directory: {webview_dir}")
+        webview_filename = Path(web_view_image_path).name
         await self.image_service.resize_and_save_image(
             web_view_height,
             image,
             None,
             Path(webview_dir),
-            file_data["filename"],
-            "webview",
+            webview_filename,
+            "",
         )
 
     @staticmethod
