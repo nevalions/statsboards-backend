@@ -7,15 +7,22 @@ from src.core.models.base import Database, Base
 
 db_url = str(settings.test_db.test_db_url)
 
+_tables_created = False
+
+
 @pytest_asyncio.fixture(scope="function")
 async def test_db():
     """Database fixture for view tests using transactions."""
+    global _tables_created
+
     assert "test" in db_url, "Test DB URL must contain 'test'"
     database = Database(db_url, echo=False)
 
-    async with database.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+    if not _tables_created:
+        async with database.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+        _tables_created = True
 
     async with database.engine.connect() as connection:
         transaction = await connection.begin()
@@ -99,6 +106,7 @@ async def test_app(test_db):
 
 @pytest_asyncio.fixture(scope="function")
 async def client(test_app):
+    """Create test client that uses app with test database."""
     transport = ASGITransport(app=test_app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
