@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import BaseServiceDB, MatchDB, PlayerMatchDB, TeamDB
 from src.logging_config import get_logger, setup_logging
@@ -81,9 +82,24 @@ class MatchServiceDB(BaseServiceDB):
                 tournament = await tournament_service.get_by_id(match.tournament_id)
                 if tournament:
                     return await sport_service.get_by_id(tournament.sport_id)
+            return None
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Database error fetching sport for match_id:{match_id} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching sport for match {match_id}",
+            )
         except Exception as ex:
             self.logger.error(
                 f"No Sport found for match_id:{match_id} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching sport for match {match_id}",
             )
 
     async def get_teams_by_match_id(
@@ -102,9 +118,24 @@ class MatchServiceDB(BaseServiceDB):
                         "home_team": home_team,
                         "away_team": away_team,
                     }
+                return None
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Database error fetching teams for match_id:{match_id} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching teams for match {match_id}",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error not all teams found for match_id:{match_id} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching teams for match {match_id}",
             )
 
     async def get_match_sponsor_line(self, match_id: int):
@@ -183,9 +214,23 @@ class MatchServiceDB(BaseServiceDB):
                 results = await session.execute(stmt)
                 players = results.scalars().all()
                 return players
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error getting players for {ITEM} id:{match_id} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching players for match {match_id}",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error getting players for {ITEM} id:{match_id} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching players for match {match_id}",
             )
 
     async def get_player_by_match_full_data(self, match_id: int):
@@ -199,12 +244,27 @@ class MatchServiceDB(BaseServiceDB):
                     p = await player_service.get_player_in_match_full_data(player.id)
                     players_with_data.append(p)
                 return players_with_data
+            return players_with_data
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error getting players with full data for {ITEM} id:{match_id} {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching players with full data for match {match_id}",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error getting players with full data for {ITEM} id:{match_id} {ex}",
                 exc_info=True,
             )
-        return players_with_data
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching players with full data for match {match_id}",
+            )
 
     async def get_scoreboard_by_match(
         self,
