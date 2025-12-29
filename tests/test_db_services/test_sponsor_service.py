@@ -9,6 +9,8 @@ from tests.fixtures import (
 from tests.testhelpers import (
     assert_http_exception_on_delete,
     assert_http_exception_on_update,
+    assert_http_exception_on_not_found,
+    assert_http_exception_on_conflict,
 )
 
 

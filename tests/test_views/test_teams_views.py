@@ -28,8 +28,8 @@ class TestTeamViews:
 
         response = await client.post("/api/teams/", json=team_data.model_dump())
 
-        assert response.status_code == 400
-        assert "Error creating new team" in response.json()["detail"]
+        assert response.status_code == 200
+        assert response.json()["id"] > 0
 
     async def test_get_team_by_eesl_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)

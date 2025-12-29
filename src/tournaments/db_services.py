@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import BaseServiceDB, PlayerTeamTournamentDB, TournamentDB
 
@@ -109,9 +110,23 @@ class TournamentServiceDB(BaseServiceDB):
                 results = await session.execute(stmt)
                 players = results.scalars().all()
                 return players
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error on get_players_by_tournament: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching players for tournament {tournament_id}",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error on get_players_by_tournament: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching players for tournament {tournament_id}",
             )
 
     async def get_count_of_matches_by_tournament(

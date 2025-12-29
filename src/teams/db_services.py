@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import BaseServiceDB, TeamDB, PlayerTeamTournamentDB
 from src.positions.db_services import PositionServiceDB
@@ -92,9 +93,23 @@ class TeamServiceDB(BaseServiceDB):
                 results = await session.execute(stmt)
                 players = results.scalars().all()
                 return players
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching players for team {team_id} and tournament {tournament_id}",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching players",
             )
 
     async def get_players_by_team_id_tournament_id_with_person(
@@ -133,11 +148,26 @@ class TeamServiceDB(BaseServiceDB):
                         "position": position,
                     }
                     players_full_data.append(player_full_data)
-                return players_full_data
+            return players_full_data
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error on get_players_by_team_id_tournament_id_with_person: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching players with person data",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error on get_players_by_team_id_tournament_id_with_person: {ex}",
                 exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching players with person data",
             )
 
     async def update(

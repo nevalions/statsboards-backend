@@ -32,6 +32,33 @@ def assert_http_exception_on_delete(exc_info: ExceptionInfo):
     assert "not found" in exc_info.value.detail.lower()
 
 
+def assert_http_exception_on_not_found(exc_info: ExceptionInfo):
+    """Helper to assert 404 Not Found HTTP exception."""
+    assert exc_info is not None
+    assert isinstance(exc_info.value, HTTPException)
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail.lower()
+
+
+def assert_http_exception_on_conflict(exc_info: ExceptionInfo):
+    """Helper to assert 409 Conflict HTTP exception."""
+    assert exc_info is not None
+    assert isinstance(exc_info.value, HTTPException)
+    assert exc_info.value.status_code == 409
+    assert "conflict" in exc_info.value.detail.lower() or "constraint" in exc_info.value.detail.lower()
+
+
+def assert_http_exception_on_server_error(exc_info: ExceptionInfo):
+    """Helper to assert 500 Internal Server Error HTTP exception."""
+    assert exc_info is not None
+    assert isinstance(exc_info.value, HTTPException)
+    assert exc_info.value.status_code == 500
+    assert (
+        "internal server error" in exc_info.value.detail.lower()
+        or "database error" in exc_info.value.detail.lower()
+    )
+
+
 def assert_season_equal(expected: SeasonSchemaCreate, actual: SeasonSchemaCreate):
     """Helper function to assert that two season objects are equal."""
     assert actual is not None

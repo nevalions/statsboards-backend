@@ -39,11 +39,16 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         @router.post("/", response_model=TeamSchema)
         async def create_team_endpoint(
             team: TeamSchemaCreate,
-            tour_id: int = None,
+            tour_id: int | None = None,
         ):
             self.logger.debug(f"Create team endpoint got data: {team}")
             new_team = await self.service.create_or_update_team(team)
-            if new_team and tour_id:
+            if not new_team:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Error creating new team",
+                )
+            if tour_id:
                 self.logger.debug(f"Check if team in tournament exists")
                 dict_conv = TeamTournamentSchemaCreate(
                     **{"team_id": new_team.id, "tournament_id": tour_id}
@@ -55,17 +60,18 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     await TeamTournamentServiceDB(db).create(
                         dict_conv
                     )
+                except HTTPException:
+                    raise
                 except Exception as ex:
                     self.logger.error(
                         f"Error creating team_tournament connection "
                         f"team_id: {new_team.id} and tour_id: {tour_id} : {ex}",
                         exc_info=True,
                     )
-            else:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error creating new team",
-                )
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Error creating team tournament connection",
+                    )
             return TeamSchema.model_validate(new_team)
 
         @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)
