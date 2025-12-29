@@ -119,15 +119,17 @@ class ImageProcessingService:
             raise
 
     def hex_to_rgb(self, hex_color: str) -> tuple[int, ...] | None:
+        hex_color = hex_color.lstrip("#")
+        if len(hex_color) not in (6, 8) or not all(c in "0123456789abcdefABCDEF" for c in hex_color):
+            return None
         try:
             self.logger.debug(f"Converting hex color: {hex_color}")
-            hex_color = hex_color.lstrip("#")
             final_color = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
             self.logger.info(f"Converted hex color: {final_color}")
             return final_color
         except Exception as e:
             self.logger.warning(
-                f"Problem converting hex color: {hex_color} {e}", exc_info=True
+                f"Problem converting hex color: {hex_color} {e}"
             )
             return None
 
