@@ -228,7 +228,7 @@ class FileService:
         self.logger.debug(f"Generated paths: {paths}")
 
         await self.download_and_resize_image(
-            img_url=paths["main_path"],
+            img_url=img_url,
             original_file_path=paths["main_path"],
             original_image_path_with_filename=paths["image_path"],
             icon_image_path=paths["icon_path"],
