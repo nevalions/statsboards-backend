@@ -47,6 +47,10 @@ class SeasonAPIRouter(
                     f"Error creating season with data: {item} {ex}",
                     exc_info=True,
                 )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error creating season",
+                )
 
         @router.put("/", response_model=SeasonSchema)
         async def update_season_endpoint(
