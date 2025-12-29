@@ -30,8 +30,6 @@ class MatchDataSchemaUpdate(BaseModel):
     ball_on: int | None = None
     down: str | None = None
     distance: str | None = None
-    gameclock_status: str | None = None
-    playclock_status: str | None = None
 
     match_id: int | None = None
 
