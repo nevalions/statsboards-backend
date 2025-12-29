@@ -951,7 +951,7 @@ class MatchAPIRouter(
                             gameclock_schema = GameClockSchemaCreate(
                                 match_id=created_match.id
                             )
-                            await gameclock_service.create_gameclock(gameclock_schema)
+                            await gameclock_service.create(gameclock_schema)
 
                             existing_match_data = (
                                 await match_data_service.get_match_data_by_match_id(
