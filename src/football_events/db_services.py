@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import BaseServiceDB, FootballEventDB
 
@@ -118,8 +119,23 @@ class FootballEventServiceDB(BaseServiceDB):
                         return match_events
                     else:
                         return []
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Error getting {ITEM}s with match id:{match_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error fetching football events for match {match_id}",
+                )
             except Exception as ex:
                 self.logger.error(
                     f"Error getting {ITEM}s with match id:{match_id} {ex}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error fetching football events for match {match_id}",
                 )

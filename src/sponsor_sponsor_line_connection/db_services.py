@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import (
     BaseServiceDB,
@@ -39,9 +40,20 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                 position=item.position,
             )
             return await super().create(new_sponsor_sponsor_line)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            self.logger.error(f"Error creating {ITEM}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error creating {ITEM}",
+            )
         except Exception as e:
             self.logger.error(f"Error creating {ITEM}: {e}", exc_info=True)
-            return None
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error creating {ITEM}",
+            )
 
     async def get_sponsor_sponsor_line_relation(
         self, sponsor_id: int, sponsor_line_id: int
@@ -58,8 +70,20 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                 sponsor_sponsor_line = result.scalars().first()
                 await session.commit()
                 return sponsor_sponsor_line
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as e:
+                self.logger.error(f"Error getting {ITEM}: {e}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error fetching {ITEM}",
+                )
             except Exception as e:
                 self.logger.error(f"Error getting {ITEM}: {e}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error fetching {ITEM}",
+                )
 
     async def get_related_sponsors(self, sponsor_line_id: int):
         async with self.db.async_session() as session:
@@ -79,10 +103,25 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                 sponsors = [{"sponsor": r[0], "position": r[1]} for r in result.all()]
                 await session.commit()
                 return {"sponsor_line": sponsor_line, "sponsors": sponsors}
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as e:
+                self.logger.error(
+                    f"Error getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error fetching sponsors by sponsor line {sponsor_line_id}",
+                )
             except Exception as e:
                 self.logger.error(
                     f"Error getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error fetching sponsors by sponsor line {sponsor_line_id}",
                 )
 
     async def delete_relation_by_sponsor_and_sponsor_line_id(
@@ -112,6 +151,17 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                     f"Deleted {ITEM}: sponsor_id={sponsor_id}, sponsor_line_id={sponsor_line_id}"
                 )
                 return item
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as e:
+                self.logger.error(f"Error deleting {ITEM}: {e}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error deleting {ITEM}",
+                )
             except Exception as e:
                 self.logger.error(f"Error deleting {ITEM}: {e}", exc_info=True)
-                raise
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error deleting {ITEM}",
+                )
