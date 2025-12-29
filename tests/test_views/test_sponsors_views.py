@@ -1,4 +1,5 @@
 import pytest
+from io import BytesIO
 from src.sponsors.db_services import SponsorServiceDB
 from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
 from tests.factories import SponsorFactory
@@ -62,5 +63,21 @@ class TestSponsorViews:
 
     async def test_get_sponsor_by_id_with_none_item(self, client, test_db):
         response = await client.get("/api/sponsors/id/99999/")
-        
+
         assert response.status_code == 404
+
+    async def test_upload_sponsor_logo_endpoint(self, client):
+        file_content = b"fake image content"
+        files = {"file": ("test_logo.png", BytesIO(file_content), "image/png")}
+        response = await client.post("/api/sponsors/upload_logo", files=files)
+
+        assert response.status_code == 200
+        assert "logoUrl" in response.json()
+        assert "sponsors/logos" in response.json()["logoUrl"]
+
+    async def test_upload_sponsor_logo_with_invalid_file(self, client):
+        file_content = b"not a valid image"
+        files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
+        response = await client.post("/api/sponsors/upload_logo", files=files)
+
+        assert response.status_code == 500

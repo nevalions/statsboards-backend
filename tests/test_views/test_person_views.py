@@ -1,4 +1,5 @@
 import pytest
+from io import BytesIO
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate, PersonSchemaUpdate
 from tests.factories import PersonFactory
@@ -67,5 +68,42 @@ class TestPersonViews:
 
     async def test_get_person_by_id_not_found(self, client):
         response = await client.get("/api/persons/id/99999")
-        
+
         assert response.status_code == 404
+
+    async def test_upload_person_photo_endpoint(self, client):
+        file_content = b"fake image content"
+        files = {"file": ("test_photo.png", BytesIO(file_content), "image/png")}
+        response = await client.post("/api/persons/upload_photo", files=files)
+
+        assert response.status_code == 200
+        assert "photoUrl" in response.json()
+        assert "persons/photos" in response.json()["photoUrl"]
+
+    async def test_upload_person_photo_with_invalid_file(self, client):
+        file_content = b"not a valid image"
+        files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
+        response = await client.post("/api/persons/upload_photo", files=files)
+
+        assert response.status_code == 500
+
+    async def test_upload_and_resize_person_photo_endpoint(self, client):
+        file_content = b"fake image content"
+        files = {"file": ("test_photo.png", BytesIO(file_content), "image/png")}
+        response = await client.post("/api/persons/upload_resize_photo", files=files)
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert "original" in response_data
+        assert "icon" in response_data
+        assert "webview" in response_data
+        assert "persons/photos" in response_data["original"]
+        assert "persons/photos" in response_data["icon"]
+        assert "persons/photos" in response_data["webview"]
+
+    async def test_upload_and_resize_person_photo_with_invalid_file(self, client):
+        file_content = b"not a valid image"
+        files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
+        response = await client.post("/api/persons/upload_resize_photo", files=files)
+
+        assert response.status_code == 500

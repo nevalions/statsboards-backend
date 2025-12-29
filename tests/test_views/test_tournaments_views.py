@@ -1,4 +1,5 @@
 import pytest
+from io import BytesIO
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaCreate, TournamentSchemaUpdate
 from src.sports.db_services import SportServiceDB
@@ -160,5 +161,42 @@ class TestTournamentViews:
 
     async def test_get_tournament_by_id_not_found(self, client):
         response = await client.get("/api/tournaments/id/99999")
-        
+
         assert response.status_code == 404
+
+    async def test_upload_tournament_logo_endpoint(self, client):
+        file_content = b"fake image content"
+        files = {"file": ("test_logo.png", BytesIO(file_content), "image/png")}
+        response = await client.post("/api/tournaments/upload_logo", files=files)
+
+        assert response.status_code == 200
+        assert "logoUrl" in response.json()
+        assert "tournaments/logos" in response.json()["logoUrl"]
+
+    async def test_upload_tournament_logo_with_invalid_file(self, client):
+        file_content = b"not a valid image"
+        files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
+        response = await client.post("/api/tournaments/upload_logo", files=files)
+
+        assert response.status_code == 500
+
+    async def test_upload_and_resize_tournament_logo_endpoint(self, client):
+        file_content = b"fake image content"
+        files = {"file": ("test_logo.png", BytesIO(file_content), "image/png")}
+        response = await client.post("/api/tournaments/upload_resize_logo", files=files)
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert "original" in response_data
+        assert "icon" in response_data
+        assert "webview" in response_data
+        assert "tournaments/logos" in response_data["original"]
+        assert "tournaments/logos" in response_data["icon"]
+        assert "tournaments/logos" in response_data["webview"]
+
+    async def test_upload_and_resize_tournament_logo_with_invalid_file(self, client):
+        file_content = b"not a valid image"
+        files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}
+        response = await client.post("/api/tournaments/upload_resize_logo", files=files)
+
+        assert response.status_code == 500
