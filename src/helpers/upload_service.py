@@ -1,0 +1,91 @@
+import shutil
+from datetime import datetime
+from pathlib import Path
+from typing import TypedDict
+
+from fastapi import UploadFile, HTTPException
+
+from src.logging_config import get_logger
+from src.helpers.file_system_service import FileSystemService
+
+
+class ImageData(TypedDict):
+    dest: Path
+    filename: str
+    timestamp: str
+    upload_dir: Path
+
+
+class UploadService:
+    def __init__(self, fs_service: FileSystemService):
+        self.fs_service = fs_service
+        self.logger = get_logger("backend_logger_upload", self)
+
+    async def sanitize_filename(self, filename: str) -> str:
+        self.logger.debug(f"Sanitizing filename: {filename}")
+        try:
+            sanitized = filename.strip().replace(" ", "_")
+            self.logger.debug(f"Sanitized filename: {sanitized}")
+            return sanitized
+        except Exception as e:
+            self.logger.error(f"Problem with sanitizing filename: {filename} {e}")
+            raise
+
+    async def get_timestamp(self) -> str:
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.logger.debug(f"Timestamp: {timestamp}")
+        return timestamp
+
+    async def get_filename(self, timestamp: str, upload_file: UploadFile) -> str:
+        original_filename = f"{timestamp}_{upload_file.filename}"
+        self.logger.debug(f"Original filename: {original_filename}")
+        return original_filename
+
+    async def is_image_type(self, upload_file: UploadFile) -> None:
+        if not upload_file.content_type.startswith("image/"):
+            self.logger.error(f"Uploaded file type not an image", exc_info=True)
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+
+    async def upload_file(self, dest: Path, upload_file: UploadFile) -> None:
+        try:
+            with dest.open("wb") as buffer:
+                self.logger.debug(f"Trying to save file")
+                shutil.copyfileobj(upload_file.file, buffer)
+        except Exception as ex:
+            self.logger.error(
+                f"Problem with saving file to destination {dest} {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400, detail="An error occurred while uploading file."
+            )
+
+    async def upload_image_and_return_data(
+        self, sub_folder: str, upload_file: UploadFile
+    ) -> ImageData:
+        upload_dir = await self.fs_service.get_and_create_upload_dir(sub_folder)
+        timestamp = await self.get_timestamp()
+        original_filename = await self.get_filename(timestamp, upload_file)
+        original_dest = await self.fs_service.get_destination_with_filename(
+            original_filename, upload_dir
+        )
+        await self.is_image_type(upload_file)
+        await self.upload_file(original_dest, upload_file)
+        self.logger.info(
+            f"Data of uploaded image: "
+            f"timestamp: {timestamp} filename: {original_filename}, "
+            f"dest: {original_dest}, upload_dir: {upload_dir}"
+        )
+        return {
+            "dest": original_dest,
+            "filename": original_filename,
+            "timestamp": timestamp,
+            "upload_dir": upload_dir,
+        }
+
+    async def save_upload_image(self, upload_file: UploadFile, sub_folder: str) -> str:
+        self.logger.debug(f"Saving image for subfolder: {sub_folder}")
+        data = await self.upload_image_and_return_data(sub_folder, upload_file)
+        rel_dest = Path("/static/uploads") / sub_folder / data["filename"]
+        self.logger.debug(f"Relative destination path: {rel_dest}")
+        return str(rel_dest)
