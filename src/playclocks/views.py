@@ -5,6 +5,7 @@ from fastapi import (
     BackgroundTasks,
 )
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core import BaseRouter, db
 from .db_services import PlayClockServiceDB
@@ -43,10 +44,25 @@ class PlayClockAPIRouter(
             try:
                 new_playclock = await self.service.create(playclock_data)
                 return PlayClockSchema.model_validate(new_playclock)
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Error creating playclock with data: {playclock_data} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error creating playclock",
+                )
             except Exception as ex:
                 self.logger.error(
                     f"Error creating playclock with data: {playclock_data} {ex}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error creating playclock",
                 )
 
         @router.put(
@@ -72,8 +88,8 @@ class PlayClockAPIRouter(
                     exc_info=True,
                 )
                 raise HTTPException(
-                    status_code=409,
-                    detail=f"Error updating playclock with data",
+                    status_code=500,
+                    detail=f"Internal server error updating playclock",
                 )
 
         @router.put(
@@ -141,26 +157,33 @@ class PlayClockAPIRouter(
                         ),
                     )
 
-                    if not self.service.disable_background_tasks:
-                        self.logger.debug(
-                            f"Start playclock background task, loop decrement"
-                        )
-                        await self.service.decrement_playclock(
-                            background_tasks,
-                            item_id,
-                        )
+                if not self.service.disable_background_tasks:
+                    self.logger.debug(
+                        f"Start playclock background task, loop decrement"
+                    )
+                    await self.service.decrement_playclock(
+                        background_tasks,
+                        item_id,
+                    )
 
-                    return self.create_response(
-                        item,
-                        f"Playclock ID:{item_id} {item_status}",
-                    )
-                else:
-                    return self.create_response(
-                        item,
-                        f"Playclock ID:{item_id} already {present_playclock_status}",
-                    )
+                return self.create_response(
+                    item,
+                    f"Playclock ID:{item_id} {item_status}",
+                )
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(f"Error starting playclock with id: {item_id} {ex}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error starting playclock with id {item_id}",
+                )
             except Exception as ex:
                 self.logger.error(f"Error starting playclock with id: {item_id} {ex}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error starting playclock",
+                )
 
         @router.put(
             "/id/{item_id}/stopped/",
@@ -185,8 +208,20 @@ class PlayClockAPIRouter(
                     updated,
                     f"Playclock {item_status}",
                 )
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(f"Error resetting playclock with id: {item_id} {ex}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error resetting playclock",
+                )
             except Exception as ex:
                 self.logger.error(f"Error resetting playclock with id: {item_id} {ex}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error resetting playclock",
+                )
 
         return router
 
