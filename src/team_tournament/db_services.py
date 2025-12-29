@@ -2,6 +2,7 @@ import asyncio
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import db, BaseServiceDB, TeamTournamentDB, TeamDB
 from src.logging_config import setup_logging, get_logger
@@ -49,9 +50,38 @@ class TeamTournamentServiceDB(BaseServiceDB):
                 team_tournament = result.scalars().first()
                 await session.commit()
             return team_tournament
-        except Exception as e:
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
             self.logger.error(
                 f"Error on get_team_tournament_relation {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching team tournament relation",
+            )
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            self.logger.error(
+                f"Error on delete_relation_by_team_and_tournament_id: {e}"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error deleting team tournament relation",
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Error on delete_relation_by_team_and_tournament_id: {e}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error deleting team tournament relation",
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching team tournament relation",
             )
 
     async def get_related_teams(self, tournament_id: int):
@@ -68,10 +98,25 @@ class TeamTournamentServiceDB(BaseServiceDB):
                 teams = result.scalars().all()
                 await session.commit()
                 return teams
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error on get_related_teams: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching related teams for tournament {tournament_id}",
+            )
         except Exception as ex:
             self.logger.error(
                 f"Error on get_related_teams: {ex}",
                 exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching related teams for tournament {tournament_id}",
             )
 
     async def delete_relation_by_team_and_tournament_id(
