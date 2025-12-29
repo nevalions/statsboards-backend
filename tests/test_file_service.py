@@ -617,5 +617,22 @@ class TestFileService:
         asyncio.run(test())
 
     def test_resize_and_save_resized_downloaded_image(self, file_service, temp_upload_dir):
-        """Test resizing and saving downloaded image - skipped due to bug in original code."""
-        pytest.skip("Bug in original code: resize_and_save_resized_downloaded_image passes directory instead of file path")
+        """Test resizing and saving downloaded image."""
+        import asyncio
+
+        async def test():
+            image = Image.new("RGB", (200, 200), color="blue")
+            timestamp = None
+            upload_dir = temp_upload_dir
+            upload_file_filename = "downloaded.jpg"
+            _type = "webview"
+
+            result = await file_service.resize_and_save_resized_downloaded_image(
+                100, image, timestamp, upload_dir, upload_file_filename, _type
+            )
+            assert result is not None
+            assert "downloaded" in result
+            assert ".jpg" in result
+            assert (temp_upload_dir / result).exists()
+
+        asyncio.run(test())

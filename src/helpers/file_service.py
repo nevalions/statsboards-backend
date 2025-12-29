@@ -158,9 +158,10 @@ class FileService:
         )
 
         self.logger.debug(f"Downloaded Image filename: {file_name}")
+        dest = upload_dir / file_name
         try:
             await self.final_image_resizer_and_save(
-                upload_dir, file_name, height, image
+                dest, file_name, height, image
             )
             return file_name
         except Exception as e:
