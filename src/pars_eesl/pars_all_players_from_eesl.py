@@ -269,6 +269,7 @@ async def get_player_from_eesl_participants(
     players_in_eesl, all_eesl_players, remaining_limit
 ) -> Optional[List[ParsePlayerWithPersonData]] | bool:
     logger.debug("Parsing player from eesl participants")
+    has_error = False
     for ppp in all_eesl_players:
         if remaining_limit == 0:
             logger.debug("Remaining limit of players reached. Stopping...")
@@ -356,11 +357,15 @@ async def get_player_from_eesl_participants(
                     )
                 except Exception as ex:
                     logger.error(
-                        f"Error while downloading person image: {ex}", exc_info=True
+                        f"Error while downloading person image: {ex}, skipping player {player_eesl_id}", exc_info=True
                     )
-                    break
+                    has_error = True
+                    continue
 
                 player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
+                if player_dob is None:
+                    logger.warning(f"Skipping player {player_eesl_id} due to missing DOB")
+                    continue
                 player_with_person: ParsePlayerWithPersonData = {
                     "person": {
                         "first_name": player_first_name,
@@ -387,7 +392,7 @@ async def get_player_from_eesl_participants(
             return False
         except Exception as ex:
             logger.error(f"Error collecting players from eesl: {ex}", exc_info=True)
-            return False
+            return False if has_error else None
 
 
 async def main():
