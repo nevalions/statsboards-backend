@@ -25,17 +25,6 @@ services:
       -c autovacuum=off
       -c track_functions=none
       -c track_counts=off
-    ports:
-      - "5432:5432"
     tmpfs:
       - /var/lib/postgresql/data:rw,size=2g
-    networks:
-      - test-network
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-
-networks:
-  test-network:
-    driver: bridge
+    network_mode: host
