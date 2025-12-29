@@ -42,55 +42,25 @@ pytest tests/test_views/
 pytest tests/test_db_services/test_tournament_service.py
 
 # Run a specific test function
-poetry run pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations
+pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations
+
+# Run a specific test with live logs enabled
+pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations -o log_cli=true
 
 # Run tests with coverage
-poetry run pytest --cov=src
+pytest --cov=src
 
 # Run async tests only
-poetry run pytest tests/ -k "async"
+pytest tests/ -k "async"
 ```
 
 **Note:** The `pytest.ini` file includes performance optimizations (`-x -v --tb=short`) for faster test execution:
-
 - `-x`: Stop on first failure
 - `-v`: Verbose output
 - `--tb=short`: Shortened traceback format
+- `log_cli=false`: Live logs disabled by default (use `-o log_cli=true` to enable for debugging)
 
 **Note:** Database echo is disabled in test fixtures for faster test execution.
-
-Then run tests:
-
-```bash
-# Run all tests
-pytest
-
-# Run a single test file
-pytest tests/test_db_services/test_tournament_service.py
-
-# Run a specific test function
-poetry run pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations
-
-# Run tests with coverage
-poetry run pytest --cov=src
-
-# Run async tests only
-poetry run pytest tests/ -k "async"
-```
-
-#### Running Tests with Docker
-
-```bash
-# Option 1: Start test database only (for running selective tests locally)
-docker-compose -f docker-compose.test-db-only.yml up -d
-pytest tests/test_db_services/test_tournament_service.py
-docker-compose -f docker-compose.test-db-only.yml down
-
-# Option 2: Run all tests in Docker container
-docker-compose -f docker-compose.test.yml build
-docker-compose -f docker-compose.test.yml run --rm statsboards-backend-test
-docker-compose -f docker-compose.test.yml down
-```
 
 **Note:** Ensure environment variables point to test database: `postgresql://test:test@localhost:5432/test_db`
 
