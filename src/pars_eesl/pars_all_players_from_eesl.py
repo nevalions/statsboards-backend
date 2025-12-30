@@ -14,7 +14,7 @@ from fastapi import HTTPException
 from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
-from src.helpers.text_helpers import ru_to_eng_datetime_month
+from src.helpers.text_helpers import ru_to_eng_datetime_month, convert_cyrillic_filename
 from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
 
@@ -104,8 +104,11 @@ async def collect_player_full_data_eesl(
         person_image_filename = (
             f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
         )
+        person_image_filename = convert_cyrillic_filename(person_image_filename)
         person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+        person_image_filename_resized_icon = convert_cyrillic_filename(person_image_filename_resized_icon)
         person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
+        person_image_filename_resized_web_view = convert_cyrillic_filename(person_image_filename_resized_web_view)
 
         image_path = os.path.join(uploads_path, "persons/photos/")
         image_path_with_filename = os.path.join(
@@ -312,8 +315,11 @@ async def get_player_from_eesl_participants(
                 person_image_filename = (
                     f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
                 )
+                person_image_filename = convert_cyrillic_filename(person_image_filename)
                 person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+                person_image_filename_resized_icon = convert_cyrillic_filename(person_image_filename_resized_icon)
                 person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
+                person_image_filename_resized_web_view = convert_cyrillic_filename(person_image_filename_resized_web_view)
 
                 image_path = os.path.join(uploads_path, "persons/photos/")
                 image_path_with_filename = os.path.join(
