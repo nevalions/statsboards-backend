@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.core.config import uploads_path
+from src.core.exception_handler import register_exception_handlers
 from src.core.models.base import db, ws_manager
 from src.football_events import api_football_event_router
 from src.gameclocks import api_gameclock_router
@@ -66,6 +67,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+register_exception_handlers(app)
 # app = FastAPI()
 
 
