@@ -24,7 +24,7 @@ setup_logging()
 
 
 def photo_files_exist(person_photo_url: str) -> bool:
-    """Check if photo files exist on disk."""
+    """Check if photo files exist on disk and have valid size."""
     if not person_photo_url:
         return False
     
@@ -35,7 +35,15 @@ def photo_files_exist(person_photo_url: str) -> bool:
             icon_path = original_path.parent / f"{Path(photo_filename).stem}_100px{Path(photo_filename).suffix}"
             web_path = original_path.parent / f"{Path(photo_filename).stem}_400px{Path(photo_filename).suffix}"
             
-            return original_path.exists() or icon_path.exists() or web_path.exists()
+            min_file_size = 1024
+            
+            for path in [original_path, icon_path, web_path]:
+                if path.exists():
+                    file_size = path.stat().st_size
+                    if file_size >= min_file_size:
+                        return True
+            
+            return False
     except Exception:
         pass
     
