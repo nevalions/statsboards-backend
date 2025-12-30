@@ -120,3 +120,27 @@ def assert_tournaments_equal(
             f"Title mismatch: expected '{expected_title}', "
             f"got '{fetched_tournament.title}'"
         )
+
+
+def assert_filename_converted(original: str, converted: str):
+    """Helper to assert filename was correctly converted from Cyrillic to Latin."""
+    assert converted is not None
+    assert original is not None
+    assert converted != original
+    assert len(converted) > 0
+
+    from pathlib import Path
+    original_path = Path(original)
+    converted_path = Path(converted)
+
+    assert original_path.suffix == converted_path.suffix
+
+
+def assert_all_files_converted(file_cases: list):
+    """Helper to assert all files in list were correctly converted."""
+    assert len(file_cases) > 0
+    for case in file_cases:
+        original = case["original_filename"]
+        converted = case["converted_filename"]
+        assert_filename_converted(original, converted)
+        assert converted == case.get("expected", converted)

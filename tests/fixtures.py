@@ -11,6 +11,7 @@ from src.positions.db_services import PositionServiceDB
 from src.sponsors.db_services import SponsorServiceDB
 from src.sponsor_lines.db_services import SponsorLineServiceDB
 from tests.factories import SportFactorySample, SeasonFactorySample, TournamentFactory, PositionFactory, SponsorFactory, SponsorLineFactory
+from pathlib import Path
 
 
 setup_logging()
@@ -170,3 +171,55 @@ async def sponsor_line(test_sponsor_line_service):
         return sponsor_line
     except Exception as e:
         test_logger.error(f"Error creating test sponsor line {e}", exc_info=True)
+
+
+@pytest.fixture(scope="function")
+def temp_file_with_cyrillic_name(tmp_path):
+    """Create a temporary file with Cyrillic filename for testing."""
+    filename = "команда.jpg"
+    file_path = tmp_path / filename
+    file_path.write_text("test content")
+    return {
+        "original_filename": filename,
+        "file_path": file_path,
+        "converted_filename": "komanda.jpg",
+    }
+
+
+@pytest.fixture(scope="function")
+def temp_files_with_various_cyrillic_names(tmp_path):
+    """Create multiple temporary files with various Cyrillic filenames for testing."""
+    test_cases = [
+        {
+            "original": "команда.jpg",
+            "converted": "komanda.jpg",
+        },
+        {
+            "original": "Турнир 2023.png",
+            "converted": "Turnir_2023.png",
+        },
+        {
+            "original": "Фото команды.jpeg",
+            "converted": "Foto_komandy.jpeg",
+        },
+        {
+            "original": "Тестовый_файл.txt",
+            "converted": "Testovyy_fayl.txt",
+        },
+        {
+            "original": "Безрасширения",
+            "converted": "Bezrasshireniya",
+        },
+    ]
+
+    created_files = []
+    for case in test_cases:
+        file_path = tmp_path / case["original"]
+        file_path.write_text("test content")
+        created_files.append({
+            "original_filename": case["original"],
+            "file_path": file_path,
+            "converted_filename": case["converted"],
+        })
+
+    return created_files

@@ -12,6 +12,7 @@ from src.helpers.file_system_service import FileSystemService
 from src.helpers.upload_service import UploadService
 from src.helpers.download_service import DownloadService
 from src.helpers.image_processing_service import ImageProcessingService
+from src.helpers.text_helpers import convert_cyrillic_filename
 
 
 class ResizedImagesPaths(TypedDict):
@@ -184,7 +185,8 @@ class FileService:
         path = urlparse(image_url).path
         ext = Path(path).suffix
 
-        image_filename = image_title.strip().replace(" ", "_")
+        converted_title = convert_cyrillic_filename(image_title)
+        image_filename = converted_title.strip().replace(" ", "_")
         icon_filename = f"{image_filename}_{icon_height}px{ext}"
         webview_filename = f"{image_filename}_{web_view_height}px{ext}"
 

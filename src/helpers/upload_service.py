@@ -7,6 +7,7 @@ from fastapi import UploadFile, HTTPException
 
 from src.logging_config import get_logger
 from src.helpers.file_system_service import FileSystemService
+from src.helpers.text_helpers import convert_cyrillic_filename
 
 
 class ImageData(TypedDict):
@@ -27,10 +28,10 @@ class UploadService:
             import unicodedata
             import re
 
-            normalized = unicodedata.normalize('NFKD', filename)
-            ascii_only = normalized.encode('ASCII', 'ignore').decode('ASCII')
+            normalized = unicodedata.normalize("NFKD", filename)
+            ascii_only = normalized.encode("ASCII", "ignore").decode("ASCII")
             sanitized = ascii_only.strip().replace(" ", "_")
-            sanitized = re.sub(r'[^\w\-_\.]', '_', sanitized)
+            sanitized = re.sub(r"[^\w\-_\.]", "_", sanitized)
             self.logger.debug(f"Sanitized filename: {sanitized}")
             return sanitized
         except Exception as e:
@@ -72,7 +73,8 @@ class UploadService:
         upload_dir = await self.fs_service.get_and_create_upload_dir(sub_folder)
         timestamp = await self.get_timestamp()
         unsanitized_filename = await self.get_filename(timestamp, upload_file)
-        original_filename = await self.sanitize_filename(unsanitized_filename)
+        converted_filename = convert_cyrillic_filename(unsanitized_filename)
+        original_filename = await self.sanitize_filename(converted_filename)
         original_dest = await self.fs_service.get_destination_with_filename(
             original_filename, upload_dir
         )

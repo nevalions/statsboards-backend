@@ -12,6 +12,8 @@ from src.helpers.file_service import (
     DownloadedAndResizedImagesPaths,
 )
 from src.helpers.download_service import DownloadService
+from src.helpers.upload_service import UploadService
+from src.helpers.file_system_service import FileSystemService
 
 
 class TestFileService:
@@ -71,9 +73,7 @@ class TestFileService:
         assert ".jpg" in result
 
     @pytest.mark.asyncio
-    async def test_save_and_resize_upload_image(
-        self, file_service, sample_upload_file
-    ):
+    async def test_save_and_resize_upload_image(self, file_service, sample_upload_file):
         """Test saving and resizing uploaded image."""
         sub_folder = "test_resize"
         result = await file_service.save_and_resize_upload_image(
@@ -98,10 +98,10 @@ class TestFileService:
         assert color == "#ff0000"
 
     @pytest.mark.asyncio
-    @patch.object(
-        DownloadService, "fetch_image_data_from_url", new_callable=AsyncMock
-    )
-    async def test_download_image(self, mock_fetch, file_service, tmp_path, sample_image):
+    @patch.object(DownloadService, "fetch_image_data_from_url", new_callable=AsyncMock)
+    async def test_download_image(
+        self, mock_fetch, file_service, tmp_path, sample_image
+    ):
         """Test downloading image from URL."""
         mock_fetch.return_value = sample_image.getvalue()
 
@@ -157,11 +157,17 @@ class TestFileService:
         tmp_path.joinpath("images/image.jpg").write_bytes(sample_image.getvalue())
 
         with patch.object(
-            file_service.download_service, "download_image", return_value=original_image_path
+            file_service.download_service,
+            "download_image",
+            return_value=original_image_path,
         ):
-            with patch.object(file_service.fs_service, "create_path", side_effect=lambda x: x):
+            with patch.object(
+                file_service.fs_service, "create_path", side_effect=lambda x: x
+            ):
                 with patch.object(
-                    file_service.image_service, "resize_and_save_image", new_callable=AsyncMock
+                    file_service.image_service,
+                    "resize_and_save_image",
+                    new_callable=AsyncMock,
                 ):
                     await file_service.download_and_resize_image(
                         img_url,
@@ -214,10 +220,10 @@ class TestFileService:
         assert result["webview_path"].endswith("_400px")
 
     @pytest.mark.asyncio
-    @patch.object(
-        DownloadService, "fetch_image_data_from_url", new_callable=AsyncMock
-    )
-    async def test_download_and_process_image(self, mock_fetch, file_service, sample_image):
+    @patch.object(DownloadService, "fetch_image_data_from_url", new_callable=AsyncMock)
+    async def test_download_and_process_image(
+        self, mock_fetch, file_service, sample_image
+    ):
         """Test downloading and processing image."""
         mock_fetch.return_value = sample_image.getvalue()
 
@@ -227,7 +233,9 @@ class TestFileService:
         icon_height = 100
         web_view_height = 400
 
-        with patch.object(file_service, "download_and_resize_image", new_callable=AsyncMock):
+        with patch.object(
+            file_service, "download_and_resize_image", new_callable=AsyncMock
+        ):
             result = await file_service.download_and_process_image(
                 img_url, image_type_prefix, image_title, icon_height, web_view_height
             )
@@ -237,3 +245,77 @@ class TestFileService:
             assert "image_url" in result
             assert "image_icon_url" in result
             assert "image_webview_url" in result
+
+    @pytest.mark.asyncio
+    async def test_generate_image_paths_with_cyrillic_title(self):
+        """Test generating image paths with Cyrillic title."""
+        image_url = "http://example.com/path/to/image.jpg"
+        image_type_prefix = "teams/"
+        image_title = "Команда"
+        icon_height = 100
+        web_view_height = 400
+
+        result = FileService._generate_image_paths(
+            image_url, image_type_prefix, image_title, icon_height, web_view_height
+        )
+
+        assert isinstance(result, dict)
+        assert "Komanda_100px.jpg" in result["icon_path"]
+        assert "Komanda_400px.jpg" in result["webview_path"]
+        assert "Komanda.jpg" in result["image_path"]
+
+
+class TestUploadService:
+    """Test suite for UploadService."""
+
+    @pytest.fixture
+    def temp_upload_dir(self, tmp_path):
+        """Create a temporary upload directory for testing."""
+        upload_dir = tmp_path / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        return upload_dir
+
+    @pytest.fixture
+    def file_system_service(self, temp_upload_dir):
+        """Create a FileSystemService instance."""
+        return FileSystemService(base_upload_dir=temp_upload_dir)
+
+    @pytest.fixture
+    def upload_service(self, file_system_service):
+        """Create an UploadService instance."""
+        return UploadService(file_system_service)
+
+    @pytest.fixture
+    def sample_image(self):
+        """Create a sample test image."""
+        image = Image.new("RGB", (100, 100), color="red")
+        img_buffer = BytesIO()
+        image.save(img_buffer, format="JPEG")
+        img_buffer.seek(0)
+        return img_buffer
+
+    @pytest.fixture
+    def sample_upload_file_cyrillic(self, sample_image):
+        """Create a sample UploadFile with Cyrillic filename."""
+        upload_file = Mock(spec=UploadFile)
+        upload_file.filename = "команда.jpg"
+        upload_file.content_type = "image/jpeg"
+        upload_file.file = sample_image
+        return upload_file
+
+    @pytest.mark.asyncio
+    async def test_upload_with_cyrillic_filename(
+        self, upload_service, temp_upload_dir, sample_upload_file_cyrillic
+    ):
+        """Test uploading file with Cyrillic filename."""
+        sub_folder = "test_images"
+
+        result = await upload_service.upload_image_and_return_data(
+            sub_folder, sample_upload_file_cyrillic
+        )
+
+        assert "filename" in result
+        filename = result["filename"]
+        assert filename.endswith(".jpg")
+        assert "komanda" in filename.lower()
+        assert result["dest"].exists()
