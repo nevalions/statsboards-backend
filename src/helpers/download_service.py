@@ -14,6 +14,19 @@ class DownloadService:
         self.fs_service = fs_service
         self.logger = get_logger("backend_logger_download", self)
 
+    async def get_remote_file_size(self, img_url: str) -> int | None:
+        """Get remote file size using HEAD request."""
+        try:
+            async with ClientSession() as session:
+                async with session.head(img_url) as response:
+                    if response.status == 200:
+                        content_length = response.headers.get('Content-Length')
+                        if content_length:
+                            return int(content_length)
+        except Exception as e:
+            self.logger.debug(f"Could not get remote file size for {img_url}: {e}")
+        return None
+
     async def fetch_image_data_from_url(self, img_url: str, max_retries: int = 3) -> bytes:
         self.logger.debug(f"Fetching image from {img_url}")
         
@@ -41,9 +54,21 @@ class DownloadService:
                     raise
 
     async def download_image(
-        self, img_url: str, path_with_image_name: str, min_file_size: int = 1024
+        self, img_url: str, path_with_image_name: str, min_file_size: int = 1024, force_redownload: bool = False
     ) -> str:
         self.logger.debug(f"Downloading image from {img_url} to {path_with_image_name}")
+        
+        if not force_redownload:
+            local_path = Path(path_with_image_name)
+            if local_path.exists():
+                local_size = local_path.stat().st_size
+                remote_size = await self.get_remote_file_size(img_url)
+                
+                if remote_size and remote_size == local_size and local_size >= min_file_size:
+                    self.logger.info(
+                        f"File already exists with same size {local_size} bytes, skipping download: {path_with_image_name}"
+                    )
+                    return path_with_image_name
         
         for attempt in range(3):
             try:

@@ -135,6 +135,7 @@ class FileService:
         web_view_image_path: str,
         icon_height: int = 100,
         web_view_height: int = 400,
+        force_redownload: bool = False,
     ) -> None:
         self.logger.debug(f"Initialize download and resize image from {img_url}")
         self.logger.debug(
@@ -142,7 +143,7 @@ class FileService:
         )
 
         image_path = await self.download_service.download_image(
-            img_url, original_image_path_with_filename
+            img_url, original_image_path_with_filename, force_redownload=force_redownload
         )
         self.logger.debug(f"img_path: {image_path}")
         file_data = await self.download_service.open_file(image_path)
@@ -221,6 +222,7 @@ class FileService:
         image_title: str,
         icon_height: int,
         web_view_height: int,
+        force_redownload: bool = False,
     ) -> DownloadedAndResizedImagesPaths:
         self.logger.debug("Starting download and processing of image")
 
@@ -237,6 +239,7 @@ class FileService:
             web_view_image_path=paths["webview_path"],
             icon_height=icon_height,
             web_view_height=web_view_height,
+            force_redownload=force_redownload,
         )
 
         final_paths_processed = {
