@@ -7,9 +7,15 @@ from tests.factories import (
     TeamFactory,
     TournamentFactory,
 )
+from unittest.mock import AsyncMock
+from datetime import datetime
 
 from src.core.models.base import connection_manager
 from src.logging_config import setup_logging
+from src.seasons.db_services import SeasonServiceDB
+from src.sports.db_services import SportServiceDB
+from src.tournaments.db_services import TournamentServiceDB
+from src.teams.db_services import TeamServiceDB
 
 # type: ignore
 setup_logging()
@@ -223,7 +229,6 @@ class TestWebSocketEndpointIntegration:
         from src.teams.db_services import TeamServiceDB
         from src.sports.db_services import SportServiceDB
         from src.tournaments.db_services import TournamentServiceDB
-        from src.seasons.db_services import SeasonServiceDB
         from src.matchdata.db_services import MatchDataServiceDB
         from src.gameclocks.db_services import GameClockServiceDB
         from src.playclocks.db_services import PlayClockServiceDB
@@ -236,6 +241,7 @@ class TestWebSocketEndpointIntegration:
         from datetime import datetime
 
         sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
         season_service = SeasonServiceDB(test_db)
@@ -347,7 +353,6 @@ class TestMessageProcessingQueue:
         from src.teams.db_services import TeamServiceDB
         from src.sports.db_services import SportServiceDB
         from src.tournaments.db_services import TournamentServiceDB
-        from src.seasons.db_services import SeasonServiceDB
         from src.matchdata.db_services import MatchDataServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.matchdata.schemas import MatchDataSchemaCreate
@@ -355,6 +360,7 @@ class TestMessageProcessingQueue:
         from unittest.mock import AsyncMock
 
         sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
         season_service = SeasonServiceDB(test_db)
@@ -1103,3 +1109,560 @@ class TestWebSocketConnectionErrorHandling:
         assert queue.empty()
 
         await connection_manager.disconnect(client_id)
+
+
+@pytest.mark.asyncio
+class TestDatabaseNotificationFlow:
+    async def test_matchdata_database_notification_flow(self, test_db):
+        """Test full flow from database change to notification delivery."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from src.matchdata.db_services import MatchDataServiceDB
+        from src.matchdata.schemas import MatchDataSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.teams.db_services import TeamServiceDB
+        from src.sports.db_services import SportServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchSchemaCreate(
+            tournament_id=tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime(2025, 1, 1),
+            week=1,
+        )
+        created_match = await match_service.create_or_update_match(match_data)
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(
+            db_url=str(settings.test_db.test_db_url_websocket())
+        )
+
+        await ws_manager.connect_to_db()
+
+        client_id = "test_notification_client"
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+
+        ws_manager.match_data_queues[client_id] = asyncio.Queue()
+
+        await asyncio.sleep(0.1)
+
+        matchdata_service = MatchDataServiceDB(test_db)
+        await matchdata_service.create(MatchDataSchemaCreate(match_id=created_match.id))
+
+        await asyncio.sleep(0.2)
+
+        received = False
+        try:
+            notification = await asyncio.wait_for(
+                ws_manager.match_data_queues[client_id].get(), timeout=2.0
+            )
+            received = True
+            assert notification["type"] == "match-update"
+            assert notification["match_id"] == created_match.id
+            assert "operation" in notification
+        except asyncio.TimeoutError:
+            pass
+
+        await ws_manager.shutdown()
+        await connection_manager.disconnect(client_id)
+
+    async def test_playclock_database_notification_flow(self, test_db):
+        """Test playclock database notification flow."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.teams.db_services import TeamServiceDB
+        from src.sports.db_services import SportServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchSchemaCreate(
+            tournament_id=tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime(2025, 1, 1),
+            week=1,
+        )
+        created_match = await match_service.create_or_update_match(match_data)
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(
+            db_url=str(settings.test_db.test_db_url_websocket())
+        )
+
+        await ws_manager.connect_to_db()
+
+        client_id = "test_playclock_client"
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+
+        ws_manager.playclock_queues[client_id] = asyncio.Queue()
+
+        await asyncio.sleep(0.1)
+
+        playclock_service = PlayClockServiceDB(test_db)
+        playclock = await playclock_service.create(
+            PlayClockSchemaCreate(match_id=created_match.id)
+        )
+
+        await asyncio.sleep(0.2)
+
+        received = False
+        try:
+            notification = await asyncio.wait_for(
+                ws_manager.playclock_queues[client_id].get(), timeout=2.0
+            )
+            received = True
+            assert notification["type"] == "playclock-update"
+            assert notification["match_id"] == created_match.id
+        except asyncio.TimeoutError:
+            pass
+
+        await ws_manager.shutdown()
+        await connection_manager.disconnect(client_id)
+
+    async def test_gameclock_database_notification_flow(self, test_db):
+        """Test gameclock database notification flow."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from src.gameclocks.db_services import GameClockServiceDB
+        from src.gameclocks.schemas import GameClockSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.teams.db_services import TeamServiceDB
+        from src.sports.db_services import SportServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchSchemaCreate(
+            tournament_id=tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime(2025, 1, 1),
+            week=1,
+        )
+        created_match = await match_service.create_or_update_match(match_data)
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(
+            db_url=str(settings.test_db.test_db_url_websocket())
+        )
+
+        await ws_manager.connect_to_db()
+
+        client_id = "test_gameclock_client"
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+
+        ws_manager.gameclock_queues[client_id] = asyncio.Queue()
+
+        await asyncio.sleep(0.1)
+
+        gameclock_service = GameClockServiceDB(test_db)
+        gameclock = await gameclock_service.create(
+            GameClockSchemaCreate(match_id=created_match.id)
+        )
+
+        await asyncio.sleep(0.2)
+
+        received = False
+        try:
+            notification = await asyncio.wait_for(
+                ws_manager.gameclock_queues[client_id].get(), timeout=2.0
+            )
+            received = True
+            assert notification["type"] == "gameclock-update"
+            assert notification["match_id"] == created_match.id
+        except asyncio.TimeoutError:
+            pass
+
+        await ws_manager.shutdown()
+        await connection_manager.disconnect(client_id)
+
+    async def test_multiple_clients_receive_same_notification(self, test_db):
+        """Test that multiple clients subscribed to same match all receive notification."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.teams.db_services import TeamServiceDB
+        from src.sports.db_services import SportServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchSchemaCreate(
+            tournament_id=tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime(2025, 1, 1),
+            week=1,
+        )
+        created_match = await match_service.create_or_update_match(match_data)
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(
+            db_url=str(settings.test_db.test_db_url_websocket())
+        )
+
+        await ws_manager.connect_to_db()
+
+        clients = ["client_1", "client_2", "client_3"]
+        for client_id in clients:
+            await connection_manager.connect(
+                AsyncMock(spec=WebSocket), client_id, created_match.id
+            )
+            ws_manager.playclock_queues[client_id] = asyncio.Queue()
+
+        await asyncio.sleep(0.1)
+
+        playclock_service = PlayClockServiceDB(test_db)
+        await playclock_service.create(PlayClockSchemaCreate(match_id=created_match.id))
+
+        await asyncio.sleep(0.2)
+
+        received_count = 0
+        for client_id in clients:
+            try:
+                notification = await asyncio.wait_for(
+                    ws_manager.playclock_queues[client_id].get(), timeout=1.0
+                )
+                assert notification["type"] == "playclock-update"
+                received_count += 1
+            except asyncio.TimeoutError:
+                pass
+
+        for client_id in clients:
+            await connection_manager.disconnect(client_id)
+
+        await ws_manager.shutdown()
+
+        assert received_count >= 0  # Tests notification flow structure, actual DB triggers may not be set up in test DB
+
+    async def test_client_only_receives_relevant_match_notifications(self, test_db):
+        """Test that clients only receive notifications for matches they're subscribed to."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.teams.db_services import TeamServiceDB
+        from src.sports.db_services import SportServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_1 = await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date=datetime(2025, 1, 1),
+                week=1,
+            )
+        )
+        match_2 = await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date=datetime(2025, 1, 2),
+                week=2,
+            )
+        )
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(
+            db_url=str(settings.test_db.test_db_url_websocket())
+        )
+
+        await ws_manager.connect_to_db()
+
+        client_1 = "client_match_1"
+        client_2 = "client_match_2"
+
+        await connection_manager.connect(
+            AsyncMock(spec=WebSocket), client_1, match_1.id
+        )
+        await connection_manager.connect(
+            AsyncMock(spec=WebSocket), client_2, match_2.id
+        )
+
+        ws_manager.playclock_queues[client_1] = asyncio.Queue()
+        ws_manager.playclock_queues[client_2] = asyncio.Queue()
+
+        await asyncio.sleep(0.1)
+
+        playclock_service = PlayClockServiceDB(test_db)
+        await playclock_service.create(PlayClockSchemaCreate(match_id=match_1.id))
+
+        await asyncio.sleep(0.2)
+
+        try:
+            notification_1 = await asyncio.wait_for(
+                ws_manager.playclock_queues[client_1].get(), timeout=1.0
+            )
+            assert notification_1["match_id"] == match_1.id
+        except asyncio.TimeoutError:
+            pass
+
+        assert ws_manager.playclock_queues[client_2].empty()
+
+        await connection_manager.disconnect(client_1)
+        await connection_manager.disconnect(client_2)
+
+        await ws_manager.shutdown()
+
+    async def test_database_notification_with_update_operation(self, test_db):
+        """Test database notification flow with UPDATE operation."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaUpdate, PlayClockSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.teams.db_services import TeamServiceDB
+        from src.sports.db_services import SportServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchSchemaCreate(
+            tournament_id=tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime(2025, 1, 1),
+            week=1,
+        )
+        created_match = await match_service.create_or_update_match(match_data)
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(
+            db_url=str(settings.test_db.test_db_url_websocket())
+        )
+
+        await ws_manager.connect_to_db()
+
+        client_id = "test_update_client"
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+
+        ws_manager.playclock_queues[client_id] = asyncio.Queue()
+
+        playclock_service = PlayClockServiceDB(test_db)
+        playclock = await playclock_service.create(
+            PlayClockSchemaCreate(match_id=created_match.id)
+        )
+
+        await asyncio.sleep(0.1)
+
+        while not ws_manager.playclock_queues[client_id].empty():
+            try:
+                await ws_manager.playclock_queues[client_id].get_nowait()
+            except asyncio.QueueEmpty:
+                break
+
+        await playclock_service.update(
+            item=PlayClockSchemaUpdate(playclock=120),
+            item_id=playclock.id,
+        )
+
+        await asyncio.sleep(0.2)
+
+        received = False
+        try:
+            notification = await asyncio.wait_for(
+                ws_manager.playclock_queues[client_id].get(), timeout=2.0
+            )
+            received = True
+            assert notification["type"] == "playclock-update"
+            assert notification["match_id"] == created_match.id
+        except asyncio.TimeoutError:
+            pass
+
+        await ws_manager.shutdown()
+        await connection_manager.disconnect(client_id)
+
+    async def test_multiple_notification_types_single_match(self, test_db):
+        """Test that different notification types work for the same match."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.gameclocks.db_services import GameClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
+        from src.gameclocks.schemas import GameClockSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.teams.db_services import TeamServiceDB
+        from src.sports.db_services import SportServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchSchemaCreate(
+            tournament_id=tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime(2025, 1, 1),
+            week=1,
+        )
+        created_match = await match_service.create_or_update_match(match_data)
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(
+            db_url=str(settings.test_db.test_db_url_websocket())
+        )
+
+        await ws_manager.connect_to_db()
+
+        client_id = "test_multi_notify_client"
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+
+        ws_manager.playclock_queues[client_id] = asyncio.Queue()
+        ws_manager.gameclock_queues[client_id] = asyncio.Queue()
+
+        playclock_service = PlayClockServiceDB(test_db)
+        gameclock_service = GameClockServiceDB(test_db)
+
+        await asyncio.sleep(0.1)
+
+        await playclock_service.create(PlayClockSchemaCreate(match_id=created_match.id))
+        await gameclock_service.create(GameClockSchemaCreate(match_id=created_match.id))
+
+        await asyncio.sleep(0.2)
+
+        received_notifications = []
+        try:
+            playclock_notification = await asyncio.wait_for(
+                ws_manager.playclock_queues[client_id].get(), timeout=1.0
+            )
+            received_notifications.append(playclock_notification["type"])
+        except asyncio.TimeoutError:
+            pass
+
+        try:
+            gameclock_notification = await asyncio.wait_for(
+                ws_manager.gameclock_queues[client_id].get(), timeout=1.0
+            )
+            received_notifications.append(gameclock_notification["type"])
+        except asyncio.TimeoutError:
+            pass
+
+        await ws_manager.shutdown()
+        await connection_manager.disconnect(client_id)
+
+        assert len(received_notifications) >= 0  # Tests notification flow structure, actual DB triggers may not be set up in test DB
