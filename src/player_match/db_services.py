@@ -5,7 +5,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models.base import Database
-from src.core.models import BaseServiceDB, PlayerMatchDB, PlayerDB, PlayerTeamTournamentDB
+from src.core.models import (
+    BaseServiceDB,
+    PlayerMatchDB,
+    PlayerDB,
+    PlayerTeamTournamentDB,
+)
 from ..player.db_services import PlayerServiceDB
 from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 from ..logging_config import setup_logging, get_logger

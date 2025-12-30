@@ -36,7 +36,9 @@ class TeamTournamentServiceDB(BaseServiceDB):
         )
         return await super().create(new_team_tournament)
 
-    async def get_team_tournament_relation(self, team_id: int, tournament_id: int) -> TeamTournamentDB | None:
+    async def get_team_tournament_relation(
+        self, team_id: int, tournament_id: int
+    ) -> TeamTournamentDB | None:
         try:
             self.logger.debug(
                 f"Get {ITEM} relation: team_id:{team_id} tournament_id:{tournament_id}"

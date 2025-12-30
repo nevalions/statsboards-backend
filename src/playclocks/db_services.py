@@ -36,7 +36,9 @@ class ClockManager:
 
 
 class PlayClockServiceDB(BaseServiceDB):
-    def __init__(self, database: Database, disable_background_tasks: bool = False) -> None:
+    def __init__(
+        self, database: Database, disable_background_tasks: bool = False
+    ) -> None:
         super().__init__(database, PlayClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks

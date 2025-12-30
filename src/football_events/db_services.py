@@ -119,7 +119,9 @@ class FootballEventServiceDB(BaseServiceDB):
             self.logger.error(f"Error updating {ITEM} {ex}", exc_info=True)
             raise
 
-    async def get_match_football_events_by_match_id(self, match_id: int) -> list[FootballEventDB]:
+    async def get_match_football_events_by_match_id(
+        self, match_id: int
+    ) -> list[FootballEventDB]:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Getting {ITEM}s by match id({match_id})")

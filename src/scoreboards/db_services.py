@@ -25,7 +25,9 @@ class ScoreboardUpdateManager:
             self.active_scoreboard_updates[scoreboard_id] = asyncio.Queue()
             self.logger.debug(f"Queue added for Scoreboard ID:{scoreboard_id}")
 
-    async def update_queue_scoreboard(self, scoreboard_id: int, updated_scoreboard: ScoreboardDB) -> None:
+    async def update_queue_scoreboard(
+        self, scoreboard_id: int, updated_scoreboard: ScoreboardDB
+    ) -> None:
         if scoreboard_id in self.active_scoreboard_updates:
             scoreboard_update_queue = self.active_scoreboard_updates[scoreboard_id]
             self.logger.debug(f"Queue updated for Scoreboard ID:{scoreboard_id}")

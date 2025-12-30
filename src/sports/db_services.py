@@ -4,7 +4,15 @@ from fastapi import HTTPException
 from sqlalchemy import select, Result
 
 from src.core.models.base import Database
-from src.core.models import db, BaseServiceDB, SportDB, TournamentDB, TeamDB, PlayerDB, PositionDB
+from src.core.models import (
+    db,
+    BaseServiceDB,
+    SportDB,
+    TournamentDB,
+    TeamDB,
+    PlayerDB,
+    PositionDB,
+)
 from .schemas import SportSchemaCreate, SportSchemaUpdate
 from ..logging_config import get_logger, setup_logging
 

@@ -345,18 +345,28 @@ class MatchAPIRouter(
 
             initial_data = await fetch_with_scoreboard_data(match_id)
             initial_data["type"] = "message-update"
-            websocket_logger.debug("WebSocket Connection initial_data for type: message-update")
+            websocket_logger.debug(
+                "WebSocket Connection initial_data for type: message-update"
+            )
             websocket_logger.info(f"WebSocket Connection initial_data: {initial_data}")
 
             initial_playclock_data = await fetch_playclock(match_id)
             initial_playclock_data["type"] = "playclock-update"
-            websocket_logger.debug("WebSocket Connection initial_data for type: playclock-update")
-            websocket_logger.info(f"WebSocket Connection initial_data: {initial_playclock_data}")
+            websocket_logger.debug(
+                "WebSocket Connection initial_data for type: playclock-update"
+            )
+            websocket_logger.info(
+                f"WebSocket Connection initial_data: {initial_playclock_data}"
+            )
 
             initial_gameclock_data = await fetch_gameclock(match_id)
             initial_gameclock_data["type"] = "gameclock-update"
-            websocket_logger.debug("WebSocket Connection initial_data for type: gameclock-update")
-            websocket_logger.info(f"WebSocket Connection initial_data: {initial_gameclock_data}")
+            websocket_logger.debug(
+                "WebSocket Connection initial_data for type: gameclock-update"
+            )
+            websocket_logger.info(
+                f"WebSocket Connection initial_data: {initial_gameclock_data}"
+            )
 
             await websocket.send_json(initial_data)
             await websocket.send_json(initial_playclock_data)
@@ -366,11 +376,19 @@ class MatchAPIRouter(
                 await connection_manager.queues[client_id].put(initial_data)
                 await connection_manager.queues[client_id].put(initial_playclock_data)
                 await connection_manager.queues[client_id].put(initial_gameclock_data)
-                websocket_logger.debug(f"Put initial_data into queue for client_id:{client_id}: {initial_data}")
-                websocket_logger.debug(f"Put initial_playclock_data into queue for client_id:{client_id}: {initial_playclock_data}")
-                websocket_logger.debug(f"Put initial_gameclock_data into queue for client_id:{client_id}: {initial_gameclock_data}")
+                websocket_logger.debug(
+                    f"Put initial_data into queue for client_id:{client_id}: {initial_data}"
+                )
+                websocket_logger.debug(
+                    f"Put initial_playclock_data into queue for client_id:{client_id}: {initial_playclock_data}"
+                )
+                websocket_logger.debug(
+                    f"Put initial_gameclock_data into queue for client_id:{client_id}: {initial_gameclock_data}"
+                )
             else:
-                websocket_logger.warning(f"No queue found for client_id {client_id}. Data not enqueued.")
+                websocket_logger.warning(
+                    f"No queue found for client_id {client_id}. Data not enqueued."
+                )
 
         async def _cleanup_websocket(client_id: str):
             await asyncio.sleep(0.1)
@@ -379,7 +397,9 @@ class MatchAPIRouter(
                 f"Client {client_id} disconnected, closing connection and removing from subscriptions"
             )
             await ws_manager.disconnect(client_id)
-            websocket_logger.warning(f"Client {client_id} disconnected from websocket, closing connection")
+            websocket_logger.warning(
+                f"Client {client_id} disconnected from websocket, closing connection"
+            )
             await ws_manager.shutdown()
 
         @router.websocket("/ws/id/{match_id}/{client_id}/")
@@ -401,9 +421,13 @@ class MatchAPIRouter(
                 await process_data_websocket(websocket, client_id, match_id)
 
             except WebSocketDisconnect as e:
-                websocket_logger.error(f"WebSocket disconnect error:{str(e)}", exc_info=True)
+                websocket_logger.error(
+                    f"WebSocket disconnect error:{str(e)}", exc_info=True
+                )
             except ConnectionClosedOK as e:
-                websocket_logger.debug(f"ConnectionClosedOK error:{str(e)}", exc_info=True)
+                websocket_logger.debug(
+                    f"ConnectionClosedOK error:{str(e)}", exc_info=True
+                )
             except asyncio.TimeoutError as e:
                 websocket_logger.error(f"TimeoutError error:{str(e)}", exc_info=True)
             except RuntimeError as e:

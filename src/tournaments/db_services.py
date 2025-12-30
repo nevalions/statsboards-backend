@@ -3,7 +3,15 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models.base import Database
-from src.core.models import BaseServiceDB, PlayerTeamTournamentDB, TournamentDB, TeamDB, MatchDB, SponsorDB, SponsorLineDB
+from src.core.models import (
+    BaseServiceDB,
+    PlayerTeamTournamentDB,
+    TournamentDB,
+    TeamDB,
+    MatchDB,
+    SponsorDB,
+    SponsorLineDB,
+)
 
 from ..logging_config import get_logger, setup_logging
 from ..sponsor_lines.db_services import SponsorLineServiceDB
@@ -176,13 +184,17 @@ class TournamentServiceDB(BaseServiceDB):
             tournament_id, "main_sponsor"
         )
 
-    async def get_tournament_sponsor_line(self, tournament_id: int) -> SponsorLineDB | None:
+    async def get_tournament_sponsor_line(
+        self, tournament_id: int
+    ) -> SponsorLineDB | None:
         self.logger.debug(f"Get tournament's sponsor line by {ITEM} id:{tournament_id}")
         return await self.get_related_item_level_one_by_id(
             tournament_id, "sponsor_line"
         )
 
-    async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int) -> list[SponsorDB]:
+    async def get_sponsors_of_tournament_sponsor_line(
+        self, tournament_id: int
+    ) -> list[SponsorDB]:
         sponsor_service = SponsorLineServiceDB(self.db)
         self.logger.debug(
             f"Get sponsors of tournament sponsor line {ITEM} id:{tournament_id}"

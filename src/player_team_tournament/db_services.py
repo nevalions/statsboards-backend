@@ -227,7 +227,9 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 exc_info=True,
             )
 
-    async def get_player_team_tournament_with_person(self, player_id: int) -> PlayerDB | None:
+    async def get_player_team_tournament_with_person(
+        self, player_id: int
+    ) -> PlayerDB | None:
         player_service = PlayerServiceDB(self.db)
         try:
             return await self.get_nested_related_item_by_id(
