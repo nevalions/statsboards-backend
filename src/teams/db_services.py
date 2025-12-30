@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, MatchDB, PlayerTeamTournamentDB, TeamDB
 from src.core.models.base import Database
 from src.positions.db_services import PositionServiceDB
@@ -42,11 +43,28 @@ class TeamServiceDB(BaseServiceDB):
             )
             self.logger.debug(f"Starting to create TeamDB with data: {team.__dict__}")
             return await super().create(team)
-        except Exception as ex:
-            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Database error creating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(
-                status_code=409,
-                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+                status_code=500,
+                detail=f"Database error creating {self.model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.create: {ex}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def create_or_update_team(
@@ -98,20 +116,41 @@ class TeamServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
+                    self.logger.error(
+                        f"Error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
+                    )
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Database error fetching players for team {team_id} and tournament {tournament_id}",
+                    )
+        except HTTPException:
+            raise
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error fetching players for team {team_id} and tournament {tournament_id}: {ex}",
+                exc_info=True
             )
             raise HTTPException(
-                status_code=500,
-                detail=f"Database error fetching players for team {team_id} and tournament {tournament_id}",
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Resource not found: {ex}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=404,
+                detail=str(ex),
             )
         except Exception as ex:
-            self.logger.error(
-                f"Error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.get_players_by_team_id_tournament_id({team_id}, {tournament_id}): {ex}",
+                exc_info=True
             )
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error fetching players",
+                detail="Internal server error",
             )
 
     async def get_players_by_team_id_tournament_id_with_person(
@@ -154,22 +193,51 @@ class TeamServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
+                    self.logger.error(
+                        f"Error on get_players_by_team_id_tournament_id_with_person: {ex}",
+                        exc_info=True,
+                    )
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Database error fetching players with person data",
+                    )
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Error on get_players_by_team_id_tournament_id_with_person: {ex}",
+                f"Database error on get_players_by_team_id_tournament_id_with_person: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
                 detail="Database error fetching players with person data",
             )
-        except Exception as ex:
-            self.logger.error(
-                f"Error on get_players_by_team_id_tournament_id_with_person: {ex}",
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error on get_players_by_team_id_tournament_id_with_person: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Resource not found: {ex}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=404,
+                detail=str(ex),
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.get_players_by_team_id_tournament_id_with_person({team_id}, {tournament_id}): {ex}",
+                exc_info=True
+            )
+            raise HTTPException(
                 status_code=500,
-                detail="Internal server error fetching players with person data",
+                detail="Internal server error",
             )
 
     async def update(

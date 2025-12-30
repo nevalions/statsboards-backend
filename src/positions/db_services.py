@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PositionDB
 from src.core.models.base import Database
 
@@ -32,11 +33,28 @@ class PositionServiceDB(BaseServiceDB):
                 title=p.title.upper(),
             )
             return await super().create(position)
-        except Exception as ex:
-            self.logger.error(f"Error creating new position {p} {ex}", exc_info=True)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Database error creating new position {p}: {ex}", exc_info=True)
             raise HTTPException(
-                status_code=409,
-                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+                status_code=500,
+                detail=f"Database error creating {self.model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error creating new position {p}: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.create: {ex}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def update(
