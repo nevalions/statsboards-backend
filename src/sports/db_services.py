@@ -1,5 +1,7 @@
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import (
     BaseServiceDB,
     PlayerDB,
@@ -34,11 +36,28 @@ class SportServiceDB(BaseServiceDB):
                 description=item.description,
             )
             return await super().create(season)
-        except Exception as e:
-            self.logger.error(f"Error creating {ITEM} {e}", exc_info=True)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            self.logger.error(f"Database error creating {ITEM}: {e}", exc_info=True)
             raise HTTPException(
-                status_code=409,
-                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+                status_code=500,
+                detail=f"Database error creating {self.model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as e:
+            self.logger.warning(f"Data error creating {ITEM}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except Exception as e:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.create: {e}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def update(
@@ -56,11 +75,32 @@ class SportServiceDB(BaseServiceDB):
             )
         except HTTPException:
             raise
-        except Exception as e:
-            self.logger.error(f"Error updating {ITEM} {e}", exc_info=True)
+        except (IntegrityError, SQLAlchemyError) as e:
+            self.logger.error(f"Database error updating {ITEM}: {e}", exc_info=True)
             raise HTTPException(
-                status_code=409,
-                detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
+                status_code=500,
+                detail=f"Database error updating {self.model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as e:
+            self.logger.warning(f"Data error updating {ITEM}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except NotFoundError as e:
+            self.logger.info(f"Not found: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=404,
+                detail=str(e),
+            )
+        except Exception as e:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.update({item_id}): {e}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def get_tournaments_by_sport(

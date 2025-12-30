@@ -1,5 +1,7 @@
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, SponsorLineDB
 from src.core.models.base import Database
 
@@ -29,11 +31,28 @@ class SponsorLineServiceDB(BaseServiceDB):
                 title=item.title,
             )
             return await super().create(result)
-        except Exception as e:
-            self.logger.error(f"Error creating {ITEM}: {e}", exc_info=True)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            self.logger.error(f"Database error creating {ITEM}: {e}", exc_info=True)
             raise HTTPException(
-                status_code=409,
-                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+                status_code=500,
+                detail=f"Database error creating {self.model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as e:
+            self.logger.warning(f"Data error creating {ITEM}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except Exception as e:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.create: {e}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def update(

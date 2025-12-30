@@ -1,7 +1,9 @@
 from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PlayerDB
 from src.core.models.base import Database
 
@@ -38,11 +40,28 @@ class PlayerServiceDB(BaseServiceDB):
                 f"Starting to create PlayerDB with data: {player.__dict__}"
             )
             return await super().create(player)
-        except Exception as ex:
-            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Database error creating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(
-                status_code=409,
-                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+                status_code=500,
+                detail=f"Database error creating {self.model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.create: {ex}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def create_or_update_player(
@@ -78,12 +97,44 @@ class PlayerServiceDB(BaseServiceDB):
                     status_code=404,
                     detail=f"Person does not exist for {ITEM} id:{player_id}",
                 )
-        except Exception as ex:
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"{ITEM} with id:{player_id} returned an error while getting person data: {ex}",
+                f"Database error getting player {player_id} with person data: {ex}",
                 exc_info=True,
             )
-            raise
+            raise HTTPException(
+                status_code=500,
+                detail="Database error fetching player data",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error getting player {player_id} with person data: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Player not found: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=404,
+                detail=str(ex),
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.get_player_with_person({player_id}): {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
+            )
 
     async def update(
         self,
