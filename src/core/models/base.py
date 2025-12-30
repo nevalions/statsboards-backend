@@ -1,23 +1,15 @@
 import asyncio
 import json
 import logging
-import os
-import shutil
-from datetime import datetime
-from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Coroutine,
-    Dict,
-    List,
-    Optional,
 )
+from collections.abc import Callable, Coroutine
 
 import asyncpg
-from fastapi import HTTPException, UploadFile
-from sqlalchemy import Column, Result, TextClause, select, text, update
-from sqlalchemy.exc import IntegrityError, NoResultFound, SQLAlchemyError
+from fastapi import HTTPException
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -28,19 +20,17 @@ from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     mapped_column,
-    selectinload,
 )
-from sqlalchemy.sql import func
 from starlette.websockets import WebSocket
 
 from src.core.config import settings
-from src.logging_config import get_logger, setup_logging
 from src.core.models.mixins import (
     CRUDMixin,
     QueryMixin,
     RelationshipMixin,
     SerializationMixin,
 )
+from src.logging_config import get_logger, setup_logging
 
 setup_logging()
 connection_socket_logger_helper = logging.getLogger("backend_logger_ConnectionManager")
@@ -279,9 +269,9 @@ ws_manager = MatchDataWebSocketManager(db_url=settings.db.db_url_websocket())
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
-        self.queues: Dict[str, asyncio.Queue] = {}
-        self.match_subscriptions: Dict[str | int, List[str]] = {}
+        self.active_connections: dict[str, WebSocket] = {}
+        self.queues: dict[str, asyncio.Queue] = {}
+        self.match_subscriptions: dict[str | int, list[str]] = {}
         self.logger = logging.getLogger("backend_logger_ConnectionManager")
         self.logger.info("ConnectionManager initialized")
 
@@ -350,7 +340,7 @@ class ConnectionManager:
             del self.active_connections[client_id]
 
         # Remove from match subscriptions
-        for match_id, clients in self.match_subscriptions.items():
+        for _match_id, clients in self.match_subscriptions.items():
             if client_id in clients:
                 clients.remove(client_id)
 
@@ -406,7 +396,7 @@ connection_manager = ConnectionManager()
 
 
 async def process_client_queue(
-    client_id: str | int, handlers: Dict[str | int, Coroutine[Any, Any, None]]
+    client_id: str | int, handlers: dict[str | int, Coroutine[Any, Any, None]]
 ):
     if client_id in connection_manager.queues:
         queue = connection_manager.queues[client_id]
@@ -463,10 +453,10 @@ class BaseServiceDB(
     async def create_or_update(
         self,
         item_schema,
-        eesl_field_name: Optional[str] = None,
-        unique_field_name: Optional[str] = None,
-        unique_field_value: Optional[Any] = None,
-        model_factory: Optional[Callable] = None,
+        eesl_field_name: str | None = None,
+        unique_field_name: str | None = None,
+        unique_field_value: Any | None = None,
+        model_factory: Callable | None = None,
         **create_kwargs,
     ):
         """

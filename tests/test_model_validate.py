@@ -1,6 +1,3 @@
-import pytest
-from pydantic import BaseModel, ConfigDict
-
 from src.teams.schemas import TeamSchema, TeamSchemaCreate, TeamSchemaUpdate
 
 

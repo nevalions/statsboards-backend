@@ -1,18 +1,19 @@
 import asyncio
 
 from fastapi import (
-    HTTPException,
+    BackgroundTasks,
     Depends,
+    HTTPException,
     Path,
     status,
-    BackgroundTasks,
 )
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import MatchDataServiceDB
-from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate, MatchDataSchema
-from ..logging_config import setup_logging, get_logger
+from .schemas import MatchDataSchema, MatchDataSchemaCreate, MatchDataSchemaUpdate
 
 setup_logging()
 
@@ -31,7 +32,7 @@ class MatchDataAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_MatchDataAPIRouter", self)
-        self.logger.debug(f"Initialized MatchDataAPIRouter")
+        self.logger.debug("Initialized MatchDataAPIRouter")
 
     def route(self):
         router = super().route()
@@ -78,7 +79,7 @@ class MatchDataAPIRouter(
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Error updating matchdata with data",
+                    detail="Error updating matchdata with data",
                 )
 
         @router.put(
@@ -89,7 +90,7 @@ class MatchDataAPIRouter(
             item_id: int,
             item=Depends(update_match_data_),
         ):
-            self.logger.debug(f"Update matchdata by ID")
+            self.logger.debug("Update matchdata by ID")
             if item:
                 return {
                     "content": MatchDataSchema.model_validate(item).model_dump(),
@@ -109,7 +110,7 @@ class MatchDataAPIRouter(
         async def get_matchdata_by_id(
             item=Depends(self.service.get_by_id),
         ):
-            self.logger.debug(f"Get matchdata by id endpoint")
+            self.logger.debug("Get matchdata by id endpoint")
             return self.create_response(
                 item,
                 f"MatchData ID:{item.id}",
@@ -124,7 +125,7 @@ class MatchDataAPIRouter(
             background_tasks: BackgroundTasks,
             match_data_id: int,
         ):
-            self.logger.debug(f"Start gameclock endpoint")
+            self.logger.debug("Start gameclock endpoint")
 
             try:
                 start_game = "in-progress"
@@ -168,7 +169,7 @@ class MatchDataAPIRouter(
                         ),
                     )
 
-                    self.logger.debug(f"Go to decrement gameclock")
+                    self.logger.debug("Go to decrement gameclock")
                     await self.service.decrement_gameclock(
                         background_tasks,
                         match_data_id,
@@ -198,7 +199,7 @@ class MatchDataAPIRouter(
         async def pause_gameclock_endpoint(
             item_id: int,
         ):
-            self.logger.debug(f"Pause gameclock endpoint")
+            self.logger.debug("Pause gameclock endpoint")
             item_status = "paused"
             try:
                 updated_ = await self.service.update(
@@ -233,7 +234,7 @@ class MatchDataAPIRouter(
             ),
         ):
             try:
-                self.logger.debug(f"Reset gameclock endpoint")
+                self.logger.debug("Reset gameclock endpoint")
                 await self.service.update(
                     item_id,
                     MatchDataSchemaUpdate(
@@ -279,7 +280,7 @@ class MatchDataAPIRouter(
             item_id: int,
             sec: int,
         ):
-            self.logger.debug(f"Start playclock endpoint")
+            self.logger.debug("Start playclock endpoint")
             item_status = "running"
 
             try:
@@ -291,7 +292,7 @@ class MatchDataAPIRouter(
                     "play",
                 )
                 if present_playclock_status != "running":
-                    self.logger.debug(f"Playclock not running")
+                    self.logger.debug("Playclock not running")
                     await self.service.update(
                         item_id,
                         MatchDataSchemaUpdate(
@@ -300,7 +301,7 @@ class MatchDataAPIRouter(
                         ),
                     )
 
-                    self.logger.debug(f"Go to decrement playclock")
+                    self.logger.debug("Go to decrement playclock")
                     await self.service.decrement_playclock(
                         background_tasks,
                         item_id,

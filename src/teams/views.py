@@ -1,27 +1,24 @@
-from typing import List
-
-from fastapi import HTTPException, UploadFile, File
+from fastapi import File, HTTPException, UploadFile
 
 from src.core import BaseRouter, db
+
+from ..helpers.file_service import file_service
+from ..logging_config import get_logger, setup_logging
+from ..pars_eesl.pars_tournament import (
+    ParsedTeamData,
+    parse_tournament_teams_index_page_eesl,
+)
+from ..team_tournament.db_services import TeamTournamentServiceDB
+from ..team_tournament.schemas import TeamTournamentSchemaCreate
+from ..tournaments.db_services import TournamentServiceDB
 from .db_services import TeamServiceDB
 from .schemas import (
     TeamSchema,
     TeamSchemaCreate,
     TeamSchemaUpdate,
-    UploadTeamLogoResponse,
     UploadResizeTeamLogoResponse,
+    UploadTeamLogoResponse,
 )
-from ..core.config import uploads_path
-from ..helpers.file_service import file_service
-from ..logging_config import setup_logging, get_logger
-from ..pars_eesl.pars_tournament import (
-    parse_tournament_teams_index_page_eesl,
-    ParsedTeamData,
-)
-
-from ..team_tournament.db_services import TeamTournamentServiceDB
-from ..team_tournament.schemas import TeamTournamentSchemaCreate
-from ..tournaments.db_services import TournamentServiceDB
 
 setup_logging()
 
@@ -31,7 +28,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
     def __init__(self, service: TeamServiceDB):
         super().__init__("/api/teams", ["teams"], service)
         self.logger = get_logger("backend_logger_TeamAPIRouter", self)
-        self.logger.debug(f"Initialized TeamAPIRouter")
+        self.logger.debug("Initialized TeamAPIRouter")
 
     def route(self):
         router = super().route()
@@ -46,10 +43,10 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             if not new_team:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Error creating new team",
+                    detail="Error creating new team",
                 )
             if tour_id:
-                self.logger.debug(f"Check if team in tournament exists")
+                self.logger.debug("Check if team in tournament exists")
                 dict_conv = TeamTournamentSchemaCreate(
                     **{"team_id": new_team.id, "tournament_id": tour_id}
                 )
@@ -68,7 +65,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     )
                     raise HTTPException(
                         status_code=500,
-                        detail=f"Error creating team tournament connection",
+                        detail="Error creating team tournament connection",
                     )
             return TeamSchema.model_validate(new_team)
 
@@ -82,7 +79,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 self.logger.warning(f"No team found with eesl_id: {eesl_id}")
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Tournament eesl_id({eesl_id}) " f"not found",
+                    detail=f"Tournament eesl_id({eesl_id}) not found",
                 )
             return TeamSchema.model_validate(team)
 
@@ -212,7 +209,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
         @router.get(
             "/pars/tournament/{eesl_tournament_id}",
-            response_model=List[TeamSchemaCreate],
+            response_model=list[TeamSchemaCreate],
         )
         async def get_parse_tournament_teams_endpoint(eesl_tournament_id: int):
             self.logger.debug(
@@ -260,7 +257,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                                 )
                                 try:
                                     self.logger.debug(
-                                        f"Trying to create team and tournament connection after parse"
+                                        "Trying to create team and tournament connection after parse"
                                     )
                                     team_tournament_connection = (
                                         await TeamTournamentServiceDB(db).create(
@@ -284,7 +281,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
                         return created_teams, created_team_tournament_ids
                     else:
-                        self.logger.warning(f"Team list is empty")
+                        self.logger.warning("Team list is empty")
                         return []
                 except HTTPException:
                     raise

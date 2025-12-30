@@ -1,8 +1,4 @@
 from datetime import datetime
-from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import selectinload
 
 
 class SerializationMixin:
@@ -13,7 +9,7 @@ class SerializationMixin:
                 return order.desc()
             else:
                 return order.asc()
-        except Exception as e:
+        except Exception:
             return None
 
     @staticmethod

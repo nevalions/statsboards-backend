@@ -1,20 +1,20 @@
 import pytest
+
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate, GameClockSchemaUpdate
+from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
-from src.matches.schemas import MatchSchemaCreate
-from src.teams.db_services import TeamServiceDB
-from src.sports.db_services import SportServiceDB
-from src.tournaments.db_services import TournamentServiceDB
 from src.seasons.db_services import SeasonServiceDB
+from src.sports.db_services import SportServiceDB
+from src.teams.db_services import TeamServiceDB
+from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
     MatchFactory,
-    TeamFactory,
-    TournamentFactory,
     SeasonFactorySample,
     SportFactorySample,
+    TeamFactory,
+    TournamentFactory,
 )
-from src.logging_config import setup_logging
 
 setup_logging()
 
@@ -131,7 +131,7 @@ class TestGameClockViews:
         )
 
         assert response.status_code == 200
-        assert response.json()["success"] == True
+        assert response.json()["success"]
 
     async def test_start_gameclock_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)

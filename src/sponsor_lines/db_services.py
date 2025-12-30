@@ -1,8 +1,10 @@
 from fastapi import HTTPException
-from src.core.models.base import Database
+
 from src.core.models import BaseServiceDB, SponsorLineDB
-from .schemas import SponsorLineSchemaUpdate, SponsorLineSchemaCreate
+from src.core.models.base import Database
+
 from ..logging_config import get_logger, setup_logging
+from .schemas import SponsorLineSchemaCreate, SponsorLineSchemaUpdate
 
 setup_logging()
 ITEM = "SPONSOR_LINE"
@@ -15,7 +17,7 @@ class SponsorLineServiceDB(BaseServiceDB):
     ) -> None:
         super().__init__(database, SponsorLineDB)
         self.logger = get_logger("backend_logger_SponsorLineServiceDB", self)
-        self.logger.debug(f"Initialized SponsorLineServiceDB")
+        self.logger.debug("Initialized SponsorLineServiceDB")
 
     async def create(
         self,

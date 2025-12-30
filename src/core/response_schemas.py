@@ -1,4 +1,5 @@
-from typing import Generic, TypeVar, Optional, Any
+from typing import Any, Generic, TypeVar
+
 from pydantic import BaseModel, ConfigDict
 from starlette import status
 
@@ -8,7 +9,7 @@ T = TypeVar("T", bound=BaseModel)
 class ResponseModel(BaseModel, Generic[T]):
     model_config = ConfigDict(from_attributes=True)
 
-    content: Optional[T] = None
+    content: T | None = None
     type: str = "text"
     message: str
     status_code: int

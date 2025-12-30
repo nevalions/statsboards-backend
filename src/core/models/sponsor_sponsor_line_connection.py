@@ -1,9 +1,10 @@
 from sqlalchemy import (
-    Integer,
     ForeignKey,
+    Integer,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column
+
 from src.core.models import Base
 
 

@@ -1,25 +1,16 @@
 import pytest
 from fastapi import HTTPException
 
-from src.seasons.schemas import SeasonSchemaUpdate, SeasonSchemaCreate
+from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 from tests.factories import SeasonFactorySample
 from tests.test_data import TestData
-from tests.fixtures import (
-    test_season_service,
-    test_sport_service,
-    test_tournament_service,
-    season,
-    sport,
-    tournament,
-    tournaments,
-)
 from tests.testhelpers import (
-    assert_season_equal,
-    assert_tournaments_equal,
     assert_http_exception_on_create,
-    assert_tournament_equal,
-    assert_http_exception_on_update,
     assert_http_exception_on_delete,
+    assert_http_exception_on_update,
+    assert_season_equal,
+    assert_tournament_equal,
+    assert_tournaments_equal,
 )
 
 

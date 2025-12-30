@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException
 from keyring.errors import ExceptionInfo
 
@@ -111,7 +109,7 @@ def assert_tournament_equal(
 
 
 def assert_tournaments_equal(
-    expected: List[TournamentSchemaCreate], actual: List[TournamentSchemaCreate]
+    expected: list[TournamentSchemaCreate], actual: list[TournamentSchemaCreate]
 ):
     """Helper function to assert that number of tournament objects are equal."""
     assert len(actual) == len(expected)

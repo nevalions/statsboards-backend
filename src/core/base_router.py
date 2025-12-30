@@ -1,7 +1,8 @@
-from typing import TypeVar, Generic, Optional, Any
+from typing import Any, Generic, TypeVar
+
 from fastapi import APIRouter, HTTPException
-from starlette import status
 from pydantic import BaseModel
+from starlette import status
 
 from .response_schemas import ResponseModel
 
@@ -17,7 +18,7 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.tags = tags
 
     @staticmethod
-    def create_response(item: Optional[Any], message: str, _type: str = "text"):
+    def create_response(item: Any | None, message: str, _type: str = "text"):
         if item:
             return {
                 "content": item.__dict__,
@@ -34,7 +35,7 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     @staticmethod
     def create_pydantic_response(
-        item: Optional[BaseModel], message: str, _type: str = "text"
+        item: BaseModel | None, message: str, _type: str = "text"
     ) -> ResponseModel[BaseModel]:
         if item:
             return ResponseModel.success_response(item, message)

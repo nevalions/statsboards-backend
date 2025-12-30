@@ -1,8 +1,8 @@
 import asyncio
 import logging
-from pprint import pprint
 import re
-from typing import TypedDict, Optional, List
+from pprint import pprint
+from typing import TypedDict
 
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
@@ -10,7 +10,6 @@ from fastapi import HTTPException
 from src.helpers import get_url
 from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
-
 
 setup_logging()
 logger = logging.getLogger("backend_logger_parse_players_from_team_tournament_eesl")
@@ -28,7 +27,7 @@ async def parse_players_from_team_tournament_eesl_and_create_jsons(
     eesl_tournament_id, eesl_team_id
 ):
     try:
-        logger.debug(f"Parse and create json players from team_tournament eesl")
+        logger.debug("Parse and create json players from team_tournament eesl")
         players = await parse_players_from_team_tournament_eesl(
             eesl_tournament_id, eesl_team_id
         )
@@ -44,7 +43,7 @@ async def parse_players_from_team_tournament_eesl_and_create_jsons(
 async def parse_players_from_team_tournament_eesl(
     eesl_tournament_id: int, eesl_team_id: int, base_url: str = BASE_TOURNAMENT_URL
 ):
-    players_in_eesl: List[ParsedPlayerTeamTournament] = []
+    players_in_eesl: list[ParsedPlayerTeamTournament] = []
     logger.debug(f"Parse players from team_tournament eesl {eesl_team_id}")
     try:
         url = f"{base_url}{eesl_tournament_id}/teams/application?team_id={eesl_team_id}"
@@ -71,7 +70,7 @@ async def parse_players_from_team_tournament_eesl(
 
 async def get_player_from_team_tournament_eesl(
     players_in_eesl, all_eesl_players, eesl_tournament_id, eesl_team_id
-) -> Optional[List[ParsedPlayerTeamTournament]]:
+) -> list[ParsedPlayerTeamTournament] | None:
     try:
         if all_eesl_players:
             for ppp in all_eesl_players:
@@ -114,7 +113,7 @@ async def get_player_from_team_tournament_eesl(
                     )
             return players_in_eesl
         else:
-            raise HTTPException(status_code=404, detail=f"Parsed eesl players empty")
+            raise HTTPException(status_code=404, detail="Parsed eesl players empty")
     except Exception as ex:
         logger.error(
             f"Error on parsing player from team_tournament eesl: {ex}", exc_info=True

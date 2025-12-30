@@ -1,16 +1,14 @@
 import asyncio
 import logging
-from typing import TypedDict, Optional, List
+import re
+from typing import TypedDict
 
 from bs4 import BeautifulSoup
-import re
-
 from fastapi import HTTPException
 
 from src.helpers import get_url
 from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_MATCH_URL
-
 
 setup_logging()
 logger = logging.getLogger("backend_logger_parse_match_eesl")
@@ -37,8 +35,8 @@ class ParsedMatch(TypedDict):
     team_logo_url_b: str | None
     score_a: str
     score_b: str
-    roster_a: list[Optional[ParsedMatchPlayer]]
-    roster_b: list[Optional[ParsedMatchPlayer]]
+    roster_a: list[ParsedMatchPlayer | None]
+    roster_b: list[ParsedMatchPlayer | None]
 
 
 async def parse_match_and_create_jsons(m_id: int):
@@ -54,7 +52,7 @@ async def parse_match_and_create_jsons(m_id: int):
 
 async def parse_match_index_page_eesl(
     m_id: int, base_url: str = BASE_MATCH_URL
-) -> Optional[ParsedMatch]:
+) -> ParsedMatch | None:
     try:
         match_data: ParsedMatch = {
             "team_a": "",
@@ -69,7 +67,7 @@ async def parse_match_index_page_eesl(
             "roster_b": [],
         }
 
-        logger.debug(f"Parse match from eesl")
+        logger.debug("Parse match from eesl")
 
         req = await get_url(base_url + str(m_id))
         soup = BeautifulSoup(req.content, "lxml")
@@ -120,8 +118,8 @@ async def parse_match_index_page_eesl(
             "li", class_="match-protocol__member match-protocol__member--right"
         )
 
-        roster_a: List[Optional[ParsedMatchPlayer]] = []
-        roster_b: List[Optional[ParsedMatchPlayer]] = []
+        roster_a: list[ParsedMatchPlayer | None] = []
+        roster_b: list[ParsedMatchPlayer | None] = []
         if players_a:
             for p in players_a:
                 try:
@@ -151,7 +149,7 @@ async def parse_match_index_page_eesl(
             logger.warning(f"No away players found for match id:{m_id}")
 
         try:
-            logger.debug(f"Set sorted rosters")
+            logger.debug("Set sorted rosters")
             match_data["roster_a"] = sorted(roster_a, key=lambda d: d["player_number"])
             match_data["roster_b"] = sorted(roster_b, key=lambda d: d["player_number"])
         except Exception as ex:
@@ -164,7 +162,7 @@ async def parse_match_index_page_eesl(
 
 async def get_player_eesl_from_match(
     soup_player_team: BeautifulSoup, team: str, team_logo_url: str
-) -> Optional[ParsedMatchPlayer]:
+) -> ParsedMatchPlayer | None:
     try:
         player: ParsedMatchPlayer = {
             "player_number": soup_player_team.find(
@@ -203,13 +201,13 @@ async def get_player_eesl_from_match(
         if player:
             return player
         else:
-            raise HTTPException(status_code=409, detail=f"Error parsing match player")
+            raise HTTPException(status_code=409, detail="Error parsing match player")
     except Exception as ex:
         logger.error(f"Error parsing match player {ex}", exc_info=True)
 
 
 async def main():
-    m = await parse_match_and_create_jsons(547)
+    await parse_match_and_create_jsons(547)
     # print(m)
 
 

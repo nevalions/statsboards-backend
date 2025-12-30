@@ -1,10 +1,11 @@
-from fastapi import HTTPException, BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
 
-from src.core.models.base import Database
 from src.core.models import BaseServiceDB, MatchDataDB
+from src.core.models.base import Database
+
+from ..logging_config import get_logger, setup_logging
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 ITEM = "MATCHDATA"
@@ -16,7 +17,7 @@ class MatchDataServiceDB(BaseServiceDB):
         # self.match_manager = MatchDataManager()
         self._running_tasks = {}
         self.logger = get_logger("backend_logger_MatchDataServiceDB", self)
-        self.logger.debug(f"Initialized MatchDataServiceDB")
+        self.logger.debug("Initialized MatchDataServiceDB")
 
     async def create(self, item: MatchDataSchemaCreate) -> MatchDataDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
@@ -98,7 +99,7 @@ class MatchDataServiceDB(BaseServiceDB):
                 )
                 if result:
                     self.logger.debug(
-                        f"get_match_data_by_match_id completed successfully."
+                        "get_match_data_by_match_id completed successfully."
                     )
                     return result.one_or_none()
                 else:

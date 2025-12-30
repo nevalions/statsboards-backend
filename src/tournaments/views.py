@@ -1,5 +1,5 @@
 import json
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import Depends, File, HTTPException, Path, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -151,7 +151,7 @@ class TournamentAPIRouter(
 
         @router.get(
             "/id/{tournament_id}/sponsors/",
-            response_model=Optional[List[SponsorSchema]],
+            response_model=Optional[list[SponsorSchema]],
         )
         async def get_sponsors_from_sponsor_line_by_tournament_id_endpoint(
             tournament_id: int,
@@ -169,7 +169,7 @@ class TournamentAPIRouter(
         )
         async def all_tournament_matches_data_endpoint(
             tournament_id: int,
-            all_matches: List = Depends(self.service.get_matches_by_tournament),
+            all_matches: list = Depends(self.service.get_matches_by_tournament),
         ):
             if not all_matches:
                 return []
@@ -246,7 +246,7 @@ class TournamentAPIRouter(
 
         @router.get(
             "/pars/season/{eesl_season_id}",
-            response_model=List[TournamentSchemaCreate],
+            response_model=list[TournamentSchemaCreate],
         )
         async def get_parsed_season_tournaments_endpoint(eesl_season_id: int):
             self.logger.debug(

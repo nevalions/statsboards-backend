@@ -1,6 +1,7 @@
-import pytest
-from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+
 from src.player_match.views import photo_files_exist
 
 
@@ -70,7 +71,7 @@ class TestPhotoFilesExist:
 
     def test_photo_files_exist_no_files_exist(self, temp_uploads_dir):
         """Test photo_files_exist returns False when no files exist."""
-        persons_dir = temp_uploads_dir / "persons" / "photos"
+        temp_uploads_dir / "persons" / "photos"
 
         with patch("src.player_match.views.uploads_path", temp_uploads_dir):
             result = photo_files_exist("/persons/photos/test_photo.jpg")

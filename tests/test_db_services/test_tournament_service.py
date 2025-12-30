@@ -6,18 +6,9 @@ from src.sports.schemas import SportSchemaCreate
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaCreate
 from tests.factories import TournamentFactory
-from tests.fixtures import (
-    test_tournament_service,
-    test_sport_service,
-    test_season_service,
-    tournament,
-    sport_sample,
-    season_sample,
-)
 from tests.testhelpers import (
-    assert_tournament_equal,
     assert_http_exception_on_create,
-    assert_tournaments_equal,
+    assert_tournament_equal,
 )
 
 

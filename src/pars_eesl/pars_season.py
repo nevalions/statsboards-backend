@@ -1,9 +1,9 @@
 import logging
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
-import re
 
 from src.helpers import get_url
 from src.helpers.file_service import file_service
@@ -60,7 +60,7 @@ async def parse_season_index_page_eesl(_id: int, base_url: str = BASE_SEASON_URL
                 ).get("src")
                 logger.debug(f"{ITEM_GOT} logo url: {tournament_logo_url}")
                 path = urlparse(tournament_logo_url).path
-                ext = Path(path).suffix
+                Path(path).suffix
 
                 icon_image_height = 100
                 web_view_image_height = 400

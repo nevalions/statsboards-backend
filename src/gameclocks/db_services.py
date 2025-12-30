@@ -4,8 +4,8 @@ import time
 from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
 
-from src.core.models.base import Database
 from src.core.models import BaseServiceDB, GameClockDB
+from src.core.models.base import Database
 
 from ..logging_config import get_logger, setup_logging
 from .schemas import GameClockSchemaBase, GameClockSchemaCreate, GameClockSchemaUpdate
@@ -151,9 +151,7 @@ class GameClockServiceDB(BaseServiceDB):
         self.logger.debug(f"Decrement gameclock by id:{gameclock_id}")
 
         if self.disable_background_tasks:
-            self.logger.debug(
-                f"Background tasks disabled, skipping gameclock decrement"
-            )
+            self.logger.debug("Background tasks disabled, skipping gameclock decrement")
             return
 
         if gameclock_id in self.clock_manager.active_gameclock_matches:

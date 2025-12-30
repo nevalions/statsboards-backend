@@ -1,7 +1,6 @@
-from pydantic import ConfigDict
-
 from datetime import datetime as date_type
-from pydantic import BaseModel
+
+from pydantic import BaseModel, ConfigDict
 
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.scoreboards.schemas import ScoreboardSchemaCreate

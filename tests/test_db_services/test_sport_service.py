@@ -1,18 +1,8 @@
-from typing import List
-
 import pytest
 
 from src.sports.schemas import SportSchemaCreate
 from src.tournaments.schemas import TournamentSchemaCreate
 from tests.factories import SportFactorySample
-from tests.fixtures import (
-    test_season_service,
-    test_sport_service,
-    test_tournament_service,
-    sport,
-    season,
-    tournaments,
-)
 from tests.testhelpers import assert_sport_equal, assert_tournaments_equal
 
 
@@ -63,7 +53,7 @@ class TestSportServiceDB:
         test_season_service,
     ):
         """Test getting tournaments by sport."""
-        got_tournaments: List[
+        got_tournaments: list[
             TournamentSchemaCreate
         ] = await test_sport_service.get_tournaments_by_sport(sport.id)
 

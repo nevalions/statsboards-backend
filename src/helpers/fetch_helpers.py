@@ -1,13 +1,12 @@
 import asyncio
 import datetime
 import logging
-from typing import List
 
 from fastapi import status
 from sqlalchemy import select
 
 from src.core import db
-from src.core.models import MatchDB, TeamDB
+from src.core.models import TeamDB
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.logging_config import setup_logging
@@ -24,7 +23,7 @@ logger = logging.getLogger("backend_logger_helpers")
 fetch_data_logger = logging.getLogger("backend_fetch_data_helpers")
 
 
-async def fetch_list_of_matches_data(matches: List):
+async def fetch_list_of_matches_data(matches: list):
     fetch_data_logger.debug("Fetching list of matches data")
     from src.matches.db_services import MatchServiceDB
 

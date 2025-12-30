@@ -1,6 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import Column, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 
@@ -83,9 +82,7 @@ class CRUDMixin:
         )
         try:
             async with self.db.async_session() as session:
-                result = await session.execute(
-                    select(model).where(getattr(model, "id") == item_id)
-                )
+                result = await session.execute(select(model).where(model.id == item_id))
                 item = result.scalars().one_or_none()
                 if item is not None:
                     self.logger.debug(

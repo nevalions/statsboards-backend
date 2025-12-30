@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import List
 
 from fastapi import Depends, File, HTTPException, Request, UploadFile, WebSocket, status
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -93,16 +92,16 @@ class MatchAPIRouter(
             tournament_service = TournamentServiceDB(db)
             sponsor_service = SponsorServiceDB(db)
             match_db_service = MatchDataServiceDB(db)
-            playclock_service = PlayClockServiceDB(db)
-            gameclock_service = GameClockServiceDB(db)
+            PlayClockServiceDB(db)
+            GameClockServiceDB(db)
             scoreboard_db_service = ScoreboardServiceDB(db)
 
             # Create all
             new_match = await self.service.create_or_update_match(data)
 
             default_match_data = MatchDataSchemaCreate(match_id=new_match.id)
-            default_playclock = PlayClockSchemaCreate(match_id=new_match.id)
-            default_gameclock = GameClockSchemaCreate(match_id=new_match.id)
+            PlayClockSchemaCreate(match_id=new_match.id)
+            GameClockSchemaCreate(match_id=new_match.id)
 
             tournament = await tournament_service.get_by_id(new_match.tournament_id)
             tournament_main_sponsor = await sponsor_service.get_by_id(
@@ -262,7 +261,7 @@ class MatchAPIRouter(
 
         @router.get("/all/data/", response_class=JSONResponse)
         async def all_matches_data_endpoint_endpoint(
-            all_matches: List = Depends(self.service.get_all_elements),
+            all_matches: list = Depends(self.service.get_all_elements),
         ):
             from src.helpers.fetch_helpers import fetch_list_of_matches_data
 
@@ -856,11 +855,9 @@ class MatchAPIRouter(
                 )
 
                 new_match_data = await match_db_service.create(default_match_data)
-                teams_data = await self.service.get_teams_by_match(
-                    new_match_data.match_id
-                )
-                new_playclock = await playclock_service.create(default_playclock)
-                new_gameclock = await gameclock_service.create(default_gameclock)
+                await self.service.get_teams_by_match(new_match_data.match_id)
+                await playclock_service.create(default_playclock)
+                await gameclock_service.create(default_gameclock)
                 self.logger.info(
                     f"Created match with full data and scoreboard {MatchSchema.model_validate(new_match)}"
                 )
@@ -879,9 +876,10 @@ class MatchAPIRouter(
                 f"Get and Save parsed matches from tournament eesl_id:{eesl_tournament_id} endpoint"
             )
             from sqlalchemy import select
+
             from src.core.models import TeamDB
 
-            teams_service = TeamServiceDB(db)
+            TeamServiceDB(db)
             playclock_service = PlayClockServiceDB(db)
             gameclock_service = GameClockServiceDB(db)
             scoreboard_service = ScoreboardServiceDB(db)
@@ -891,7 +889,7 @@ class MatchAPIRouter(
             )
             try:
                 self.logger.debug("Start parsing tournament for matches")
-                matches_list: List[
+                matches_list: list[
                     ParsedMatchData
                 ] = await parse_tournament_matches_index_page_eesl(eesl_tournament_id)
 

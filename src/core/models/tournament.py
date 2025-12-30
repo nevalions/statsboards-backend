@@ -1,17 +1,18 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Text, ForeignKey
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
+
 from . import SeasonSportRelationMixin
 
 if TYPE_CHECKING:
-    from .team import TeamDB
     from .match import MatchDB
+    from .player_team_tournament import PlayerTeamTournamentDB
     from .sponsor import SponsorDB
     from .sponsor_line import SponsorLineDB
-    from .player_team_tournament import PlayerTeamTournamentDB
+    from .team import TeamDB
 
 
 class TournamentDB(SeasonSportRelationMixin, Base):

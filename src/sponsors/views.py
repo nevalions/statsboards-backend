@@ -1,17 +1,17 @@
-from fastapi import HTTPException, Depends, UploadFile, File
+from fastapi import File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
+from src.helpers.file_service import file_service
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import SponsorServiceDB
 from .schemas import (
-    SponsorSchemaCreate,
     SponsorSchema,
+    SponsorSchemaCreate,
     SponsorSchemaUpdate,
     UploadSponsorLogoResponse,
 )
-from src.core.config import uploads_path
-from src.helpers.file_service import file_service
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 
@@ -30,7 +30,7 @@ class SponsorAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_SponsorAPIRouter", self)
-        self.logger.debug(f"Initialized SponsorAPIRouter")
+        self.logger.debug("Initialized SponsorAPIRouter")
 
     def route(self):
         router = super().route()
@@ -40,12 +40,12 @@ class SponsorAPIRouter(
             response_model=SponsorSchema,
         )
         async def create_sponsor_endpoint(item: SponsorSchemaCreate):
-            self.logger.debug(f"Creating sponsor endpoint")
+            self.logger.debug("Creating sponsor endpoint")
             new_ = await self.service.create(item)
             if new_ is None:
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Failed to create sponsor. Check input data.",
+                    detail="Failed to create sponsor. Check input data.",
                 )
             return SponsorSchema.model_validate(new_)
 
@@ -57,7 +57,7 @@ class SponsorAPIRouter(
             item_id: int,
             item: SponsorSchemaUpdate,
         ):
-            self.logger.debug(f"Updating sponsor endpoint")
+            self.logger.debug("Updating sponsor endpoint")
             update_ = await self.service.update(
                 item_id,
                 item,
@@ -90,7 +90,7 @@ class SponsorAPIRouter(
         @router.post("/upload_logo", response_model=UploadSponsorLogoResponse)
         async def upload_sponsor_logo_endpoint(file: UploadFile = File(...)):
             try:
-                self.logger.debug(f"Uploading sponsor logo endpoint")
+                self.logger.debug("Uploading sponsor logo endpoint")
                 file_location = await file_service.save_upload_image(
                     file, sub_folder="sponsors/logos"
                 )

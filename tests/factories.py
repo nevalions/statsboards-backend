@@ -1,25 +1,16 @@
 import factory
-from src.core.models.sport import SportDB
-from src.core.models.season import SeasonDB
-from src.core.models.tournament import TournamentDB
-from src.core.models.team import TeamDB
-from src.core.models.person import PersonDB
-from src.core.models.player import PlayerDB
-from src.core.models.match import MatchDB
-from src.core.models.position import PositionDB
-from src.core.models.sponsor import SponsorDB
-from src.core.models.sponsor_line import SponsorLineDB
-from tests.test_data import TestData
-from src.sports.schemas import SportSchemaCreate
-from src.seasons.schemas import SeasonSchemaCreate
-from src.tournaments.schemas import TournamentSchemaCreate
-from src.teams.schemas import TeamSchemaCreate
+
+from src.matches.schemas import MatchSchemaCreate
 from src.person.schemas import PersonSchemaCreate
 from src.player.schemas import PlayerSchemaCreate
-from src.matches.schemas import MatchSchemaCreate
 from src.positions.schemas import PositionSchemaCreate
-from src.sponsors.schemas import SponsorSchemaCreate
+from src.seasons.schemas import SeasonSchemaCreate
 from src.sponsor_lines.schemas import SponsorLineSchemaCreate
+from src.sponsors.schemas import SponsorSchemaCreate
+from src.sports.schemas import SportSchemaCreate
+from src.teams.schemas import TeamSchemaCreate
+from src.tournaments.schemas import TournamentSchemaCreate
+from tests.test_data import TestData
 
 
 class SportFactorySample(factory.Factory):

@@ -1,9 +1,9 @@
+from src.positions.schemas import PositionSchemaCreate, PositionSchemaUpdate
 from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+from src.sponsor_lines.schemas import SponsorLineSchemaCreate
+from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
 from src.sports.schemas import SportSchemaCreate
 from src.tournaments.schemas import TournamentSchemaCreate
-from src.positions.schemas import PositionSchemaCreate, PositionSchemaUpdate
-from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
-from src.sponsor_lines.schemas import SponsorLineSchemaCreate, SponsorLineSchemaUpdate
 
 
 class TestData:

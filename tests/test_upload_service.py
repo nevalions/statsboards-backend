@@ -1,12 +1,12 @@
-import pytest
-from pathlib import Path
-from fastapi import UploadFile, HTTPException
-from unittest.mock import Mock, AsyncMock, patch
-from PIL import Image
 from io import BytesIO
+from unittest.mock import Mock
 
-from src.helpers.upload_service import UploadService, ImageData
+import pytest
+from fastapi import HTTPException, UploadFile
+from PIL import Image
+
 from src.helpers.file_system_service import FileSystemService
+from src.helpers.upload_service import UploadService
 
 
 class TestUploadService:
@@ -118,7 +118,7 @@ class TestUploadService:
         """Test uploading file with error."""
         dest = temp_upload_dir / "test.jpg"
         upload_file = Mock(spec=UploadFile)
-        upload_file.file = Mock(side_effect=IOError("Disk full"))
+        upload_file.file = Mock(side_effect=OSError("Disk full"))
 
         with pytest.raises(HTTPException) as exc_info:
             await upload_service.upload_file(dest, upload_file)

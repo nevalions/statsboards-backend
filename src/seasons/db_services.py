@@ -1,18 +1,18 @@
 from fastapi import HTTPException
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 
-from src.core.models.base import Database
 from src.core.models import (
     BaseServiceDB,
+    MatchDB,
     SeasonDB,
-    TournamentDB,
     SportDB,
     TeamDB,
-    MatchDB,
+    TournamentDB,
 )
-from src.logging_config import setup_logging, get_logger
-from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+from src.core.models.base import Database
+from src.logging_config import get_logger, setup_logging
 
+from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 
 setup_logging()
 ITEM = "SEASON"
@@ -25,7 +25,7 @@ class SeasonServiceDB(BaseServiceDB):
             model=SeasonDB,
         )
         self.logger = get_logger("backend_logger_SeasonServiceDB", self)
-        self.logger.debug(f"Initialized SeasonServiceDB")
+        self.logger.debug("Initialized SeasonServiceDB")
 
     async def create(self, item: SeasonSchemaCreate) -> SeasonDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
@@ -122,7 +122,7 @@ class SeasonServiceDB(BaseServiceDB):
                 self.logger.error(f"Error getting tournaments: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Error getting tournaments",
+                    detail="Error getting tournaments",
                 )
 
     async def get_tournaments_by_season_and_sport_ids(
@@ -149,7 +149,7 @@ class SeasonServiceDB(BaseServiceDB):
                 self.logger.error(f"Error getting tournaments: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Error getting tournaments",
+                    detail="Error getting tournaments",
                 )
 
     async def get_teams_by_year(

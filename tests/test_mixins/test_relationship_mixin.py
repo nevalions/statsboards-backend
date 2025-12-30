@@ -1,10 +1,10 @@
 import pytest
-from fastapi import HTTPException
+
+from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
-from src.logging_config import setup_logging
 
 setup_logging()
 
@@ -126,7 +126,7 @@ class TestRelationshipMixin:
         tournament_data = TournamentFactory.build(
             sport_id=sport.id, season_id=season.id
         )
-        tournament = await tournament_service.create(tournament_data)
+        await tournament_service.create(tournament_data)
 
         result = await season_service.get_related_items_by_two(
             "id",

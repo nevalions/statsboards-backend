@@ -1,8 +1,9 @@
 import pytest
-from src.sports.db_services import SportServiceDB
-from src.sports.schemas import SportSchemaCreate, SportSchemaUpdate
-from tests.factories import SportFactorySample
+
 from src.logging_config import setup_logging
+from src.sports.db_services import SportServiceDB
+from src.sports.schemas import SportSchemaUpdate
+from tests.factories import SportFactorySample
 
 setup_logging()
 
@@ -25,7 +26,7 @@ class TestSportViews:
         update_data = SportSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            f"/api/sports/",
+            "/api/sports/",
             params={"item_id": created.id},
             json=update_data.model_dump(),
         )
@@ -36,7 +37,7 @@ class TestSportViews:
         update_data = SportSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            f"/api/sports/", params={"item_id": 99999}, json=update_data.model_dump()
+            "/api/sports/", params={"item_id": 99999}, json=update_data.model_dump()
         )
 
         assert response.status_code == 404

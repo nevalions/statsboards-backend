@@ -4,17 +4,16 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 from urllib.parse import urlparse
 
-from aiohttp import ClientError
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
 from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
-from src.helpers.text_helpers import ru_to_eng_datetime_month, convert_cyrillic_filename
+from src.helpers.text_helpers import convert_cyrillic_filename, ru_to_eng_datetime_month
 from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
 
@@ -65,7 +64,7 @@ async def collect_players_dob_from_all_eesl(
 
 async def collect_player_full_data_eesl(
     player_eesl_id: int, base_url: str = BASE_PLAYER, force_redownload: bool = False
-) -> Optional[ParsePlayerWithPersonData]:
+) -> ParsePlayerWithPersonData | None:
     logger.debug(
         f"Collect players full data from eesl (force_redownload={force_redownload})"
     )
@@ -409,7 +408,7 @@ def _create_player_with_person_data(
 
 async def get_player_from_eesl_participants(
     players_in_eesl, all_eesl_players, remaining_limit
-) -> Optional[List[ParsePlayerWithPersonData]] | bool:
+) -> list[ParsePlayerWithPersonData] | None | bool:
     logger.debug("Parsing player from eesl participants")
     has_error = False
 

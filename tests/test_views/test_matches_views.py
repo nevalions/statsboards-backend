@@ -1,17 +1,18 @@
 import pytest
+
+from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
 from src.matches.schemas import MatchSchemaCreate, MatchSchemaUpdate
-from src.teams.db_services import TeamServiceDB
-from src.sports.db_services import SportServiceDB
-from src.tournaments.db_services import TournamentServiceDB
 from src.seasons.db_services import SeasonServiceDB
+from src.sports.db_services import SportServiceDB
+from src.teams.db_services import TeamServiceDB
+from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
-    TeamFactory,
-    TournamentFactory,
     SeasonFactorySample,
     SportFactorySample,
+    TeamFactory,
+    TournamentFactory,
 )
-from src.logging_config import setup_logging
 
 setup_logging()
 

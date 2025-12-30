@@ -1,5 +1,3 @@
-import pytest
-
 from src.helpers.text_helpers import convert_cyrillic_filename
 
 
@@ -129,9 +127,9 @@ class TestConvertCyrillicFilename:
 
         for original, expected in test_cases:
             result = convert_cyrillic_filename(original)
-            assert (
-                result == expected
-            ), f"Expected {expected} for {original}, got {result}"
+            assert result == expected, (
+                f"Expected {expected} for {original}, got {result}"
+            )
 
     def test_convert_filename_multiple_extensions(self):
         """Test converting filename with multiple dots."""

@@ -1,7 +1,7 @@
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from aiohttp import ClientSession
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from src.helpers.download_service import DownloadService
 from src.helpers.file_system_service import FileSystemService

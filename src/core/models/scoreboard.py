@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Boolean, ForeignKey, Float
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .player_match import PlayerMatchDB
     from .match import MatchDB
+    from .player_match import PlayerMatchDB
 
 
 class ScoreboardDB(Base):
@@ -277,10 +277,10 @@ class ScoreboardDB(Base):
         back_populates="match_player_lower",
     )
 
-    match_football_qb_full_stats_match_lower_rel: Mapped[
-        "PlayerMatchDB"
-    ] = relationship(
-        "PlayerMatchDB",
-        primaryjoin="ScoreboardDB.football_qb_full_stats_match_lower_id == PlayerMatchDB.id",
-        back_populates="football_qb_full_stats_match_player_lower",
+    match_football_qb_full_stats_match_lower_rel: Mapped["PlayerMatchDB"] = (
+        relationship(
+            "PlayerMatchDB",
+            primaryjoin="ScoreboardDB.football_qb_full_stats_match_lower_id == PlayerMatchDB.id",
+            back_populates="football_qb_full_stats_match_player_lower",
+        )
     )

@@ -1,11 +1,12 @@
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from src.core.models.base import Database
-from src.core.models import BaseServiceDB, PositionDB
 
+from src.core.models import BaseServiceDB, PositionDB
+from src.core.models.base import Database
+
+from ..logging_config import get_logger, setup_logging
 from .schemas import PositionSchemaCreate, PositionSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 ITEM = "POSITION"
@@ -18,7 +19,7 @@ class PositionServiceDB(BaseServiceDB):
     ) -> None:
         super().__init__(database, PositionDB)
         self.logger = get_logger("backend_logger_PositionServiceDB", self)
-        self.logger.debug(f"Initialized PositionServiceDB")
+        self.logger.debug("Initialized PositionServiceDB")
 
     async def create(
         self,

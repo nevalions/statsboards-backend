@@ -1,6 +1,6 @@
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from bs4 import BeautifulSoup
 
 from src.pars_eesl import pars_season
 

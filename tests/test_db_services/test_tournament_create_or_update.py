@@ -1,15 +1,14 @@
 import pytest
 
 from src.core.models.base import Database
-from src.tournaments.db_services import TournamentServiceDB
-from src.tournaments.schemas import TournamentSchemaCreate, TournamentSchemaUpdate
-from src.sports.db_services import SportServiceDB
-from src.sports.schemas import SportSchemaCreate
+from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate
-from tests.factories import TournamentFactory, SportFactorySample, SeasonFactorySample
-from tests.testhelpers import assert_tournaments_equal
-from src.logging_config import setup_logging
+from src.sports.db_services import SportServiceDB
+from src.sports.schemas import SportSchemaCreate
+from src.tournaments.db_services import TournamentServiceDB
+from src.tournaments.schemas import TournamentSchemaUpdate
+from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
 setup_logging()
 

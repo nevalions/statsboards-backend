@@ -2,16 +2,16 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.models.base import Database
 from src.core.models import (
     BaseServiceDB,
-    PlayerTeamTournamentDB,
-    TournamentDB,
-    TeamDB,
     MatchDB,
+    PlayerTeamTournamentDB,
     SponsorDB,
     SponsorLineDB,
+    TeamDB,
+    TournamentDB,
 )
+from src.core.models.base import Database
 
 from ..logging_config import get_logger, setup_logging
 from ..sponsor_lines.db_services import SponsorLineServiceDB

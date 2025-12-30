@@ -6,10 +6,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .tournament import TournamentDB
-    from .team import TeamDB
     from .player import PlayerDB
     from .position import PositionDB
+    from .team import TeamDB
+    from .tournament import TournamentDB
 
 
 class SportDB(Base):

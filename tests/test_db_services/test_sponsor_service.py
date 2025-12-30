@@ -1,16 +1,10 @@
 import pytest
 from fastapi import HTTPException
-from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
+
+from src.sponsors.schemas import SponsorSchemaUpdate
 from tests.factories import SponsorFactory
-from tests.fixtures import (
-    test_sponsor_service,
-    sponsor,
-)
 from tests.testhelpers import (
     assert_http_exception_on_delete,
-    assert_http_exception_on_update,
-    assert_http_exception_on_not_found,
-    assert_http_exception_on_conflict,
 )
 
 

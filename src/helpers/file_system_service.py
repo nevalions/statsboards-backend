@@ -1,9 +1,6 @@
 import os
-import shutil
 from pathlib import Path
 from typing import Any
-
-from fastapi import UploadFile, HTTPException
 
 from src.logging_config import get_logger
 

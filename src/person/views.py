@@ -1,6 +1,9 @@
-from fastapi import HTTPException, UploadFile, File
+from fastapi import File, HTTPException, UploadFile
 
 from src.core import BaseRouter, db
+
+from ..helpers.file_service import file_service
+from ..logging_config import get_logger, setup_logging
 from .db_services import PersonServiceDB
 from .schemas import (
     PersonSchema,
@@ -9,9 +12,6 @@ from .schemas import (
     UploadPersonPhotoResponse,
     UploadResizePersonPhotoResponse,
 )
-from ..core.config import uploads_path
-from ..helpers.file_service import file_service
-from ..logging_config import get_logger, setup_logging
 
 setup_logging()
 
@@ -20,7 +20,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
     def __init__(self, service: PersonServiceDB):
         super().__init__("/api/persons", ["persons"], service)
         self.logger = get_logger("backend_logger_PersonAPIRouter", self)
-        self.logger.debug(f"Initialized PersonAPIRouter")
+        self.logger.debug("Initialized PersonAPIRouter")
 
     def route(self):
         router = super().route()
@@ -40,7 +40,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 self.logger.error(
                     f"Error on create or update person got data: {person}"
                 )
-                raise HTTPException(status_code=409, detail=f"Person creation fail")
+                raise HTTPException(status_code=409, detail="Person creation fail")
 
         @router.get(
             "/eesl_id/{eesl_id}",
@@ -89,7 +89,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
         @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
         async def upload_person_photo_endpoint(file: UploadFile = File(...)):
             try:
-                self.logger.debug(f"Upload person photo got data")
+                self.logger.debug("Upload person photo got data")
                 file_location = await file_service.save_upload_image(
                     file, sub_folder="persons/photos"
                 )
@@ -110,7 +110,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
         )
         async def upload_and_resize_person_photo_endpoint(file: UploadFile = File(...)):
             try:
-                self.logger.debug(f"Upload and resize person photo")
+                self.logger.debug("Upload and resize person photo")
                 uploaded_paths = await file_service.save_and_resize_upload_image(
                     file,
                     sub_folder="persons/photos",

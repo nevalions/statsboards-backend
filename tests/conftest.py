@@ -1,12 +1,11 @@
 import os
 import shutil
+
 import pytest
 import pytest_asyncio
-from unittest.mock import patch
 
 from src.core import settings
-
-from src.core.models.base import Database, Base
+from src.core.models.base import Base, Database
 
 db_url = settings.test_db.test_db_url
 

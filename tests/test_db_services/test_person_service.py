@@ -1,11 +1,10 @@
 import pytest
-from fastapi import HTTPException
 
 from src.core.models.base import Database
-from src.person.db_services import PersonServiceDB
-from src.person.schemas import PersonSchemaCreate, PersonSchemaUpdate
-from tests.factories import PersonFactory
 from src.logging_config import setup_logging
+from src.person.db_services import PersonServiceDB
+from src.person.schemas import PersonSchemaUpdate
+from tests.factories import PersonFactory
 
 setup_logging()
 

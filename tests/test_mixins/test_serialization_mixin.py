@@ -1,8 +1,6 @@
-import pytest
 from datetime import datetime
-from src.core.models.base import BaseServiceDB
+
 from src.core.models.mixins import SerializationMixin
-from src.seasons.db_services import SeasonServiceDB
 from src.logging_config import setup_logging
 
 setup_logging()

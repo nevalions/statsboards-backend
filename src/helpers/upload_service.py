@@ -4,11 +4,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import TypedDict
 
-from fastapi import UploadFile, HTTPException
+from fastapi import HTTPException, UploadFile
 
-from src.logging_config import get_logger
 from src.helpers.file_system_service import FileSystemService
 from src.helpers.text_helpers import convert_cyrillic_filename
+from src.logging_config import get_logger
 
 
 class ImageData(TypedDict):
@@ -26,8 +26,8 @@ class UploadService:
     async def sanitize_filename(self, filename: str) -> str:
         self.logger.debug(f"Sanitizing filename: {filename}")
         try:
-            import unicodedata
             import re
+            import unicodedata
 
             normalized = unicodedata.normalize("NFKD", filename)
             ascii_only = normalized.encode("ASCII", "ignore").decode("ASCII")
@@ -52,13 +52,13 @@ class UploadService:
 
     async def is_image_type(self, upload_file: UploadFile) -> None:
         if not upload_file.content_type.startswith("image/"):
-            self.logger.error(f"Uploaded file type not an image", exc_info=True)
+            self.logger.error("Uploaded file type not an image", exc_info=True)
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
     async def upload_file(self, dest: Path, upload_file: UploadFile) -> None:
         try:
             with dest.open("wb") as buffer:
-                self.logger.debug(f"Trying to save file")
+                self.logger.debug("Trying to save file")
                 shutil.copyfileobj(upload_file.file, buffer)
         except Exception as ex:
             self.logger.error(

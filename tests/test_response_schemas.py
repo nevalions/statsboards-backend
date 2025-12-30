@@ -1,4 +1,3 @@
-import pytest
 from pydantic import BaseModel, ConfigDict
 from starlette import status
 

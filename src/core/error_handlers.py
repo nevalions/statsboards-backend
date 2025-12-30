@@ -1,6 +1,5 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from src.logging_config import get_logger
 
 
 class DatabaseErrorHandler:
@@ -40,4 +39,4 @@ class DatabaseErrorHandler:
         elif isinstance(error, SQLAlchemyError):
             raise HTTPException(status_code=500, detail=f"Database error: {str(error)}")
         else:
-            raise HTTPException(status_code=500, detail=f"Internal server error")
+            raise HTTPException(status_code=500, detail="Internal server error")

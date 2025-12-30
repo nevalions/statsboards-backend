@@ -66,7 +66,7 @@ def ru_to_eng_datetime_month(ru):
 
 def ru_to_eng_datetime_month_day_time(ru, year="2023"):
     try:
-        logger.debug(f"Converting ru to eng datetime month day time")
+        logger.debug("Converting ru to eng datetime month day time")
         s = ru.strip().lower().split("/")
         day_num, month = s[0].strip().split(" ")
         day_word = s[1].strip()

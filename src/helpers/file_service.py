@@ -7,12 +7,12 @@ from fastapi import UploadFile
 from PIL import Image
 
 from src.core.config import uploads_path
-from src.logging_config import get_logger
-from src.helpers.file_system_service import FileSystemService
-from src.helpers.upload_service import UploadService
 from src.helpers.download_service import DownloadService
+from src.helpers.file_system_service import FileSystemService
 from src.helpers.image_processing_service import ImageProcessingService
 from src.helpers.text_helpers import convert_cyrillic_filename
+from src.helpers.upload_service import UploadService
+from src.logging_config import get_logger
 
 
 class ResizedImagesPaths(TypedDict):

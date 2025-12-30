@@ -2,8 +2,8 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.models.base import Database
 from src.core.models import BaseServiceDB, FootballEventDB
+from src.core.models.base import Database
 
 from ..logging_config import get_logger, setup_logging
 from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
@@ -95,7 +95,7 @@ class FootballEventServiceDB(BaseServiceDB):
                 self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error creating football event",
+                    detail="Internal server error creating football event",
                 )
 
     async def update(

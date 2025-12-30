@@ -1,13 +1,11 @@
-from fastapi import Depends, status
+from fastapi import Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
-from .db_services import ScoreboardServiceDB
-from .schemas import ScoreboardSchema, ScoreboardSchemaCreate, ScoreboardSchemaUpdate
-
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Response
-from fastapi.responses import JSONResponse, StreamingResponse
 
 from ..logging_config import get_logger, setup_logging
+from .db_services import ScoreboardServiceDB
+from .schemas import ScoreboardSchema, ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 
 setup_logging()
 
@@ -22,7 +20,7 @@ class ScoreboardAPIRouter(
     def __init__(self, service: ScoreboardServiceDB):
         super().__init__("/api/scoreboards", ["scoreboards"], service)
         self.logger = get_logger("backend_logger_ScoreboardAPIRouter", self)
-        self.logger.debug(f"Initialized ScoreboardAPIRouter")
+        self.logger.debug("Initialized ScoreboardAPIRouter")
 
     def route(self):
         router = super().route()
@@ -66,7 +64,7 @@ class ScoreboardAPIRouter(
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Error updating scoreboard with data",
+                    detail="Error updating scoreboard with data",
                 )
 
         @router.put(
@@ -77,7 +75,7 @@ class ScoreboardAPIRouter(
             item_id: int,
             item=Depends(update_scoreboard_),
         ):
-            self.logger.debug(f"Update scoreboard endpoint by ID")
+            self.logger.debug("Update scoreboard endpoint by ID")
             if item:
                 return {
                     "content": ScoreboardSchema.model_validate(item).model_dump(),

@@ -1,10 +1,12 @@
-import pytest
 from io import BytesIO
+
+import pytest
 from PIL import Image
-from src.sponsors.db_services import SponsorServiceDB
-from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
-from tests.factories import SponsorFactory
+
 from src.logging_config import setup_logging
+from src.sponsors.db_services import SponsorServiceDB
+from src.sponsors.schemas import SponsorSchemaUpdate
+from tests.factories import SponsorFactory
 
 setup_logging()
 
@@ -35,7 +37,7 @@ class TestSponsorViews:
         update_data = SponsorSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            f"/api/sponsors/",
+            "/api/sponsors/",
             params={"item_id": created.id},
             json=update_data.model_dump(),
         )
@@ -46,7 +48,7 @@ class TestSponsorViews:
         update_data = SponsorSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            f"/api/sponsors/", params={"item_id": 99999}, json=update_data.model_dump()
+            "/api/sponsors/", params={"item_id": 99999}, json=update_data.model_dump()
         )
 
         assert response.status_code == 404

@@ -1,10 +1,10 @@
 from fastapi import HTTPException
-from src.core.models.base import Database
-from src.core.models import db, BaseServiceDB, SponsorDB
-from src.logging_config import get_logger, setup_logging
-from src.sponsors.schemas import SponsorSchemaUpdate, SponsorSchemaCreate
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models import BaseServiceDB, SponsorDB
+from src.core.models.base import Database
+from src.logging_config import get_logger, setup_logging
+from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
 
 setup_logging()
 ITEM = "SPONSOR"
@@ -17,7 +17,7 @@ class SponsorServiceDB(BaseServiceDB):
     ) -> None:
         super().__init__(database, SponsorDB)
         self.logger = get_logger("backend_logger_SponsorServiceDB")
-        self.logger.debug(f"Initialized SponsorServiceDB")
+        self.logger.debug("Initialized SponsorServiceDB")
 
     async def create(
         self,

@@ -1,15 +1,10 @@
 import pytest
 from fastapi import HTTPException
-from src.positions.schemas import PositionSchemaCreate, PositionSchemaUpdate
+
+from src.positions.schemas import PositionSchemaUpdate
 from tests.factories import PositionFactory
-from tests.fixtures import (
-    test_position_service,
-    position,
-    sport,
-)
 from tests.testhelpers import (
     assert_http_exception_on_delete,
-    assert_http_exception_on_update,
 )
 
 

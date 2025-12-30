@@ -1,12 +1,11 @@
 import asyncio
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from datetime import datetime
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from bs4 import BeautifulSoup
 
 from src.pars_eesl import pars_all_players_from_eesl
-from src.pars_eesl import pars_tournament
-from src.pars_eesl import pars_season
 
 
 class TestParsAllPlayersFromEesl:
@@ -189,11 +188,12 @@ class TestParsAllPlayersFromEesl:
         mock_response.content = mock_players_list_html
         mock_get_url.return_value = mock_response
 
-        with patch(
-            "src.pars_eesl.pars_all_players_from_eesl.file_service"
-        ) as mock_fs, patch(
-            "src.pars_eesl.pars_all_players_from_eesl.collect_players_dob_from_all_eesl"
-        ) as mock_dob:
+        with (
+            patch("src.pars_eesl.pars_all_players_from_eesl.file_service") as mock_fs,
+            patch(
+                "src.pars_eesl.pars_all_players_from_eesl.collect_players_dob_from_all_eesl"
+            ) as mock_dob,
+        ):
             mock_fs.download_and_resize_image = AsyncMock()
             mock_dob.return_value = datetime(1990, 1, 1)
 

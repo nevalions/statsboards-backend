@@ -1,15 +1,15 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Float
+from sqlalchemy import Float, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .tournament import TournamentDB
     from .match import MatchDB
-    from .team import TeamDB
     from .sponsor_line import SponsorLineDB
+    from .team import TeamDB
+    from .tournament import TournamentDB
 
 
 class SponsorDB(Base):

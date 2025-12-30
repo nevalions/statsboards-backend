@@ -1,17 +1,18 @@
 import pytest
+
+from src.logging_config import setup_logging
+from src.seasons.db_services import SeasonServiceDB
+from src.sports.db_services import SportServiceDB
 from src.team_tournament.db_services import TeamTournamentServiceDB
 from src.team_tournament.schemas import TeamTournamentSchemaCreate
 from src.teams.db_services import TeamServiceDB
-from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
-from src.seasons.db_services import SeasonServiceDB
 from tests.factories import (
-    TeamFactory,
-    TournamentFactory,
     SeasonFactorySample,
     SportFactorySample,
+    TeamFactory,
+    TournamentFactory,
 )
-from src.logging_config import setup_logging
 
 setup_logging()
 
@@ -134,8 +135,6 @@ class TestTeamTournamentServiceDB:
         assert len(result) == 3
 
     async def test_delete_relation_by_team_and_tournament_id(self, test_db):
-        from fastapi import HTTPException
-
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 

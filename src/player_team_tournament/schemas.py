@@ -1,6 +1,7 @@
+from typing import Annotated
+
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
-from typing import Annotated
 
 
 class PlayerTeamTournamentSchemaBase(BaseModel):

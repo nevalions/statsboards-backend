@@ -1,17 +1,18 @@
 from fastapi import (
-    HTTPException,
+    BackgroundTasks,
     Depends,
+    HTTPException,
     Path,
     status,
-    BackgroundTasks,
 )
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core import BaseRouter, db
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import PlayClockServiceDB
 from .schemas import PlayClockSchema, PlayClockSchemaCreate, PlayClockSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 
@@ -30,7 +31,7 @@ class PlayClockAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_PlayClockAPIRouter", self)
-        self.logger.debug(f"Initialized PlayClockAPIRouter")
+        self.logger.debug("Initialized PlayClockAPIRouter")
 
     def route(self):
         router = super().route()
@@ -54,7 +55,7 @@ class PlayClockAPIRouter(
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Database error creating playclock",
+                    detail="Database error creating playclock",
                 )
             except Exception as ex:
                 self.logger.error(
@@ -63,7 +64,7 @@ class PlayClockAPIRouter(
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error creating playclock",
+                    detail="Internal server error creating playclock",
                 )
 
         @router.put(
@@ -90,7 +91,7 @@ class PlayClockAPIRouter(
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error updating playclock",
+                    detail="Internal server error updating playclock",
                 )
 
         @router.put(
@@ -101,7 +102,7 @@ class PlayClockAPIRouter(
             item_id: int,
             item=Depends(update_playclock_),
         ):
-            self.logger.debug(f"Update playclock endpoint by ID")
+            self.logger.debug("Update playclock endpoint by ID")
             if item:
                 return {
                     "content": PlayClockSchema.model_validate(item).model_dump(),
@@ -121,7 +122,7 @@ class PlayClockAPIRouter(
         async def get_playclock_by_id(
             item=Depends(self.service.get_by_id),
         ):
-            self.logger.debug(f"Get playclock endpoint by ID")
+            self.logger.debug("Get playclock endpoint by ID")
             if item is None:
                 raise HTTPException(status_code=404, detail="Playclock not found")
             return self.create_response(
@@ -156,9 +157,7 @@ class PlayClockAPIRouter(
                     )
 
                 if not self.service.disable_background_tasks:
-                    self.logger.debug(
-                        f"Start playclock background task, loop decrement"
-                    )
+                    self.logger.debug("Start playclock background task, loop decrement")
                     await self.service.decrement_playclock(
                         background_tasks,
                         item_id,
@@ -182,7 +181,7 @@ class PlayClockAPIRouter(
                 self.logger.error(f"Error starting playclock with id: {item_id} {ex}")
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error starting playclock",
+                    detail="Internal server error starting playclock",
                 )
 
         @router.put(
@@ -223,13 +222,13 @@ class PlayClockAPIRouter(
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Database error resetting playclock",
+                    detail="Database error resetting playclock",
                 )
             except Exception as ex:
                 self.logger.error(f"Error resetting playclock with id: {item_id} {ex}")
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error resetting playclock",
+                    detail="Internal server error resetting playclock",
                 )
 
         @router.put(
@@ -261,13 +260,13 @@ class PlayClockAPIRouter(
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Database error resetting playclock",
+                    detail="Database error resetting playclock",
                 )
             except Exception as ex:
                 self.logger.error(f"Error resetting playclock with id: {item_id} {ex}")
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error resetting playclock",
+                    detail="Internal server error resetting playclock",
                 )
 
         return router

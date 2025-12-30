@@ -1,12 +1,11 @@
 import pytest
+
+from src.logging_config import setup_logging
+from src.sponsor_lines.db_services import SponsorLineServiceDB
 from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
 from src.sponsor_sponsor_line_connection.schemas import SponsorSponsorLineSchemaCreate
 from src.sponsors.db_services import SponsorServiceDB
-from src.sponsors.schemas import SponsorSchemaCreate
-from src.sponsor_lines.db_services import SponsorLineServiceDB
-from src.sponsor_lines.schemas import SponsorLineSchemaCreate
 from tests.factories import SponsorFactory, SponsorLineFactory
-from src.logging_config import setup_logging
 
 setup_logging()
 

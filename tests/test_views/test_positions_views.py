@@ -1,9 +1,10 @@
 import pytest
+
+from src.logging_config import setup_logging
 from src.positions.db_services import PositionServiceDB
 from src.positions.schemas import PositionSchemaCreate, PositionSchemaUpdate
 from src.sports.db_services import SportServiceDB
 from tests.factories import SportFactorySample
-from src.logging_config import setup_logging
 
 setup_logging()
 

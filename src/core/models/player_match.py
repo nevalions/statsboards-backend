@@ -1,17 +1,17 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, ForeignKey, Integer, Boolean
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
+    from .football_event import FootballEventDB
+    from .match import MatchDB
     from .player_team_tournament import PlayerTeamTournamentDB
     from .position import PositionDB
-    from .match import MatchDB
-    from .team import TeamDB
     from .scoreboard import ScoreboardDB
-    from .football_event import FootballEventDB
+    from .team import TeamDB
 
 
 class PlayerMatchDB(Base):
@@ -103,12 +103,12 @@ class PlayerMatchDB(Base):
         back_populates="match_player_match_lower_rel",
     )
 
-    football_qb_full_stats_match_player_lower: Mapped[
-        list["ScoreboardDB"]
-    ] = relationship(
-        "ScoreboardDB",
-        foreign_keys="ScoreboardDB.football_qb_full_stats_match_lower_id",
-        back_populates="match_football_qb_full_stats_match_lower_rel",
+    football_qb_full_stats_match_player_lower: Mapped[list["ScoreboardDB"]] = (
+        relationship(
+            "ScoreboardDB",
+            foreign_keys="ScoreboardDB.football_qb_full_stats_match_lower_id",
+            back_populates="match_football_qb_full_stats_match_lower_rel",
+        )
     )
 
     event_qb_events: Mapped[list["FootballEventDB"]] = relationship(

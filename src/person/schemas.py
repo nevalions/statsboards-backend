@@ -1,7 +1,8 @@
 from datetime import datetime as date_type
+from typing import Annotated
+
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
-from typing import Annotated
 
 
 class PersonSchemaBase(BaseModel):

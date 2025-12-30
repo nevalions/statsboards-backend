@@ -1,27 +1,21 @@
-from typing import TYPE_CHECKING
-
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.models.base import Database
 from src.core.models import (
     BaseServiceDB,
-    PlayerMatchDB,
     PlayerDB,
+    PlayerMatchDB,
     PlayerTeamTournamentDB,
 )
-from ..player.db_services import PlayerServiceDB
-from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
-from ..logging_config import setup_logging, get_logger
-from ..player_team_tournament.db_services import PlayerTeamTournamentServiceDB
-from ..player.schemas import PlayerSchema
+from src.core.models.base import Database
 from src.positions.db_services import PositionServiceDB
-from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
-from ..logging_config import setup_logging, get_logger
-from ..player.db_services import PlayerServiceDB
-from ..player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 
+from ..logging_config import get_logger, setup_logging
+from ..player.db_services import PlayerServiceDB
+from ..player.schemas import PlayerSchema
+from ..player_team_tournament.db_services import PlayerTeamTournamentServiceDB
+from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 
 setup_logging()
 ITEM = "PLAYER_MATCH"
@@ -34,7 +28,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
     ) -> None:
         super().__init__(database, PlayerMatchDB)
         self.logger = get_logger("backend_logger_PlayerMatchServiceDB")
-        self.logger.debug(f"Initialized PlayerMatchServiceDB")
+        self.logger.debug("Initialized PlayerMatchServiceDB")
 
     async def create_or_update_player_match(
         self,
@@ -188,13 +182,13 @@ class PlayerMatchServiceDB(BaseServiceDB):
             self.logger.error(f"Error getting player in sport {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error fetching player in sport",
+                detail="Database error fetching player in sport",
             )
         except Exception as ex:
             self.logger.error(f"Error getting player in sport {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error fetching player in sport",
+                detail="Internal server error fetching player in sport",
             )
 
     async def get_player_person_in_match(self, player_id: int) -> PlayerSchema | None:
@@ -215,7 +209,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error fetching player person in match",
+                detail="Database error fetching player person in match",
             )
         except Exception as ex:
             self.logger.error(
@@ -223,7 +217,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error fetching player person in match",
+                detail="Internal server error fetching player person in match",
             )
 
     async def get_player_in_team_tournament(
@@ -244,7 +238,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error fetching player team tournament",
+                detail="Database error fetching player team tournament",
             )
         except Exception as ex:
             self.logger.error(
@@ -252,7 +246,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error fetching player team tournament",
+                detail="Internal server error fetching player team tournament",
             )
 
     async def get_player_in_match_full_data(self, match_player_id: int) -> dict:
@@ -281,7 +275,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error fetching player with full data",
+                detail="Database error fetching player with full data",
             )
         except Exception as ex:
             self.logger.error(
@@ -289,7 +283,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error fetching player with full data",
+                detail="Internal server error fetching player with full data",
             )
 
     async def get_player_match_by_eesl_id(

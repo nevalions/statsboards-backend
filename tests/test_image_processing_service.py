@@ -1,9 +1,9 @@
-import pytest
-from pathlib import Path
-from fastapi import HTTPException
-from unittest.mock import Mock
-from PIL import Image
 from io import BytesIO
+from pathlib import Path
+
+import pytest
+from fastapi import HTTPException
+from PIL import Image
 
 from src.helpers.image_processing_service import ImageProcessingService
 

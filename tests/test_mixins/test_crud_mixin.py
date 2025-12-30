@@ -1,12 +1,9 @@
 import pytest
-from sqlalchemy import Column, Integer
-from sqlalchemy.orm import Mapped, mapped_column
 from fastapi import HTTPException
-from src.core.models.base import Base, Database, BaseServiceDB
-from src.logging_config import setup_logging
-from tests.factories import SeasonFactorySample
-from src.seasons.db_services import SeasonServiceDB
+
 from src.core.models.season import SeasonDB
+from src.logging_config import setup_logging
+from src.seasons.db_services import SeasonServiceDB
 
 setup_logging()
 

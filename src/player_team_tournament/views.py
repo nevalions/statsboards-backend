@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
@@ -187,7 +185,7 @@ class PlayerTeamTournamentAPIRouter(
 
         @router.put(
             "/pars_and_create/tournament/{tournament_id}/team/id/{team_id}/players",
-            response_model=List[PlayerTeamTournamentSchema],
+            response_model=list[PlayerTeamTournamentSchema],
         )
         async def create_parsed_players_to_team_tournament_endpoint(
             tournament_id: int, team_id: int

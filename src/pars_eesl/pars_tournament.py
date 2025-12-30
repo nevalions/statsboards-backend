@@ -1,10 +1,8 @@
-import asyncio
 import logging
 import re
 from datetime import datetime
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
-from aiohttp import ClientError
 from bs4 import BeautifulSoup
 
 from src.helpers import get_url
@@ -80,7 +78,7 @@ async def parse_tournament_teams_and_create_jsons(_id: int):
 async def parse_tournament_teams_index_page_eesl(
     _id: int,
     base_url: str = BASE_TOURNAMENT_URL,
-) -> Optional[List[ParsedTeamData]]:
+) -> list[ParsedTeamData] | None:
     logger.debug(
         f"Starting parse for eesl {ITEM_PARSED} for {ITEM_GOT} id:{_id} url:{base_url}{_id}"
     )
@@ -227,14 +225,13 @@ def _parse_match_date(date_texts, item):
         logger.error(f"Error splitting date_formatted:{date_formatted} {ex}")
         date = 1
         month = "января"
-        year = 2024
         time = "12:00"
 
     month = months[month]
     date_ = datetime.strptime(f"{date} {month} {time}", "%d %B %H:%M")
     YEAR = 2025
     date_ = date_.replace(year=YEAR)
-    formatted_date = date_.strftime("%Y-%m-%d %H:%M:%S.%f")
+    date_.strftime("%Y-%m-%d %H:%M:%S.%f")
 
     return date_
 
@@ -298,7 +295,7 @@ def _process_matches_in_week(
 
 async def parse_tournament_matches_index_page_eesl(
     _id: int, base_url: str = BASE_TOURNAMENT_URL, year: int = 2024
-) -> Optional[List[ParsedMatchData]]:
+) -> list[ParsedMatchData] | None:
     logger.debug(
         f"Starting parse for eesl {ITEM_PARSED} for {ITEM_GOT_MATCH} id:{_id} url:{base_url}{_id}"
     )

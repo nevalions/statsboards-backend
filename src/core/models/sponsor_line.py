@@ -1,15 +1,15 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, ForeignKey, Boolean
+from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .sponsor import SponsorDB
-    from .tournament import TournamentDB
-    from .team import TeamDB
     from .match import MatchDB
+    from .sponsor import SponsorDB
+    from .team import TeamDB
+    from .tournament import TournamentDB
 
 
 class SponsorLineDB(Base):

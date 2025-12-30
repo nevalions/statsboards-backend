@@ -1,10 +1,11 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import SeasonServiceDB
-from .schemas import SeasonSchemaCreate, SeasonSchema, SeasonSchemaUpdate
-from ..logging_config import setup_logging, get_logger
+from .schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
 
 setup_logging()
 
@@ -23,7 +24,7 @@ class SeasonAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_SeasonAPIRouter", self)
-        self.logger.debug(f"Initialized SeasonAPIRouter")
+        self.logger.debug("Initialized SeasonAPIRouter")
 
     def route(self):
         router = super().route()
@@ -38,7 +39,7 @@ class SeasonAPIRouter(
                 else:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Error creating new season",
+                        detail="Error creating new season",
                     )
             except HTTPException:
                 raise
@@ -49,7 +50,7 @@ class SeasonAPIRouter(
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error creating season",
+                    detail="Internal server error creating season",
                 )
 
         @router.put("/", response_model=SeasonSchema)
@@ -86,7 +87,7 @@ class SeasonAPIRouter(
             response_class=JSONResponse,
         )
         async def get_season_by_id_endpoint(item_id: int):
-            self.logger.debug(f"Get season by id endpoint")
+            self.logger.debug("Get season by id endpoint")
             try:
                 item = await self.service.get_by_id(item_id)
                 if item is None:

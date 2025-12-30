@@ -1,20 +1,20 @@
 import pytest
+
+from src.logging_config import setup_logging
+from src.matches.db_services import MatchServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
-from src.matches.db_services import MatchServiceDB
-from src.matches.schemas import MatchSchemaCreate
-from src.teams.db_services import TeamServiceDB
-from src.sports.db_services import SportServiceDB
-from src.tournaments.db_services import TournamentServiceDB
 from src.seasons.db_services import SeasonServiceDB
+from src.sports.db_services import SportServiceDB
+from src.teams.db_services import TeamServiceDB
+from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
     MatchFactory,
-    TeamFactory,
-    TournamentFactory,
     SeasonFactorySample,
     SportFactorySample,
+    TeamFactory,
+    TournamentFactory,
 )
-from src.logging_config import setup_logging
 
 setup_logging()
 
@@ -120,8 +120,8 @@ class TestScoreboardServiceDB:
 
         updated = await scoreboard_service.update(created.id, update_data)
 
-        assert updated.is_time == True
-        assert updated.is_playclock == True
+        assert updated.is_time
+        assert updated.is_playclock
 
     async def test_get_scoreboard_by_match_id(self, test_db):
         sport_service = SportServiceDB(test_db)
@@ -217,4 +217,4 @@ class TestScoreboardServiceDB:
         updated = await scoreboard_service.create_or_update_scoreboard(update_data)
 
         assert updated.id == created.id
-        assert updated.is_time == True
+        assert updated.is_time

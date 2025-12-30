@@ -1,18 +1,18 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Text, ForeignKey
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .tournament import TournamentDB
     from .match import MatchDB
-    from .sport import SportDB
+    from .player_match import PlayerMatchDB
+    from .player_team_tournament import PlayerTeamTournamentDB
     from .sponsor import SponsorDB
     from .sponsor_line import SponsorLineDB
-    from .player_team_tournament import PlayerTeamTournamentDB
-    from .player_match import PlayerMatchDB
+    from .sport import SportDB
+    from .tournament import TournamentDB
 
 
 class TeamDB(Base):

@@ -1,9 +1,10 @@
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import PositionServiceDB
 from .schemas import PositionSchema, PositionSchemaCreate, PositionSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 
@@ -14,7 +15,7 @@ class PositionAPIRouter(
     def __init__(self, service: PositionServiceDB):
         super().__init__("/api/positions", ["positions"], service)
         self.logger = get_logger("backend_logger_PositionAPIRouter", self)
-        self.logger.debug(f"Initialized PositionAPIRouter")
+        self.logger.debug("Initialized PositionAPIRouter")
 
     def route(self):
         router = super().route()
@@ -33,7 +34,7 @@ class PositionAPIRouter(
                 else:
                     self.logger.error(f"Error on create position got data: {position}")
                     raise HTTPException(
-                        status_code=409, detail=f"Position creation fail"
+                        status_code=409, detail="Position creation fail"
                     )
             except Exception as e:
                 self.logger.error(

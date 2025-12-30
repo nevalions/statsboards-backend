@@ -1,15 +1,6 @@
 import pytest
-import os
-import shutil
 
-from src.pars_eesl import pars_all_players_from_eesl
-from src.pars_eesl import pars_tournament
-from src.pars_eesl import pars_season
-from src.pars_eesl.pars_settings import (
-    BASE_PLAYER,
-    BASE_TOURNAMENT_URL,
-    BASE_SEASON_URL,
-)
+from src.pars_eesl import pars_all_players_from_eesl, pars_season, pars_tournament
 
 
 @pytest.mark.integration
@@ -35,7 +26,7 @@ class TestParsAllPlayersIntegration:
 
         # Note: Files are downloaded to production directory during tests
         # The monkeypatch approach doesn't work due to module import timing
-        print(f"\nTest completed. Player data parsed successfully.")
+        print("\nTest completed. Player data parsed successfully.")
         print(f"First name: {result['person']['first_name']}")
         print(f"Last name: {result['person']['second_name']}")
         print(f"Photo icon URL: {result['person']['person_photo_icon_url']}")

@@ -1,23 +1,23 @@
 import pytest
+
 from src.football_events.db_services import FootballEventServiceDB
 from src.football_events.schemas import (
     FootballEventSchemaCreate,
     FootballEventSchemaUpdate,
 )
+from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
-from src.matches.schemas import MatchSchemaCreate
-from src.teams.db_services import TeamServiceDB
-from src.sports.db_services import SportServiceDB
-from src.tournaments.db_services import TournamentServiceDB
 from src.seasons.db_services import SeasonServiceDB
+from src.sports.db_services import SportServiceDB
+from src.teams.db_services import TeamServiceDB
+from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
     MatchFactory,
-    TeamFactory,
-    TournamentFactory,
     SeasonFactorySample,
     SportFactorySample,
+    TeamFactory,
+    TournamentFactory,
 )
-from src.logging_config import setup_logging
 
 setup_logging()
 

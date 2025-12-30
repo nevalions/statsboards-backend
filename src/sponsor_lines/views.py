@@ -1,10 +1,11 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
-from .db_services import SponsorLineServiceDB
-from .schemas import SponsorLineSchemaCreate, SponsorLineSchema, SponsorLineSchemaUpdate
+
 from ..logging_config import get_logger, setup_logging
+from .db_services import SponsorLineServiceDB
+from .schemas import SponsorLineSchema, SponsorLineSchemaCreate, SponsorLineSchemaUpdate
 
 setup_logging()
 
@@ -23,7 +24,7 @@ class SponsorLineAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_SponsorLineAPIRouter", self)
-        self.logger.debug(f"Initialized SponsorLineAPIRouter")
+        self.logger.debug("Initialized SponsorLineAPIRouter")
 
     def route(self):
         router = super().route()
@@ -34,7 +35,7 @@ class SponsorLineAPIRouter(
         )
         async def create_sponsor_line_endpoint(item: SponsorLineSchemaCreate):
             try:
-                self.logger.debug(f"Create sponsor line endpoint")
+                self.logger.debug("Create sponsor line endpoint")
                 new_ = await self.service.create(item)
                 return SponsorLineSchema.model_validate(new_)
             except Exception as e:
@@ -50,7 +51,7 @@ class SponsorLineAPIRouter(
             item_id: int,
             item: SponsorLineSchemaUpdate,
         ):
-            self.logger.debug(f"Update sponsor line endpoint")
+            self.logger.debug("Update sponsor line endpoint")
             try:
                 update_ = await self.service.update(item_id, item)
                 if update_ is None:
@@ -67,7 +68,7 @@ class SponsorLineAPIRouter(
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Error updating sponsor line",
+                    detail="Error updating sponsor line",
                 )
 
         @router.get(

@@ -1,11 +1,12 @@
-import pytest
 from io import BytesIO
+
+import pytest
 from PIL import Image
-from src.teams.db_services import TeamServiceDB
-from src.teams.schemas import TeamSchemaCreate
-from src.sports.db_services import SportServiceDB
-from tests.factories import TeamFactory, SportFactorySample
+
 from src.logging_config import setup_logging
+from src.sports.db_services import SportServiceDB
+from src.teams.db_services import TeamServiceDB
+from tests.factories import SportFactorySample, TeamFactory
 
 setup_logging()
 
@@ -39,7 +40,7 @@ class TestTeamViews:
         team_data = TeamFactory.build(sport_id=sport.id, team_eesl_id=100)
         created = await team_service.create_or_update_team(team_data)
 
-        response = await client.get(f"/api/teams/eesl_id/100")
+        response = await client.get("/api/teams/eesl_id/100")
 
         assert response.status_code == 200
         assert response.json()["id"] == created.id

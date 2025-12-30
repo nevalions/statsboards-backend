@@ -1,8 +1,9 @@
 import pytest
-from src.seasons.db_services import SeasonServiceDB
-from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
-from tests.factories import SeasonFactorySample
+
 from src.logging_config import setup_logging
+from src.seasons.db_services import SeasonServiceDB
+from src.seasons.schemas import SeasonSchemaUpdate
+from tests.factories import SeasonFactorySample
 
 setup_logging()
 
@@ -25,7 +26,7 @@ class TestSeasonViews:
         update_data = SeasonSchemaUpdate(year=2025)
 
         response = await client.put(
-            f"/api/seasons/",
+            "/api/seasons/",
             params={"item_id": created.id},
             json=update_data.model_dump(),
         )
@@ -36,7 +37,7 @@ class TestSeasonViews:
         update_data = SeasonSchemaUpdate(year=2025)
 
         response = await client.put(
-            f"/api/seasons/", params={"item_id": 99999}, json=update_data.model_dump()
+            "/api/seasons/", params={"item_id": 99999}, json=update_data.model_dump()
         )
 
         assert response.status_code == 404

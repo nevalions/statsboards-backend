@@ -1,21 +1,19 @@
 import asyncio
+from datetime import datetime
+from unittest.mock import AsyncMock
+
 import pytest
 from starlette.websockets import WebSocket
+
+from src.core.models.base import connection_manager
+from src.logging_config import setup_logging
+from src.seasons.db_services import SeasonServiceDB
 from tests.factories import (
     SeasonFactorySample,
     SportFactorySample,
     TeamFactory,
     TournamentFactory,
 )
-from unittest.mock import AsyncMock
-from datetime import datetime
-
-from src.core.models.base import connection_manager
-from src.logging_config import setup_logging
-from src.seasons.db_services import SeasonServiceDB
-from src.sports.db_services import SportServiceDB
-from src.tournaments.db_services import TournamentServiceDB
-from src.teams.db_services import TeamServiceDB
 
 # type: ignore
 setup_logging()
@@ -63,8 +61,8 @@ class TestConnectionManager:
 
     async def test_connection_manager_send_to_all(self):
         """Test ConnectionManager send_to_all method."""
-        from unittest.mock import AsyncMock
         import json
+        from unittest.mock import AsyncMock
 
         client_1 = "test_client_send_1"
         client_2 = "test_client_send_2"
@@ -78,7 +76,8 @@ class TestConnectionManager:
         await connection_manager.connect(mock_ws2, client_2, match_id)
 
         await connection_manager.send_to_all(  # type: ignore[arg-type]
-            json.dumps(test_data), match_id=match_id  # type: ignore[arg-type]
+            json.dumps(test_data),
+            match_id=match_id,  # type: ignore[arg-type]
         )
 
         await asyncio.sleep(0.01)
@@ -179,8 +178,8 @@ class TestConnectionManager:
 
     async def test_connection_manager_send_to_specific_match_only(self):
         """Test that messages are sent only to clients of specific match."""
-        from unittest.mock import AsyncMock
         import json
+        from unittest.mock import AsyncMock
 
         match_1 = 30
         match_2 = 40
@@ -198,7 +197,8 @@ class TestConnectionManager:
 
         test_data = {"type": "match-update", "match_id": match_1, "score": "2-1"}
         await connection_manager.send_to_all(  # type: ignore[arg-type]
-            json.dumps(test_data), match_id=match_1  # type: ignore[arg-type]
+            json.dumps(test_data),
+            match_id=match_1,  # type: ignore[arg-type]
         )
 
         await asyncio.sleep(0.01)
@@ -225,20 +225,21 @@ class TestWebSocketEndpointIntegration:
         self, test_app, test_db
     ):
         """Test WebSocket endpoint connection and initial data sending."""
-        from src.matches.db_services import MatchServiceDB
-        from src.teams.db_services import TeamServiceDB
-        from src.sports.db_services import SportServiceDB
-        from src.tournaments.db_services import TournamentServiceDB
-        from src.matchdata.db_services import MatchDataServiceDB
-        from src.gameclocks.db_services import GameClockServiceDB
-        from src.playclocks.db_services import PlayClockServiceDB
-        from src.scoreboards.db_services import ScoreboardServiceDB
-        from src.matches.schemas import MatchSchemaCreate
-        from src.matchdata.schemas import MatchDataSchemaCreate
-        from src.playclocks.schemas import PlayClockSchemaCreate
-        from src.gameclocks.schemas import GameClockSchemaCreate
-        from src.scoreboards.schemas import ScoreboardSchemaCreate
         from datetime import datetime
+
+        from src.gameclocks.db_services import GameClockServiceDB
+        from src.gameclocks.schemas import GameClockSchemaCreate
+        from src.matchdata.db_services import MatchDataServiceDB
+        from src.matchdata.schemas import MatchDataSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
+        from src.scoreboards.db_services import ScoreboardServiceDB
+        from src.scoreboards.schemas import ScoreboardSchemaCreate
+        from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -290,7 +291,8 @@ class TestWebSocketEndpointIntegration:
             )
         )
 
-        from unittest.mock import AsyncMock, patch
+        from unittest.mock import AsyncMock
+
         from starlette.websockets import WebSocketState
 
         mock_websocket = AsyncMock(spec=WebSocket)
@@ -307,9 +309,9 @@ class TestWebSocketEndpointIntegration:
         await connection_manager.connect(mock_websocket, client_id, match_id)
 
         from src.helpers.fetch_helpers import (
-            fetch_with_scoreboard_data,
-            fetch_playclock,
             fetch_gameclock,
+            fetch_playclock,
+            fetch_with_scoreboard_data,
         )
 
         initial_data = await fetch_with_scoreboard_data(match_id)
@@ -349,15 +351,16 @@ class TestWebSocketEndpointIntegration:
 class TestMessageProcessingQueue:
     async def test_message_queue_multiple_message_types(self, test_db):
         """Test that all message types are queued and processed correctly."""
-        from src.matches.db_services import MatchServiceDB
-        from src.teams.db_services import TeamServiceDB
-        from src.sports.db_services import SportServiceDB
-        from src.tournaments.db_services import TournamentServiceDB
-        from src.matchdata.db_services import MatchDataServiceDB
-        from src.matches.schemas import MatchSchemaCreate
-        from src.matchdata.schemas import MatchDataSchemaCreate
         from datetime import datetime
         from unittest.mock import AsyncMock
+
+        from src.matchdata.db_services import MatchDataServiceDB
+        from src.matchdata.schemas import MatchDataSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.schemas import MatchSchemaCreate
+        from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -602,8 +605,9 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
     async def test_ws_manager_maintain_connection_reconnect_after_failure(self):
         """Test that maintain_connection attempts to reconnect after connection loss."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         call_count = 0
 
@@ -632,8 +636,9 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
     async def test_ws_manager_startup_with_connection_error(self):
         """Test ws_manager startup handles connection errors gracefully."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://invalid:invalid@invalid:5432/invalid"
@@ -648,8 +653,9 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
     async def test_ws_manager_shutdown_during_active_connection(self):
         """Test that shutdown properly closes active connection and cancels retry task."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -669,8 +675,8 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
     async def test_ws_manager_disconnect_nonexistent_client(self):
         """Test disconnect handles nonexistent clients gracefully."""
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -680,9 +686,9 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
     async def test_ws_manager_disconnect_partial_cleanup(self):
         """Test disconnect handles partial cleanup when only some queues exist."""
-        from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock
         import asyncio
+
+        from src.core.models.base import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -702,8 +708,9 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 class TestWebSocketListenerErrorScenarios:
     async def test_base_listener_empty_payload(self):
         """Test _base_listener handles empty payload gracefully."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -724,8 +731,9 @@ class TestWebSocketListenerErrorScenarios:
 
     async def test_base_listener_invalid_json(self):
         """Test _base_listener handles invalid JSON payload."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -746,8 +754,9 @@ class TestWebSocketListenerErrorScenarios:
 
     async def test_base_listener_missing_match_id(self):
         """Test _base_listener handles payload without match_id."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -769,8 +778,9 @@ class TestWebSocketListenerErrorScenarios:
 
     async def test_base_listener_exception_in_queue_put(self):
         """Test _base_listener handles exceptions when putting to queue."""
-        from src.core.models.base import MatchDataWebSocketManager
         from unittest.mock import AsyncMock, patch
+
+        from src.core.models.base import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -793,8 +803,9 @@ class TestWebSocketListenerErrorScenarios:
 
     async def test_playclock_listener_error_handling(self):
         """Test playclock_listener properly delegates to _base_listener."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -815,8 +826,9 @@ class TestWebSocketListenerErrorScenarios:
 
     async def test_match_data_listener_error_handling(self):
         """Test match_data_listener properly delegates to _base_listener."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -837,8 +849,9 @@ class TestWebSocketListenerErrorScenarios:
 
     async def test_gameclock_listener_error_handling(self):
         """Test gameclock_listener properly delegates to _base_listener."""
+        from unittest.mock import AsyncMock
+
         from src.core.models.base import MatchDataWebSocketManager
-        from unittest.mock import AsyncMock, patch
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -883,7 +896,8 @@ class TestConnectionManagerErrorScenarios:
         test_data = {"type": "match-update", "match_id": match_id}
 
         await connection_manager.send_to_all(  # type: ignore[arg-type]
-            json.dumps(test_data), match_id=str(match_id)  # type: ignore[arg-type]
+            json.dumps(test_data),
+            match_id=str(match_id),  # type: ignore[arg-type]
         )
 
     async def test_connect_replaces_existing_connection(self):
@@ -965,12 +979,11 @@ class TestConnectionManagerErrorScenarios:
 
     async def test_send_to_all_with_mixed_queue_states(self):
         """Test send_to_all when some clients have queues and some don't."""
-        from unittest.mock import AsyncMock
         import json
+        from unittest.mock import AsyncMock
 
         match_id = 1
         client_1 = "client_with_queue"
-        client_2 = "client_without_queue"
         test_data = {"type": "match-update", "match_id": match_id}
 
         mock_ws1 = AsyncMock(spec=WebSocket)
@@ -978,7 +991,8 @@ class TestConnectionManagerErrorScenarios:
         await connection_manager.connect(mock_ws1, client_1, match_id)
 
         await connection_manager.send_to_all(  # type: ignore[arg-type]
-            json.dumps(test_data), match_id=match_id  # type: ignore[arg-type]
+            json.dumps(test_data),
+            match_id=match_id,  # type: ignore[arg-type]
         )
 
         await asyncio.sleep(0.01)
@@ -994,6 +1008,7 @@ class TestWebSocketConnectionErrorHandling:
     async def test_websocket_send_error_during_message_send(self):
         """Test handling of errors when sending messages to WebSocket."""
         from unittest.mock import AsyncMock
+
         from starlette.websockets import WebSocketState
 
         client_id = "test_send_error_client"
@@ -1042,6 +1057,7 @@ class TestWebSocketConnectionErrorHandling:
     async def test_websocket_state_check_before_send(self):
         """Test WebSocket state is checked before sending messages."""
         from unittest.mock import AsyncMock
+
         from starlette.websockets import WebSocketState
 
         client_id = "test_state_check_client"
@@ -1077,7 +1093,7 @@ class TestWebSocketConnectionErrorHandling:
 
         received_count = 0
         while not queue.empty():
-            msg = await queue.get()
+            await queue.get()
             received_count += 1
 
         assert received_count == num_messages
@@ -1120,8 +1136,8 @@ class TestDatabaseNotificationFlow:
         from src.matchdata.schemas import MatchDataSchemaCreate
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
-        from src.teams.db_services import TeamServiceDB
         from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
@@ -1159,7 +1175,9 @@ class TestDatabaseNotificationFlow:
         await ws_manager.connect_to_db()
 
         client_id = "test_notification_client"
-        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+        await connection_manager.connect(
+            AsyncMock(spec=WebSocket), client_id, created_match.id
+        )
 
         ws_manager.match_data_queues[client_id] = asyncio.Queue()
 
@@ -1170,12 +1188,10 @@ class TestDatabaseNotificationFlow:
 
         await asyncio.sleep(0.2)
 
-        received = False
         try:
             notification = await asyncio.wait_for(
                 ws_manager.match_data_queues[client_id].get(), timeout=2.0
             )
-            received = True
             assert notification["type"] == "match-update"
             assert notification["match_id"] == created_match.id
             assert "operation" in notification
@@ -1188,12 +1204,12 @@ class TestDatabaseNotificationFlow:
     async def test_playclock_database_notification_flow(self, test_db):
         """Test playclock database notification flow."""
         from src.core.models.base import MatchDataWebSocketManager
-        from src.playclocks.db_services import PlayClockServiceDB
-        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
-        from src.teams.db_services import TeamServiceDB
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
@@ -1231,25 +1247,23 @@ class TestDatabaseNotificationFlow:
         await ws_manager.connect_to_db()
 
         client_id = "test_playclock_client"
-        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+        await connection_manager.connect(
+            AsyncMock(spec=WebSocket), client_id, created_match.id
+        )
 
         ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
         playclock_service = PlayClockServiceDB(test_db)
-        playclock = await playclock_service.create(
-            PlayClockSchemaCreate(match_id=created_match.id)
-        )
+        await playclock_service.create(PlayClockSchemaCreate(match_id=created_match.id))
 
         await asyncio.sleep(0.2)
 
-        received = False
         try:
             notification = await asyncio.wait_for(
                 ws_manager.playclock_queues[client_id].get(), timeout=2.0
             )
-            received = True
             assert notification["type"] == "playclock-update"
             assert notification["match_id"] == created_match.id
         except asyncio.TimeoutError:
@@ -1265,8 +1279,8 @@ class TestDatabaseNotificationFlow:
         from src.gameclocks.schemas import GameClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
-        from src.teams.db_services import TeamServiceDB
         from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
@@ -1304,25 +1318,23 @@ class TestDatabaseNotificationFlow:
         await ws_manager.connect_to_db()
 
         client_id = "test_gameclock_client"
-        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+        await connection_manager.connect(
+            AsyncMock(spec=WebSocket), client_id, created_match.id
+        )
 
         ws_manager.gameclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
         gameclock_service = GameClockServiceDB(test_db)
-        gameclock = await gameclock_service.create(
-            GameClockSchemaCreate(match_id=created_match.id)
-        )
+        await gameclock_service.create(GameClockSchemaCreate(match_id=created_match.id))
 
         await asyncio.sleep(0.2)
 
-        received = False
         try:
             notification = await asyncio.wait_for(
                 ws_manager.gameclock_queues[client_id].get(), timeout=2.0
             )
-            received = True
             assert notification["type"] == "gameclock-update"
             assert notification["match_id"] == created_match.id
         except asyncio.TimeoutError:
@@ -1334,12 +1346,12 @@ class TestDatabaseNotificationFlow:
     async def test_multiple_clients_receive_same_notification(self, test_db):
         """Test that multiple clients subscribed to same match all receive notification."""
         from src.core.models.base import MatchDataWebSocketManager
-        from src.playclocks.db_services import PlayClockServiceDB
-        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
-        from src.teams.db_services import TeamServiceDB
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
@@ -1406,17 +1418,19 @@ class TestDatabaseNotificationFlow:
 
         await ws_manager.shutdown()
 
-        assert received_count >= 0  # Tests notification flow structure, actual DB triggers may not be set up in test DB
+        assert (
+            received_count >= 0
+        )  # Tests notification flow structure, actual DB triggers may not be set up in test DB
 
     async def test_client_only_receives_relevant_match_notifications(self, test_db):
         """Test that clients only receive notifications for matches they're subscribed to."""
         from src.core.models.base import MatchDataWebSocketManager
-        from src.playclocks.db_services import PlayClockServiceDB
-        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
-        from src.teams.db_services import TeamServiceDB
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
@@ -1501,12 +1515,12 @@ class TestDatabaseNotificationFlow:
     async def test_database_notification_with_update_operation(self, test_db):
         """Test database notification flow with UPDATE operation."""
         from src.core.models.base import MatchDataWebSocketManager
-        from src.playclocks.db_services import PlayClockServiceDB
-        from src.playclocks.schemas import PlayClockSchemaUpdate, PlayClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
-        from src.teams.db_services import TeamServiceDB
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
         from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
@@ -1544,7 +1558,9 @@ class TestDatabaseNotificationFlow:
         await ws_manager.connect_to_db()
 
         client_id = "test_update_client"
-        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+        await connection_manager.connect(
+            AsyncMock(spec=WebSocket), client_id, created_match.id
+        )
 
         ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
@@ -1568,12 +1584,10 @@ class TestDatabaseNotificationFlow:
 
         await asyncio.sleep(0.2)
 
-        received = False
         try:
             notification = await asyncio.wait_for(
                 ws_manager.playclock_queues[client_id].get(), timeout=2.0
             )
-            received = True
             assert notification["type"] == "playclock-update"
             assert notification["match_id"] == created_match.id
         except asyncio.TimeoutError:
@@ -1585,14 +1599,14 @@ class TestDatabaseNotificationFlow:
     async def test_multiple_notification_types_single_match(self, test_db):
         """Test that different notification types work for the same match."""
         from src.core.models.base import MatchDataWebSocketManager
-        from src.playclocks.db_services import PlayClockServiceDB
         from src.gameclocks.db_services import GameClockServiceDB
-        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.gameclocks.schemas import GameClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
-        from src.teams.db_services import TeamServiceDB
+        from src.playclocks.db_services import PlayClockServiceDB
+        from src.playclocks.schemas import PlayClockSchemaCreate
         from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
@@ -1630,7 +1644,9 @@ class TestDatabaseNotificationFlow:
         await ws_manager.connect_to_db()
 
         client_id = "test_multi_notify_client"
-        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+        await connection_manager.connect(
+            AsyncMock(spec=WebSocket), client_id, created_match.id
+        )
 
         ws_manager.playclock_queues[client_id] = asyncio.Queue()
         ws_manager.gameclock_queues[client_id] = asyncio.Queue()
@@ -1665,4 +1681,6 @@ class TestDatabaseNotificationFlow:
         await ws_manager.shutdown()
         await connection_manager.disconnect(client_id)
 
-        assert len(received_notifications) >= 0  # Tests notification flow structure, actual DB triggers may not be set up in test DB
+        assert (
+            len(received_notifications) >= 0
+        )  # Tests notification flow structure, actual DB triggers may not be set up in test DB

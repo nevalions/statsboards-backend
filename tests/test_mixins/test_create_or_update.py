@@ -1,16 +1,14 @@
 import pytest
 from fastapi import HTTPException
 
-from src.core.models.base import BaseServiceDB, Database
-from src.core.models.season import SeasonDB
-from src.seasons.db_services import SeasonServiceDB
-from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
-from src.sports.db_services import SportServiceDB
-from src.sports.schemas import SportSchemaCreate
-from src.tournaments.db_services import TournamentServiceDB
-from src.tournaments.schemas import TournamentSchemaCreate, TournamentSchemaUpdate
-from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
+from src.core.models.base import Database
 from src.logging_config import setup_logging
+from src.seasons.db_services import SeasonServiceDB
+from src.seasons.schemas import SeasonSchemaUpdate
+from src.sports.db_services import SportServiceDB
+from src.tournaments.db_services import TournamentServiceDB
+from src.tournaments.schemas import TournamentSchemaUpdate
+from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
 setup_logging()
 
@@ -67,9 +65,7 @@ class TestCreateOrUpdateGeneric:
         season_data = SeasonFactorySample.build(year=2025)
         from src.core.models.season import SeasonDB
 
-        season_model = SeasonDB(
-            year=season_data.year, description=season_data.description
-        )
+        SeasonDB(year=season_data.year, description=season_data.description)
 
         result = await season_service.create_or_update(
             season_data,
@@ -149,7 +145,7 @@ class TestCreateOrUpdateGeneric:
         season_db_model = SeasonDB(
             year=season_data.year, description=season_data.description
         )
-        created = await season_service.create(season_db_model)
+        await season_service.create(season_db_model)
 
         update1 = SeasonSchemaUpdate(year=2041)
         updated1 = await season_service.create_or_update(
@@ -173,7 +169,6 @@ class TestCreateOrUpdateGeneric:
         """Test using custom unique_field_name instead of eesl_id."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2050)
-        from src.core.models.season import SeasonDB
 
         result = await season_service.create_or_update(
             season_data,

@@ -1,5 +1,7 @@
 import logging
+
 from uvicorn import run
+
 from src.logging_config import setup_logging
 
 if __name__ == "__main__":

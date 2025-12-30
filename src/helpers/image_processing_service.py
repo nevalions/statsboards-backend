@@ -1,9 +1,8 @@
 from io import BytesIO
 from pathlib import Path
-from typing import Any
 
-from PIL import Image
 from fastapi import HTTPException
+from PIL import Image
 
 from src.logging_config import get_logger
 
@@ -147,7 +146,7 @@ class ImageProcessingService:
             excluded_colors = [
                 {0},
                 {255},
-                {254, 254, 254},
+                {254},
                 set(self.hex_to_rgb("#000105") or ()),
                 set(self.hex_to_rgb("#fdfdfd") or ()),
                 set(self.hex_to_rgb("#dfdfdf") or ()),

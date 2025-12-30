@@ -1,10 +1,12 @@
-import pytest
 from io import BytesIO
+
+import pytest
 from PIL import Image
-from src.person.db_services import PersonServiceDB
-from src.person.schemas import PersonSchemaCreate, PersonSchemaUpdate
-from tests.factories import PersonFactory
+
 from src.logging_config import setup_logging
+from src.person.db_services import PersonServiceDB
+from src.person.schemas import PersonSchemaUpdate
+from tests.factories import PersonFactory
 
 setup_logging()
 
@@ -20,7 +22,7 @@ def create_test_image():
 @pytest.mark.asyncio
 class TestPersonViews:
     async def test_create_person_endpoint(self, client, test_db):
-        person_service = PersonServiceDB(test_db)
+        PersonServiceDB(test_db)
         person_data = PersonFactory.build(person_eesl_id=100)
 
         response = await client.post(

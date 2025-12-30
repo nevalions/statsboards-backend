@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import (
     HTTPException,
 )
@@ -72,7 +70,7 @@ class FootballEventAPIRouter(
 
         @router.get(
             "/match_id/{match_id}/",
-            response_model=List[FootballEventSchema],
+            response_model=list[FootballEventSchema],
         )
         async def get_football_events_by_match_id(match_id: int):
             try:

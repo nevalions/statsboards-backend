@@ -1,6 +1,7 @@
 from redis import asyncio as aioredis
-from src.helpers.sse_queue import MatchEventQueue
+
 from src.core.models import MatchDataDB
+from src.helpers.sse_queue import MatchEventQueue
 
 
 class RedisService:
@@ -13,7 +14,7 @@ class RedisService:
                 self.redis_url, decode_responses=True
             )
             return redis_connection
-        except Exception as e:
+        except Exception:
             raise
 
     async def create_match_event_queue(self, match_data_id) -> MatchEventQueue:

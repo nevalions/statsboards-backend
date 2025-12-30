@@ -1,9 +1,9 @@
-import os
 import logging
 import logging.config
-import yaml
+import os
 from pathlib import Path
-from typing import Optional
+
+import yaml
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,7 +33,7 @@ class ContextFilter(logging.Filter):
 class ClassNameAdapter(logging.LoggerAdapter):
     """Adapter that automatically adds class name to log records"""
 
-    def __init__(self, logger: logging.Logger, class_instance: Optional[object] = None):
+    def __init__(self, logger: logging.Logger, class_instance: object | None = None):
         extra = {
             "classname": class_instance.__class__.__name__ if class_instance else "None"
         }
@@ -46,7 +46,7 @@ class ClassNameAdapter(logging.LoggerAdapter):
 
 
 def get_logger(
-    name: str, class_instance: Optional[object] = None
+    name: str, class_instance: object | None = None
 ) -> logging.LoggerAdapter:
     """
     Get a logger with class name support.
@@ -65,7 +65,7 @@ def get_logger(
 def setup_logging(config_path=logs_config_yaml):
     """Set up logging with the enhanced configuration"""
     # Load YAML configuration
-    with open(config_path, "r") as file:
+    with open(config_path) as file:
         config = yaml.safe_load(file)
 
     # Define the log directory and add it to the configuration

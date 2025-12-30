@@ -1,11 +1,12 @@
+from typing import TYPE_CHECKING
+
 from fastapi import HTTPException
 
-from src.core.models.base import Database
 from src.core.models import BaseServiceDB, PlayerDB
+from src.core.models.base import Database
 
 from ..logging_config import get_logger, setup_logging
 from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.core.models import PlayerDB

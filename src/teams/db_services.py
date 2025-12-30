@@ -2,11 +2,12 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models import BaseServiceDB, MatchDB, PlayerTeamTournamentDB, TeamDB
 from src.core.models.base import Database
-from src.core.models import BaseServiceDB, TeamDB, PlayerTeamTournamentDB, MatchDB
 from src.positions.db_services import PositionServiceDB
+
+from ..logging_config import get_logger, setup_logging
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 ITEM = "TEAM"
@@ -19,7 +20,7 @@ class TeamServiceDB(BaseServiceDB):
     ) -> None:
         super().__init__(database, TeamDB)
         self.logger = get_logger("backend_logger_TeamServiceDB", self)
-        self.logger.debug(f"Initialized TeamServiceDB")
+        self.logger.debug("Initialized TeamServiceDB")
 
     async def create(
         self,
@@ -110,7 +111,7 @@ class TeamServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error fetching players",
+                detail="Internal server error fetching players",
             )
 
     async def get_players_by_team_id_tournament_id_with_person(
@@ -159,7 +160,7 @@ class TeamServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error fetching players with person data",
+                detail="Database error fetching players with person data",
             )
         except Exception as ex:
             self.logger.error(
@@ -168,7 +169,7 @@ class TeamServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error fetching players with person data",
+                detail="Internal server error fetching players with person data",
             )
 
     async def update(

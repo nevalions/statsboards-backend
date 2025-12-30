@@ -1,19 +1,17 @@
-import pytest
-import os
-from pathlib import Path
-from fastapi import UploadFile, HTTPException
-from unittest.mock import Mock, AsyncMock, patch
-from PIL import Image
 from io import BytesIO
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+from fastapi import UploadFile
+from PIL import Image
+
+from src.helpers.download_service import DownloadService
 from src.helpers.file_service import (
     FileService,
-    ResizedImagesPaths,
-    DownloadedAndResizedImagesPaths,
 )
-from src.helpers.download_service import DownloadService
-from src.helpers.upload_service import UploadService
 from src.helpers.file_system_service import FileSystemService
+from src.helpers.upload_service import UploadService
 
 
 class TestFileService:

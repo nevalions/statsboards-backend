@@ -1,10 +1,11 @@
 import pytest
+
+from src.logging_config import setup_logging
+from src.person.db_services import PersonServiceDB
 from src.player.db_services import PlayerServiceDB
 from src.player.schemas import PlayerSchemaCreate, PlayerSchemaUpdate
 from src.sports.db_services import SportServiceDB
-from src.person.db_services import PersonServiceDB
-from tests.factories import SportFactorySample, PersonFactory
-from src.logging_config import setup_logging
+from tests.factories import PersonFactory, SportFactorySample
 
 setup_logging()
 

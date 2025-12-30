@@ -1,13 +1,14 @@
-import time
 import asyncio
+import time
 
-from fastapi import HTTPException, BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
 
-from src.core.models.base import Database
 from src.core.models import BaseServiceDB, PlayClockDB
-from .schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate, PlayClockSchemaBase
-from ..logging_config import setup_logging, get_logger
+from src.core.models.base import Database
+
+from ..logging_config import get_logger, setup_logging
+from .schemas import PlayClockSchemaBase, PlayClockSchemaCreate, PlayClockSchemaUpdate
 
 setup_logging()
 
@@ -16,7 +17,7 @@ class ClockManager:
     def __init__(self) -> None:
         self.active_playclock_matches: dict[int, asyncio.Queue] = {}
         self.logger = get_logger("backend_logger_ClockManager", self)
-        self.logger.debug(f"Initialized ClockManager")
+        self.logger.debug("Initialized ClockManager")
 
     async def start_clock(self, match_id: int) -> None:
         self.logger.debug("Start clock in clock manager")
@@ -43,7 +44,7 @@ class PlayClockServiceDB(BaseServiceDB):
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
         self.logger = get_logger("backend_logger_PlayClockServiceDB", self)
-        self.logger.debug(f"Initialized PlayClockServiceDB")
+        self.logger.debug("Initialized PlayClockServiceDB")
 
     async def create(self, item: PlayClockSchemaCreate) -> PlayClockDB:
         self.logger.debug(f"Create playclock: {item}")
@@ -54,7 +55,7 @@ class PlayClockServiceDB(BaseServiceDB):
                     playclock_status=item.playclock_status,
                     match_id=item.match_id,
                 )
-                self.logger.debug(f"Is playclock exist")
+                self.logger.debug("Is playclock exist")
                 is_exist = await self.get_playclock_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"Playclock already exists: {playclock_result}")
@@ -228,9 +229,7 @@ class PlayClockServiceDB(BaseServiceDB):
         self.logger.debug(f"Decrement playclock by id:{playclock_id}")
 
         if self.disable_background_tasks:
-            self.logger.debug(
-                f"Background tasks disabled, skipping playclock decrement"
-            )
+            self.logger.debug("Background tasks disabled, skipping playclock decrement")
             return
 
         if playclock_id in self.clock_manager.active_playclock_matches:
@@ -260,7 +259,7 @@ class PlayClockServiceDB(BaseServiceDB):
             self.logger.debug(f"Updated playclock: {updated_playclock}")
 
             if updated_playclock == 0:
-                self.logger.debug(f"Stopping playclock")
+                self.logger.debug("Stopping playclock")
                 await self.update(
                     playclock_id,
                     PlayClockSchemaUpdate(
@@ -292,7 +291,7 @@ class PlayClockServiceDB(BaseServiceDB):
             )
             self.logger.debug(f"Playclock in queue updated: {playclock}")
 
-        self.logger.debug(f"Returning playclock")
+        self.logger.debug("Returning playclock")
         return await self.get_by_id(playclock_id)
 
     async def decrement_playclock_one_second(
@@ -311,7 +310,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 return updated_playclock
 
             else:
-                self.logger.debug(f"Playclock is 0, stopping")
+                self.logger.debug("Playclock is 0, stopping")
                 await self.update(
                     item_id,
                     PlayClockSchemaUpdate(

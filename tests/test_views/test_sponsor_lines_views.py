@@ -1,8 +1,9 @@
 import pytest
-from src.sponsor_lines.db_services import SponsorLineServiceDB
-from src.sponsor_lines.schemas import SponsorLineSchemaCreate, SponsorLineSchemaUpdate
-from tests.factories import SponsorLineFactory
+
 from src.logging_config import setup_logging
+from src.sponsor_lines.db_services import SponsorLineServiceDB
+from src.sponsor_lines.schemas import SponsorLineSchemaUpdate
+from tests.factories import SponsorLineFactory
 
 setup_logging()
 
@@ -27,7 +28,7 @@ class TestSponsorLineViews:
         update_data = SponsorLineSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            f"/api/sponsor_lines/",
+            "/api/sponsor_lines/",
             params={"item_id": created.id},
             json=update_data.model_dump(),
         )
@@ -38,7 +39,7 @@ class TestSponsorLineViews:
         update_data = SponsorLineSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            f"/api/sponsor_lines/",
+            "/api/sponsor_lines/",
             params={"item_id": 99999},
             json=update_data.model_dump(),
         )

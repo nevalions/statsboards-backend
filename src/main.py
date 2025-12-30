@@ -1,6 +1,6 @@
+import logging.config
 import os
 from contextlib import asynccontextmanager
-import logging.config
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
@@ -8,10 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.core.config import uploads_path
-from src.core.models.base import ws_manager, db
+from src.core.models.base import db, ws_manager
 from src.football_events import api_football_event_router
 from src.gameclocks import api_gameclock_router
-from src.logging_config import setup_logging, logs_dir
+from src.logging_config import logs_dir, setup_logging
 from src.matchdata import api_matchdata_router
 from src.matches import api_match_router, template_match_router
 from src.person import api_person_router

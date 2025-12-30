@@ -1,13 +1,14 @@
 import pytest
+
+from src.logging_config import setup_logging
+from src.sponsor_lines.db_services import SponsorLineServiceDB
 from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
 from src.sponsor_sponsor_line_connection.schemas import (
     SponsorSponsorLineSchemaCreate,
     SponsorSponsorLineSchemaUpdate,
 )
 from src.sponsors.db_services import SponsorServiceDB
-from src.sponsor_lines.db_services import SponsorLineServiceDB
 from tests.factories import SponsorFactory, SponsorLineFactory
-from src.logging_config import setup_logging
 
 setup_logging()
 
@@ -50,12 +51,12 @@ class TestSponsorSponsorLineViews:
 
     async def test_get_sponsor_sponsor_line_relation_not_found(self, client, test_db):
         sponsor_service = SponsorServiceDB(test_db)
-        sponsor = await sponsor_service.create(SponsorFactory.build())
+        await sponsor_service.create(SponsorFactory.build())
 
         sponsor_line_service = SponsorLineServiceDB(test_db)
-        sponsor_line = await sponsor_line_service.create(SponsorLineFactory.build())
+        await sponsor_line_service.create(SponsorLineFactory.build())
 
-        response = await client.get(f"/api/sponsor_in_sponsor_line/99999in99999")
+        response = await client.get("/api/sponsor_in_sponsor_line/99999in99999")
 
         assert response.status_code == 404
 
@@ -75,7 +76,7 @@ class TestSponsorSponsorLineViews:
         update_data = SponsorSponsorLineSchemaUpdate(position=2)
 
         response = await client.put(
-            f"/api/sponsor_in_sponsor_line/",
+            "/api/sponsor_in_sponsor_line/",
             params={"item_id": created.id},
             json=update_data.model_dump(),
         )
@@ -86,7 +87,7 @@ class TestSponsorSponsorLineViews:
         update_data = SponsorSponsorLineSchemaUpdate(position=2)
 
         response = await client.put(
-            f"/api/sponsor_in_sponsor_line/",
+            "/api/sponsor_in_sponsor_line/",
             params={"item_id": 99999},
             json=update_data.model_dump(),
         )

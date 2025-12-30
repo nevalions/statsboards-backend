@@ -1,20 +1,17 @@
-import asyncio
-
 from fastapi import HTTPException
-from sqlalchemy import select, Result
 
-from src.core.models.base import Database
 from src.core.models import (
-    db,
     BaseServiceDB,
-    SportDB,
-    TournamentDB,
-    TeamDB,
     PlayerDB,
     PositionDB,
+    SportDB,
+    TeamDB,
+    TournamentDB,
 )
-from .schemas import SportSchemaCreate, SportSchemaUpdate
+from src.core.models.base import Database
+
 from ..logging_config import get_logger, setup_logging
+from .schemas import SportSchemaCreate, SportSchemaUpdate
 
 setup_logging()
 ITEM = "SPORT"
@@ -27,7 +24,7 @@ class SportServiceDB(BaseServiceDB):
             model=SportDB,
         )
         self.logger = get_logger("backend_logger_SportServiceDB", self)
-        self.logger.debug(f"Initialized SportServiceDB")
+        self.logger.debug("Initialized SportServiceDB")
 
     async def create(self, item: SportSchemaCreate) -> SportDB:
         self.logger.debug(f"Creat {ITEM}:{item}")

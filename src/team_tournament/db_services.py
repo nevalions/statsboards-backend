@@ -1,12 +1,10 @@
-import asyncio
-
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models import BaseServiceDB, TeamDB, TeamTournamentDB
 from src.core.models.base import Database
-from src.core.models import db, BaseServiceDB, TeamTournamentDB, TeamDB
-from src.logging_config import setup_logging, get_logger
+from src.logging_config import get_logger, setup_logging
 from src.team_tournament.schemas import TeamTournamentSchemaCreate
 
 setup_logging()
@@ -17,7 +15,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(database, TeamTournamentDB)
         self.logger = get_logger("backend_logger_TeamTournamentServiceDB", self)
-        self.logger.debug(f"Initialized TeamTournamentServiceDB")
+        self.logger.debug("Initialized TeamTournamentServiceDB")
 
     async def create(
         self,
@@ -61,7 +59,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error fetching team tournament relation",
+                detail="Database error fetching team tournament relation",
             )
         except HTTPException:
             raise
@@ -71,7 +69,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error deleting team tournament relation",
+                detail="Database error deleting team tournament relation",
             )
         except Exception as e:
             self.logger.error(
@@ -80,7 +78,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error deleting team tournament relation",
+                detail="Internal server error deleting team tournament relation",
             )
 
     async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:

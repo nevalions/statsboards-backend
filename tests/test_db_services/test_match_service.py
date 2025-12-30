@@ -1,27 +1,26 @@
+from datetime import datetime
+
 import pytest
 import pytest_asyncio
-from fastapi import HTTPException
 
 from src.core.models.base import Database
+from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
-from src.matches.schemas import MatchSchemaCreate, MatchSchemaUpdate
-from src.teams.db_services import TeamServiceDB
-from src.teams.schemas import TeamSchemaCreate
-from src.tournaments.db_services import TournamentServiceDB
-from src.tournaments.schemas import TournamentSchemaCreate
+from src.matches.schemas import MatchSchemaUpdate
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate
+from src.teams.db_services import TeamServiceDB
+from src.tournaments.db_services import TournamentServiceDB
+from src.tournaments.schemas import TournamentSchemaCreate
 from tests.factories import (
     MatchFactory,
+    SeasonFactorySample,
+    SportFactorySample,
     TeamFactory,
     TournamentFactory,
-    SportFactorySample,
-    SeasonFactorySample,
 )
-from src.logging_config import setup_logging
-from datetime import datetime
 
 setup_logging()
 

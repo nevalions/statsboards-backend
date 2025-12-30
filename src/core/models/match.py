@@ -1,22 +1,22 @@
 from datetime import datetime as date_type
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Integer, TIMESTAMP, ForeignKey, func
+from sqlalchemy import TIMESTAMP, ForeignKey, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .team import TeamDB
-    from .tournament import TournamentDB
+    from .football_event import FootballEventDB
+    from .gameclock import GameClockDB
     from .matchdata import MatchDataDB
+    from .playclock import PlayClockDB
+    from .player_match import PlayerMatchDB
+    from .scoreboard import ScoreboardDB
     from .sponsor import SponsorDB
     from .sponsor_line import SponsorLineDB
-    from .scoreboard import ScoreboardDB
-    from .playclock import PlayClockDB
-    from .gameclock import GameClockDB
-    from .player_match import PlayerMatchDB
-    from .football_event import FootballEventDB
+    from .team import TeamDB
+    from .tournament import TournamentDB
 
 
 class MatchDB(Base):

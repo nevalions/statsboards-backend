@@ -1,9 +1,10 @@
 import pytest
 from fastapi import HTTPException
+
+from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from tests.factories import SeasonFactorySample, SportFactorySample
-from src.logging_config import setup_logging
 
 setup_logging()
 
@@ -39,8 +40,8 @@ class TestQueryMixin:
     @pytest.mark.asyncio
     async def test_update_item_by_eesl_id_success(self, test_db):
         """Test successful update of an item by eesl field."""
-        from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
         from src.core.models.season import SeasonDB
+        from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
 
         service = SeasonServiceDB(test_db)
         season_data = SeasonSchemaCreate(year=2023, description="Original")

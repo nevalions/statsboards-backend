@@ -1,15 +1,14 @@
-import os
 from pathlib import Path
+
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
 from src.core.config import uploads_path
-from .db_services import PlayerMatchServiceDB
-from .schemas import PlayerMatchSchema, PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
-from ..logging_config import setup_logging, get_logger
+
+from ..logging_config import get_logger, setup_logging
 from ..matches.schemas import MatchSchemaBase
 from ..pars_eesl.pars_all_players_from_eesl import collect_player_full_data_eesl
-from ..pars_eesl.pars_match import parse_match_and_create_jsons, ParsedMatch, logger
+from ..pars_eesl.pars_match import ParsedMatch, logger, parse_match_and_create_jsons
 from ..person.schemas import PersonSchemaCreate
 from ..player.schemas import PlayerSchema, PlayerSchemaCreate
 from ..player_team_tournament.schemas import (
@@ -17,8 +16,10 @@ from ..player_team_tournament.schemas import (
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
 )
-from ..positions.schemas import PositionSchemaCreate, PositionSchemaBase
+from ..positions.schemas import PositionSchemaBase, PositionSchemaCreate
 from ..teams.schemas import TeamSchemaBase
+from .db_services import PlayerMatchServiceDB
+from .schemas import PlayerMatchSchema, PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 
 setup_logging()
 
@@ -66,7 +67,7 @@ class PlayerMatchAPIRouter(
     def __init__(self, service: PlayerMatchServiceDB):
         super().__init__("/api/players_match", ["players_match"], service)
         self.logger = get_logger("backend_logger_PlayerMatchAPIRouter", self)
-        self.logger.debug(f"Initialized PlayerMatchAPIRouter")
+        self.logger.debug("Initialized PlayerMatchAPIRouter")
 
     def route(self):
         router = super().route()
@@ -89,7 +90,7 @@ class PlayerMatchAPIRouter(
                     return PlayerMatchSchema.model_validate(new_player_match)
                 else:
                     raise HTTPException(
-                        status_code=409, detail=f"Player in match creation fail"
+                        status_code=409, detail="Player in match creation fail"
                     )
             except Exception as ex:
                 self.logger.error(
@@ -123,30 +124,6 @@ class PlayerMatchAPIRouter(
                 self.logger.error(
                     f"Error getting player in match with match eesl_id {eesl_id} {ex}",
                     exc_info=True,
-                )
-
-        async def get_player_match_by_eesl_id_endpoint(
-            player_match_eesl_id: int,
-        ):
-            try:
-                self.logger.debug(
-                    f"Get player in match endpoint with eesl_id:{player_match_eesl_id}"
-                )
-                tournament = await self.service.get_player_match_by_eesl_id(
-                    value=player_match_eesl_id
-                )
-                if tournament is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Player match eesl_id({player_match_eesl_id}) not found",
-                    )
-                return PlayerMatchSchema.model_validate(tournament)
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error getting player in match with match eesl_id {player_match_eesl_id} {ex}",
-                    exc_info=ex,
                 )
 
         @router.put(
@@ -219,13 +196,13 @@ class PlayerMatchAPIRouter(
                 f"Start parsing eesl match endpoint with eesl_id:{eesl_match_id}"
             )
             from ..matches.db_services import MatchServiceDB
-            from ..positions.db_services import PositionServiceDB
-            from ..teams.db_services import TeamServiceDB
             from ..person.db_services import PersonServiceDB
             from ..player.db_services import PlayerServiceDB
             from ..player_team_tournament.db_services import (
                 PlayerTeamTournamentServiceDB,
             )
+            from ..positions.db_services import PositionServiceDB
+            from ..teams.db_services import TeamServiceDB
 
             try:
                 parsed_match: ParsedMatch = await parse_match_and_create_jsons(
@@ -246,7 +223,7 @@ class PlayerMatchAPIRouter(
                 created_players_match = []
 
                 if parsed_match and match:
-                    self.logger.debug(f"Got parse match and match in db")
+                    self.logger.debug("Got parse match and match in db")
                     existing_player_ids = set()
                     for home_player in parsed_match["roster_a"]:
                         position: PositionSchemaBase = (
@@ -255,12 +232,12 @@ class PlayerMatchAPIRouter(
                             )
                         )
                         if position is None:
-                            self.logger.debug(f"No position found for home player")
+                            self.logger.debug("No position found for home player")
                             position_schema = {
                                 "title": home_player["player_position"],
                                 "sport_id": 1,
                             }
-                            self.logger.debug(f"Creating new position for home player")
+                            self.logger.debug("Creating new position for home player")
                             position = await PositionServiceDB(db).create(
                                 PositionSchemaCreate(**position_schema)
                             )
@@ -275,7 +252,7 @@ class PlayerMatchAPIRouter(
                             or not photo_files_exist(person.person_photo_url)
                         )
                         if person is None:
-                            self.logger.debug(f"No person for home player")
+                            self.logger.debug("No person for home player")
                         elif needs_photo_download:
                             self.logger.debug(
                                 f"Person exists but missing photos for {home_player['player_eesl_id']}"
@@ -289,7 +266,7 @@ class PlayerMatchAPIRouter(
                                 **player_in_team["person"]
                             )
                             self.logger.debug(
-                                f"Creating/updating person for home player"
+                                "Creating/updating person for home player"
                             )
                             person = await PersonServiceDB(db).create_or_update_person(
                                 person_schema
@@ -299,7 +276,7 @@ class PlayerMatchAPIRouter(
                             home_player["player_eesl_id"]
                         )
                         if player is None:
-                            self.logger.debug(f"No player for home match player")
+                            self.logger.debug("No player for home match player")
                             player_schema = PlayerSchemaCreate(
                                 **{
                                     "sport_id": 1,
@@ -307,7 +284,7 @@ class PlayerMatchAPIRouter(
                                     "player_eesl_id": home_player["player_eesl_id"],
                                 }
                             )
-                            self.logger.debug(f"Creating new player for home player")
+                            self.logger.debug("Creating new player for home player")
                             player = await PlayerServiceDB(db).create_or_update_player(
                                 player_schema
                             )
@@ -319,7 +296,7 @@ class PlayerMatchAPIRouter(
                         )
 
                         if player_in_team is None:
-                            self.logger.debug(f"No player in team for home player")
+                            self.logger.debug("No player in team for home player")
                             created_player_in_team_schema = (
                                 PlayerTeamTournamentSchemaCreate(
                                     **{
@@ -335,7 +312,7 @@ class PlayerMatchAPIRouter(
                                 )
                             )
                             self.logger.debug(
-                                f"Creating new player in team for home player"
+                                "Creating new player in team for home player"
                             )
                             player_in_team = await PlayerTeamTournamentServiceDB(
                                 db
@@ -344,7 +321,7 @@ class PlayerMatchAPIRouter(
                             )
                         else:
                             self.logger.debug(
-                                f"Player exists in team for home player, updating"
+                                "Player exists in team for home player, updating"
                             )
                             updated_player_in_team_schema = (
                                 PlayerTeamTournamentSchemaUpdate(
@@ -367,12 +344,12 @@ class PlayerMatchAPIRouter(
                             )
 
                         if team_a is None or player_in_team is None:
-                            self.logger.debug(f"No team for home player, continue")
+                            self.logger.debug("No team for home player, continue")
                             continue
 
                         player_eesl_id = home_player.get("player_eesl_id")
                         if player_eesl_id in existing_player_ids:
-                            self.logger.debug(f"No eesl id for home player, skipping")
+                            self.logger.debug("No eesl id for home player, skipping")
                             continue
 
                         existing_player_ids.add(player_eesl_id)
@@ -394,24 +371,24 @@ class PlayerMatchAPIRouter(
                         )
 
                         if exist_player_in_match:
-                            self.logger.debug(f"Player in match exist")
+                            self.logger.debug("Player in match exist")
                             if exist_player_in_match.is_start:
-                                self.logger.warning(f"Player in match is in Start")
-                                player_schema[
-                                    "player_match_eesl_id"
-                                ] = exist_player_in_match.player_match_eesl_id
-                                player_schema[
-                                    "player_team_tournament_id"
-                                ] = exist_player_in_match.player_team_tournament_id
-                                player_schema[
-                                    "match_position_id"
-                                ] = exist_player_in_match.match_position_id
-                                player_schema[
-                                    "match_id"
-                                ] = exist_player_in_match.match_id
-                                player_schema[
-                                    "match_number"
-                                ] = exist_player_in_match.match_number
+                                self.logger.warning("Player in match is in Start")
+                                player_schema["player_match_eesl_id"] = (
+                                    exist_player_in_match.player_match_eesl_id
+                                )
+                                player_schema["player_team_tournament_id"] = (
+                                    exist_player_in_match.player_team_tournament_id
+                                )
+                                player_schema["match_position_id"] = (
+                                    exist_player_in_match.match_position_id
+                                )
+                                player_schema["match_id"] = (
+                                    exist_player_in_match.match_id
+                                )
+                                player_schema["match_number"] = (
+                                    exist_player_in_match.match_number
+                                )
                                 player_schema["team_id"] = exist_player_in_match.team_id
                                 player_schema["is_start"] = True
                                 position = await PositionServiceDB(db).get_by_id(
@@ -436,12 +413,12 @@ class PlayerMatchAPIRouter(
                             away_player["player_position"]
                         )
                         if position is None:
-                            self.logger.debug(f"No position for away player")
+                            self.logger.debug("No position for away player")
                             position_schema = {
                                 "title": away_player["player_position"],
                                 "sport_id": 1,
                             }
-                            self.logger.debug(f"Creating new position for away player")
+                            self.logger.debug("Creating new position for away player")
                             position = await PositionServiceDB(db).create(
                                 PositionSchemaCreate(**position_schema)
                             )
@@ -456,7 +433,7 @@ class PlayerMatchAPIRouter(
                             or not photo_files_exist(person.person_photo_url)
                         )
                         if person is None:
-                            self.logger.debug(f"No person for away player")
+                            self.logger.debug("No person for away player")
                         elif needs_photo_download:
                             self.logger.debug(
                                 f"Person exists but missing photos for {away_player['player_eesl_id']}"
@@ -470,7 +447,7 @@ class PlayerMatchAPIRouter(
                                 **player_in_team["person"]
                             )
                             self.logger.debug(
-                                f"Creating/updating person for away player"
+                                "Creating/updating person for away player"
                             )
                             person = await PersonServiceDB(db).create_or_update_person(
                                 person_schema
@@ -480,7 +457,7 @@ class PlayerMatchAPIRouter(
                             away_player["player_eesl_id"]
                         )
                         if player is None:
-                            self.logger.debug(f"No player for away match player")
+                            self.logger.debug("No player for away match player")
                             player_schema = PlayerSchemaCreate(
                                 **{
                                     "sport_id": 1,
@@ -488,7 +465,7 @@ class PlayerMatchAPIRouter(
                                     "player_eesl_id": away_player["player_eesl_id"],
                                 }
                             )
-                            self.logger.debug(f"Creating new player for away player")
+                            self.logger.debug("Creating new player for away player")
                             player = await PlayerServiceDB(db).create_or_update_player(
                                 player_schema
                             )
@@ -514,14 +491,14 @@ class PlayerMatchAPIRouter(
                                     }
                                 )
                             )
-                            logger.debug(f"Creating new player in team for away player")
+                            logger.debug("Creating new player in team for away player")
                             player_in_team = await PlayerTeamTournamentServiceDB(
                                 db
                             ).create_or_update_player_team_tournament(
                                 created_player_in_team_schema
                             )
                         else:
-                            logger.debug(f"Player in team exists, updating player")
+                            logger.debug("Player in team exists, updating player")
                             updated_player_in_team_schema = (
                                 PlayerTeamTournamentSchemaUpdate(
                                     **{
@@ -546,12 +523,12 @@ class PlayerMatchAPIRouter(
                         #     away_player['player_eesl_id'])
 
                         if team_b is None or player_in_team is None:
-                            self.logger.debug(f"No team for away player, continue")
+                            self.logger.debug("No team for away player, continue")
                             continue
 
                         player_eesl_id = away_player.get("player_eesl_id")
                         if player_eesl_id in existing_player_ids:
-                            self.logger.debug(f"No eesl id for away player, skipping")
+                            self.logger.debug("No eesl id for away player, skipping")
                             continue
 
                         existing_player_ids.add(player_eesl_id)
@@ -573,31 +550,31 @@ class PlayerMatchAPIRouter(
                         )
 
                         if exist_player_in_match:
-                            self.logger.debug(f"Player in already in match")
+                            self.logger.debug("Player in already in match")
                             if exist_player_in_match.is_start:
-                                self.logger.warning(f"Player in start")
-                                player_schema[
-                                    "player_match_eesl_id"
-                                ] = exist_player_in_match.player_match_eesl_id
-                                player_schema[
-                                    "player_team_tournament_id"
-                                ] = exist_player_in_match.player_team_tournament_id
-                                player_schema[
-                                    "match_position_id"
-                                ] = exist_player_in_match.match_position_id
-                                player_schema[
-                                    "match_id"
-                                ] = exist_player_in_match.match_id
-                                player_schema[
-                                    "match_number"
-                                ] = exist_player_in_match.match_number
+                                self.logger.warning("Player in start")
+                                player_schema["player_match_eesl_id"] = (
+                                    exist_player_in_match.player_match_eesl_id
+                                )
+                                player_schema["player_team_tournament_id"] = (
+                                    exist_player_in_match.player_team_tournament_id
+                                )
+                                player_schema["match_position_id"] = (
+                                    exist_player_in_match.match_position_id
+                                )
+                                player_schema["match_id"] = (
+                                    exist_player_in_match.match_id
+                                )
+                                player_schema["match_number"] = (
+                                    exist_player_in_match.match_number
+                                )
                                 player_schema["team_id"] = exist_player_in_match.team_id
                                 player_schema["is_start"] = True
                                 position = await PositionServiceDB(db).get_by_id(
                                     exist_player_in_match.match_position_id
                                 )
 
-                        self.logger.debug(f"Creating player in match")
+                        self.logger.debug("Creating player in match")
                         player = PlayerMatchSchemaCreate(**player_schema)
                         created_player = (
                             await self.service.create_or_update_player_match(player)

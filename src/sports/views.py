@@ -1,10 +1,11 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import SportServiceDB
-from .schemas import SportSchemaCreate, SportSchema, SportSchemaUpdate
-from ..logging_config import setup_logging, get_logger
+from .schemas import SportSchema, SportSchemaCreate, SportSchemaUpdate
 
 setup_logging()
 
@@ -23,7 +24,7 @@ class SportAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_SportAPIRouter", self)
-        self.logger.debug(f"Initialized SportAPIRouter")
+        self.logger.debug("Initialized SportAPIRouter")
 
     def route(self):
         router = super().route()

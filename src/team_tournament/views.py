@@ -1,15 +1,13 @@
-from typing import List
-
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
+
 from .db_services import TeamTournamentServiceDB
 from .schemas import (
     TeamTournamentSchema,
     TeamTournamentSchemaCreate,
     TeamTournamentSchemaUpdate,
 )
-from src.teams.schemas import TeamSchema
 
 
 # Team backend

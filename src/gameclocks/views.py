@@ -1,16 +1,17 @@
 from fastapi import (
-    HTTPException,
+    BackgroundTasks,
     Depends,
+    HTTPException,
     Path,
     status,
-    BackgroundTasks,
 )
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
+
+from ..logging_config import get_logger, setup_logging
 from .db_services import GameClockServiceDB
 from .schemas import GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate
-from ..logging_config import get_logger, setup_logging
 
 setup_logging()
 
@@ -25,7 +26,7 @@ class GameClockAPIRouter(
             service,
         )
         self.logger = get_logger("backend_logger_GameClockAPIRouter", self)
-        self.logger.debug(f"Initialized GameClockAPIRouter")
+        self.logger.debug("Initialized GameClockAPIRouter")
 
     def route(self):
         router = super().route()
@@ -70,7 +71,7 @@ class GameClockAPIRouter(
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Error updating gameclock with data",
+                    detail="Error updating gameclock with data",
                 )
 
         @router.put(
@@ -81,7 +82,7 @@ class GameClockAPIRouter(
             item_id: int,
             item=Depends(update_gameclock_),
         ):
-            self.logger.debug(f"Update gameclock endpoint by ID")
+            self.logger.debug("Update gameclock endpoint by ID")
             if item:
                 return {
                     "content": GameClockSchema.model_validate(item).model_dump(),
@@ -117,7 +118,7 @@ class GameClockAPIRouter(
                     # Start background task for decrementing the game clock
                     if not self.service.disable_background_tasks:
                         self.logger.debug(
-                            f"Start gameclock background task, loop decrement"
+                            "Start gameclock background task, loop decrement"
                         )
                         background_tasks.add_task(
                             self.service.loop_decrement_gameclock, gameclock_id

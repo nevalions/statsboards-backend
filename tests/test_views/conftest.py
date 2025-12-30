@@ -1,9 +1,9 @@
-import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
+
 from src.core.config import settings
-from src.core.models.base import Database, Base
+from src.core.models.base import Base, Database
 
 db_url = str(settings.test_db.test_db_url)
 
@@ -41,47 +41,46 @@ async def test_app(test_db):
     """Create FastAPI app with test database by creating new router instances."""
     app = FastAPI()
 
-    from src.football_events.views import FootballEventAPIRouter
-    from src.seasons.views import SeasonAPIRouter
-    from src.sports.views import SportAPIRouter
-    from src.teams.views import TeamAPIRouter
-    from src.matches.views import MatchAPIRouter
-    from src.tournaments.views import TournamentAPIRouter
-    from src.positions.views import PositionAPIRouter
-    from src.sponsors.views import SponsorAPIRouter
-    from src.sponsor_lines.views import SponsorLineAPIRouter
-    from src.sponsor_sponsor_line_connection.views import SponsorSponsorLineAPIRouter
-    from src.gameclocks.views import GameClockAPIRouter
-    from src.playclocks.views import PlayClockAPIRouter
-    from src.matchdata.views import MatchDataAPIRouter
-    from src.person.views import PersonAPIRouter
-    from src.player.views import PlayerAPIRouter
-    from src.player_match.views import PlayerMatchAPIRouter
-    from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
-    from src.scoreboards.views import ScoreboardAPIRouter
-    from src.team_tournament.views import TeamTournamentRouter
-
     from src.football_events.db_services import FootballEventServiceDB
-    from src.seasons.db_services import SeasonServiceDB
-    from src.sports.db_services import SportServiceDB
-    from src.teams.db_services import TeamServiceDB
+    from src.football_events.views import FootballEventAPIRouter
+    from src.gameclocks.db_services import GameClockServiceDB
+    from src.gameclocks.views import GameClockAPIRouter
+    from src.matchdata.db_services import MatchDataServiceDB
+    from src.matchdata.views import MatchDataAPIRouter
     from src.matches.db_services import MatchServiceDB
-    from src.tournaments.db_services import TournamentServiceDB
+    from src.matches.views import MatchAPIRouter
+    from src.person.db_services import PersonServiceDB
+    from src.person.views import PersonAPIRouter
+    from src.playclocks.db_services import PlayClockServiceDB
+    from src.playclocks.views import PlayClockAPIRouter
+    from src.player.db_services import PlayerServiceDB
+    from src.player.views import PlayerAPIRouter
+    from src.player_match.db_services import PlayerMatchServiceDB
+    from src.player_match.views import PlayerMatchAPIRouter
+    from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
+    from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
     from src.positions.db_services import PositionServiceDB
-    from src.sponsors.db_services import SponsorServiceDB
+    from src.positions.views import PositionAPIRouter
+    from src.scoreboards.db_services import ScoreboardServiceDB
+    from src.scoreboards.views import ScoreboardAPIRouter
+    from src.seasons.db_services import SeasonServiceDB
+    from src.seasons.views import SeasonAPIRouter
     from src.sponsor_lines.db_services import SponsorLineServiceDB
+    from src.sponsor_lines.views import SponsorLineAPIRouter
     from src.sponsor_sponsor_line_connection.db_services import (
         SponsorSponsorLineServiceDB,
     )
-    from src.gameclocks.db_services import GameClockServiceDB
-    from src.playclocks.db_services import PlayClockServiceDB
-    from src.matchdata.db_services import MatchDataServiceDB
-    from src.person.db_services import PersonServiceDB
-    from src.player.db_services import PlayerServiceDB
-    from src.player_match.db_services import PlayerMatchServiceDB
-    from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
-    from src.scoreboards.db_services import ScoreboardServiceDB
+    from src.sponsor_sponsor_line_connection.views import SponsorSponsorLineAPIRouter
+    from src.sponsors.db_services import SponsorServiceDB
+    from src.sponsors.views import SponsorAPIRouter
+    from src.sports.db_services import SportServiceDB
+    from src.sports.views import SportAPIRouter
     from src.team_tournament.db_services import TeamTournamentServiceDB
+    from src.team_tournament.views import TeamTournamentRouter
+    from src.teams.db_services import TeamServiceDB
+    from src.teams.views import TeamAPIRouter
+    from src.tournaments.db_services import TournamentServiceDB
+    from src.tournaments.views import TournamentAPIRouter
 
     app.include_router(FootballEventAPIRouter(FootballEventServiceDB(test_db)).route())
     app.include_router(SeasonAPIRouter(SeasonServiceDB(test_db)).route())

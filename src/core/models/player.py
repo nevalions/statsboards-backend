@@ -7,8 +7,8 @@ from src.core.models import Base
 
 if TYPE_CHECKING:
     from .person import PersonDB
-    from .sport import SportDB
     from .player_team_tournament import PlayerTeamTournamentDB
+    from .sport import SportDB
 
 
 class PlayerDB(Base):

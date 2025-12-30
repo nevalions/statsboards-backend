@@ -4,22 +4,20 @@ import pytest
 import pytest_asyncio
 
 from src.logging_config import setup_logging
+from src.positions.db_services import PositionServiceDB
 from src.seasons.db_services import SeasonServiceDB
+from src.sponsor_lines.db_services import SponsorLineServiceDB
+from src.sponsors.db_services import SponsorServiceDB
 from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
-from src.positions.db_services import PositionServiceDB
-from src.sponsors.db_services import SponsorServiceDB
-from src.sponsor_lines.db_services import SponsorLineServiceDB
 from tests.factories import (
-    SportFactorySample,
-    SeasonFactorySample,
-    TournamentFactory,
     PositionFactory,
+    SeasonFactorySample,
     SponsorFactory,
     SponsorLineFactory,
+    SportFactorySample,
+    TournamentFactory,
 )
-from pathlib import Path
-
 
 setup_logging()
 test_logger = logging.getLogger("backend_logger_tests")
@@ -44,7 +42,7 @@ async def test_tournament_service(test_db) -> TournamentServiceDB:
 async def season(test_season_service):
     """Create and return a season instance in the database."""
     try:
-        test_logger.info(f"Creating test season")
+        test_logger.info("Creating test season")
         data = SeasonFactorySample.build()
         season = await test_season_service.create(data)
         return season
@@ -56,7 +54,7 @@ async def season(test_season_service):
 async def sport(test_sport_service):
     """Create and return a sport instance in the database."""
     try:
-        test_logger.info(f"Creating test sport")
+        test_logger.info("Creating test sport")
         data = SportFactorySample.build()
         sport = await test_sport_service.create(data)
         return sport
@@ -150,7 +148,7 @@ async def test_sponsor_line_service(test_db) -> SponsorLineServiceDB:
 async def position(test_position_service, sport):
     """Create and return a position instance in database."""
     try:
-        test_logger.info(f"Creating test position")
+        test_logger.info("Creating test position")
         data = PositionFactory.build(sport_id=sport.id)
         position = await test_position_service.create(data)
         return position
@@ -162,7 +160,7 @@ async def position(test_position_service, sport):
 async def sponsor(test_sponsor_service):
     """Create and return a sponsor instance in database."""
     try:
-        test_logger.info(f"Creating test sponsor")
+        test_logger.info("Creating test sponsor")
         data = SponsorFactory.build()
         sponsor = await test_sponsor_service.create(data)
         return sponsor
@@ -174,7 +172,7 @@ async def sponsor(test_sponsor_service):
 async def sponsor_line(test_sponsor_line_service):
     """Create and return a sponsor line instance in database."""
     try:
-        test_logger.info(f"Creating test sponsor line")
+        test_logger.info("Creating test sponsor line")
         data = SponsorLineFactory.build()
         sponsor_line = await test_sponsor_line_service.create(data)
         return sponsor_line

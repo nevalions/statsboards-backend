@@ -1,14 +1,14 @@
 import asyncio
-from typing import Union
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models import BaseServiceDB, MatchDataDB, ScoreboardDB
 from src.core.models.base import Database
-from src.core.models import BaseServiceDB, ScoreboardDB, MatchDataDB
+
+from ..logging_config import get_logger, setup_logging
 from .schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
-from ..logging_config import setup_logging, get_logger
 
 setup_logging()
 
@@ -17,7 +17,7 @@ class ScoreboardUpdateManager:
     def __init__(self) -> None:
         self.active_scoreboard_updates: dict[int, asyncio.Queue] = {}
         self.logger = get_logger("backend_logger_ScoreboardUpdateManager", self)
-        self.logger.debug(f"Initialized ScoreboardUpdateManager")
+        self.logger.debug("Initialized ScoreboardUpdateManager")
 
     async def enable_scoreboard_update_queue(self, scoreboard_id: int) -> None:
         if scoreboard_id not in self.active_scoreboard_updates:
@@ -39,7 +39,7 @@ class ScoreboardServiceDB(BaseServiceDB):
         super().__init__(database, ScoreboardDB)
         self.scoreboard_update_manager = ScoreboardUpdateManager()
         self.logger = get_logger("backend_logger_ScoreboardServiceDB", self)
-        self.logger.debug(f"Initialized ScoreboardServiceDB")
+        self.logger.debug("Initialized ScoreboardServiceDB")
 
     async def create(self, item: ScoreboardSchemaCreate) -> ScoreboardDB:
         self.logger.debug(f"Create scoreboard: {item}")
@@ -88,7 +88,7 @@ class ScoreboardServiceDB(BaseServiceDB):
                     match_id=item.match_id,
                 )
 
-                self.logger.debug(f"Is scoreboard exist")
+                self.logger.debug("Is scoreboard exist")
                 is_exist = await self.get_scoreboard_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"Scoreboard already exists: {scoreboard_result}")
@@ -154,30 +154,30 @@ class ScoreboardServiceDB(BaseServiceDB):
 
     async def create_or_update_scoreboard(
         self,
-        scoreboard: Union[ScoreboardSchemaCreate, ScoreboardSchemaUpdate],
+        scoreboard: ScoreboardSchemaCreate | ScoreboardSchemaUpdate,
     ) -> ScoreboardDB:
         self.logger.debug(f"Create or update scoreboard: {scoreboard}")
         existing_scoreboard = await self.get_scoreboard_by_match_id(scoreboard.match_id)
 
         if existing_scoreboard:
-            self.logger.info(f"Scoreboard already exists")
+            self.logger.info("Scoreboard already exists")
             if isinstance(scoreboard, ScoreboardSchemaUpdate):
                 updated_scoreboard = await self.update(
                     existing_scoreboard.id, scoreboard
                 )
-                self.logger.debug(f"Updated scoreboard")
+                self.logger.debug("Updated scoreboard")
             else:
-                self.logger.error(f"Wrong Schema for updating scoreboard")
+                self.logger.error("Wrong Schema for updating scoreboard")
                 raise ValueError("Must use ScoreboardSchemaUpdate for updating.")
             return updated_scoreboard
 
         else:
-            self.logger.debug(f"Scoreboard does not exist")
+            self.logger.debug("Scoreboard does not exist")
             if isinstance(scoreboard, ScoreboardSchemaCreate):
                 new_scoreboard = await self.create(scoreboard)
-                self.logger.info(f"Scoreboard created")
+                self.logger.info("Scoreboard created")
             else:
-                self.logger.error(f"Wrong Schema for creating scoreboard")
+                self.logger.error("Wrong Schema for creating scoreboard")
                 raise ValueError("Must use ScoreboardSchemaCreate for creating.")
             return new_scoreboard
 

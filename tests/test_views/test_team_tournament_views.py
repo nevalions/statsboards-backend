@@ -1,20 +1,21 @@
 import pytest
+
+from src.logging_config import setup_logging
+from src.seasons.db_services import SeasonServiceDB
+from src.sports.db_services import SportServiceDB
 from src.team_tournament.db_services import TeamTournamentServiceDB
 from src.team_tournament.schemas import (
     TeamTournamentSchemaCreate,
     TeamTournamentSchemaUpdate,
 )
 from src.teams.db_services import TeamServiceDB
-from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
-from src.seasons.db_services import SeasonServiceDB
 from tests.factories import (
-    TeamFactory,
-    TournamentFactory,
     SeasonFactorySample,
     SportFactorySample,
+    TeamFactory,
+    TournamentFactory,
 )
-from src.logging_config import setup_logging
 
 setup_logging()
 
@@ -102,7 +103,7 @@ class TestTeamTournamentViews:
         )
 
         response = await client.put(
-            f"/api/team_in_tournament/",
+            "/api/team_in_tournament/",
             params={"item_id": created.id},
             json=update_data.model_dump(),
         )
@@ -113,7 +114,7 @@ class TestTeamTournamentViews:
         update_data = TeamTournamentSchemaUpdate(team_id=1, tournament_id=1)
 
         response = await client.put(
-            f"/api/team_in_tournament/",
+            "/api/team_in_tournament/",
             params={"item_id": 99999},
             json=update_data.model_dump(),
         )

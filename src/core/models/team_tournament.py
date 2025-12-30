@@ -1,16 +1,16 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    Integer,
     ForeignKey,
+    Integer,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
+
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .player import PlayerDB
-    from .player_team_tournament import PlayerTeamTournamentDB
+    pass
 
 
 class TeamTournamentDB(Base):

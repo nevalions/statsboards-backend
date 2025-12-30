@@ -3,21 +3,20 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
-from src.core.models.base import Database
 from src.core.models import (
     BaseServiceDB,
-    MatchDB,
-    PlayerMatchDB,
-    TeamDB,
-    MatchDataDB,
-    PlayClockDB,
     GameClockDB,
+    MatchDataDB,
+    MatchDB,
+    PlayClockDB,
+    PlayerMatchDB,
     ScoreboardDB,
-    SportDB,
     SponsorLineDB,
+    SportDB,
+    TeamDB,
 )
+from src.core.models.base import Database
 from src.logging_config import get_logger, setup_logging
-from src.player_match.db_services import PlayerMatchServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
@@ -122,7 +121,7 @@ class MatchServiceDB(BaseServiceDB):
     ) -> dict | None:
         self.logger.debug(f"Get teams by {ITEM} id:{match_id}")
         try:
-            async with self.db.async_session() as session:
+            async with self.db.async_session():
                 team_service = TeamServiceDB(self.db)
                 match = await self.get_by_id(match_id)
                 if match:
@@ -251,8 +250,8 @@ class MatchServiceDB(BaseServiceDB):
     async def get_player_by_match_full_data(self, match_id: int) -> list[dict]:
         self.logger.debug(f"Get players with full data by {ITEM} id:{match_id}")
         try:
-            from src.core.models.player_team_tournament import PlayerTeamTournamentDB
             from src.core.models.player import PlayerDB
+            from src.core.models.player_team_tournament import PlayerTeamTournamentDB
 
             async with self.db.async_session() as session:
                 stmt = (
