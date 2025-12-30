@@ -48,7 +48,9 @@ async def test_app(test_db):
     from src.matchdata.db_services import MatchDataServiceDB
     from src.matchdata.views import MatchDataAPIRouter
     from src.matches.db_services import MatchServiceDB
-    from src.matches.views import MatchAPIRouter
+    from src.matches.crud_router import MatchCRUDRouter
+    from src.matches.websocket_router import MatchWebSocketRouter
+    from src.matches.parser_router import MatchParserRouter
     from src.person.db_services import PersonServiceDB
     from src.person.views import PersonAPIRouter
     from src.playclocks.db_services import PlayClockServiceDB
@@ -86,7 +88,9 @@ async def test_app(test_db):
     app.include_router(SeasonAPIRouter(SeasonServiceDB(test_db)).route())
     app.include_router(SportAPIRouter(SportServiceDB(test_db)).route())
     app.include_router(TeamAPIRouter(TeamServiceDB(test_db)).route())
-    app.include_router(MatchAPIRouter(MatchServiceDB(test_db)).route())
+    app.include_router(MatchCRUDRouter(MatchServiceDB(test_db)).route())
+    app.include_router(MatchWebSocketRouter(MatchServiceDB(test_db)).route())
+    app.include_router(MatchParserRouter(MatchServiceDB(test_db)).route())
     app.include_router(TournamentAPIRouter(TournamentServiceDB(test_db)).route())
     app.include_router(PositionAPIRouter(PositionServiceDB(test_db)).route())
     app.include_router(SponsorAPIRouter(SponsorServiceDB(test_db)).route())

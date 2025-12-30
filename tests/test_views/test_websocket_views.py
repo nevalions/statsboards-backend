@@ -299,9 +299,13 @@ class TestWebSocketEndpointIntegration:
         mock_websocket.application_state = WebSocketState.CONNECTED
         mock_websocket.send_json = AsyncMock()
 
-        from src.matches.views import MatchAPIRouter
+        from src.matches.crud_router import MatchCRUDRouter
+        from src.matches.websocket_router import MatchWebSocketRouter
+        from src.matches.parser_router import MatchParserRouter
 
-        MatchAPIRouter(MatchServiceDB(test_db))
+        MatchCRUDRouter(MatchServiceDB(test_db))
+        MatchWebSocketRouter(MatchServiceDB(test_db))
+        MatchParserRouter(MatchServiceDB(test_db))
 
         client_id = "test_endpoint_client"
         match_id = created_match.id

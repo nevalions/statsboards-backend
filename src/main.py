@@ -13,7 +13,12 @@ from src.football_events import api_football_event_router
 from src.gameclocks import api_gameclock_router
 from src.logging_config import logs_dir, setup_logging
 from src.matchdata import api_matchdata_router
-from src.matches import api_match_router, template_match_router
+from src.matches import (
+    api_match_crud_router,
+    api_match_parser_router,
+    api_match_websocket_router,
+    template_match_router,
+)
 from src.person import api_person_router
 from src.playclocks import api_playclock_router
 from src.player import api_player_router
@@ -81,7 +86,9 @@ app.include_router(api_tournament_router)
 app.include_router(template_tournament_router)
 app.include_router(api_team_router)
 app.include_router(api_team_tournament_router)
-app.include_router(api_match_router)
+app.include_router(api_match_crud_router)
+app.include_router(api_match_websocket_router)
+app.include_router(api_match_parser_router)
 app.include_router(template_match_router)
 app.include_router(api_matchdata_router)
 app.include_router(api_playclock_router)
