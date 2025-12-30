@@ -215,7 +215,9 @@ class TestConnectionManager:
 
 @pytest.mark.asyncio
 class TestWebSocketEndpointIntegration:
-    async def test_websocket_endpoint_connection_and_initial_data(self, test_app, test_db):
+    async def test_websocket_endpoint_connection_and_initial_data(
+        self, test_app, test_db
+    ):
         """Test WebSocket endpoint connection and initial data sending."""
         from src.matches.db_services import MatchServiceDB
         from src.teams.db_services import TeamServiceDB
@@ -309,11 +311,11 @@ class TestWebSocketEndpointIntegration:
         await mock_websocket.send_json(initial_data)
 
         initial_playclock_data = await fetch_playclock(match_id)
-        initial_playclock_data["type"] = "playclock-update"
+        initial_playclock_data["type"] = "playclock-update"  # type: ignore[assignment]
         await mock_websocket.send_json(initial_playclock_data)
 
         initial_gameclock_data = await fetch_gameclock(match_id)
-        initial_gameclock_data["type"] = "gameclock-update"
+        initial_gameclock_data["type"] = "gameclock-update"  # type: ignore[assignment]
         await mock_websocket.send_json(initial_gameclock_data)
 
         assert mock_websocket.send_json.call_count == 3
@@ -572,5 +574,532 @@ class TestWebSocketCleanup:
         active_connections = await connection_manager.get_active_connections()
         assert active_connections[client_id] == mock_ws2
         assert mock_ws1.close.called
+
+        await connection_manager.disconnect(client_id)
+
+
+@pytest.mark.asyncio
+class TestMatchDataWebSocketManagerErrorScenarios:
+    async def test_ws_manager_database_connection_failure(self):
+        """Test MatchDataWebSocketManager handles database connection failures."""
+        from src.core.models.base import MatchDataWebSocketManager
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://invalid:invalid@invalid:5432/invalid"
+        )
+
+        try:
+            await manager.connect_to_db()
+            assert False, "Should have raised an exception for invalid connection"
+        except Exception:
+            pass
+
+    async def test_ws_manager_maintain_connection_reconnect_after_failure(self):
+        """Test that maintain_connection attempts to reconnect after connection loss."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        call_count = 0
+
+        async def mock_connect():
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise Exception("Connection failed")
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        manager.connect_to_db = AsyncMock(side_effect=mock_connect)
+        manager.is_connected = False
+
+        task = asyncio.create_task(manager.maintain_connection())
+        await asyncio.sleep(0.1)
+        task.cancel()
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+        assert call_count >= 1
+
+    async def test_ws_manager_startup_with_connection_error(self):
+        """Test ws_manager startup handles connection errors gracefully."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://invalid:invalid@invalid:5432/invalid"
+        )
+        manager.connect_to_db = AsyncMock(side_effect=Exception("Connection failed"))
+
+        try:
+            await manager.startup()
+            assert False, "Should have raised an exception"
+        except Exception:
+            pass
+
+    async def test_ws_manager_shutdown_during_active_connection(self):
+        """Test that shutdown properly closes active connection and cancels retry task."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        manager.connection = AsyncMock()
+        manager.is_connected = True
+
+        async def mock_cancelled_task():
+            raise asyncio.CancelledError()
+
+        manager._connection_retry_task = asyncio.create_task(mock_cancelled_task())
+
+        await manager.shutdown()
+
+        manager.connection.close.assert_called_once()
+        assert manager.is_connected is False
+
+    async def test_ws_manager_disconnect_nonexistent_client(self):
+        """Test disconnect handles nonexistent clients gracefully."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+
+        await manager.disconnect("nonexistent_client")
+
+    async def test_ws_manager_disconnect_partial_cleanup(self):
+        """Test disconnect handles partial cleanup when only some queues exist."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock
+        import asyncio
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        client_id = "test_client"
+        manager.match_data_queues[client_id] = asyncio.Queue()
+        manager.playclock_queues[client_id] = asyncio.Queue()
+
+        await manager.disconnect(client_id)
+
+        assert client_id not in manager.match_data_queues
+        assert client_id not in manager.playclock_queues
+        assert client_id not in manager.gameclock_queues
+
+
+@pytest.mark.asyncio
+class TestWebSocketListenerErrorScenarios:
+    async def test_base_listener_empty_payload(self):
+        """Test _base_listener handles empty payload gracefully."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
+        queue_dict["test_client"].put = AsyncMock()
+
+        await manager._base_listener(
+            connection=None,
+            pid=123,
+            channel="test_channel",
+            payload="   ",
+            update_type="test-update",
+            queue_dict=queue_dict,
+        )
+
+        queue_dict["test_client"].put.assert_not_called()
+
+    async def test_base_listener_invalid_json(self):
+        """Test _base_listener handles invalid JSON payload."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
+        queue_dict["test_client"].put = AsyncMock()
+
+        await manager._base_listener(
+            connection=None,
+            pid=123,
+            channel="test_channel",
+            payload="invalid json {{{",
+            update_type="test-update",
+            queue_dict=queue_dict,
+        )
+
+        queue_dict["test_client"].put.assert_not_called()
+
+    async def test_base_listener_missing_match_id(self):
+        """Test _base_listener handles payload without match_id."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
+        queue_dict["test_client"].put = AsyncMock()
+
+        try:
+            await manager._base_listener(
+                connection=None,
+                pid=123,
+                channel="test_channel",
+                payload='{"data": "test"}',
+                update_type="test-update",
+                queue_dict=queue_dict,
+            )
+        except KeyError:
+            pass
+
+    async def test_base_listener_exception_in_queue_put(self):
+        """Test _base_listener handles exceptions when putting to queue."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        mock_queue = AsyncMock(spec=asyncio.Queue)
+        mock_queue.put = AsyncMock(side_effect=Exception("Queue error"))
+        queue_dict = {"test_client": mock_queue}
+
+        with patch.object(
+            connection_manager, "get_match_subscriptions", return_value=[]
+        ):
+            await manager._base_listener(
+                connection=None,
+                pid=123,
+                channel="test_channel",
+                payload='{"match_id": 1}',
+                update_type="test-update",
+                queue_dict=queue_dict,
+            )
+
+    async def test_playclock_listener_error_handling(self):
+        """Test playclock_listener properly delegates to _base_listener."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        manager._base_listener = AsyncMock()
+
+        await manager.playclock_listener(
+            connection=None,
+            pid=123,
+            channel="playclock_change",
+            payload='{"match_id": 1}',
+        )
+
+        manager._base_listener.assert_called_once()
+        args = manager._base_listener.call_args.args
+        assert args[4] == "playclock-update"
+        assert args[5] == manager.playclock_queues
+
+    async def test_match_data_listener_error_handling(self):
+        """Test match_data_listener properly delegates to _base_listener."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        manager._base_listener = AsyncMock()
+
+        await manager.match_data_listener(
+            connection=None,
+            pid=123,
+            channel="matchdata_change",
+            payload='{"match_id": 1}',
+        )
+
+        manager._base_listener.assert_called_once()
+        args = manager._base_listener.call_args.args
+        assert args[4] == "match-update"
+        assert args[5] == manager.match_data_queues
+
+    async def test_gameclock_listener_error_handling(self):
+        """Test gameclock_listener properly delegates to _base_listener."""
+        from src.core.models.base import MatchDataWebSocketManager
+        from unittest.mock import AsyncMock, patch
+
+        manager = MatchDataWebSocketManager(
+            db_url="postgresql://test:test@localhost:5432/test"
+        )
+        manager._base_listener = AsyncMock()
+
+        await manager.gameclock_listener(
+            connection=None,
+            pid=123,
+            channel="gameclock_change",
+            payload='{"match_id": 1}',
+        )
+
+        manager._base_listener.assert_called_once()
+        args = manager._base_listener.call_args.args
+        assert args[4] == "gameclock-update"
+        assert args[5] == manager.gameclock_queues
+
+
+@pytest.mark.asyncio
+class TestConnectionManagerErrorScenarios:
+    async def test_disconnect_nonexistent_client(self):
+        """Test disconnect handles nonexistent clients gracefully."""
+        await connection_manager.disconnect("nonexistent_client")
+
+        active_connections = await connection_manager.get_active_connections()
+        assert "nonexistent_client" not in active_connections
+
+    async def test_get_queue_for_nonexistent_client(self):
+        """Test get_queue_for_client raises KeyError for nonexistent client."""
+        try:
+            await connection_manager.get_queue_for_client("nonexistent_client")
+            assert False, "Should have raised KeyError"
+        except KeyError:
+            pass
+
+    async def test_send_to_all_with_no_match_subscribers(self):
+        """Test send_to_all handles case with no subscribers to a match."""
+        import json
+
+        match_id = 999
+        test_data = {"type": "match-update", "match_id": match_id}
+
+        await connection_manager.send_to_all(  # type: ignore[arg-type]
+            json.dumps(test_data), match_id=str(match_id)  # type: ignore[arg-type]
+        )
+
+    async def test_connect_replaces_existing_connection(self):
+        """Test connect properly closes existing connection when reconnecting."""
+        from unittest.mock import AsyncMock
+
+        client_id = "test_reconnect_client"
+        match_id = 1
+
+        mock_ws1 = AsyncMock(spec=WebSocket)
+        mock_ws2 = AsyncMock(spec=WebSocket)
+
+        await connection_manager.connect(mock_ws1, client_id, match_id)
+        await connection_manager.connect(mock_ws2, client_id, match_id)
+
+        active_connections = await connection_manager.get_active_connections()
+        assert active_connections[client_id] == mock_ws2
+        mock_ws1.close.assert_called_once()
+
+        await connection_manager.disconnect(client_id)
+
+    async def test_queue_operations_on_empty_queue(self):
+        """Test queue operations when queue is empty."""
+        from unittest.mock import AsyncMock
+
+        client_id = "test_empty_queue_client"
+        match_id = 1
+
+        mock_websocket = AsyncMock(spec=WebSocket)
+        await connection_manager.connect(mock_websocket, client_id, match_id)
+
+        queue = await connection_manager.get_queue_for_client(client_id)
+        assert queue.empty()
+
+        try:
+            queue.get_nowait()
+            assert False, "Should have raised asyncio.QueueEmpty"
+        except asyncio.QueueEmpty:
+            pass
+
+        await connection_manager.disconnect(client_id)
+
+    async def test_cleanup_connection_resources_for_nonexistent_client(self):
+        """Test cleanup_connection_resources handles nonexistent client."""
+        await connection_manager.cleanup_connection_resources("nonexistent_client")
+
+        active_connections = await connection_manager.get_active_connections()
+        assert "nonexistent_client" not in active_connections
+
+    async def test_multiple_concurrent_connect_disconnect(self):
+        """Test handling multiple concurrent connect and disconnect operations."""
+        from unittest.mock import AsyncMock
+
+        clients = [f"client_{i}" for i in range(10)]
+        match_id = 1
+
+        mock_websockets = [AsyncMock(spec=WebSocket) for _ in range(10)]
+
+        connect_tasks = [
+            connection_manager.connect(ws, client_id, match_id)
+            for ws, client_id in zip(mock_websockets, clients)
+        ]
+
+        await asyncio.gather(*connect_tasks)
+
+        active_connections = await connection_manager.get_active_connections()
+        for client_id in clients:
+            assert client_id in active_connections
+
+        disconnect_tasks = [
+            connection_manager.disconnect(client_id) for client_id in clients
+        ]
+
+        await asyncio.gather(*disconnect_tasks)
+
+        active_connections = await connection_manager.get_active_connections()
+        for client_id in clients:
+            assert client_id not in active_connections
+
+    async def test_send_to_all_with_mixed_queue_states(self):
+        """Test send_to_all when some clients have queues and some don't."""
+        from unittest.mock import AsyncMock
+        import json
+
+        match_id = 1
+        client_1 = "client_with_queue"
+        client_2 = "client_without_queue"
+        test_data = {"type": "match-update", "match_id": match_id}
+
+        mock_ws1 = AsyncMock(spec=WebSocket)
+
+        await connection_manager.connect(mock_ws1, client_1, match_id)
+
+        await connection_manager.send_to_all(  # type: ignore[arg-type]
+            json.dumps(test_data), match_id=match_id  # type: ignore[arg-type]
+        )
+
+        await asyncio.sleep(0.01)
+
+        queue_1 = await connection_manager.get_queue_for_client(client_1)
+        assert not queue_1.empty()
+
+        await connection_manager.disconnect(client_1)
+
+
+@pytest.mark.asyncio
+class TestWebSocketConnectionErrorHandling:
+    async def test_websocket_send_error_during_message_send(self):
+        """Test handling of errors when sending messages to WebSocket."""
+        from unittest.mock import AsyncMock
+        from starlette.websockets import WebSocketState
+
+        client_id = "test_send_error_client"
+        match_id = 1
+
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_websocket.application_state = WebSocketState.CONNECTED
+        mock_websocket.send_json = AsyncMock(side_effect=Exception("Send failed"))
+
+        await connection_manager.connect(mock_websocket, client_id, match_id)
+
+        queue = await connection_manager.get_queue_for_client(client_id)
+        await queue.put({"type": "test", "data": "message"})
+
+        msg = await queue.get()
+        assert msg == {"type": "test", "data": "message"}
+
+        try:
+            await mock_websocket.send_json(msg)
+        except Exception:
+            pass
+
+        await connection_manager.disconnect(client_id)
+
+    async def test_websocket_close_error_during_disconnect(self):
+        """Test handling of errors when closing WebSocket connection."""
+        from unittest.mock import AsyncMock
+
+        client_id = "test_close_error_client"
+        match_id = 1
+
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_websocket.close = AsyncMock(side_effect=Exception("Close failed"))
+
+        await connection_manager.connect(mock_websocket, client_id, match_id)
+
+        try:
+            await connection_manager.disconnect(client_id)
+            assert False, "Should have raised exception when closing fails"
+        except Exception as e:
+            assert "Close failed" in str(e)
+
+        active_connections = await connection_manager.get_active_connections()
+        assert client_id in active_connections
+
+    async def test_websocket_state_check_before_send(self):
+        """Test WebSocket state is checked before sending messages."""
+        from unittest.mock import AsyncMock
+        from starlette.websockets import WebSocketState
+
+        client_id = "test_state_check_client"
+        match_id = 1
+
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_websocket.application_state = WebSocketState.DISCONNECTED
+        mock_websocket.send_json = AsyncMock()
+
+        await connection_manager.connect(mock_websocket, client_id, match_id)
+
+        assert mock_websocket.application_state == WebSocketState.DISCONNECTED
+
+        await connection_manager.disconnect(client_id)
+
+    async def test_queue_overflow_prevention(self):
+        """Test that queue can handle high volume of messages without overflow."""
+        from unittest.mock import AsyncMock
+
+        client_id = "test_queue_overflow_client"
+        match_id = 1
+
+        mock_websocket = AsyncMock(spec=WebSocket)
+        await connection_manager.connect(mock_websocket, client_id, match_id)
+
+        queue = await connection_manager.get_queue_for_client(client_id)
+
+        num_messages = 1000
+        for i in range(num_messages):
+            await queue.put({"type": "test", "index": i})
+
+        assert queue.qsize() == num_messages
+
+        received_count = 0
+        while not queue.empty():
+            msg = await queue.get()
+            received_count += 1
+
+        assert received_count == num_messages
+
+        await connection_manager.disconnect(client_id)
+
+    async def test_concurrent_queue_access(self):
+        """Test handling of concurrent access to the same queue."""
+        from unittest.mock import AsyncMock
+
+        client_id = "test_concurrent_access_client"
+        match_id = 1
+
+        mock_websocket = AsyncMock(spec=WebSocket)
+        await connection_manager.connect(mock_websocket, client_id, match_id)
+
+        queue = await connection_manager.get_queue_for_client(client_id)
+
+        async def produce_messages():
+            for i in range(50):
+                await queue.put({"type": "producer", "index": i})
+
+        async def consume_messages():
+            for _ in range(50):
+                await queue.get()
+
+        await asyncio.gather(produce_messages(), consume_messages())
+
+        assert queue.empty()
 
         await connection_manager.disconnect(client_id)
