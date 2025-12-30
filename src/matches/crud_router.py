@@ -95,6 +95,7 @@ class MatchCRUDRouter(
                 await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
             )
 
+            scoreboard_schema: ScoreboardSchemaCreate | ScoreboardSchemaUpdate  # type: ignore[assignment]
             if existing_scoreboard is None:
                 scoreboard_schema = ScoreboardSchemaCreate(
                     match_id=new_match.id,
@@ -353,6 +354,7 @@ class MatchCRUDRouter(
                     await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
                 )
 
+                scoreboard_schema: ScoreboardSchemaCreate | ScoreboardSchemaUpdate  # type: ignore[assignment]
                 if existing_scoreboard is None:
                     scoreboard_schema = ScoreboardSchemaCreate(
                         match_id=new_match.id,

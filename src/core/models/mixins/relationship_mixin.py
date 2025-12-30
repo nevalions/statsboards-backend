@@ -1,12 +1,21 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
 
+if TYPE_CHECKING:
+    from logging import Logger
 
-class RelationshipMixin:  # type: ignore[attr-defined]
+    from src.core.models.base import Base, Database
+
+
+class RelationshipMixin:
+    db: "Database"
+    logger: "Logger"
+    model: type["Base"]
+
     async def find_relation(
         self,
         secondary_table,
@@ -281,8 +290,8 @@ class RelationshipMixin:  # type: ignore[attr-defined]
         )
 
         if related_item is not None:
-            if related_item.id:
-                _id = related_item.id
+            if hasattr(related_item, "id") and related_item.id:  # type: ignore[attr-defined]
+                _id = related_item.id  # type: ignore[attr-defined]
                 self.logger.debug(
                     f"Fetching nested related items for item id: {_id} and property: {related_property} "
                     f"and nested_related_property {nested_related_property} for model {self.model.__name__}"

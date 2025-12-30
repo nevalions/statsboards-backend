@@ -159,32 +159,41 @@ class MatchServiceDB(BaseServiceDB):
     async def get_matchdata_by_match(
         self,
         match_id: int,
-    ) -> list[MatchDataDB] | None:
+    ) -> MatchDataDB | None:
         self.logger.debug(f"Get match_data by {ITEM} id:{match_id}")
-        return await self.get_related_item_level_one_by_id(
+        result = await self.get_related_item_level_one_by_id(
             match_id,
             "match_data",
         )
+        if result and len(result) > 0:
+            return result[0]  # type: ignore[return-value]
+        return None
 
     async def get_playclock_by_match(
         self,
         match_id: int,
-    ) -> list[PlayClockDB] | None:
+    ) -> PlayClockDB | None:
         self.logger.debug(f"Get match_playclock by {ITEM} id:{match_id}")
-        return await self.get_related_item_level_one_by_id(
+        result = await self.get_related_item_level_one_by_id(
             match_id,
             "match_playclock",
         )
+        if result and len(result) > 0:
+            return result[0]  # type: ignore[return-value]
+        return None
 
     async def get_gameclock_by_match(
         self,
         match_id: int,
-    ) -> list[GameClockDB] | None:
+    ) -> GameClockDB | None:
         self.logger.debug(f"Get match_gameclock by {ITEM} id:{match_id}")
-        return await self.get_related_item_level_one_by_id(
+        result = await self.get_related_item_level_one_by_id(
             match_id,
             "match_gameclock",
         )
+        if result and len(result) > 0:
+            return result[0]  # type: ignore[return-value]
+        return None
 
     async def get_teams_by_match(
         self,
@@ -310,7 +319,7 @@ class MatchServiceDB(BaseServiceDB):
     async def get_scoreboard_by_match(
         self,
         match_id: int,
-    ) -> list[ScoreboardDB] | None:
+    ) -> ScoreboardDB | None:
         self.logger.debug(f"Getting scoreboard for {ITEM} id:{match_id}")
         try:
             result = await self.get_related_item_level_one_by_id(
@@ -318,7 +327,9 @@ class MatchServiceDB(BaseServiceDB):
                 "match_scoreboard",
             )
             self.logger.debug(f"Got scoreboard successfully. Result: {result}")
-            return result
+            if result and len(result) > 0:
+                return result[0]  # type: ignore[return-value]
+            return None
         except Exception as e:
             self.logger.error(
                 f"Error getting scoreboard for {ITEM} id:{match_id} {e}", exc_info=True
