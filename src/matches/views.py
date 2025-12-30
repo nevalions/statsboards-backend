@@ -334,6 +334,54 @@ class MatchAPIRouter(
             )
             return uploaded_paths
 
+        async def _send_initial_data(
+            websocket: WebSocket, client_id: str, match_id: int
+        ):
+            from src.helpers.fetch_helpers import (
+                fetch_gameclock,
+                fetch_playclock,
+                fetch_with_scoreboard_data,
+            )
+
+            initial_data = await fetch_with_scoreboard_data(match_id)
+            initial_data["type"] = "message-update"
+            websocket_logger.debug("WebSocket Connection initial_data for type: message-update")
+            websocket_logger.info(f"WebSocket Connection initial_data: {initial_data}")
+
+            initial_playclock_data = await fetch_playclock(match_id)
+            initial_playclock_data["type"] = "playclock-update"
+            websocket_logger.debug("WebSocket Connection initial_data for type: playclock-update")
+            websocket_logger.info(f"WebSocket Connection initial_data: {initial_playclock_data}")
+
+            initial_gameclock_data = await fetch_gameclock(match_id)
+            initial_gameclock_data["type"] = "gameclock-update"
+            websocket_logger.debug("WebSocket Connection initial_data for type: gameclock-update")
+            websocket_logger.info(f"WebSocket Connection initial_data: {initial_gameclock_data}")
+
+            await websocket.send_json(initial_data)
+            await websocket.send_json(initial_playclock_data)
+            await websocket.send_json(initial_gameclock_data)
+
+            if client_id in connection_manager.queues:
+                await connection_manager.queues[client_id].put(initial_data)
+                await connection_manager.queues[client_id].put(initial_playclock_data)
+                await connection_manager.queues[client_id].put(initial_gameclock_data)
+                websocket_logger.debug(f"Put initial_data into queue for client_id:{client_id}: {initial_data}")
+                websocket_logger.debug(f"Put initial_playclock_data into queue for client_id:{client_id}: {initial_playclock_data}")
+                websocket_logger.debug(f"Put initial_gameclock_data into queue for client_id:{client_id}: {initial_gameclock_data}")
+            else:
+                websocket_logger.warning(f"No queue found for client_id {client_id}. Data not enqueued.")
+
+        async def _cleanup_websocket(client_id: str):
+            await asyncio.sleep(0.1)
+            await connection_manager.disconnect(client_id)
+            connection_socket_logger.warning(
+                f"Client {client_id} disconnected, closing connection and removing from subscriptions"
+            )
+            await ws_manager.disconnect(client_id)
+            websocket_logger.warning(f"Client {client_id} disconnected from websocket, closing connection")
+            await ws_manager.shutdown()
+
         @router.websocket("/ws/id/{match_id}/{client_id}/")
         async def websocket_endpoint(
             websocket: WebSocket,
@@ -349,90 +397,13 @@ class MatchAPIRouter(
             await ws_manager.startup()
 
             try:
-                from src.helpers.fetch_helpers import (
-                    fetch_gameclock,
-                    fetch_playclock,
-                    fetch_with_scoreboard_data,
-                )
-
-                type_message_update = "message-update"
-                initial_data = await fetch_with_scoreboard_data(match_id)
-                initial_data["type"] = type_message_update
-                websocket_logger.debug(
-                    f"WebSocket Connection initial_data for type: {type_message_update}"
-                )
-                websocket_logger.info(
-                    f"WebSocket Connection initial_data: {initial_data}"
-                )
-
-                type_message_update = "match-update"
-                initial_data = await fetch_with_scoreboard_data(match_id)
-                initial_data["type"] = type_message_update
-                websocket_logger.debug(
-                    f"WebSocket Connection initial_data for type: {type_message_update}"
-                )
-                websocket_logger.info(
-                    f"WebSocket Connection initial_data: {initial_data}"
-                )
-
-                type_playclock_update = "playclock-update"
-                initial_playclock_data = await fetch_playclock(match_id)
-                initial_playclock_data["type"] = type_playclock_update
-                websocket_logger.debug(
-                    f"WebSocket Connection initial_data for type: {type_playclock_update}"
-                )
-                websocket_logger.info(
-                    f"WebSocket Connection initial_data: {initial_playclock_data}"
-                )
-
-                type_gameclock_update = "gameclock-update"
-                initial_gameclock_data = await fetch_gameclock(match_id)
-                initial_gameclock_data["type"] = type_gameclock_update
-                websocket_logger.debug(
-                    f"WebSocket Connection initial_data for type: {type_gameclock_update}"
-                )
-                websocket_logger.info(
-                    f"WebSocket Connection initial_data: {initial_gameclock_data}"
-                )
-
-                await websocket.send_json(initial_data)
-                await websocket.send_json(initial_playclock_data)
-                await websocket.send_json(initial_gameclock_data)
-
-                # Ensure the client_id is associated with a queue
-                if client_id in connection_manager.queues:
-                    # Add the data to the client's queue
-                    await connection_manager.queues[client_id].put(initial_data)
-                    await connection_manager.queues[client_id].put(
-                        initial_playclock_data
-                    )
-                    await connection_manager.queues[client_id].put(
-                        initial_gameclock_data
-                    )
-                    websocket_logger.debug(
-                        f"Put initial_data into queue for client_id:{client_id}: {initial_data}"
-                    )
-                    websocket_logger.debug(
-                        f"Put initial_playclock_data into queue for client_id:{client_id}: {initial_playclock_data}"
-                    )
-                    websocket_logger.debug(
-                        f"Put initial_gameclock_data into queue for client_id:{client_id}: {initial_gameclock_data}"
-                    )
-                else:
-                    websocket_logger.warning(
-                        f"No queue found for client_id {client_id}. Data not enqueued."
-                    )
-
+                await _send_initial_data(websocket, client_id, match_id)
                 await process_data_websocket(websocket, client_id, match_id)
 
             except WebSocketDisconnect as e:
-                websocket_logger.error(
-                    f"WebSocket disconnect error:{str(e)}", exc_info=True
-                )
+                websocket_logger.error(f"WebSocket disconnect error:{str(e)}", exc_info=True)
             except ConnectionClosedOK as e:
-                websocket_logger.debug(
-                    f"ConnectionClosedOK error:{str(e)}", exc_info=True
-                )
+                websocket_logger.debug(f"ConnectionClosedOK error:{str(e)}", exc_info=True)
             except asyncio.TimeoutError as e:
                 websocket_logger.error(f"TimeoutError error:{str(e)}", exc_info=True)
             except RuntimeError as e:
@@ -440,17 +411,7 @@ class MatchAPIRouter(
             except Exception as e:
                 websocket_logger.error(f"Unexpected error:{str(e)}", exc_info=True)
             finally:
-                await asyncio.sleep(0.1)
-                await connection_manager.disconnect(client_id)
-                connection_socket_logger.warning(
-                    f"Client {client_id} disconnected, closing connection "
-                    f"and removing from subscriptions"
-                )
-                await ws_manager.disconnect(client_id)
-                websocket_logger.warning(
-                    f"Client {client_id} disconnected from websocket, closing connection"
-                )
-                await ws_manager.shutdown()
+                await _cleanup_websocket(client_id)
 
         async def process_data_websocket(
             websocket: WebSocket, client_id: str, match_id: int

@@ -274,138 +274,152 @@ async def parse_all_players_from_eesl_index_page_eesl(
     return players_in_eesl
 
 
+def _parse_player_basic_info(ppp):
+    player_eesl_id = int(
+        re.findall(r"\d+", ppp.find("a", class_="table__player").get("href"))[0]
+    )
+    logger.debug(f"Parsing player eesl_id: {player_eesl_id}")
+    
+    player_full_name = ppp.find("span", class_="table__player-name").text.strip().lower()
+    logger.debug(f"Parsing player full name: {player_full_name}")
+    
+    player_first_name = player_full_name.split(" ")[1]
+    player_second_name = player_full_name.split(" ")[0]
+    logger.debug(f"Parsing player first name and second name: {player_first_name} {player_second_name}")
+    
+    img_url, extension = ppp.find("img", class_="table__player-img").get("src").strip().split("_")
+    logger.debug(f"Parsing player image url: {img_url} and extension: {extension}")
+    player_img_url = f"{img_url}.{extension.split('.')[1]}"
+    
+    return {
+        "player_eesl_id": player_eesl_id,
+        "player_first_name": player_first_name,
+        "player_second_name": player_second_name,
+        "player_img_url": player_img_url,
+    }
+
+def _generate_player_image_paths(player_eesl_id, player_second_name, player_first_name, player_img_url):
+    icon_image_height = 100
+    web_view_image_height = 400
+    
+    logger.debug("Getting image data for persons")
+    path = urlparse(player_img_url).path
+    ext = Path(path).suffix
+    
+    person_image_filename = f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
+    person_image_filename = convert_cyrillic_filename(person_image_filename)
+    
+    person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+    person_image_filename_resized_icon = convert_cyrillic_filename(person_image_filename_resized_icon)
+    
+    person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
+    person_image_filename_resized_web_view = convert_cyrillic_filename(person_image_filename_resized_web_view)
+    
+    image_path = os.path.join(uploads_path, "persons/photos/")
+    image_path_with_filename = os.path.join(uploads_path, f"persons/photos/{person_image_filename}")
+    
+    resized_icon_image_path = os.path.join(uploads_path, f"persons/photos/{person_image_filename_resized_icon}")
+    resized_web_image_path = os.path.join(uploads_path, f"persons/photos/{person_image_filename_resized_web_view}")
+    
+    relative_image_icon_path = os.path.join("/static/uploads/persons/photos", person_image_filename_resized_icon)
+    relative_image_web_path = os.path.join("/static/uploads/persons/photos", person_image_filename_resized_web_view)
+    relative_image_path = os.path.join("/static/uploads/persons/photos", person_image_filename)
+    
+    return {
+        "image_path": image_path,
+        "image_path_with_filename": image_path_with_filename,
+        "resized_icon_image_path": resized_icon_image_path,
+        "resized_web_image_path": resized_web_image_path,
+        "relative_image_icon_path": relative_image_icon_path,
+        "relative_image_web_path": relative_image_web_path,
+        "relative_image_path": relative_image_path,
+        "icon_image_height": icon_image_height,
+        "web_view_image_height": web_view_image_height,
+    }
+
+async def _download_player_image(player_img_url, image_paths, player_eesl_id):
+    try:
+        logger.debug("Downloading person image")
+        await file_service.download_and_resize_image(
+            img_url=player_img_url,
+            original_file_path=image_paths["image_path"],
+            original_image_path_with_filename=image_paths["image_path_with_filename"],
+            icon_image_path=image_paths["resized_icon_image_path"],
+            web_view_image_path=image_paths["resized_web_image_path"],
+            icon_height=image_paths["icon_image_height"],
+            web_view_height=image_paths["web_view_image_height"],
+        )
+        return True
+    except Exception as ex:
+        logger.error(f"Error while downloading person image: {ex}, skipping player {player_eesl_id}", exc_info=True)
+        return False
+
+def _create_player_with_person_data(player_eesl_id, player_first_name, player_second_name, player_dob, image_paths):
+    player_with_person: ParsePlayerWithPersonData = {
+        "person": {
+            "first_name": player_first_name,
+            "second_name": player_second_name,
+            "person_photo_url": image_paths["relative_image_path"],
+            "person_photo_icon_url": image_paths["relative_image_icon_path"],
+            "person_photo_web_url": image_paths["relative_image_web_path"],
+            "person_dob": player_dob,
+            "person_eesl_id": player_eesl_id,
+        },
+        "player": {
+            "sport_id": "1",
+            "player_eesl_id": player_eesl_id,
+        },
+    }
+    return player_with_person
+
 async def get_player_from_eesl_participants(
     players_in_eesl, all_eesl_players, remaining_limit
 ) -> Optional[List[ParsePlayerWithPersonData]] | bool:
     logger.debug("Parsing player from eesl participants")
     has_error = False
+    
     for ppp in all_eesl_players:
         if remaining_limit == 0:
             logger.debug("Remaining limit of players reached. Stopping...")
             break
+            
         try:
-            if ppp:
-                logger.debug("Parsing player from eesl")
-                player_eesl_id = int(
-                    re.findall(
-                        r"\d+", ppp.find("a", class_="table__player").get("href")
-                    )[0]
-                )
-                logger.debug(f"Parsing player eesl_id: {player_eesl_id}")
-                player_full_name = (
-                    ppp.find("span", class_="table__player-name").text.strip().lower()
-                )
-                logger.debug(f"Parsing player full name: {player_full_name}")
-                player_first_name = player_full_name.split(" ")[1]
-                player_second_name = player_full_name.split(" ")[0]
-                logger.debug(
-                    f"Parsing player first name and second name: {player_first_name} {player_second_name}"
-                )
-                img_url, extension = (
-                    ppp.find("img", class_="table__player-img")
-                    .get("src")
-                    .strip()
-                    .split("_")
-                )
-                logger.debug(
-                    f"Parsing player image url: {img_url} and extension: {extension}"
-                )
-                player_img_url = f"{img_url}.{extension.split('.')[1]}"
-
-                icon_image_height = 100
-                web_view_image_height = 400
-
-                logger.debug("Getting image data for persons")
-                path = urlparse(player_img_url).path
-                ext = Path(path).suffix
-                person_image_filename = (
-                    f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
-                )
-                person_image_filename = convert_cyrillic_filename(person_image_filename)
-                person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
-                person_image_filename_resized_icon = convert_cyrillic_filename(
-                    person_image_filename_resized_icon
-                )
-                person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
-                person_image_filename_resized_web_view = convert_cyrillic_filename(
-                    person_image_filename_resized_web_view
-                )
-
-                image_path = os.path.join(uploads_path, "persons/photos/")
-                image_path_with_filename = os.path.join(
-                    uploads_path, f"persons/photos/{person_image_filename}"
-                )
-
-                resized_icon_image_path = os.path.join(
-                    uploads_path,
-                    f"persons/photos/{person_image_filename_resized_icon}",
-                )
-                resized_web_image_path = os.path.join(
-                    uploads_path,
-                    f"persons/photos/{person_image_filename_resized_web_view}",
-                )
-
-                relative_image_icon_path = os.path.join(
-                    "/static/uploads/persons/photos",
-                    person_image_filename_resized_icon,
-                )
-
-                relative_image_web_path = os.path.join(
-                    "/static/uploads/persons/photos",
-                    person_image_filename_resized_web_view,
-                )
-
-                relative_image_path = os.path.join(
-                    "/static/uploads/persons/photos",
-                    person_image_filename,
-                )
-
-                try:
-                    logger.debug("Downloading person image")
-                    await file_service.download_and_resize_image(
-                        img_url=player_img_url,
-                        original_file_path=image_path,
-                        original_image_path_with_filename=image_path_with_filename,
-                        icon_image_path=resized_icon_image_path,
-                        web_view_image_path=resized_web_image_path,
-                        icon_height=icon_image_height,
-                        web_view_height=web_view_image_height,
-                    )
-                except Exception as ex:
-                    logger.error(
-                        f"Error while downloading person image: {ex}, skipping player {player_eesl_id}",
-                        exc_info=True,
-                    )
-                    has_error = True
-                    continue
-
-                player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
-                if player_dob is None:
-                    logger.warning(
-                        f"Skipping player {player_eesl_id} due to missing DOB"
-                    )
-                    continue
-                player_with_person: ParsePlayerWithPersonData = {
-                    "person": {
-                        "first_name": player_first_name,
-                        "second_name": player_second_name,
-                        "person_photo_url": relative_image_path,
-                        "person_photo_icon_url": relative_image_icon_path,
-                        "person_photo_web_url": relative_image_web_path,
-                        "person_dob": player_dob,
-                        "person_eesl_id": player_eesl_id,
-                    },
-                    "player": {
-                        "sport_id": "1",
-                        "player_eesl_id": player_eesl_id,
-                    },
-                }
-                logger.info(
-                    f"Final player with person data parsed {player_with_person}"
-                )
-                players_in_eesl.append(player_with_person.copy())
-                if remaining_limit and remaining_limit is not float("inf"):
-                    remaining_limit -= 1
+            if not ppp:
+                continue
+                
+            logger.debug("Parsing player from eesl")
+            
+            basic_info = _parse_player_basic_info(ppp)
+            image_paths = _generate_player_image_paths(
+                basic_info["player_eesl_id"],
+                basic_info["player_second_name"],
+                basic_info["player_first_name"],
+                basic_info["player_img_url"]
+            )
+            
+            if not await _download_player_image(basic_info["player_img_url"], image_paths, basic_info["player_eesl_id"]):
+                has_error = True
+                continue
+                
+            player_dob = await collect_players_dob_from_all_eesl(basic_info["player_eesl_id"])
+            if player_dob is None:
+                logger.warning(f"Skipping player {basic_info['player_eesl_id']} due to missing DOB")
+                continue
+                
+            player_with_person = _create_player_with_person_data(
+                basic_info["player_eesl_id"],
+                basic_info["player_first_name"],
+                basic_info["player_second_name"],
+                player_dob,
+                image_paths
+            )
+            
+            logger.info(f"Final player with person data parsed {player_with_person}")
+            players_in_eesl.append(player_with_person.copy())
+            
+            if remaining_limit and remaining_limit is not float("inf"):
+                remaining_limit -= 1
+                
         except asyncio.TimeoutError:
             logger.error("Timeout occur while parsing player with person from eesl")
             return False
