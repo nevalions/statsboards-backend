@@ -64,9 +64,9 @@ async def collect_players_dob_from_all_eesl(
 
 
 async def collect_player_full_data_eesl(
-    player_eesl_id: int, base_url: str = BASE_PLAYER
+    player_eesl_id: int, base_url: str = BASE_PLAYER, force_redownload: bool = False
 ) -> Optional[ParsePlayerWithPersonData]:
-    logger.debug("Collect players full data from eesl")
+    logger.debug(f"Collect players full data from eesl (force_redownload={force_redownload})")
     url = base_url + str(player_eesl_id)
     logger.debug(f"URL: {url}")
     try:
@@ -136,7 +136,7 @@ async def collect_player_full_data_eesl(
 
         relative_image_path = os.path.join(
             "/static/uploads/persons/photos",
-            person_image_filename_resized_icon,
+            person_image_filename,
         )
 
         try:
@@ -347,7 +347,7 @@ async def get_player_from_eesl_participants(
 
                 relative_image_path = os.path.join(
                     "/static/uploads/persons/photos",
-                    person_image_filename_resized_icon,
+                    person_image_filename,
                 )
 
                 try:
