@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+from src.core.exceptions import NotFoundError
 
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database
@@ -72,14 +74,34 @@ class CRUDMixin:
                         f"No element found with ID: {item_id} for {self.model.__name__}"
                     )
                     return None
-        except Exception as ex:
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",
+                f"Database error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to fetch element for model id:{item_id} {self.model.__name__}.",
+                detail=f"Database error fetching {self.model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.get_by_id({item_id}): {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def get_by_id_and_model(
@@ -103,14 +125,34 @@ class CRUDMixin:
                         f"No element found with ID: {item_id} for {model.__name__}"
                     )
                 return item
-        except Exception as ex:
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Error fetching element with ID: {item_id} for {model.__name__}: {ex}",
+                f"Database error fetching element with ID: {item_id} for {model.__name__}: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to fetch element for model id:{item_id} {self.model.__name__}.",
+                detail=f"Database error fetching {model.__name__}",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error fetching element with ID: {item_id} for {model.__name__}: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided",
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.get_by_id_and_model({item_id}): {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
             )
 
     async def update(self, item_id: int, item, **kwargs):
@@ -146,14 +188,32 @@ class CRUDMixin:
                 return updated_item
             except HTTPException:
                 raise
-            except Exception as ex:
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error updating element with ID: {item_id} for model {self.model.__name__}: {ex}",
+                    f"Database error updating element with ID: {item_id} for {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to update element for model id:{item_id} {self.model.__name__}.",
+                    detail=f"Database error updating {self.model.__name__}",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error updating element with ID: {item_id} for {self.model.__name__}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided",
+                )
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error in {self.__class__.__name__}.update({item_id}): {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error",
                 )
 
     async def delete(self, item_id: int):
@@ -174,12 +234,30 @@ class CRUDMixin:
                 return db_item
             except HTTPException:
                 raise
-            except Exception as ex:
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error deleting element with ID: {item_id} for model {self.model.__name__}: {ex}",
+                    f"Database error deleting element with ID: {item_id} for {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to delete element for model id:{item_id} {self.model.__name__}.",
+                    detail=f"Database error deleting {self.model.__name__}",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error deleting element with ID: {item_id} for {self.model.__name__}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided",
+                )
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error in {self.__class__.__name__}.delete({item_id}): {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error",
                 )

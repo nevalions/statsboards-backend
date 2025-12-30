@@ -3,6 +3,9 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException
 from sqlalchemy import Column, Result, select, update
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+from src.core.exceptions import NotFoundError
 
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database
@@ -36,14 +39,43 @@ class QueryMixin:
                 )
 
                 return result.scalars().one_or_none()
-            except Exception as ex:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error fetching item by {field_name} with value {value}: {ex} for model {self.model.__name__}",
+                    f"Database error fetching item by {field_name} with value {value}: {ex} for model {self.model.__name__}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to fetch item for model {self.model.__name__}. Please try again later.",
+                    detail=f"Database error fetching {self.model.__name__}",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error fetching item by {field_name} with value {value}: {ex} for model {self.model.__name__}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Item not found by {field_name} with value {value}: {ex} for model {self.model.__name__}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=404,
+                    detail=str(ex),
+                )
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error in {self.__class__.__name__}.get_item_by_field_value({field_name}, {value}): {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error",
                 )
 
     async def update_item_by_eesl_id(
@@ -150,5 +182,23 @@ class QueryMixin:
                 result = await session.execute(query_count)
                 return result.scalar() or 0
 
-            except Exception:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Database error getting count of related items for {item_id} and property {related_property}: {ex}",
+                    exc_info=True,
+                )
+                return 0
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error getting count of related items for {item_id} and property {related_property}: {ex}",
+                    exc_info=True,
+                )
+                return 0
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error in {self.__class__.__name__}.get_count_of_items_level_one_by_id({item_id}, {related_property}): {ex}",
+                    exc_info=True,
+                )
                 return 0

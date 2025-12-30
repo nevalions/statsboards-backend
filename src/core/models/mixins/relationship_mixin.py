@@ -2,8 +2,10 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError, NoResultFound, SQLAlchemyError
 from sqlalchemy.orm import selectinload
+
+from src.core.exceptions import NotFoundError
 
 if TYPE_CHECKING:
     from logging import LoggerAdapter
@@ -116,9 +118,23 @@ class RelationshipMixin:
                             f"Relation created between {parent_model.__name__} and {child_model.__name__} for model {self.model.__name__}"
                         )
                         return list(getattr(parent, child_relation))
-                    except Exception as ex:
+                    except HTTPException:
+                        raise
+                    except (IntegrityError, SQLAlchemyError) as ex:
                         self.logger.error(
-                            f"Error creating relation: {ex} for model {self.model.__name__}",
+                            f"Database error creating relation between {parent_model.__name__} and {child_model.__name__}: {ex} for model {self.model.__name__}",
+                            exc_info=True,
+                        )
+                        return None
+                    except (ValueError, KeyError, TypeError) as ex:
+                        self.logger.warning(
+                            f"Data error creating relation between {parent_model.__name__} and {child_model.__name__}: {ex} for model {self.model.__name__}",
+                            exc_info=True,
+                        )
+                        return None
+                    except Exception as ex:
+                        self.logger.critical(
+                            f"Unexpected error in {self.__class__.__name__}.create_m2m_relation: {ex}",
                             exc_info=True,
                         )
                         return None
@@ -395,13 +411,43 @@ class RelationshipMixin:
                         status_code=404,
                         detail=f"{second_model} {filter_key} not found for model {self.model.__name__}",
                     )
-            except Exception as e:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as e:
                 self.logger.error(
-                    f"Error fetching related item for key: {filter_key} and value {filter_value} "
+                    f"Database error fetching related item for key: {filter_key} and value {filter_value} "
                     f"for model {self.model.__name__}: {e}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal Server Error {e}",
+                    detail=f"Database error fetching {self.model.__name__}",
+                )
+            except (ValueError, KeyError, TypeError) as e:
+                self.logger.warning(
+                    f"Data error fetching related item for key: {filter_key} and value {filter_value} "
+                    f"for model {self.model.__name__}: {e}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided",
+                )
+            except NotFoundError as e:
+                self.logger.info(
+                    f"Resource not found for key: {filter_key} and value {filter_value}: {e} for model {self.model.__name__}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=404,
+                    detail=str(e),
+                )
+            except Exception as e:
+                self.logger.critical(
+                    f"Unexpected error in {self.__class__.__name__}.get_related_items_by_two({filter_key}, {filter_value}): {e}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error",
                 )
