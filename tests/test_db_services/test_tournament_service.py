@@ -54,6 +54,7 @@ class TestTournamentServiceDB:
     ):
         """Test that a tournament cannot be created without a sport_id."""
         from src.tournaments.schemas import TournamentSchemaCreate
+
         invalid_tournament_sample = TournamentSchemaCreate.model_construct(
             sport_id=None,
             season_id=tournament_sample.season_id,

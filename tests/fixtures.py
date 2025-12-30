@@ -10,7 +10,14 @@ from src.tournaments.db_services import TournamentServiceDB
 from src.positions.db_services import PositionServiceDB
 from src.sponsors.db_services import SponsorServiceDB
 from src.sponsor_lines.db_services import SponsorLineServiceDB
-from tests.factories import SportFactorySample, SeasonFactorySample, TournamentFactory, PositionFactory, SponsorFactory, SponsorLineFactory
+from tests.factories import (
+    SportFactorySample,
+    SeasonFactorySample,
+    TournamentFactory,
+    PositionFactory,
+    SponsorFactory,
+    SponsorLineFactory,
+)
 from pathlib import Path
 
 
@@ -103,6 +110,7 @@ async def tournaments(test_tournament_service, sport, season):
     """Create and return multiple tournament instances."""
     return await creat_tournaments(test_tournament_service, sport, season, count=5)
 
+
 @pytest.fixture(scope="function")
 def season_sample():
     """Return a season schema sample for testing."""
@@ -119,6 +127,7 @@ def sport_sample():
 def season_db_model():
     """Return a SeasonDB model instance for testing (not a schema)."""
     from src.core.models.season import SeasonDB
+
     return SeasonDB(year=2024, description="Test Season")
 
 
@@ -216,10 +225,12 @@ def temp_files_with_various_cyrillic_names(tmp_path):
     for case in test_cases:
         file_path = tmp_path / case["original"]
         file_path.write_text("test content")
-        created_files.append({
-            "original_filename": case["original"],
-            "file_path": file_path,
-            "converted_filename": case["converted"],
-        })
+        created_files.append(
+            {
+                "original_filename": case["original"],
+                "file_path": file_path,
+                "converted_filename": case["converted"],
+            }
+        )
 
     return created_files

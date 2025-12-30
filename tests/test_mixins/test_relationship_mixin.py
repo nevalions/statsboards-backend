@@ -62,9 +62,7 @@ class TestRelationshipMixin:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_related_item_level_one_by_id_single_object(
-        self, test_db, sport
-    ):
+    async def test_get_related_item_level_one_by_id_single_object(self, test_db, sport):
         """Test get_related_item_level_one_by_id for single-object relationship."""
         sport_service = SportServiceDB(test_db)
         result = await sport_service.get_related_item_level_one_by_id(

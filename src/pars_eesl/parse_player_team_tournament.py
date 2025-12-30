@@ -49,7 +49,7 @@ async def parse_players_from_team_tournament_eesl(
     try:
         url = f"{base_url}{eesl_tournament_id}/teams/application?team_id={eesl_team_id}"
         logger.debug(f"URL: {url}")
-        req = get_url(url)
+        req = await get_url(url)
         soup = BeautifulSoup(req.content, "lxml")
         all_eesl_players = soup.find_all("tr", class_="table__row")
         try:

@@ -39,9 +39,7 @@ class TestBaseServiceDBIntegration:
         retrieved = await service.get_by_id(created.id)
         assert retrieved.id == created.id
 
-        retrieved_by_year = await service.get_item_by_field_value(
-            created.year, "year"
-        )
+        retrieved_by_year = await service.get_item_by_field_value(created.year, "year")
         assert retrieved_by_year.id == created.id
 
         update_data = SeasonSchemaUpdate(year=created.year + 1)

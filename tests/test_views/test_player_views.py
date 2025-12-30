@@ -14,103 +14,115 @@ class TestPlayerViews:
     async def test_create_player_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
-        
+
         person_service = PersonServiceDB(test_db)
         person = await person_service.create_or_update_person(PersonFactory.build())
-        
-        player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id, player_eesl_id=100)
-        
+
+        player_data = PlayerSchemaCreate(
+            sport_id=sport.id, person_id=person.id, player_eesl_id=100
+        )
+
         response = await client.post("/api/players/", json=player_data.model_dump())
-        
+
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
     async def test_get_player_by_eesl_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
-        
+
         person_service = PersonServiceDB(test_db)
-        person = await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=100))
-        
+        person = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=100)
+        )
+
         player_service = PlayerServiceDB(test_db)
-        player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id, player_eesl_id=100)
+        player_data = PlayerSchemaCreate(
+            sport_id=sport.id, person_id=person.id, player_eesl_id=100
+        )
         created = await player_service.create_or_update_player(player_data)
-        
+
         response = await client.get("/api/players/eesl_id/100")
-        
+
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
     async def test_get_player_by_eesl_id_not_found(self, client):
         response = await client.get("/api/players/eesl_id/99999")
-        
+
         assert response.status_code == 404
 
     async def test_update_player_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
-        
+
         person_service = PersonServiceDB(test_db)
         person = await person_service.create_or_update_person(PersonFactory.build())
-        
+
         player_service = PlayerServiceDB(test_db)
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id)
         created = await player_service.create_or_update_player(player_data)
-        
+
         update_data = PlayerSchemaUpdate(player_eesl_id=200)
-        
-        response = await client.put(f"/api/players/{created.id}/", json=update_data.model_dump())
-        
+
+        response = await client.put(
+            f"/api/players/{created.id}/", json=update_data.model_dump()
+        )
+
         assert response.status_code == 200
 
     async def test_get_all_players_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
-        
+
         person_service = PersonServiceDB(test_db)
         person1 = await person_service.create_or_update_person(PersonFactory.build())
         person2 = await person_service.create_or_update_person(PersonFactory.build())
-        
+
         player_service = PlayerServiceDB(test_db)
-        await player_service.create_or_update_player(PlayerSchemaCreate(sport_id=sport.id, person_id=person1.id))
-        await player_service.create_or_update_player(PlayerSchemaCreate(sport_id=sport.id, person_id=person2.id))
-        
+        await player_service.create_or_update_player(
+            PlayerSchemaCreate(sport_id=sport.id, person_id=person1.id)
+        )
+        await player_service.create_or_update_player(
+            PlayerSchemaCreate(sport_id=sport.id, person_id=person2.id)
+        )
+
         response = await client.get("/api/players/")
-        
+
         assert response.status_code == 200
         assert len(response.json()) >= 2
 
     async def test_get_player_by_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
-        
+
         person_service = PersonServiceDB(test_db)
         person = await person_service.create_or_update_person(PersonFactory.build())
-        
+
         player_service = PlayerServiceDB(test_db)
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id)
         created = await player_service.create_or_update_player(player_data)
-        
+
         response = await client.get(f"/api/players/id/{created.id}")
-        
+
         assert response.status_code == 200
 
     async def test_get_player_by_id_not_found(self, client):
         response = await client.get("/api/players/id/99999")
-        
+
         assert response.status_code == 404
 
     async def test_get_person_by_player_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
-        
+
         person_service = PersonServiceDB(test_db)
         person = await person_service.create_or_update_person(PersonFactory.build())
-        
+
         player_service = PlayerServiceDB(test_db)
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id)
         created = await player_service.create_or_update_player(player_data)
-        
+
         response = await client.get(f"/api/players/id/{created.id}/person")
-        
+
         assert response.status_code == 200

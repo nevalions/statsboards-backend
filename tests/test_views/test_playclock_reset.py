@@ -7,7 +7,13 @@ from src.teams.db_services import TeamServiceDB
 from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from src.seasons.db_services import SeasonServiceDB
-from tests.factories import MatchFactory, TeamFactory, TournamentFactory, SeasonFactorySample, SportFactorySample
+from tests.factories import (
+    MatchFactory,
+    TeamFactory,
+    TournamentFactory,
+    SeasonFactorySample,
+    SportFactorySample,
+)
 from src.logging_config import setup_logging
 
 setup_logging()
@@ -23,17 +29,27 @@ class TestPlayClockResetEndpoint:
         season = await season_service.create(SeasonFactorySample.build())
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(TournamentFactory.build(sport_id=sport.id, season_id=season.id))
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
 
         team_service = TeamServiceDB(test_db)
         team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
         team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
 
         match_service = MatchServiceDB(test_db)
-        match = await match_service.create(MatchFactory.build(tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id))
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
 
         playclock_service = PlayClockServiceDB(test_db)
-        playclock = await playclock_service.create(PlayClockSchemaCreate(match_id=match.id, playclock=60, playclock_status="stopped"))
+        playclock = await playclock_service.create(
+            PlayClockSchemaCreate(
+                match_id=match.id, playclock=60, playclock_status="stopped"
+            )
+        )
 
         response = await client.put(f"/api/playclock/id/{playclock.id}/stopped/")
 

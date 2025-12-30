@@ -133,14 +133,22 @@ class TestTournamentServiceDBCreateOrUpdate:
         tournament_service = TournamentServiceDB(test_db)
 
         tournament1_data = TournamentFactory.build(
-            sport_id=created_sport.id, season_id=created_season.id, tournament_eesl_id=301
+            sport_id=created_sport.id,
+            season_id=created_season.id,
+            tournament_eesl_id=301,
         )
         tournament2_data = TournamentFactory.build(
-            sport_id=created_sport.id, season_id=created_season.id, tournament_eesl_id=302
+            sport_id=created_sport.id,
+            season_id=created_season.id,
+            tournament_eesl_id=302,
         )
 
-        tournament1 = await tournament_service.create_or_update_tournament(tournament1_data)
-        tournament2 = await tournament_service.create_or_update_tournament(tournament2_data)
+        tournament1 = await tournament_service.create_or_update_tournament(
+            tournament1_data
+        )
+        tournament2 = await tournament_service.create_or_update_tournament(
+            tournament2_data
+        )
 
         assert tournament1.tournament_eesl_id == 301
         assert tournament2.tournament_eesl_id == 302
@@ -203,7 +211,9 @@ class TestTournamentServiceDBCreateOrUpdate:
         )
         created = await tournament_service.create_or_update_tournament(create_data)
 
-        update_data = TournamentSchemaUpdate(tournament_eesl_id=500, title="Update Title")
+        update_data = TournamentSchemaUpdate(
+            tournament_eesl_id=500, title="Update Title"
+        )
         updated = await tournament_service.create_or_update_tournament(update_data)
 
         assert created.id == updated.id

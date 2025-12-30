@@ -71,7 +71,7 @@ async def parse_match_index_page_eesl(
 
         logger.debug(f"Parse match from eesl")
 
-        req = get_url(base_url + str(m_id))
+        req = await get_url(base_url + str(m_id))
         soup = BeautifulSoup(req.content, "lxml")
 
         team_a = soup.find(

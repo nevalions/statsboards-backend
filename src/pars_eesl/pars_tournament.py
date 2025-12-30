@@ -1,8 +1,10 @@
+import asyncio
 import logging
 import re
 from datetime import datetime
 from typing import List, Optional, TypedDict
 
+from aiohttp import ClientError
 from bs4 import BeautifulSoup
 
 from src.helpers import get_url
@@ -84,7 +86,7 @@ async def parse_tournament_teams_index_page_eesl(
     )
     teams_in_tournament = []
     url = f"{base_url}{str(_id)}/teams"
-    req = get_url(url)
+    req = await get_url(url)
     # logger.debug(f"Request: {req}")
     soup = BeautifulSoup(req.content, "lxml")
     # logger.debug(f"Soup: {soup}")
@@ -178,7 +180,7 @@ async def parse_tournament_matches_index_page_eesl(
     last_week_num = None
     matches_in_tournament = []
     url = f"{base_url}{str(_id)}/calendar"
-    req = get_url(url)
+    req = await get_url(url)
     # logger.debug(f"Request: {req}")
     soup = BeautifulSoup(req.content, "lxml")
     # logger.debug(f"Soup: {soup}")

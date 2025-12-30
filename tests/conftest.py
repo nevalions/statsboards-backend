@@ -13,12 +13,14 @@ db_url = settings.test_db.test_db_url
 # Import fixtures from fixtures.py
 pytest_plugins = ["tests.fixtures"]
 
+
 # Custom markers
 def pytest_configure(config):
     """Configure custom pytest markers."""
     config.addinivalue_line(
         "markers", "integration: marks test as integration test (hits real website)"
     )
+
 
 # Database fixture that ensures a clean state using transactions, function-scoped
 @pytest_asyncio.fixture(scope="function")
@@ -69,5 +71,6 @@ def test_uploads_path(test_downloads_dir, monkeypatch):
     """Fixture to patch uploads_path for integration tests."""
     # Patch the config module's uploads_path directly
     import src.core.config as config_module
+
     monkeypatch.setattr(config_module, "uploads_path", test_downloads_dir)
     return test_downloads_dir

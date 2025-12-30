@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Optional, TypedDict
 from urllib.parse import urlparse
 
-import requests
+from aiohttp import ClientError
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
@@ -50,12 +50,12 @@ async def collect_players_dob_from_all_eesl(
     url = base_url + str(player_eesl_id)
     logger.debug(f"URL: {url}")
     try:
-        req = get_url(url)
+        req = await get_url(url)
         soup = BeautifulSoup(req.content, "lxml")
         dob_text = soup.find("span", class_="player-promo__value").text.strip().lower()
         dob_text_eng = ru_to_eng_datetime_month(dob_text)
         return datetime.strptime(dob_text_eng, "%d %B %Y")
-    except requests.exceptions.Timeout:
+    except asyncio.TimeoutError:
         logger.error("Timeout occur while parsing date of birthday form eesl")
     except Exception as ex:
         logger.error(
@@ -66,11 +66,13 @@ async def collect_players_dob_from_all_eesl(
 async def collect_player_full_data_eesl(
     player_eesl_id: int, base_url: str = BASE_PLAYER, force_redownload: bool = False
 ) -> Optional[ParsePlayerWithPersonData]:
-    logger.debug(f"Collect players full data from eesl (force_redownload={force_redownload})")
+    logger.debug(
+        f"Collect players full data from eesl (force_redownload={force_redownload})"
+    )
     url = base_url + str(player_eesl_id)
     logger.debug(f"URL: {url}")
     try:
-        req = get_url(url)
+        req = await get_url(url)
         soup = BeautifulSoup(req.content, "lxml")
         dob_text = soup.find("span", class_="player-promo__value").text.strip().lower()
 
@@ -106,9 +108,13 @@ async def collect_player_full_data_eesl(
         )
         person_image_filename = convert_cyrillic_filename(person_image_filename)
         person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
-        person_image_filename_resized_icon = convert_cyrillic_filename(person_image_filename_resized_icon)
+        person_image_filename_resized_icon = convert_cyrillic_filename(
+            person_image_filename_resized_icon
+        )
         person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
-        person_image_filename_resized_web_view = convert_cyrillic_filename(person_image_filename_resized_web_view)
+        person_image_filename_resized_web_view = convert_cyrillic_filename(
+            person_image_filename_resized_web_view
+        )
 
         image_path = os.path.join(uploads_path, "persons/photos/")
         image_path_with_filename = os.path.join(
@@ -176,7 +182,7 @@ async def collect_player_full_data_eesl(
                 status_code=404,
                 detail="Parsed player does not exist",
             )
-    except requests.exceptions.Timeout:
+    except asyncio.TimeoutError:
         logger.error("Timeout occur while parsing player with person from eesl")
     except Exception as ex:
         logger.error(
@@ -221,7 +227,7 @@ async def parse_all_players_from_eesl_index_page_eesl(
             else f"{base_url}?season_id={season_id}&page={num + 1}"
         )
         logger.debug(f"URL:{url}")
-        req = get_url(url)
+        req = await get_url(url)
         soup = BeautifulSoup(req.content, "lxml")
         all_eesl_players = soup.find_all("tr", class_="table__row")
 
@@ -317,9 +323,13 @@ async def get_player_from_eesl_participants(
                 )
                 person_image_filename = convert_cyrillic_filename(person_image_filename)
                 person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
-                person_image_filename_resized_icon = convert_cyrillic_filename(person_image_filename_resized_icon)
+                person_image_filename_resized_icon = convert_cyrillic_filename(
+                    person_image_filename_resized_icon
+                )
                 person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
-                person_image_filename_resized_web_view = convert_cyrillic_filename(person_image_filename_resized_web_view)
+                person_image_filename_resized_web_view = convert_cyrillic_filename(
+                    person_image_filename_resized_web_view
+                )
 
                 image_path = os.path.join(uploads_path, "persons/photos/")
                 image_path_with_filename = os.path.join(
@@ -363,14 +373,17 @@ async def get_player_from_eesl_participants(
                     )
                 except Exception as ex:
                     logger.error(
-                        f"Error while downloading person image: {ex}, skipping player {player_eesl_id}", exc_info=True
+                        f"Error while downloading person image: {ex}, skipping player {player_eesl_id}",
+                        exc_info=True,
                     )
                     has_error = True
                     continue
 
                 player_dob = await collect_players_dob_from_all_eesl(player_eesl_id)
                 if player_dob is None:
-                    logger.warning(f"Skipping player {player_eesl_id} due to missing DOB")
+                    logger.warning(
+                        f"Skipping player {player_eesl_id} due to missing DOB"
+                    )
                     continue
                 player_with_person: ParsePlayerWithPersonData = {
                     "person": {
@@ -393,7 +406,7 @@ async def get_player_from_eesl_participants(
                 players_in_eesl.append(player_with_person.copy())
                 if remaining_limit and remaining_limit is not float("inf"):
                     remaining_limit -= 1
-        except requests.exceptions.Timeout:
+        except asyncio.TimeoutError:
             logger.error("Timeout occur while parsing player with person from eesl")
             return False
         except Exception as ex:

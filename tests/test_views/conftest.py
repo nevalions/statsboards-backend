@@ -70,7 +70,9 @@ async def test_app(test_db):
     from src.positions.db_services import PositionServiceDB
     from src.sponsors.db_services import SponsorServiceDB
     from src.sponsor_lines.db_services import SponsorLineServiceDB
-    from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
+    from src.sponsor_sponsor_line_connection.db_services import (
+        SponsorSponsorLineServiceDB,
+    )
     from src.gameclocks.db_services import GameClockServiceDB
     from src.playclocks.db_services import PlayClockServiceDB
     from src.matchdata.db_services import MatchDataServiceDB
@@ -90,14 +92,26 @@ async def test_app(test_db):
     app.include_router(PositionAPIRouter(PositionServiceDB(test_db)).route())
     app.include_router(SponsorAPIRouter(SponsorServiceDB(test_db)).route())
     app.include_router(SponsorLineAPIRouter(SponsorLineServiceDB(test_db)).route())
-    app.include_router(SponsorSponsorLineAPIRouter(SponsorSponsorLineServiceDB(test_db)).route())
-    app.include_router(GameClockAPIRouter(GameClockServiceDB(test_db, disable_background_tasks=True)).route())
-    app.include_router(PlayClockAPIRouter(PlayClockServiceDB(test_db, disable_background_tasks=True)).route())
+    app.include_router(
+        SponsorSponsorLineAPIRouter(SponsorSponsorLineServiceDB(test_db)).route()
+    )
+    app.include_router(
+        GameClockAPIRouter(
+            GameClockServiceDB(test_db, disable_background_tasks=True)
+        ).route()
+    )
+    app.include_router(
+        PlayClockAPIRouter(
+            PlayClockServiceDB(test_db, disable_background_tasks=True)
+        ).route()
+    )
     app.include_router(MatchDataAPIRouter(MatchDataServiceDB(test_db)).route())
     app.include_router(PersonAPIRouter(PersonServiceDB(test_db)).route())
     app.include_router(PlayerAPIRouter(PlayerServiceDB(test_db)).route())
     app.include_router(PlayerMatchAPIRouter(PlayerMatchServiceDB(test_db)).route())
-    app.include_router(PlayerTeamTournamentAPIRouter(PlayerTeamTournamentServiceDB(test_db)).route())
+    app.include_router(
+        PlayerTeamTournamentAPIRouter(PlayerTeamTournamentServiceDB(test_db)).route()
+    )
     app.include_router(ScoreboardAPIRouter(ScoreboardServiceDB(test_db)).route())
     app.include_router(TeamTournamentRouter(TeamTournamentServiceDB(test_db)).route())
 

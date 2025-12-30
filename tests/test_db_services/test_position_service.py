@@ -93,6 +93,7 @@ class TestPositionServiceDB:
     ):
         """Test fail position deletion"""
         import pytest
+
         with pytest.raises(HTTPException) as exc_info:
             await test_position_service.delete(position.id + 1)
         assert_http_exception_on_delete(exc_info)

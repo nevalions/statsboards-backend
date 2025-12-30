@@ -44,7 +44,9 @@ class TestQueryMixin:
 
         service = SeasonServiceDB(test_db)
         season_data = SeasonSchemaCreate(year=2023, description="Original")
-        season_model = SeasonDB(year=season_data.year, description=season_data.description)
+        season_model = SeasonDB(
+            year=season_data.year, description=season_data.description
+        )
         created = await service.create(season_model)
 
         update_data = SeasonSchemaUpdate(description="Updated description")

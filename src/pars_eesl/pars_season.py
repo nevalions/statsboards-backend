@@ -37,7 +37,7 @@ async def parse_season_index_page_eesl(_id: int, base_url: str = BASE_SEASON_URL
     logger.debug(f"Starting parse for eesl {ITEM_PARSED} id:{_id} url:{base_url}{_id}")
     tournaments_in_season = []
 
-    req = get_url(base_url + str(_id))
+    req = await get_url(base_url + str(_id))
     # logger.debug(f"Request: {req}")
     soup = BeautifulSoup(req.content, "lxml")
     # logger.debug(f"Soup: {soup}")

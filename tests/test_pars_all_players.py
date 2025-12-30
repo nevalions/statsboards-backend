@@ -1,8 +1,8 @@
+import asyncio
 import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from datetime import datetime
 from bs4 import BeautifulSoup
-import requests
 
 from src.pars_eesl import pars_all_players_from_eesl
 from src.pars_eesl import pars_tournament
@@ -56,7 +56,7 @@ class TestParsAllPlayersFromEesl:
     ):
         """Test collecting full player data successfully."""
         mock_response = Mock()
-        mock_response.content = mock_player_page_html.encode()
+        mock_response.content = mock_player_page_html
         mock_get_url.return_value = mock_response
 
         mock_file_service.download_and_resize_image = AsyncMock()
@@ -77,7 +77,7 @@ class TestParsAllPlayersFromEesl:
         self, mock_file_service, mock_get_url
     ):
         """Test collecting player data with timeout."""
-        mock_get_url.side_effect = requests.exceptions.Timeout()
+        mock_get_url.side_effect = asyncio.TimeoutError()
 
         result = await pars_all_players_from_eesl.collect_player_full_data_eesl(123)
 
@@ -91,7 +91,7 @@ class TestParsAllPlayersFromEesl:
     ):
         """Test collecting player data with download error."""
         mock_response = Mock()
-        mock_response.content = mock_player_page_html.encode()
+        mock_response.content = mock_player_page_html
         mock_get_url.return_value = mock_response
 
         mock_file_service.download_and_resize_image = AsyncMock(
@@ -113,7 +113,7 @@ class TestParsAllPlayersFromEesl:
     ):
         """Test parsing player from participants list successfully."""
         mock_response = Mock()
-        mock_response.content = mock_players_list_html.encode()
+        mock_response.content = mock_players_list_html
         mock_get_url.return_value = mock_response
 
         mock_file_service.download_and_resize_image = AsyncMock()
@@ -122,8 +122,10 @@ class TestParsAllPlayersFromEesl:
         players_in_eesl = []
         result = await pars_all_players_from_eesl.get_player_from_eesl_participants(
             players_in_eesl,
-            BeautifulSoup(mock_players_list_html, "lxml").find_all("tr", class_="table__row"),
-            remaining_limit=10
+            BeautifulSoup(mock_players_list_html, "lxml").find_all(
+                "tr", class_="table__row"
+            ),
+            remaining_limit=10,
         )
 
         assert result is not False
@@ -141,7 +143,7 @@ class TestParsAllPlayersFromEesl:
     ):
         """Test parsing player with download error - should skip player and continue."""
         mock_response = Mock()
-        mock_response.content = mock_players_list_html.encode()
+        mock_response.content = mock_players_list_html
         mock_get_url.return_value = mock_response
 
         mock_file_service.download_and_resize_image = AsyncMock(
@@ -152,8 +154,10 @@ class TestParsAllPlayersFromEesl:
         players_in_eesl = []
         result = await pars_all_players_from_eesl.get_player_from_eesl_participants(
             players_in_eesl,
-            BeautifulSoup(mock_players_list_html, "lxml").find_all("tr", class_="table__row"),
-            remaining_limit=10
+            BeautifulSoup(mock_players_list_html, "lxml").find_all(
+                "tr", class_="table__row"
+            ),
+            remaining_limit=10,
         )
 
         assert result is None  # Function returns None when it completes normally
@@ -166,7 +170,7 @@ class TestParsAllPlayersFromEesl:
     ):
         """Test parsing when no players are found."""
         mock_response = Mock()
-        mock_response.content = "<html><body><table></table></body></html>".encode()
+        mock_response.content = "<html><body><table></table></body></html>"
         mock_get_url.return_value = mock_response
 
         result = await pars_all_players_from_eesl.parse_all_players_from_eesl_index_page_eesl(
@@ -182,11 +186,14 @@ class TestParsAllPlayersFromEesl:
     ):
         """Test parsing with a limit on number of players."""
         mock_response = Mock()
-        mock_response.content = mock_players_list_html.encode()
+        mock_response.content = mock_players_list_html
         mock_get_url.return_value = mock_response
 
-        with patch("src.pars_eesl.pars_all_players_from_eesl.file_service") as mock_fs, \
-             patch("src.pars_eesl.pars_all_players_from_eesl.collect_players_dob_from_all_eesl") as mock_dob:
+        with patch(
+            "src.pars_eesl.pars_all_players_from_eesl.file_service"
+        ) as mock_fs, patch(
+            "src.pars_eesl.pars_all_players_from_eesl.collect_players_dob_from_all_eesl"
+        ) as mock_dob:
             mock_fs.download_and_resize_image = AsyncMock()
             mock_dob.return_value = datetime(1990, 1, 1)
 

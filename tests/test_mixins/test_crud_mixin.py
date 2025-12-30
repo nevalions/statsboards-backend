@@ -115,6 +115,7 @@ class TestCRUDMixin:
         """Test retrieval of all elements."""
         service = SeasonServiceDB(test_db)
         from src.core.models.season import SeasonDB
+
         season_db_model2 = SeasonDB(year=2025, description="Test description 2")
         await service.create(season_db_model)
         await service.create(season_db_model2)

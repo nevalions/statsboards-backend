@@ -7,7 +7,14 @@ from src.teams.schemas import TeamSchema, TeamSchemaCreate, TeamSchemaUpdate
 class DummyTeamModel:
     """Mock database model to test model_validate."""
 
-    def __init__(self, id: int, title: str, city: str = "City", description: str = "", sport_id: int = 1):
+    def __init__(
+        self,
+        id: int,
+        title: str,
+        city: str = "City",
+        description: str = "",
+        sport_id: int = 1,
+    ):
         self.id = id
         self.title = title
         self.city = city

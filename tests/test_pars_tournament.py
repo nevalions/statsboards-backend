@@ -30,7 +30,7 @@ class TestParsTournament:
                 </ul>
             </body>
         </html>
-        """.encode()
+        """
         mock_get_url.return_value = mock_response
 
         mock_file_service.download_and_process_image = AsyncMock(
@@ -50,7 +50,7 @@ class TestParsTournament:
     ):
         """Test parsing when no matches are found."""
         mock_response = Mock()
-        mock_response.content = "<html><body></body></html>".encode()
+        mock_response.content = "<html><body></body></html>"
         mock_get_url.return_value = mock_response
 
         result = await pars_tournament.parse_tournament_matches_index_page_eesl(1)

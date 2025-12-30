@@ -19,9 +19,7 @@ setup_logging()
 class TestCreateOrUpdateGeneric:
     """Test generic create_or_update method in BaseServiceDB."""
 
-    async def test_create_when_no_eesl_id(
-        self, test_db: Database
-    ):
+    async def test_create_when_no_eesl_id(self, test_db: Database):
         """Test creating new record when eesl_id is None."""
         service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2024)
@@ -36,9 +34,7 @@ class TestCreateOrUpdateGeneric:
         assert result.id is not None
         assert result.year == 2024
 
-    async def test_create_when_eesl_id_not_in_db(
-        self, test_db: Database
-    ):
+    async def test_create_when_eesl_id_not_in_db(self, test_db: Database):
         """Test creating new record when eesl_id doesn't exist in DB."""
         sport = SportFactorySample.build()
         sport_service = SportServiceDB(test_db)
@@ -65,14 +61,15 @@ class TestCreateOrUpdateGeneric:
         assert result.id is not None
         assert result.tournament_eesl_id == 999
 
-    async def test_create_with_valid_data(
-        self, test_db: Database
-    ):
+    async def test_create_with_valid_data(self, test_db: Database):
         """Test successful creation with all fields."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2025)
         from src.core.models.season import SeasonDB
-        season_model = SeasonDB(year=season_data.year, description=season_data.description)
+
+        season_model = SeasonDB(
+            year=season_data.year, description=season_data.description
+        )
 
         result = await season_service.create_or_update(
             season_data,
@@ -83,9 +80,7 @@ class TestCreateOrUpdateGeneric:
         assert result.id is not None
         assert result.year == 2025
 
-    async def test_update_when_eesl_id_exists(
-        self, test_db: Database
-    ):
+    async def test_update_when_eesl_id_exists(self, test_db: Database):
         """Test updating existing record by eesl_id."""
         sport = SportFactorySample.build()
         sport_service = SportServiceDB(test_db)
@@ -123,14 +118,15 @@ class TestCreateOrUpdateGeneric:
         assert updated.title == "Updated Title"
         assert updated.description == "Updated description"
 
-    async def test_update_partial_fields(
-        self, test_db: Database
-    ):
+    async def test_update_partial_fields(self, test_db: Database):
         """Test updating only specific fields."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2030)
         from src.core.models.season import SeasonDB
-        season_db_model = SeasonDB(year=season_data.year, description=season_data.description)
+
+        season_db_model = SeasonDB(
+            year=season_data.year, description=season_data.description
+        )
         created = await season_service.create(season_db_model)
 
         update_data = SeasonSchemaUpdate(year=2031)
@@ -144,14 +140,15 @@ class TestCreateOrUpdateGeneric:
         assert updated.id == created.id
         assert updated.year == 2031
 
-    async def test_update_multiple_times(
-        self, test_db: Database
-    ):
+    async def test_update_multiple_times(self, test_db: Database):
         """Test sequential updates to the same record."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2040)
         from src.core.models.season import SeasonDB
-        season_db_model = SeasonDB(year=season_data.year, description=season_data.description)
+
+        season_db_model = SeasonDB(
+            year=season_data.year, description=season_data.description
+        )
         created = await season_service.create(season_db_model)
 
         update1 = SeasonSchemaUpdate(year=2041)
@@ -172,9 +169,7 @@ class TestCreateOrUpdateGeneric:
         assert updated2.year == 2042
         assert updated1.id == updated2.id
 
-    async def test_create_or_update_custom_field(
-        self, test_db: Database
-    ):
+    async def test_create_or_update_custom_field(self, test_db: Database):
         """Test using custom unique_field_name instead of eesl_id."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2050)
@@ -189,9 +184,7 @@ class TestCreateOrUpdateGeneric:
         assert result is not None
         assert result.year == 2050
 
-    async def test_custom_field_create(
-        self, test_db: Database
-    ):
+    async def test_custom_field_create(self, test_db: Database):
         """Test create when custom field value doesn't exist."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2060)
@@ -205,22 +198,21 @@ class TestCreateOrUpdateGeneric:
         assert result.id is not None
         assert result.year == 2060
 
-    async def test_custom_field_update(
-        self, test_db: Database
-    ):
+    async def test_custom_field_update(self, test_db: Database):
         """Test update when custom field value exists."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2070)
         from src.core.models.season import SeasonDB
-        season_db_model = SeasonDB(year=season_data.year, description=season_data.description)
+
+        season_db_model = SeasonDB(
+            year=season_data.year, description=season_data.description
+        )
         created = await season_service.create(season_db_model)
 
         retrieved = await season_service.get_by_id(created.id)
         assert retrieved is not None
 
-    async def test_invalid_field_name(
-        self, test_db: Database
-    ):
+    async def test_invalid_field_name(self, test_db: Database):
         """Test raising HTTPException when field_name is None."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2080)
@@ -230,9 +222,7 @@ class TestCreateOrUpdateGeneric:
 
         assert exc_info.value.status_code == 409
 
-    async def test_create_with_model_factory(
-        self, test_db: Database
-    ):
+    async def test_create_with_model_factory(self, test_db: Database):
         """Test creating with a custom model_factory function."""
         season_service = SeasonServiceDB(test_db)
         season_data = SeasonFactorySample.build(year=2090)
@@ -251,11 +241,10 @@ class TestCreateOrUpdateGeneric:
         assert result is not None
         assert result.year == 2090
 
-    async def test_error_handling_on_invalid_data(
-        self, test_db: Database
-    ):
+    async def test_error_handling_on_invalid_data(self, test_db: Database):
         """Test proper exception handling with invalid data."""
         from src.core.models.season import SeasonDB
+
         season_service = SeasonServiceDB(test_db)
 
         season_db_model1 = SeasonDB(year=2099, description="Test Season 1")

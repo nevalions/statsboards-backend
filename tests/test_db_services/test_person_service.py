@@ -109,9 +109,7 @@ class TestPersonServiceDBCreateOrUpdate:
         )
         created = await person_service.create_or_update_person(create_data)
 
-        update_data = PersonSchemaUpdate(
-            person_eesl_id=500, second_name="Updated"
-        )
+        update_data = PersonSchemaUpdate(person_eesl_id=500, second_name="Updated")
         updated = await person_service.create_or_update_person(update_data)
 
         assert created.id == updated.id

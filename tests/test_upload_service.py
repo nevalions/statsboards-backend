@@ -72,7 +72,7 @@ class TestUploadService:
         """Test filename sanitization with mixed characters."""
         result = await upload_service.sanitize_filename("test_файл@#$%.jpg")
         assert result.isascii()
-        assert all(c.isalnum() or c in '._-' for c in result)
+        assert all(c.isalnum() or c in "._-" for c in result)
 
     @pytest.mark.asyncio
     async def test_get_timestamp(self, upload_service):

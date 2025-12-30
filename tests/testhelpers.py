@@ -45,7 +45,10 @@ def assert_http_exception_on_conflict(exc_info: ExceptionInfo):
     assert exc_info is not None
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 409
-    assert "conflict" in exc_info.value.detail.lower() or "constraint" in exc_info.value.detail.lower()
+    assert (
+        "conflict" in exc_info.value.detail.lower()
+        or "constraint" in exc_info.value.detail.lower()
+    )
 
 
 def assert_http_exception_on_server_error(exc_info: ExceptionInfo):
@@ -130,6 +133,7 @@ def assert_filename_converted(original: str, converted: str):
     assert len(converted) > 0
 
     from pathlib import Path
+
     original_path = Path(original)
     converted_path = Path(converted)
 

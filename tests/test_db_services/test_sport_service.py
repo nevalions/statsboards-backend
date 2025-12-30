@@ -29,9 +29,7 @@ class TestSportServiceDB:
         sport_sample,
     ):
         """Test successful sport creation."""
-        created_sport: SportSchemaCreate = await test_sport_service.create(
-            sport_sample
-        )
+        created_sport: SportSchemaCreate = await test_sport_service.create(sport_sample)
         assert_sport_equal(sport_sample, created_sport)
 
     async def test_get_sport_by_id(

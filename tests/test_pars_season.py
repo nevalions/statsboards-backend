@@ -33,7 +33,7 @@ class TestParsSeason:
     ):
         """Test parsing season successfully."""
         mock_response = Mock()
-        mock_response.content = mock_season_html.encode()
+        mock_response.content = mock_season_html
         mock_get_url.return_value = mock_response
 
         mock_file_service.download_and_process_image = AsyncMock(
@@ -55,12 +55,10 @@ class TestParsSeason:
 
     @pytest.mark.asyncio
     @patch("src.pars_eesl.pars_season.get_url")
-    async def test_parse_season_index_page_eesl_no_tournaments(
-        self, mock_get_url
-    ):
+    async def test_parse_season_index_page_eesl_no_tournaments(self, mock_get_url):
         """Test parsing when no tournaments are found."""
         mock_response = Mock()
-        mock_response.content = "<html><body></body></html>".encode()
+        mock_response.content = "<html><body></body></html>"
         mock_get_url.return_value = mock_response
 
         result = await pars_season.parse_season_index_page_eesl(1)

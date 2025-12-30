@@ -135,9 +135,7 @@ class TestSeasonServiceDB:
         reset_season_data = SeasonSchemaUpdate(
             year=season.year, description=season.description
         )
-        await test_season_service.update(
-            item_id=season.id, item=reset_season_data
-        )
+        await test_season_service.update(item_id=season.id, item=reset_season_data)
         reset_season = await test_season_service.get_season_by_year(season.year)
         assert_season_equal(season, reset_season)
 

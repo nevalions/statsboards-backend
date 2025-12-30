@@ -62,7 +62,9 @@ class TestData:
 
     @staticmethod
     def get_sponsor_data() -> SponsorSchemaCreate:
-        return SponsorSchemaCreate(title="Test Sponsor", logo_url="logo_url", scale_logo=1.0)
+        return SponsorSchemaCreate(
+            title="Test Sponsor", logo_url="logo_url", scale_logo=1.0
+        )
 
     @staticmethod
     def get_sponsor_data_for_update() -> SponsorSchemaUpdate:

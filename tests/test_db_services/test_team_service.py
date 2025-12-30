@@ -143,9 +143,7 @@ class TestTeamServiceDBCreateOrUpdate:
         assert updated.title == "Full Title"
         assert updated.description == "New Description"
 
-    async def test_error_handling_invalid_data(
-        self, test_db: Database
-    ):
+    async def test_error_handling_invalid_data(self, test_db: Database):
         """Test error handling with invalid team data."""
         team_service = TeamServiceDB(test_db)
 

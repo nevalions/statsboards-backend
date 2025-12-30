@@ -13,7 +13,13 @@ from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate
-from tests.factories import MatchFactory, TeamFactory, TournamentFactory, SportFactorySample, SeasonFactorySample
+from tests.factories import (
+    MatchFactory,
+    TeamFactory,
+    TournamentFactory,
+    SportFactorySample,
+    SeasonFactorySample,
+)
 from src.logging_config import setup_logging
 from datetime import datetime
 
@@ -46,9 +52,7 @@ async def tournament_data(
 
 
 @pytest_asyncio.fixture(scope="function")
-async def teams_data(
-    test_db: Database, sport: SportSchemaCreate
-):
+async def teams_data(test_db: Database, sport: SportSchemaCreate):
     sport_service = SportServiceDB(test_db)
     created_sport = await sport_service.create(sport)
 
