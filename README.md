@@ -101,7 +101,7 @@ docker-compose -f docker-compose.test.db.yml run --rm test_app
 docker-compose -f docker-compose.test.db.yml down
 ```
 
-**Note:** Ensure environment variables point to test database: `postgresql://test:test@localhost:5432/test_db`
+**Note:** Ensure environment variables point to test database
 
 ### Code Quality
 

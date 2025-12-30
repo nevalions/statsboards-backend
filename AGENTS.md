@@ -62,7 +62,7 @@ pytest tests/ -k "async"
 
 **Note:** Database echo is disabled in test fixtures for faster test execution.
 
-**Note:** Ensure environment variables point to test database: `postgresql://test:test@localhost:5432/test_db`
+**Note:** Ensure environment variables point to test database
 
 ### Code Quality
 
