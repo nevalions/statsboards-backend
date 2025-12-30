@@ -56,10 +56,12 @@ async def collect_players_dob_from_all_eesl(
         return datetime.strptime(dob_text_eng, "%d %B %Y")
     except asyncio.TimeoutError:
         logger.error("Timeout occur while parsing date of birthday form eesl")
+        return None
     except Exception as ex:
         logger.error(
             f"Error while parsing date of birthday from eesl: {ex}", exc_info=True
         )
+        return None
 
 
 async def collect_player_full_data_eesl(
@@ -466,6 +468,8 @@ async def get_player_from_eesl_participants(
         except Exception as ex:
             logger.error(f"Error collecting players from eesl: {ex}", exc_info=True)
             return False if has_error else None
+
+    return players_in_eesl
 
 
 async def main():

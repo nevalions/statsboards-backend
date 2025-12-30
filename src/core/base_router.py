@@ -64,7 +64,7 @@ class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType
             if model is None:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"{str(ModelType.__name__)} {model_id} not found",
+                    detail=f"{self.service.model.__name__} {model_id} not found",
                 )
             return model
 

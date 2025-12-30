@@ -38,6 +38,8 @@ async def parse_players_from_team_tournament_eesl_and_create_jsons(
             f"Error on parsing and saving json players from team_tournament eesl: {ex}",
             exc_info=True,
         )
+        raise
+        return None
 
 
 async def parse_players_from_team_tournament_eesl(
@@ -66,6 +68,7 @@ async def parse_players_from_team_tournament_eesl(
         logger.error(
             f"Error on parsing players from team_tournament eesl: {ex}", exc_info=True
         )
+        raise
 
 
 async def get_player_from_team_tournament_eesl(
@@ -118,6 +121,7 @@ async def get_player_from_team_tournament_eesl(
         logger.error(
             f"Error on parsing player from team_tournament eesl: {ex}", exc_info=True
         )
+        return None
 
 
 async def main():

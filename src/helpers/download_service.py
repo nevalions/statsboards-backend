@@ -57,6 +57,7 @@ class DownloadService:
                         f"All {max_retries} attempts failed for {img_url}: {e}"
                     )
                     raise
+        raise RuntimeError(f"Failed to fetch image from {img_url} after {max_retries} attempts")
 
     async def download_image(
         self,
@@ -130,6 +131,7 @@ class DownloadService:
                         exc_info=True,
                     )
                     raise
+        raise RuntimeError(f"Failed to download image from {img_url} after 3 attempts")
 
     async def open_file(self, file_path: str) -> dict[str, Any]:
         return await self.fs_service.open_file(file_path)

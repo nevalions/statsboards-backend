@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from fastapi.templating import Jinja2Templates
-from pydantic import PostgresDsn
+from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.logging_config import setup_logging
@@ -39,7 +39,7 @@ class DbSettings(BaseSettings):
     port: int
 
     @property
-    def db_url(self) -> PostgresDsn:
+    def db_url(self) -> str:
         # print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
@@ -53,7 +53,7 @@ class DbSettings(BaseSettings):
         )
         return url
 
-    def db_url_websocket(self) -> PostgresDsn:
+    def db_url_websocket(self) -> str:
         # print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
@@ -79,7 +79,7 @@ class TestDbSettings(BaseSettings):
     port: int
 
     @property
-    def test_db_url(self) -> PostgresDsn:
+    def test_db_url(self) -> str:
         # print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
@@ -93,7 +93,7 @@ class TestDbSettings(BaseSettings):
         )
         return url
 
-    def test_db_url_websocket(self) -> PostgresDsn:
+    def test_db_url_websocket(self) -> str:
         # print(self.host, self.user, self.password, self.name)
         url = str(
             PostgresDsn.build(
@@ -110,8 +110,8 @@ class TestDbSettings(BaseSettings):
 
 class Settings(BaseSettings):
     # api_v1_prefix: str = "/api/v1"
-    db: DbSettings = DbSettings()
-    test_db: TestDbSettings = TestDbSettings()
+    db: DbSettings = DbSettings()  # type: ignore[arg-type]
+    test_db: TestDbSettings = TestDbSettings()  # type: ignore[arg-type]
     db_echo: bool = False
 
 

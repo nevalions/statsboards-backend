@@ -220,6 +220,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 if playclock:
                     self.logger.debug(f"Playclock found: {playclock}")
                     return playclock
+        return None
 
     async def decrement_playclock(
         self,

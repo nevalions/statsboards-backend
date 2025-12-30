@@ -29,8 +29,8 @@ class ParsedMatchPlayer(TypedDict):
 class ParsedMatch(TypedDict):
     team_a: str
     team_b: str
-    team_a_eesl_id: int
-    team_b_eesl_id: int
+    team_a_eesl_id: int | None
+    team_b_eesl_id: int | None
     team_logo_url_a: str | None
     team_logo_url_b: str | None
     score_a: str
@@ -158,6 +158,7 @@ async def parse_match_index_page_eesl(
         return match_data
     except Exception as ex:
         logger.error(f"Error parsing match id:{m_id} {ex}", exc_info=True)
+        return None
 
 
 async def get_player_eesl_from_match(
@@ -204,6 +205,7 @@ async def get_player_eesl_from_match(
             raise HTTPException(status_code=409, detail="Error parsing match player")
     except Exception as ex:
         logger.error(f"Error parsing match player {ex}", exc_info=True)
+        return None
 
 
 async def main():

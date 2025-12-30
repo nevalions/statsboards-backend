@@ -76,6 +76,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             self.logger.error(
                 f"Error creating or updating {ITEM}:{p} {ex}", exc_info=True
             )
+            return None
 
     async def create_new_player_match(
         self,
@@ -95,10 +96,11 @@ class PlayerMatchServiceDB(BaseServiceDB):
             return await super().create(player_match)
         except Exception as ex:
             self.logger.error(f"Error creating {ITEM}{ex}", exc_info=True)
+            raise
 
     async def get_player_match_by_match_id_and_eesl_id(
         self, match_id: int, player_match_eesl_id: int | str
-    ) -> PlayerMatchDB:
+    ) -> PlayerMatchDB | None:
         try:
             self.logger.debug(
                 f"Get {ITEM} by match id:{match_id} and eesl id:{player_match_eesl_id}"
@@ -125,6 +127,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 f"Error getting {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
                 exc_info=True,
             )
+            return None
 
     async def update_player_match_by_eesl(
         self, match_id: int, eesl_id: int | str, new_player: PlayerMatchSchemaUpdate
@@ -142,6 +145,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
             self.logger.error(
                 f"Error updating {ITEM}{ex} by match eesl{eesl_id}", exc_info=True
             )
+            return None
 
     async def get_players_match_by_match_id(
         self, match_id: int, player_team_tournament_id: int
@@ -165,6 +169,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 self.logger.error(
                     f"Error getting {ITEM} by match id:{match_id} {ex}", exc_info=True
                 )
+                return None
 
     async def get_player_in_sport(self, player_id: int) -> PlayerDB | None:
         player_service = PlayerTeamTournamentServiceDB(self.db)

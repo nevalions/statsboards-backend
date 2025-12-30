@@ -239,7 +239,6 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 try:
                     if teams_list:
                         for t in teams_list:
-                            t: ParsedTeamData
                             team = TeamSchemaCreate(**t)
                             created_team = await self.service.create_or_update_team(
                                 team
