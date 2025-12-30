@@ -16,8 +16,6 @@ from tests.factories import MatchFactory, TeamFactory, TournamentFactory, Season
 from src.logging_config import setup_logging
 
 setup_logging()
-
-
 @pytest.mark.asyncio
 class TestPlayerMatchViews:
     async def test_create_player_match_endpoint(self, client, test_db):
@@ -195,5 +193,6 @@ class TestPlayerMatchViews:
 
     async def test_get_player_match_by_id_not_found(self, client):
         response = await client.get("/api/players_match/id/99999")
-        
+
         assert response.status_code == 404
+

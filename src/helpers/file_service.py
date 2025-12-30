@@ -143,7 +143,9 @@ class FileService:
         )
 
         image_path = await self.download_service.download_image(
-            img_url, original_image_path_with_filename, force_redownload=force_redownload
+            img_url,
+            original_image_path_with_filename,
+            force_redownload=force_redownload,
         )
         self.logger.debug(f"img_path: {image_path}")
         file_data = await self.download_service.open_file(image_path)

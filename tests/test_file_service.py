@@ -103,7 +103,8 @@ class TestFileService:
         self, mock_fetch, file_service, tmp_path, sample_image
     ):
         """Test downloading image from URL."""
-        mock_fetch.return_value = sample_image.getvalue()
+        large_image_data = sample_image.getvalue() * 20
+        mock_fetch.return_value = large_image_data
 
         img_url = "http://example.com/image.jpg"
         path_with_image_name = str(tmp_path / "downloaded_image.jpg")
@@ -245,6 +246,77 @@ class TestFileService:
             assert "image_url" in result
             assert "image_icon_url" in result
             assert "image_webview_url" in result
+
+    @pytest.mark.asyncio
+    @patch.object(DownloadService, "download_image", new_callable=AsyncMock)
+    async def test_download_and_resize_image_with_force_redownload(
+        self, mock_download, file_service, tmp_path, sample_image
+    ):
+        """Test download_and_resize_image with force_redownload parameter."""
+        img_url = "http://example.com/image.jpg"
+        original_file_path = str(tmp_path / "images")
+        original_image_path = str(tmp_path / "images" / "image.jpg")
+        icon_image_path = str(tmp_path / "images" / "icon_100px.jpg")
+        web_view_image_path = str(tmp_path / "images" / "webview_400px.jpg")
+
+        tmp_path.joinpath("images").mkdir(parents=True, exist_ok=True)
+        tmp_path.joinpath("images/image.jpg").write_bytes(sample_image.getvalue() * 20)
+
+        mock_download.return_value = original_image_path
+
+        with patch.object(
+            file_service.fs_service, "create_path", side_effect=lambda x: x
+        ):
+            with patch.object(
+                file_service.image_service,
+                "resize_and_save_image",
+                new_callable=AsyncMock,
+            ):
+                await file_service.download_and_resize_image(
+                    img_url,
+                    original_file_path,
+                    original_image_path,
+                    icon_image_path,
+                    web_view_image_path,
+                    icon_height=100,
+                    web_view_height=400,
+                    force_redownload=True,
+                )
+                mock_download.assert_called_once_with(
+                    img_url, original_image_path, force_redownload=True
+                )
+
+    @pytest.mark.asyncio
+    @patch.object(DownloadService, "fetch_image_data_from_url", new_callable=AsyncMock)
+    @patch.object(DownloadService, "download_image", new_callable=AsyncMock)
+    async def test_download_and_process_image_with_force_redownload(
+        self, mock_download, mock_fetch, file_service, sample_image
+    ):
+        """Test download_and_process_image with force_redownload parameter."""
+        mock_fetch.return_value = sample_image.getvalue()
+        mock_download.return_value = "/path/to/image.jpg"
+
+        img_url = "http://example.com/image.jpg"
+        image_type_prefix = "teams/"
+        image_title = "test team"
+        icon_height = 100
+        web_view_height = 400
+
+        with patch.object(
+            file_service, "download_and_resize_image", new_callable=AsyncMock
+        ) as mock_download_resize:
+            result = await file_service.download_and_process_image(
+                img_url,
+                image_type_prefix,
+                image_title,
+                icon_height,
+                web_view_height,
+                force_redownload=True,
+            )
+            assert isinstance(result, dict)
+            mock_download_resize.assert_called_once()
+            call_kwargs = mock_download_resize.call_args.kwargs
+            assert call_kwargs.get("force_redownload") is True
 
     @pytest.mark.asyncio
     async def test_generate_image_paths_with_cyrillic_title(self):
