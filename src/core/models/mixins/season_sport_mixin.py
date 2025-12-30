@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from ..season import SeasonDB
     from ..sport import SportDB
 
+
 class SeasonSportRelationMixin:
     _season_id_nullable: bool = False
     _season_id_unique: bool = False

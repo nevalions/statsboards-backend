@@ -5,11 +5,11 @@ from typing import Annotated
 
 class TournamentSchemaBase(BaseModel):
     tournament_eesl_id: int | None = None
-    title: Annotated[str, Path(max_length=255)] = 'Tournament'
-    description: str | None = ''
-    tournament_logo_url: Annotated[str, Path(max_length=500)] | None = ''
-    tournament_logo_icon_url: Annotated[str, Path(max_length=500)] | None = ''
-    tournament_logo_web_url: Annotated[str, Path(max_length=500)] | None = ''
+    title: Annotated[str, Path(max_length=255)] = "Tournament"
+    description: str | None = ""
+    tournament_logo_url: Annotated[str, Path(max_length=500)] | None = ""
+    tournament_logo_icon_url: Annotated[str, Path(max_length=500)] | None = ""
+    tournament_logo_web_url: Annotated[str, Path(max_length=500)] | None = ""
     season_id: int
     sport_id: int
     sponsor_line_id: int | None = None

@@ -148,7 +148,9 @@ class GameClockServiceDB(BaseServiceDB):
         self.logger.debug(f"Decrement gameclock by id:{gameclock_id}")
 
         if self.disable_background_tasks:
-            self.logger.debug(f"Background tasks disabled, skipping gameclock decrement")
+            self.logger.debug(
+                f"Background tasks disabled, skipping gameclock decrement"
+            )
             return
 
         if gameclock_id in self.clock_manager.active_gameclock_matches:

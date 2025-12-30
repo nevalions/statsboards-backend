@@ -9,7 +9,7 @@ class PlayerTeamTournamentSchemaBase(BaseModel):
     position_id: int | None = None
     team_id: int | None = None
     tournament_id: int | None = None
-    player_number: Annotated[str, Path(max_length=10)] | None = '0'
+    player_number: Annotated[str, Path(max_length=10)] | None = "0"
 
 
 class PlayerTeamTournamentSchemaUpdate(BaseModel):

@@ -20,9 +20,7 @@ class FootballEventServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_FootballEventServiceDB", self)
         self.logger.debug("Initialized FootballEventServiceDB")
 
-    async def create(
-        self, item: FootballEventSchemaCreate
-    ):
+    async def create(self, item: FootballEventSchemaCreate):
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Creating {ITEM}")
@@ -85,7 +83,9 @@ class FootballEventServiceDB(BaseServiceDB):
             except HTTPException:
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(f"Database error creating {ITEM}: {ex}", exc_info=True)
+                self.logger.error(
+                    f"Database error creating {ITEM}: {ex}", exc_info=True
+                )
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error creating football event for match {item.match_id}",

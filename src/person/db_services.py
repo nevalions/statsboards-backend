@@ -32,7 +32,9 @@ class PersonServiceDB(BaseServiceDB):
                 person_photo_web_url=item.person_photo_web_url,
                 person_dob=item.person_dob,
             )
-            self.logger.debug(f"Starting to create PersonDB with data: {person.__dict__}")
+            self.logger.debug(
+                f"Starting to create PersonDB with data: {person.__dict__}"
+            )
             return await super().create(person)
         except Exception as ex:
             self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)

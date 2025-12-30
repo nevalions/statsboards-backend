@@ -115,11 +115,17 @@ class MatchDataServiceDB(BaseServiceDB):
                 )
 
     async def enable_match_data_clock_queues(self, match_data_id: int, clock_type: str):
-        self.logger.debug(f"Enable matchdata clock queues for id: {match_data_id}, type: {clock_type}")
+        self.logger.debug(
+            f"Enable matchdata clock queues for id: {match_data_id}, type: {clock_type}"
+        )
         await self.get_by_id(match_data_id)
 
-    async def decrement_gameclock(self, background_tasks: BackgroundTasks, match_data_id: int):
+    async def decrement_gameclock(
+        self, background_tasks: BackgroundTasks, match_data_id: int
+    ):
         self.logger.debug(f"Decrement gameclock for matchdata id: {match_data_id}")
 
-    async def decrement_playclock(self, background_tasks: BackgroundTasks, match_data_id: int):
+    async def decrement_playclock(
+        self, background_tasks: BackgroundTasks, match_data_id: int
+    ):
         self.logger.debug(f"Decrement playclock for matchdata id: {match_data_id}")

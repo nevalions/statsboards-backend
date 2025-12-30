@@ -57,9 +57,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     self.logger.debug(
                         f"Try creating team_tournament connection team_id: {new_team.id} to tour_id: {tour_id}"
                     )
-                    await TeamTournamentServiceDB(db).create(
-                        dict_conv
-                    )
+                    await TeamTournamentServiceDB(db).create(dict_conv)
                 except HTTPException:
                     raise
                 except Exception as ex:
@@ -152,8 +150,10 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 f"Get players with persons by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
             try:
-                return await self.service.get_players_by_team_id_tournament_id_with_person(
-                    team_id, tournament_id
+                return (
+                    await self.service.get_players_by_team_id_tournament_id_with_person(
+                        team_id, tournament_id
+                    )
                 )
             except HTTPException:
                 raise
@@ -263,9 +263,9 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                                         f"Trying to create team and tournament connection after parse"
                                     )
                                     team_tournament_connection = (
-                                        await TeamTournamentServiceDB(
-                                            db
-                                        ).create(dict_conv)
+                                        await TeamTournamentServiceDB(db).create(
+                                            dict_conv
+                                        )
                                     )
                                     created_team_tournament_ids.append(
                                         team_tournament_connection

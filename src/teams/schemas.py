@@ -5,12 +5,12 @@ from typing import Annotated
 
 class TeamSchemaBase(BaseModel):
     team_eesl_id: int | None = None
-    title: Annotated[str, Path(max_length=50)] = 'Team'
-    city: Annotated[str, Path(max_length=50)] | None = 'City'
-    description: str | None = ''
-    team_logo_url: Annotated[str, Path(max_length=500)] | None = ''
-    team_logo_icon_url: Annotated[str, Path(max_length=500)] | None = ''
-    team_logo_web_url: Annotated[str, Path(max_length=500)] | None = ''
+    title: Annotated[str, Path(max_length=50)] = "Team"
+    city: Annotated[str, Path(max_length=50)] | None = "City"
+    description: str | None = ""
+    team_logo_url: Annotated[str, Path(max_length=500)] | None = ""
+    team_logo_icon_url: Annotated[str, Path(max_length=500)] | None = ""
+    team_logo_web_url: Annotated[str, Path(max_length=500)] | None = ""
     team_color: Annotated[str, Path(max_length=10)] = "#c01c28"
     sponsor_line_id: int | None = None
     main_sponsor_id: int | None = None

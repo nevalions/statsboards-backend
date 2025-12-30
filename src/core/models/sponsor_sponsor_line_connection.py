@@ -36,8 +36,5 @@ class SponsorSponsorLineDB(Base):
         nullable=False,
     )
     position: Mapped[int] = mapped_column(
-        Integer,
-        nullable=True,
-        default=1,
-        server_default="1"
+        Integer, nullable=True, default=1, server_default="1"
     )

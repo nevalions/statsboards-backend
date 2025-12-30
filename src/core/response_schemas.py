@@ -15,7 +15,9 @@ class ResponseModel(BaseModel, Generic[T]):
     success: bool
 
     @classmethod
-    def success_response(cls, content: T, message: str = "Operation successful") -> "ResponseModel[T]":
+    def success_response(
+        cls, content: T, message: str = "Operation successful"
+    ) -> "ResponseModel[T]":
         return cls(
             content=content,
             type="text",
@@ -25,7 +27,9 @@ class ResponseModel(BaseModel, Generic[T]):
         )
 
     @classmethod
-    def created_response(cls, content: T, message: str = "Resource created") -> "ResponseModel[T]":
+    def created_response(
+        cls, content: T, message: str = "Resource created"
+    ) -> "ResponseModel[T]":
         return cls(
             content=content,
             type="text",

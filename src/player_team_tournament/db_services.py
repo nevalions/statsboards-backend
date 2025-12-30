@@ -37,7 +37,9 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 tournament_id=item.tournament_id,
                 player_number=item.player_number,
             )
-            self.logger.debug(f"Starting to create PlayerTeamTournamentDB with data: {player_team_tournament.__dict__}")
+            self.logger.debug(
+                f"Starting to create PlayerTeamTournamentDB with data: {player_team_tournament.__dict__}"
+            )
             return await super().create(player_team_tournament)
         except Exception as ex:
             self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
@@ -80,9 +82,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     )
                     if player_team_tournament_from_db:
                         self.logger.debug(f"{ITEM} exist, updating...")
-                        return await self.update(
-                            player_team_tournament_from_db.id, p
-                        )
+                        return await self.update(player_team_tournament_from_db.id, p)
                 self.logger.debug(f"{ITEM} does not exist, creating...")
                 return await self.create_new_player_team_tournament(
                     p,

@@ -4,7 +4,7 @@ from typing import Annotated
 
 
 class PositionSchemaBase(BaseModel):
-    title: Annotated[str, Path(max_length=30)] = 'Position'
+    title: Annotated[str, Path(max_length=30)] = "Position"
     sport_id: int
 
 

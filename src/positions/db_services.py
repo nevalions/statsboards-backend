@@ -62,7 +62,8 @@ class PositionServiceDB(BaseServiceDB):
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Database error getting position by title: {title} {ex}", exc_info=True
+                    f"Database error getting position by title: {title} {ex}",
+                    exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,

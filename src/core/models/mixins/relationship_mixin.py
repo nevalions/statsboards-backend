@@ -369,7 +369,9 @@ class RelationshipMixin:
                     items = []
                     for related_item in related_items:
                         second_level = getattr(related_item, second_level_property)
-                        if hasattr(second_level, '__iter__') and not isinstance(second_level, (str, bytes)):
+                        if hasattr(second_level, "__iter__") and not isinstance(
+                            second_level, (str, bytes)
+                        ):
                             for final_point in second_level:
                                 items.append(final_point)
                         else:

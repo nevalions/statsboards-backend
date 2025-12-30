@@ -495,8 +495,12 @@ class BaseServiceDB(
             field_value = unique_field_value or getattr(item_schema, field_name, None)
 
             if field_value:
-                self.logger.debug(f"Get {self.model.__name__} {field_name}:{field_value}")
-                existing_item = await self.get_item_by_field_value(field_value, field_name)
+                self.logger.debug(
+                    f"Get {self.model.__name__} {field_name}:{field_value}"
+                )
+                existing_item = await self.get_item_by_field_value(
+                    field_value, field_name
+                )
 
                 if existing_item:
                     self.logger.debug(
@@ -512,7 +516,9 @@ class BaseServiceDB(
                     )
             else:
                 self.logger.debug(f"No {field_name} in schema, create new")
-                return await self._create_item(item_schema, model_factory, **create_kwargs)
+                return await self._create_item(
+                    item_schema, model_factory, **create_kwargs
+                )
         except Exception as ex:
             self.logger.error(
                 f"{self.model.__name__} returned an error: {ex}", exc_info=True
@@ -527,7 +533,9 @@ class BaseServiceDB(
     ):
         """Internal method to update an existing item."""
         if field_name.endswith("_eesl_id"):
-            return await self.update_item_by_eesl_id(field_name, field_value, item_schema)
+            return await self.update_item_by_eesl_id(
+                field_name, field_value, item_schema
+            )
         else:
             return await self.update(existing_item.id, item_schema)
 

@@ -1,3 +1,4 @@
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -30,7 +31,8 @@ class UploadService:
 
             normalized = unicodedata.normalize("NFKD", filename)
             ascii_only = normalized.encode("ASCII", "ignore").decode("ASCII")
-            sanitized = ascii_only.strip().replace(" ", "_")
+            sanitized = os.path.basename(ascii_only).strip().replace(" ", "_")
+            sanitized = sanitized.replace("\x00", "")
             sanitized = re.sub(r"[^\w\-_\.]", "_", sanitized)
             self.logger.debug(f"Sanitized filename: {sanitized}")
             return sanitized

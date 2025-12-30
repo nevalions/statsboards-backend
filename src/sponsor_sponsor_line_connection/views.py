@@ -42,9 +42,7 @@ class SponsorSponsorLineAPIRouter(
                     sponsor_line_id=sponsor_line_id,
                     sponsor_id=sponsor_id,
                 )
-                new_ = await self.service.create(
-                    sponsor_sponsor_line_schema_create
-                )
+                new_ = await self.service.create(sponsor_sponsor_line_schema_create)
                 if new_:
                     return new_
                 else:

@@ -5,11 +5,11 @@ from typing import Annotated
 
 
 class PersonSchemaBase(BaseModel):
-    first_name: Annotated[str, Path(max_length=100)] = 'Name'
-    second_name: Annotated[str, Path(max_length=100)] | None = 'Surname'
-    person_photo_url: Annotated[str, Path(max_length=500)] | None = ''
-    person_photo_icon_url: Annotated[str, Path(max_length=500)] | None = ''
-    person_photo_web_url: Annotated[str, Path(max_length=500)] | None = ''
+    first_name: Annotated[str, Path(max_length=100)] = "Name"
+    second_name: Annotated[str, Path(max_length=100)] | None = "Surname"
+    person_photo_url: Annotated[str, Path(max_length=500)] | None = ""
+    person_photo_icon_url: Annotated[str, Path(max_length=500)] | None = ""
+    person_photo_web_url: Annotated[str, Path(max_length=500)] | None = ""
     person_dob: date_type | None = None
     person_eesl_id: int | None = None
 

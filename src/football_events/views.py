@@ -44,9 +44,7 @@ class FootballEventAPIRouter(
         async def create_football_event(football_event: FootballEventSchemaCreate):
             try:
                 self.logger.debug(f"Creating {ITEM} endpoint")
-                new_football_event = await self.service.create(
-                    football_event
-                )
+                new_football_event = await self.service.create(football_event)
                 return FootballEventSchema.model_validate(new_football_event)
             except Exception as e:
                 self.logger.error(f"Error creating football_event: {e}", exc_info=e)

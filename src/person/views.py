@@ -50,9 +50,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             eesl_id: int,
         ):
             self.logger.debug(f"Get person by eesl_id: {eesl_id}")
-            person = await self.service.get_person_by_eesl_id(
-                value=eesl_id
-            )
+            person = await self.service.get_person_by_eesl_id(value=eesl_id)
             if person is None:
                 raise HTTPException(
                     status_code=404,

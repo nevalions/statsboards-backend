@@ -8,7 +8,7 @@ class PlayerMatchSchemaBase(BaseModel):
     player_team_tournament_id: int | None = None
     match_position_id: int | None = None
     match_id: int
-    match_number: Annotated[str, Path(max_length=10)] | None = '0'
+    match_number: Annotated[str, Path(max_length=10)] | None = "0"
     team_id: int
     is_start: bool | None = False
 

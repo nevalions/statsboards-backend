@@ -41,6 +41,7 @@ class TeamTournamentDB(Base):
         nullable=False,
     )
 
+
 # fk_players_id = relationship('PlayerDB',
 #                              secondary='player_team_tournament',
 #                              back_populates='fk_team_tournaments_id',

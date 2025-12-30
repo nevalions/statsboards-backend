@@ -49,7 +49,10 @@ async def fetch_list_of_matches_data(matches: List):
             teams = {team.id: team for team in results.scalars().all()}
 
         match_data_list = await asyncio.gather(
-            *[match_service_db.get_matchdata_by_match(match_id) for match_id in match_ids]
+            *[
+                match_service_db.get_matchdata_by_match(match_id)
+                for match_id in match_ids
+            ]
         )
 
         for idx, match in enumerate(matches):

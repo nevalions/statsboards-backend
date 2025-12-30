@@ -5,7 +5,7 @@ from typing import Annotated
 
 class SponsorSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=50)]
-    logo_url: str | None = ''
+    logo_url: str | None = ""
     scale_logo: float | None = 1.0
 
 

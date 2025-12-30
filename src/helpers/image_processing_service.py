@@ -42,17 +42,13 @@ class ImageProcessingService:
                 save_image.save(buffer, format=source_image.format)
             self.logger.info(f"Image saved: {dest}")
         except Exception as e:
-            self.logger.error(
-                f"Problem saving image to: {dest} {e}", exc_info=True
-            )
+            self.logger.error(f"Problem saving image to: {dest} {e}", exc_info=True)
             raise HTTPException(
                 status_code=400,
                 detail="An error occurred while saving image.",
             )
 
-    async def resize_image(
-        self, image: Image.Image, height: int
-    ) -> Image.Image:
+    async def resize_image(self, image: Image.Image, height: int) -> Image.Image:
         try:
             width = int((image.width / image.height) * height)
         except Exception as e:
@@ -120,7 +116,9 @@ class ImageProcessingService:
 
     def hex_to_rgb(self, hex_color: str) -> tuple[int, ...] | None:
         hex_color = hex_color.lstrip("#")
-        if len(hex_color) not in (6, 8) or not all(c in "0123456789abcdefABCDEF" for c in hex_color):
+        if len(hex_color) not in (6, 8) or not all(
+            c in "0123456789abcdefABCDEF" for c in hex_color
+        ):
             return None
         try:
             self.logger.debug(f"Converting hex color: {hex_color}")
@@ -128,9 +126,7 @@ class ImageProcessingService:
             self.logger.info(f"Converted hex color: {final_color}")
             return final_color
         except Exception as e:
-            self.logger.warning(
-                f"Problem converting hex color: {hex_color} {e}"
-            )
+            self.logger.warning(f"Problem converting hex color: {hex_color} {e}")
             return None
 
     async def get_most_common_color(self, image_path: str) -> str | None:

@@ -60,9 +60,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                         and p.match_id == player_match_from_db.match_id
                     ):
                         self.logger.debug(f"{ITEM} already in match, updating...")
-                        return await self.update(
-                            player_match_from_db.id, p
-                        )
+                        return await self.update(player_match_from_db.id, p)
                 self.logger.debug(f"{ITEM} does not exist, creating...")
                 return await self.create_new_player_match(
                     p,

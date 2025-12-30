@@ -88,7 +88,8 @@ class MatchServiceDB(BaseServiceDB):
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Database error fetching sport for match_id:{match_id} {ex}", exc_info=True
+                f"Database error fetching sport for match_id:{match_id} {ex}",
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
@@ -124,7 +125,8 @@ class MatchServiceDB(BaseServiceDB):
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Database error fetching teams for match_id:{match_id} {ex}", exc_info=True
+                f"Database error fetching teams for match_id:{match_id} {ex}",
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=500,

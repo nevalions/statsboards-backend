@@ -30,9 +30,7 @@ class DatabaseErrorHandler:
 
     def handle_db_error(self, error: Exception, context: str = "") -> None:
         """Handle database errors with appropriate status codes"""
-        self.logger.error(
-            f"{self.model_name} {context} error: {error}", exc_info=True
-        )
+        self.logger.error(f"{self.model_name} {context} error: {error}", exc_info=True)
 
         if isinstance(error, IntegrityError):
             raise HTTPException(
@@ -40,10 +38,6 @@ class DatabaseErrorHandler:
                 detail=f"Database constraint violation: {str(error)}",
             )
         elif isinstance(error, SQLAlchemyError):
-            raise HTTPException(
-                status_code=500, detail=f"Database error: {str(error)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Database error: {str(error)}")
         else:
-            raise HTTPException(
-                status_code=500, detail=f"Internal server error"
-            )
+            raise HTTPException(status_code=500, detail=f"Internal server error")

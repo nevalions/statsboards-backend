@@ -63,6 +63,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 # app = FastAPI()
 
+
 @app.get("/health")
 async def health_check():
     # Get the current time in ISO 8601 format with timezone awareness

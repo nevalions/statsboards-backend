@@ -65,9 +65,7 @@ class FileSystemService:
                 fp.write(data)
                 self.logger.info(f"File saved successfully: {file_path}")
         except Exception as e:
-            self.logger.error(
-                f"Error saving file to {file_path}: {e}", exc_info=True
-            )
+            self.logger.error(f"Error saving file to {file_path}: {e}", exc_info=True)
             raise
 
     async def open_file(self, file_path: str) -> dict[str, Any]:
