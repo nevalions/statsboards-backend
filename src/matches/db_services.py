@@ -152,9 +152,16 @@ class MatchServiceDB(BaseServiceDB):
                 detail=f"Internal server error fetching teams for match {match_id}",
             )
 
-    async def get_match_sponsor_line(self, match_id: int) -> list[SponsorLineDB] | None:
+    async def get_match_sponsor_line(self, match_id: int) -> SponsorLineDB | None:
         self.logger.debug(f"Get sponsor_line by {ITEM} id:{match_id}")
-        return await self.get_related_item_level_one_by_id(match_id, "sponsor_line")
+        result = await self.get_related_item_level_one_by_id(match_id, "sponsor_line")
+        if result:
+            if hasattr(result, "__len__"):
+                if len(result) > 0:
+                    return result[0]  # type: ignore[return-value]
+                return None
+            return result  # type: ignore[return-value]
+        return None
 
     async def get_matchdata_by_match(
         self,
@@ -165,8 +172,12 @@ class MatchServiceDB(BaseServiceDB):
             match_id,
             "match_data",
         )
-        if result and len(result) > 0:
-            return result[0]  # type: ignore[return-value]
+        if result:
+            if hasattr(result, "__len__"):
+                if len(result) > 0:
+                    return result[0]  # type: ignore[return-value]
+                return None
+            return result  # type: ignore[return-value]
         return None
 
     async def get_playclock_by_match(
@@ -178,8 +189,12 @@ class MatchServiceDB(BaseServiceDB):
             match_id,
             "match_playclock",
         )
-        if result and len(result) > 0:
-            return result[0]  # type: ignore[return-value]
+        if result:
+            if hasattr(result, "__len__"):
+                if len(result) > 0:
+                    return result[0]  # type: ignore[return-value]
+                return None
+            return result  # type: ignore[return-value]
         return None
 
     async def get_gameclock_by_match(
@@ -191,8 +206,12 @@ class MatchServiceDB(BaseServiceDB):
             match_id,
             "match_gameclock",
         )
-        if result and len(result) > 0:
-            return result[0]  # type: ignore[return-value]
+        if result:
+            if hasattr(result, "__len__"):
+                if len(result) > 0:
+                    return result[0]  # type: ignore[return-value]
+                return None
+            return result  # type: ignore[return-value]
         return None
 
     async def get_teams_by_match(
@@ -327,8 +346,12 @@ class MatchServiceDB(BaseServiceDB):
                 "match_scoreboard",
             )
             self.logger.debug(f"Got scoreboard successfully. Result: {result}")
-            if result and len(result) > 0:
-                return result[0]  # type: ignore[return-value]
+            if result:
+                if hasattr(result, "__len__"):
+                    if len(result) > 0:
+                        return result[0]  # type: ignore[return-value]
+                    return None
+                return result  # type: ignore[return-value]
             return None
         except Exception as e:
             self.logger.error(
