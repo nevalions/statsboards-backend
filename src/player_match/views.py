@@ -1,6 +1,9 @@
+import os
+from pathlib import Path
 from fastapi import HTTPException
 
 from src.core import BaseRouter, db
+from src.core.config import uploads_path
 from .db_services import PlayerMatchServiceDB
 from .schemas import PlayerMatchSchema, PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 from ..logging_config import setup_logging, get_logger
@@ -18,6 +21,25 @@ from ..positions.schemas import PositionSchemaCreate, PositionSchemaBase
 from ..teams.schemas import TeamSchemaBase
 
 setup_logging()
+
+
+def photo_files_exist(person_photo_url: str) -> bool:
+    """Check if photo files exist on disk."""
+    if not person_photo_url:
+        return False
+    
+    try:
+        photo_filename = Path(person_photo_url).name
+        if photo_filename:
+            original_path = Path(uploads_path) / "persons" / "photos" / photo_filename
+            icon_path = original_path.parent / f"{Path(photo_filename).stem}_100px{Path(photo_filename).suffix}"
+            web_path = original_path.parent / f"{Path(photo_filename).stem}_400px{Path(photo_filename).suffix}"
+            
+            return original_path.exists() or icon_path.exists() or web_path.exists()
+    except Exception:
+        pass
+    
+    return False
 
 
 class PlayerMatchAPIRouter(
@@ -230,15 +252,30 @@ class PlayerMatchAPIRouter(
                         person = await PersonServiceDB(db).get_person_by_eesl_id(
                             home_player["player_eesl_id"]
                         )
+                        needs_photo_download = (
+                            person is None
+                            or not person.person_photo_url
+                            or not person.person_photo_icon_url
+                            or not person.person_photo_web_url
+                            or not photo_files_exist(person.person_photo_url)
+                        )
                         if person is None:
                             self.logger.debug(f"No person for home player")
+                        elif needs_photo_download:
+                            self.logger.debug(
+                                f"Person exists but missing photos for {home_player['player_eesl_id']}"
+                            )
+                        
+                        if needs_photo_download:
                             player_in_team = await collect_player_full_data_eesl(
                                 home_player["player_eesl_id"]
                             )
                             person_schema = PersonSchemaCreate(
                                 **player_in_team["person"]
                             )
-                            self.logger.debug(f"Creating new person for home player")
+                            self.logger.debug(
+                                f"Creating/updating person for home player"
+                            )
                             person = await PersonServiceDB(db).create_or_update_person(
                                 person_schema
                             )
@@ -396,15 +433,30 @@ class PlayerMatchAPIRouter(
                         person = await PersonServiceDB(db).get_person_by_eesl_id(
                             away_player["player_eesl_id"]
                         )
+                        needs_photo_download = (
+                            person is None
+                            or not person.person_photo_url
+                            or not person.person_photo_icon_url
+                            or not person.person_photo_web_url
+                            or not photo_files_exist(person.person_photo_url)
+                        )
                         if person is None:
                             self.logger.debug(f"No person for away player")
+                        elif needs_photo_download:
+                            self.logger.debug(
+                                f"Person exists but missing photos for {away_player['player_eesl_id']}"
+                            )
+                        
+                        if needs_photo_download:
                             player_in_team = await collect_player_full_data_eesl(
                                 away_player["player_eesl_id"]
                             )
                             person_schema = PersonSchemaCreate(
                                 **player_in_team["person"]
                             )
-                            self.logger.debug(f"Creating new person for away player")
+                            self.logger.debug(
+                                f"Creating/updating person for away player"
+                            )
                             person = await PersonServiceDB(db).create_or_update_person(
                                 person_schema
                             )
