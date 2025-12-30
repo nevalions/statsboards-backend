@@ -24,7 +24,13 @@ class UploadService:
     async def sanitize_filename(self, filename: str) -> str:
         self.logger.debug(f"Sanitizing filename: {filename}")
         try:
-            sanitized = filename.strip().replace(" ", "_")
+            import unicodedata
+            import re
+
+            normalized = unicodedata.normalize('NFKD', filename)
+            ascii_only = normalized.encode('ASCII', 'ignore').decode('ASCII')
+            sanitized = ascii_only.strip().replace(" ", "_")
+            sanitized = re.sub(r'[^\w\-_\.]', '_', sanitized)
             self.logger.debug(f"Sanitized filename: {sanitized}")
             return sanitized
         except Exception as e:
@@ -65,7 +71,8 @@ class UploadService:
     ) -> ImageData:
         upload_dir = await self.fs_service.get_and_create_upload_dir(sub_folder)
         timestamp = await self.get_timestamp()
-        original_filename = await self.get_filename(timestamp, upload_file)
+        unsanitized_filename = await self.get_filename(timestamp, upload_file)
+        original_filename = await self.sanitize_filename(unsanitized_filename)
         original_dest = await self.fs_service.get_destination_with_filename(
             original_filename, upload_dir
         )

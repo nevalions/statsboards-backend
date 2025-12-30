@@ -75,7 +75,7 @@ class FileService:
             image,
             timestamp,
             upload_dir,
-            upload_file.filename,
+            original_filename,
             "icon",
         )
 
@@ -84,7 +84,7 @@ class FileService:
             image,
             timestamp,
             upload_dir,
-            upload_file.filename,
+            original_filename,
             "webview",
         )
 

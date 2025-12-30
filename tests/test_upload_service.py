@@ -60,6 +60,21 @@ class TestUploadService:
         assert result == "test___image___file"
 
     @pytest.mark.asyncio
+    async def test_sanitize_filename_with_cyrillic(self, upload_service):
+        """Test filename sanitization with Cyrillic characters."""
+        result = await upload_service.sanitize_filename("мирандов_леонид.jpg")
+        assert result.isascii()
+        assert "_" in result
+        assert ".jpg" in result
+
+    @pytest.mark.asyncio
+    async def test_sanitize_filename_with_mixed_chars(self, upload_service):
+        """Test filename sanitization with mixed characters."""
+        result = await upload_service.sanitize_filename("test_файл@#$%.jpg")
+        assert result.isascii()
+        assert all(c.isalnum() or c in '._-' for c in result)
+
+    @pytest.mark.asyncio
     async def test_get_timestamp(self, upload_service):
         """Test timestamp generation."""
         timestamp = await upload_service.get_timestamp()
