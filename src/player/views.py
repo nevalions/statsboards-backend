@@ -78,7 +78,19 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         @router.get("/id/{player_id}/person")
         async def person_by_player_id(player_id: int):
             self.logger.debug(f"Get person by player id: {player_id} endpoint")
-            return await self.service.get_player_with_person(player_id)
+            try:
+                return await self.service.get_player_with_person(player_id)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting person by player id:{player_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error fetching person by player id",
+                )
 
         @router.get(
             "/pars/all_eesl",
@@ -137,10 +149,16 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                     return created_players, created_persons
                 else:
                     return []
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error on create parsed players with person from all eesl: {ex}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error creating parsed players with person from EESL",
                 )
 
         return router

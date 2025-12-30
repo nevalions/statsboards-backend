@@ -82,8 +82,20 @@ class FootballEventServiceDB(BaseServiceDB):
                     f"for match id({item.match_id})"
                     f"returned some error",
                 )
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(f"Database error creating {ITEM}: {ex}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error creating football event for match {item.match_id}",
+                )
             except Exception as ex:
                 self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error creating football event",
+                )
 
     async def update(
         self,

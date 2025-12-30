@@ -3,6 +3,7 @@ from typing import Union
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.models import BaseServiceDB, ScoreboardDB, MatchDataDB
 from .schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
@@ -210,10 +211,25 @@ class ScoreboardServiceDB(BaseServiceDB):
                         detail=f"Scoreboard with match_id {matchdata.match_id} not found",
                     )
                 return scoreboard
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Database error getting scoreboard by matchdata id: {matchdata_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error fetching scoreboard for matchdata {matchdata_id}",
+                )
             except Exception as ex:
                 self.logger.error(
                     f"Error getting scoreboard by matchdata id: {matchdata_id} {ex}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error fetching scoreboard for matchdata {matchdata_id}",
                 )
 
     """triggers for sse process, now we use websocket"""

@@ -71,13 +71,22 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             self.logger.debug(f"Update person endpoint got data: {item}")
             try:
                 update_ = await self.service.update(item_id, item)
+                if update_ is None:
+                    raise HTTPException(
+                        status_code=404, detail=f"Person id {item_id} not found"
+                    )
+                return PersonSchema.model_validate(update_)
             except HTTPException:
                 raise
-            if update_ is None:
-                raise HTTPException(
-                    status_code=404, detail=f"Person id {item_id} not found"
+            except Exception as ex:
+                self.logger.error(
+                    f"Error updating person with id:{item_id} {ex}",
+                    exc_info=True,
                 )
-            return PersonSchema.model_validate(update_)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error updating person",
+                )
 
         @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
         async def upload_person_photo_endpoint(file: UploadFile = File(...)):

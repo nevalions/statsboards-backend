@@ -282,10 +282,16 @@ class TournamentAPIRouter(
                 else:
                     self.logger.warning("Teams list is empty")
                     return []
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error on parse and tournaments from season: {ex}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error parsing and creating tournaments from season",
                 )
 
         return router

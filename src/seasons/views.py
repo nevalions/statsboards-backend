@@ -58,16 +58,28 @@ class SeasonAPIRouter(
             item: SeasonSchemaUpdate,
         ):
             self.logger.debug(f"Update season endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update(
-                item_id,
-                item,
-            )
-            if update_ is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Season not found",
+            try:
+                update_ = await self.service.update(
+                    item_id,
+                    item,
                 )
-            return SeasonSchema.model_validate(update_)
+                if update_ is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Season not found",
+                    )
+                return SeasonSchema.model_validate(update_)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error updating season with id:{item_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error updating season",
+                )
 
         @router.get(
             "/id/{item_id}/",
@@ -75,17 +87,29 @@ class SeasonAPIRouter(
         )
         async def get_season_by_id_endpoint(item_id: int):
             self.logger.debug(f"Get season by id endpoint")
-            item = await self.service.get_by_id(item_id)
-            if item is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Season with id {item_id} not found",
+            try:
+                item = await self.service.get_by_id(item_id)
+                if item is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Season with id {item_id} not found",
+                    )
+                return self.create_response(
+                    item,
+                    f"Season ID:{item.id}",
+                    "Season",
                 )
-            return self.create_response(
-                item,
-                f"Season ID:{item.id}",
-                "Season",
-            )
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting season by id:{item_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error fetching season",
+                )
 
         @router.get("/id/{item_id}/sports/id/{sport_id}/tournaments")
         async def tournaments_by_season_id_and_sport_endpoint(
@@ -101,13 +125,25 @@ class SeasonAPIRouter(
         @router.get("/year/{season_year}", response_model=SeasonSchema)
         async def season_by_year_endpoint(season_year: int):
             self.logger.debug(f"Get season by year {season_year} endpoint")
-            season = await self.service.get_season_by_year(season_year)
-            if season is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Season {season_year} not found",
+            try:
+                season = await self.service.get_season_by_year(season_year)
+                if season is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Season {season_year} not found",
+                    )
+                return SeasonSchema.model_validate(season)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting season by year:{season_year} {ex}",
+                    exc_info=True,
                 )
-            return SeasonSchema.model_validate(season)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error fetching season by year",
+                )
 
         @router.get("/year/{year}/tournaments")
         async def tournaments_by_year_endpoint(year: int):

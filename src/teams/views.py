@@ -107,7 +107,19 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         @router.get("/id/{team_id}/matches/")
         async def get_matches_by_team_endpoint(team_id: int):
             self.logger.debug(f"Get matches by team id:{team_id} endpoint")
-            return await self.service.get_matches_by_team_id(team_id)
+            try:
+                return await self.service.get_matches_by_team_id(team_id)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting matches by team id:{team_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error fetching matches for team",
+                )
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players/")
         async def get_players_by_team_and_tournament_endpoint(
@@ -116,9 +128,21 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             self.logger.debug(
                 f"Get players by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
-            return await self.service.get_players_by_team_id_tournament_id(
-                team_id, tournament_id
-            )
+            try:
+                return await self.service.get_players_by_team_id_tournament_id(
+                    team_id, tournament_id
+                )
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting players by team id:{team_id} and tournament id:{tournament_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error fetching players for team and tournament",
+                )
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players_with_persons/")
         async def get_players_by_team_id_tournament_id_with_person_endpoint(
@@ -127,9 +151,21 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             self.logger.debug(
                 f"Get players with persons by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
-            return await self.service.get_players_by_team_id_tournament_id_with_person(
-                team_id, tournament_id
-            )
+            try:
+                return await self.service.get_players_by_team_id_tournament_id_with_person(
+                    team_id, tournament_id
+                )
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting players with persons by team id:{team_id} and tournament id:{tournament_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error fetching players with persons for team and tournament",
+                )
 
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo_endpoint(file: UploadFile = File(...)):
@@ -250,15 +286,27 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     else:
                         self.logger.warning(f"Team list is empty")
                         return []
+                except HTTPException:
+                    raise
                 except Exception as ex:
                     self.logger.error(
                         f"Error on parse and create teams from tournament: {ex}",
                         exc_info=True,
                     )
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Internal server error parsing and creating teams from tournament",
+                    )
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error on parse and create teams from tournament: {ex}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error parsing and creating teams from tournament",
                 )
 
         return router

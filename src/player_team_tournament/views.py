@@ -68,10 +68,16 @@ class PlayerTeamTournamentAPIRouter(
                     raise HTTPException(
                         status_code=409, detail="Player_team_tournament creation fail"
                     )
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error creating player_team_tournament with data {player_team_tournament} {e}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error creating player team tournament",
                 )
 
         @router.get(
@@ -101,6 +107,10 @@ class PlayerTeamTournamentAPIRouter(
                     f"Error getting player_team_tournament by eesl_id {eesl_id} {e}",
                     exc_info=True,
                 )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error fetching player team tournament for eesl_id {eesl_id}",
+                )
 
         @router.put(
             "/{item_id}/",
@@ -121,10 +131,16 @@ class PlayerTeamTournamentAPIRouter(
                         detail=f"Player team tournament id {item_id} not found",
                     )
                 return PlayerTeamTournamentSchema.model_validate(update_)
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error updating player_team_tournament with data {item_id} {e}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error updating player team tournament",
                 )
 
         # @router.get(
@@ -285,10 +301,16 @@ class PlayerTeamTournamentAPIRouter(
                         status_code=404,
                         detail=f"No players in team id:{team_id} tournament id:{tournament_id}",
                     )
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
                     f"Error parsing player in team id:{team_id} tournament id:{tournament_id} : {e}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error parsing and creating players to team tournament",
                 )
 
         return router
