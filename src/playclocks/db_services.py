@@ -104,15 +104,92 @@ class PlayClockServiceDB(BaseServiceDB):
         **kwargs,
     ):
         self.logger.debug(f"Update playclock id:{item_id} data: {item}")
-        updated_ = await super().update(
-            item_id,
-            item,
-            **kwargs,
-        )
-        self.logger.debug(f"Updated playclock: {updated_}")
-        await self.trigger_update_playclock(item_id)
+        async with self.db.async_session() as session:
+            try:
+                result = await session.execute(
+                    select(PlayClockDB).where(PlayClockDB.id == item_id)
+                )
+                updated_item = result.scalars().one_or_none()
 
-        return updated_
+                if not updated_item:
+                    self.logger.warning(f"PlayClock not found: {item_id}")
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"PlayClock with id {item_id} not found",
+                    )
+
+                update_data = item.model_dump(exclude_unset=True)
+
+                for key, value in update_data.items():
+                    if value is not None:
+                        setattr(updated_item, key, value)
+
+                await session.flush()
+                await session.commit()
+                await session.refresh(updated_item)
+
+                self.logger.debug(f"Updated playclock: {updated_item}")
+                await self.trigger_update_playclock(item_id)
+
+                return updated_item
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to update playclock with id {item_id}",
+                )
+
+    async def update_with_none(
+        self,
+        item_id: int,
+        item: PlayClockSchemaUpdate,
+        **kwargs,
+    ):
+        self.logger.debug(
+            f"Update playclock with None allowed id:{item_id} data: {item}"
+        )
+        async with self.db.async_session() as session:
+            try:
+                result = await session.execute(
+                    select(PlayClockDB).where(PlayClockDB.id == item_id)
+                )
+                updated_item = result.scalars().one_or_none()
+
+                if not updated_item:
+                    self.logger.warning(f"PlayClock not found: {item_id}")
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"PlayClock with id {item_id} not found",
+                    )
+
+                update_data = item.model_dump(exclude_unset=True)
+
+                for key, value in update_data.items():
+                    if key != "match_id" or value is not None:
+                        setattr(updated_item, key, value)
+
+                await session.flush()
+                await session.commit()
+                await session.refresh(updated_item)
+
+                self.logger.debug(f"Updated playclock: {updated_item}")
+                await self.trigger_update_playclock(item_id)
+
+                return updated_item
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to update playclock with id {item_id}",
+                )
 
     async def get_playclock_status(
         self,
@@ -148,7 +225,9 @@ class PlayClockServiceDB(BaseServiceDB):
         self.logger.debug(f"Decrement playclock by id:{playclock_id}")
 
         if self.disable_background_tasks:
-            self.logger.debug(f"Background tasks disabled, skipping playclock decrement")
+            self.logger.debug(
+                f"Background tasks disabled, skipping playclock decrement"
+            )
             return
 
         if playclock_id in self.clock_manager.active_playclock_matches:

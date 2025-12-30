@@ -1,6 +1,7 @@
 from fastapi import (
     HTTPException,
     Depends,
+    Path,
     status,
     BackgroundTasks,
 )
@@ -122,10 +123,7 @@ class PlayClockAPIRouter(
         ):
             self.logger.debug(f"Get playclock endpoint by ID")
             if item is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Playclock not found"
-                )
+                raise HTTPException(status_code=404, detail="Playclock not found")
             return self.create_response(
                 item,
                 f"Playclock ID:{item.id}",
@@ -173,7 +171,9 @@ class PlayClockAPIRouter(
             except HTTPException:
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(f"Error starting playclock with id: {item_id} {ex}", exc_info=True)
+                self.logger.error(
+                    f"Error starting playclock with id: {item_id} {ex}", exc_info=True
+                )
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error starting playclock with id {item_id}",
@@ -186,21 +186,28 @@ class PlayClockAPIRouter(
                 )
 
         @router.put(
-            "/id/{item_id}/stopped/",
+            "/id/{item_id}/{item_status}/{sec}/",
             response_class=JSONResponse,
         )
         async def reset_playclock_endpoint(
             item_id: int,
+            item_status: str = Path(
+                ...,
+                examples=["stopped"],
+            ),
+            sec: int = Path(
+                ...,
+                description="Seconds",
+                examples=[25],
+            ),
         ):
             self.logger.debug(f"Resetting playclock endpoint with id: {item_id}")
             try:
-                item_status = "stopped"
-
                 updated = await self.service.update(
                     item_id,
                     PlayClockSchemaUpdate(
-                        playclock=None,
-                        playclock_status="stopped",
+                        playclock=sec,
+                        playclock_status=item_status,
                     ),
                 )
 
@@ -211,7 +218,47 @@ class PlayClockAPIRouter(
             except HTTPException:
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(f"Error resetting playclock with id: {item_id} {ex}", exc_info=True)
+                self.logger.error(
+                    f"Error resetting playclock with id: {item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error resetting playclock",
+                )
+            except Exception as ex:
+                self.logger.error(f"Error resetting playclock with id: {item_id} {ex}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error resetting playclock",
+                )
+
+        @router.put(
+            "/id/{item_id}/stopped/",
+            response_class=JSONResponse,
+        )
+        async def reset_playclock_stopped_endpoint(item_id: int):
+            self.logger.debug(
+                f"Resetting playclock to stopped endpoint with id: {item_id}"
+            )
+            try:
+                updated = await self.service.update_with_none(
+                    item_id,
+                    PlayClockSchemaUpdate(
+                        playclock=None,
+                        playclock_status="stopped",
+                    ),
+                )
+
+                return self.create_response(
+                    updated,
+                    "Playclock stopped",
+                )
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Error resetting playclock with id: {item_id} {ex}", exc_info=True
+                )
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error resetting playclock",
