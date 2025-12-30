@@ -398,8 +398,9 @@ connection_manager = ConnectionManager()
 async def process_client_queue(
     client_id: str | int, handlers: dict[str | int, Coroutine[Any, Any, None]]
 ):
-    if client_id in connection_manager.queues:
-        queue = connection_manager.queues[client_id]
+    client_id_str = str(client_id)
+    if client_id_str in connection_manager.queues:
+        queue = connection_manager.queues[client_id_str]
         while True:
             try:
                 message = await queue.get()

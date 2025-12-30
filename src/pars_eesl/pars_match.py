@@ -82,32 +82,32 @@ async def parse_match_index_page_eesl(
         logo_urls = soup.find_all("img", class_="match-promo__team-img")
         score = soup.find("div", class_="match-promo__score-main")
 
+        team_a_link = soup.find(
+            "a", class_="match-protocol__team-name match-protocol__team-name--left"
+        )
+        team_b_link = soup.find(
+            "a", class_="match-protocol__team-name match-protocol__team-name--right"
+        )
         team_a_id = int(
-            soup.find(
-                "a", class_="match-protocol__team-name match-protocol__team-name--left"
-            )
-            .get("href")
-            .strip()
-            .split("=")[1]
+            team_a_link.get("href").strip().split("=")[1]
+            if team_a_link and team_a_link.get("href")
+            else 0
         )
         team_b_id = int(
-            soup.find(
-                "a", class_="match-protocol__team-name match-protocol__team-name--right"
-            )
-            .get("href")
-            .strip()
-            .split("=")[1]
+            team_b_link.get("href").strip().split("=")[1]
+            if team_b_link and team_b_link.get("href")
+            else 0
         )
 
         try:
-            match_data["team_a"] = team_a.text.strip()
-            match_data["team_b"] = team_b.text.strip()
+            match_data["team_a"] = team_a.text.strip() if team_a else ""
+            match_data["team_b"] = team_b.text.strip() if team_b else ""
             match_data["team_a_eesl_id"] = team_a_id
             match_data["team_b_eesl_id"] = team_b_id
-            match_data["team_logo_url_a"] = logo_urls[0].get("src")
-            match_data["team_logo_url_b"] = logo_urls[1].get("src")
-            match_data["score_a"] = score.text.split(":")[0].strip()
-            match_data["score_b"] = score.text.split(":")[1].strip()
+            match_data["team_logo_url_a"] = logo_urls[0].get("src") if len(logo_urls) > 0 else None
+            match_data["team_logo_url_b"] = logo_urls[1].get("src") if len(logo_urls) > 1 else None
+            match_data["score_a"] = score.text.split(":")[0].strip() if score else ""
+            match_data["score_b"] = score.text.split(":")[1].strip() if score else ""
         except Exception as ex:
             logger.error(f"Error with parsed match data {ex}", exc_info=True)
 
@@ -152,8 +152,8 @@ async def parse_match_index_page_eesl(
 
         try:
             logger.debug("Set sorted rosters")
-            match_data["roster_a"] = sorted([d for d in roster_a if d], key=lambda d: d["player_number"])
-            match_data["roster_b"] = sorted([d for d in roster_b if d], key=lambda d: d["player_number"])
+            match_data["roster_a"] = sorted([d for d in roster_a if d], key=lambda d: d["player_number"] if d else "")
+            match_data["roster_b"] = sorted([d for d in roster_b if d], key=lambda d: d["player_number"] if d else "")
         except Exception as ex:
             logger.error(f"Error getting sorted rosters {ex}", exc_info=True)
 
@@ -167,37 +167,26 @@ async def get_player_eesl_from_match(
     soup_player_team: BeautifulSoup, team: str, team_logo_url: str
 ) -> ParsedMatchPlayer | None:
     try:
+        number_el = soup_player_team.find("span", class_="match-protocol__member-number")
+        position_el = soup_player_team.find("span", class_="match-protocol__member-amplua")
+        name_el = soup_player_team.find("a", class_="match-protocol__member-name")
+        img_el = soup_player_team.find("img", class_="match-protocol__member-img")
+
+        name_text = name_el.text.strip() if name_el else ""
+        name_parts = name_text.split(" ") if name_text else []
+
         player: ParsedMatchPlayer = {
-            "player_number": soup_player_team.find(
-                "span", class_="match-protocol__member-number"
-            ).text.strip(),
-            "player_position": soup_player_team.find(
-                "span", class_="match-protocol__member-amplua"
-            ).text.strip(),
-            "player_full_name": soup_player_team.find(
-                "a", class_="match-protocol__member-name"
-            ).text.strip(),
-            "player_first_name": soup_player_team.find(
-                "a", class_="match-protocol__member-name"
-            )
-            .text.strip()
-            .split(" ")[0],
-            "player_second_name": soup_player_team.find(
-                "a", class_="match-protocol__member-name"
-            )
-            .text.strip()
-            .split(" ")[1],
+            "player_number": number_el.text.strip() if number_el else "",
+            "player_position": position_el.text.strip() if position_el else "",
+            "player_full_name": name_text,
+            "player_first_name": name_parts[0] if len(name_parts) > 0 else "",
+            "player_second_name": name_parts[1] if len(name_parts) > 1 else "",
             "player_eesl_id": int(
-                re.findall(
-                    r"\d+",
-                    soup_player_team.find(
-                        "a", class_="match-protocol__member-name"
-                    ).get("href"),
-                )[0]
-            ),
-            "player_img_url": soup_player_team.find(
-                "img", class_="match-protocol__member-img"
-            ).get("src"),
+                re.findall(r"\d+", name_el.get("href") or "")[0]
+            )
+            if name_el and name_el.get("href")
+            else 0,
+            "player_img_url": img_el.get("src") if img_el else None,
             "player_team": team,
             "player_team_logo_url": team_logo_url,
         }

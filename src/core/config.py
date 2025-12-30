@@ -32,11 +32,11 @@ templates = Jinja2Templates(directory=template_path)
 
 class DbSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="DB_", extra="allow")
-    host: str
-    user: str
-    password: str
-    name: str
-    port: int
+    host: str = ""
+    user: str = ""
+    password: str = ""
+    name: str = ""
+    port: int = 5432
 
     @property
     def db_url(self) -> str:
@@ -72,11 +72,11 @@ class TestDbSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env.test.local", env_prefix="DB_TEST_", extra="allow"
     )
-    host: str
-    user: str
-    password: str
-    name: str
-    port: int
+    host: str = ""
+    user: str = ""
+    password: str = ""
+    name: str = ""
+    port: int = 5432
 
     @property
     def test_db_url(self) -> str:
@@ -110,8 +110,8 @@ class TestDbSettings(BaseSettings):
 
 class Settings(BaseSettings):
     # api_v1_prefix: str = "/api/v1"
-    db: DbSettings = DbSettings()  # type: ignore[arg-type]
-    test_db: TestDbSettings = TestDbSettings()  # type: ignore[arg-type]
+    db: DbSettings = DbSettings()
+    test_db: TestDbSettings = TestDbSettings()
     db_echo: bool = False
 
 

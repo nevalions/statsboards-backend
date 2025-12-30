@@ -1,9 +1,19 @@
+import logging
+from typing import TYPE_CHECKING, Any
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+if TYPE_CHECKING:
+    from src.core.models.base import Base, Database
+
 
 class CRUDMixin:
+    if TYPE_CHECKING:
+        logger: logging.LoggerAdapter
+        model: type["Base"]
+        db: "Database"
     async def create(self, item):
         async with self.db.async_session() as session:
             self.logger.debug(

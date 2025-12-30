@@ -6,14 +6,14 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
 
 if TYPE_CHECKING:
-    from logging import Logger
+    from logging import LoggerAdapter
 
     from src.core.models.base import Base, Database
 
 
 class RelationshipMixin:
     db: "Database"
-    logger: "Logger"
+    logger: "LoggerAdapter"
     model: type["Base"]
 
     async def find_relation(

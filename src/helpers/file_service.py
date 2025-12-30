@@ -94,7 +94,7 @@ class FileService:
             rel_icon_dest = Path("/static/uploads") / sub_folder / icon_filename
             rel_webview_dest = Path("/static/uploads") / sub_folder / webview_filename
 
-            final_urls = {
+            final_urls: ResizedImagesPaths = {
                 "original": str(rel_original_dest),
                 "icon": str(rel_icon_dest),
                 "webview": str(rel_webview_dest),
@@ -244,7 +244,7 @@ class FileService:
             force_redownload=force_redownload,
         )
 
-        final_paths_processed = {
+        final_paths_processed: DownloadedAndResizedImagesPaths = {
             "main_path": paths["main_path"],
             "image_path": paths["image_path"],
             "image_url": paths["relative_image_url"],

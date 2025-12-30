@@ -1,8 +1,19 @@
+import logging
+from typing import TYPE_CHECKING, Any
+
 from fastapi import HTTPException
 from sqlalchemy import Column, Result, select, update
 
+if TYPE_CHECKING:
+    from src.core.models.base import Base, Database
+
 
 class QueryMixin:
+    if TYPE_CHECKING:
+        logger: logging.LoggerAdapter
+        model: type["Base"]
+        db: "Database"
+        get_by_id: Any
     async def get_item_by_field_value(self, value, field_name: str):
         self.logger.debug(
             f"Starting to fetch item by field {field_name} with value: {value} for model {self.model.__name__}"
@@ -14,7 +25,7 @@ class QueryMixin:
                     f"Accessed column: {column} for model {self.model.__name__}"
                 )
 
-                stmt = select(self.model).where(column == value)
+                stmt: Any = select(self.model).where(column == value)
                 self.logger.debug(
                     f"Executing SQL statement: {stmt} for model {self.model.__name__}"
                 )
@@ -85,7 +96,7 @@ class QueryMixin:
                 f"Getting item first with id {item_id} and property {related_property}"
             )
 
-            query = select(self.model).where(self.model.id == item_id)
+            query: Any = select(self.model).where(self.model.id == item_id)
             item_result = await session.execute(query)
             item = item_result.scalars().one_or_none()
 
