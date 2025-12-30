@@ -126,12 +126,9 @@ class MatchParser:
                         )
                         await gameclock_service.create(gameclock_schema)
 
-                        existing_match_data = await asyncio.gather(
-                            match_data_service.get_match_data_by_match_id(
-                                created_match.id
-                            )
+                        existing_match_data = await match_data_service.get_match_data_by_match_id(
+                            created_match.id
                         )
-                        existing_match_data = existing_match_data[0]
 
                         if existing_match_data is None:
                             match_data_schema_create = MatchDataSchemaCreate(
@@ -152,12 +149,9 @@ class MatchParser:
                                 existing_match_data.id, match_data_schema_update
                             )
 
-                        existing_scoreboard = await asyncio.gather(
-                            scoreboard_service.get_scoreboard_by_match_id(
-                                created_match.id
-                            )
+                        existing_scoreboard = await scoreboard_service.get_scoreboard_by_match_id(
+                            created_match.id
                         )
-                        existing_scoreboard = existing_scoreboard[0]
 
                         if existing_scoreboard is None:
                             scoreboard_schema = ScoreboardSchemaCreate(
@@ -180,7 +174,7 @@ class MatchParser:
                                 ):
                                     existing_data[key] = value
 
-                            scoreboard_schema = ScoreboardSchemaUpdate(**existing_data)
+                            scoreboard_schema: ScoreboardSchemaUpdate | ScoreboardSchemaCreate = ScoreboardSchemaUpdate(**existing_data)
 
                         created_scoreboard = (
                             await scoreboard_service.create_or_update_scoreboard(

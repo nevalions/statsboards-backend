@@ -124,9 +124,10 @@ async def parse_match_index_page_eesl(
             for p in players_a:
                 try:
                     player = await get_player_eesl_from_match(
-                        p, match_data["team_a"], match_data["team_logo_url_a"]
+                        p, match_data["team_a"], match_data["team_logo_url_a"] or ""
                     )
-                    roster_a.append(player.copy())
+                    if player:
+                        roster_a.append(player.copy())
                 except Exception as ex:
                     logger.error(
                         f"Error getting player for home roster {ex}", exc_info=True
@@ -138,9 +139,10 @@ async def parse_match_index_page_eesl(
             for p in players_b:
                 try:
                     player = await get_player_eesl_from_match(
-                        p, match_data["team_b"], match_data["team_logo_url_b"]
+                        p, match_data["team_b"], match_data["team_logo_url_b"] or ""
                     )
-                    roster_b.append(player.copy())
+                    if player:
+                        roster_b.append(player.copy())
                 except Exception as ex:
                     logger.error(
                         f"Error getting player for away roster {ex}", exc_info=True
@@ -150,8 +152,8 @@ async def parse_match_index_page_eesl(
 
         try:
             logger.debug("Set sorted rosters")
-            match_data["roster_a"] = sorted(roster_a, key=lambda d: d["player_number"])
-            match_data["roster_b"] = sorted(roster_b, key=lambda d: d["player_number"])
+            match_data["roster_a"] = sorted([d for d in roster_a if d], key=lambda d: d["player_number"])
+            match_data["roster_b"] = sorted([d for d in roster_b if d], key=lambda d: d["player_number"])
         except Exception as ex:
             logger.error(f"Error getting sorted rosters {ex}", exc_info=True)
 

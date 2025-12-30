@@ -56,7 +56,9 @@ class PlayClockServiceDB(BaseServiceDB):
                     match_id=item.match_id,
                 )
                 self.logger.debug("Is playclock exist")
-                is_exist = await self.get_playclock_by_match_id(item.match_id)
+                is_exist = None
+                if item.match_id is not None:
+                    is_exist = await self.get_playclock_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"Playclock already exists: {playclock_result}")
                     return playclock_result
@@ -200,7 +202,7 @@ class PlayClockServiceDB(BaseServiceDB):
         item_id: int,
     ) -> str | None:
         self.logger.debug(f"Get playclock status for item id:{item_id}")
-        playclock: PlayClockSchemaBase = await self.get_by_id(item_id)
+        playclock: PlayClockDB | None = await self.get_by_id(item_id)
         if playclock:
             self.logger.debug(f"Playclock status: {playclock}")
             return playclock.playclock_status
@@ -216,7 +218,7 @@ class PlayClockServiceDB(BaseServiceDB):
             )
             if result:
                 self.logger.debug(f"Playclock in DB: {result}")
-                playclock: PlayClockSchemaBase = result.one_or_none()
+                playclock: PlayClockDB | None = result.one_or_none()
                 if playclock:
                     self.logger.debug(f"Playclock found: {playclock}")
                     return playclock
@@ -241,7 +243,7 @@ class PlayClockServiceDB(BaseServiceDB):
         else:
             self.logger.warning(f"Playclock not found by id:{playclock_id}")
 
-    async def loop_decrement_playclock(self, playclock_id: int) -> PlayClockDB:
+    async def loop_decrement_playclock(self, playclock_id: int) -> PlayClockDB | None:
         self.logger.debug(f"Loop decrement playclock by id:{playclock_id}")
         next_time = time.monotonic()
         while True:
@@ -271,7 +273,7 @@ class PlayClockServiceDB(BaseServiceDB):
 
                 await asyncio.sleep(2)
 
-                playclock: PlayClockSchemaBase = await self.update(
+                playclock: PlayClockDB = await self.update(
                     playclock_id,
                     PlayClockSchemaUpdate(
                         playclock=None,
@@ -281,7 +283,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 self.logger.debug(f"Playclock status: {playclock.playclock_status}")
 
             else:
-                playclock = await self.update(
+                playclock: PlayClockDB = await self.update(
                     playclock_id, PlayClockSchemaUpdate(playclock=updated_playclock)
                 )
 
@@ -331,7 +333,7 @@ class PlayClockServiceDB(BaseServiceDB):
         playclock_id: int,
     ) -> None:
         self.logger.debug(f"Trigger update playclock for playclock id:{playclock_id}")
-        playclock: PlayClockSchemaBase = await self.get_by_id(playclock_id)
+        playclock: PlayClockDB | None = await self.get_by_id(playclock_id)
 
         active_clock_matches = self.clock_manager.active_playclock_matches
 

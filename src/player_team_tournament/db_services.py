@@ -66,12 +66,12 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     self.logger.debug(f"{ITEM} exist, updating...")
                     return await self.update_player_team_tournament_by_eesl(
                         "player_team_tournament_eesl_id",
-                        p,
+                        PlayerTeamTournamentSchemaUpdate(**p.model_dump()),
                     )
                 else:
                     self.logger.debug(f"{ITEM} does not exist, creating...")
                     return await self.create_new_player_team_tournament(
-                        p,
+                        PlayerTeamTournamentSchemaCreate(**p.model_dump()),
                     )
             else:
                 if p.tournament_id and p.player_id:
@@ -83,10 +83,10 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     )
                     if player_team_tournament_from_db:
                         self.logger.debug(f"{ITEM} exist, updating...")
-                        return await self.update(player_team_tournament_from_db.id, p)
+                        return await self.update(player_team_tournament_from_db.id, PlayerTeamTournamentSchemaUpdate(**p.model_dump()))
                 self.logger.debug(f"{ITEM} does not exist, creating...")
                 return await self.create_new_player_team_tournament(
-                    p,
+                    PlayerTeamTournamentSchemaCreate(**p.model_dump()),
                 )
         except HTTPException:
             raise
@@ -198,7 +198,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
 
     async def get_player_team_tournaments_by_tournament_id(
         self, tournament_id: int, player_id: int
-    ) -> PlayerTeamTournamentDB:
+    ) -> PlayerTeamTournamentDB | None:
         try:
             self.logger.debug(
                 f"Get {ITEM} by tournament id:{tournament_id} and player id:{player_id}"

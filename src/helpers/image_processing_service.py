@@ -136,33 +136,34 @@ class ImageProcessingService:
             self.logger.debug(f"Converting RGBA to RGB: {img.mode}")
             temp_img = Image.new("RGB", img.size)
             temp_img.paste(img, mask=img.split()[3])
-            img = temp_img
+            img_rgb = temp_img
+        else:
+            img_rgb = img
 
-        colors = img.convert("RGB").getcolors(img.size[0] * img.size[1])
+        colors = img_rgb.convert("RGB").getcolors(img_rgb.size[0] * img_rgb.size[1])
 
-        if colors:
+        if colors and isinstance(colors, list):
             colors.sort(key=lambda tup: tup[0], reverse=True)
 
             excluded_colors = [
-                {0},
-                {255},
-                {254},
-                set(self.hex_to_rgb("#000105") or ()),
-                set(self.hex_to_rgb("#fdfdfd") or ()),
-                set(self.hex_to_rgb("#dfdfdf") or ()),
-                set(self.hex_to_rgb("#fcfcfc") or ()),
+                (0,),
+                (255,),
+                (254,),
+                self.hex_to_rgb("#000105") or (),
+                self.hex_to_rgb("#fdfdfd") or (),
+                self.hex_to_rgb("#dfdfdf") or (),
+                self.hex_to_rgb("#fcfcfc") or (),
             ]
 
             most_common_color = next(
-                (color for count, color in colors if set(color) not in excluded_colors),
+                (color for count, color in colors if color not in excluded_colors),
                 None,
             )
 
-            return (
-                "#{:02x}{:02x}{:02x}".format(*most_common_color)
-                if most_common_color
-                else None
-            )
+            if most_common_color:
+                return "#{:02x}{:02x}{:02x}".format(*most_common_color)
+            else:
+                return None
         else:
             self.logger.warning("No common color detected")
             return None

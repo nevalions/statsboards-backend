@@ -58,7 +58,9 @@ class GameClockServiceDB(BaseServiceDB):
                 )
 
                 self.logger.debug("Is gameclock exist")
-                is_exist = await self.get_gameclock_by_match_id(item.match_id)
+                is_exist = None
+                if item.match_id is not None:
+                    is_exist = await self.get_gameclock_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"gameclock already exists: {gameclock_result}")
                     return gameclock_result

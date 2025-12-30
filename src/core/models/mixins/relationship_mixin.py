@@ -6,7 +6,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
 
 
-class RelationshipMixin:
+class RelationshipMixin:  # type: ignore[attr-defined]
     async def find_relation(
         self,
         secondary_table,

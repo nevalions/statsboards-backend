@@ -47,7 +47,7 @@ class SeasonServiceDB(BaseServiceDB):
         item_id: int,
         item: SeasonSchemaUpdate,
         **kwargs,
-    ) -> SeasonDB:
+    ) -> SeasonDB | None:
         self.logger.debug(f"Update {ITEM} with id:{item_id}")
         if item.year is None:
             raise HTTPException(
@@ -64,6 +64,7 @@ class SeasonServiceDB(BaseServiceDB):
             if e.status_code == 404:
                 return None
             self.logger.error(f"Error updating {ITEM} {e}", exc_info=True)
+            raise
             raise HTTPException(
                 status_code=409,
                 detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",

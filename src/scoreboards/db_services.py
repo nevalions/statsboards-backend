@@ -89,7 +89,9 @@ class ScoreboardServiceDB(BaseServiceDB):
                 )
 
                 self.logger.debug("Is scoreboard exist")
-                is_exist = await self.get_scoreboard_by_match_id(item.match_id)
+                is_exist = None
+                if item.match_id is not None:
+                    is_exist = await self.get_scoreboard_by_match_id(item.match_id)
                 if is_exist:
                     self.logger.info(f"Scoreboard already exists: {scoreboard_result}")
                     return scoreboard_result
@@ -157,7 +159,9 @@ class ScoreboardServiceDB(BaseServiceDB):
         scoreboard: ScoreboardSchemaCreate | ScoreboardSchemaUpdate,
     ) -> ScoreboardDB:
         self.logger.debug(f"Create or update scoreboard: {scoreboard}")
-        existing_scoreboard = await self.get_scoreboard_by_match_id(scoreboard.match_id)
+        existing_scoreboard = None
+        if scoreboard.match_id is not None:
+            existing_scoreboard = await self.get_scoreboard_by_match_id(scoreboard.match_id)
 
         if existing_scoreboard:
             self.logger.info("Scoreboard already exists")
