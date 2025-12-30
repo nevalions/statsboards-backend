@@ -159,7 +159,7 @@ class TestParsAllPlayersFromEesl:
             remaining_limit=10,
         )
 
-        assert result is None  # Function returns None when it completes normally
+        assert result == []  # Function returns empty list when no players added
         assert len(players_in_eesl) == 0  # No player added due to download error
 
     @pytest.mark.asyncio

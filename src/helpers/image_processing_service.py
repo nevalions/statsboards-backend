@@ -146,9 +146,9 @@ class ImageProcessingService:
             colors.sort(key=lambda tup: tup[0], reverse=True)
 
             excluded_colors = [
-                (0,),
-                (255,),
-                (254,),
+                (0, 0, 0),
+                (255, 255, 255),
+                (254, 254, 254),
                 self.hex_to_rgb("#000105") or (),
                 self.hex_to_rgb("#fdfdfd") or (),
                 self.hex_to_rgb("#dfdfdf") or (),
@@ -156,7 +156,7 @@ class ImageProcessingService:
             ]
 
             most_common_color = next(
-                (color for count, color in colors if color not in excluded_colors),
+                (color for count, color in colors if color not in excluded_colors and (isinstance(color, tuple) and len(color) == 3)),
                 None,
             )
 
