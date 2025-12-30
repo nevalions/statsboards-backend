@@ -3,7 +3,19 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
-from src.core.models import BaseServiceDB, MatchDB, PlayerMatchDB, TeamDB
+from src.core.models.base import Database
+from src.core.models import (
+    BaseServiceDB,
+    MatchDB,
+    PlayerMatchDB,
+    TeamDB,
+    MatchDataDB,
+    PlayClockDB,
+    GameClockDB,
+    ScoreboardDB,
+    SportDB,
+    SponsorLineDB,
+)
 from src.logging_config import get_logger, setup_logging
 from src.player_match.db_services import PlayerMatchServiceDB
 from src.sports.db_services import SportServiceDB
@@ -17,7 +29,7 @@ ITEM = "MATCH"
 
 
 class MatchServiceDB(BaseServiceDB):
-    def __init__(self, database):
+    def __init__(self, database: Database) -> None:
         super().__init__(database, MatchDB)
         self.logger = get_logger("backend_logger_MatchServiceDB", self)
         self.logger.debug("Initialized MatchServiceDB")
@@ -25,7 +37,7 @@ class MatchServiceDB(BaseServiceDB):
     async def create(
         self,
         item: MatchSchemaCreate | MatchSchemaUpdate,
-    ):
+    ) -> MatchDB:
         try:
             match = self.model(
                 match_date=item.match_date,
@@ -46,14 +58,14 @@ class MatchServiceDB(BaseServiceDB):
                 detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
             )
 
-    async def create_or_update_match(self, m: MatchSchemaCreate):
+    async def create_or_update_match(self, m: MatchSchemaCreate) -> MatchDB:
         return await super().create_or_update(m, eesl_field_name="match_eesl_id")
 
     async def get_match_by_eesl_id(
         self,
-        value,
-        field_name="match_eesl_id",
-    ):
+        value: int | str,
+        field_name: str = "match_eesl_id",
+    ) -> MatchDB | None:
         self.logger.debug(f"Get {ITEM} {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
@@ -65,7 +77,7 @@ class MatchServiceDB(BaseServiceDB):
         item_id: int,
         item: MatchSchemaUpdate,
         **kwargs,
-    ):
+    ) -> MatchDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,
@@ -73,7 +85,7 @@ class MatchServiceDB(BaseServiceDB):
             **kwargs,
         )
 
-    async def get_sport_by_match_id(self, match_id: int):
+    async def get_sport_by_match_id(self, match_id: int) -> SportDB | None:
         self.logger.debug(f"Get sport by {ITEM} id:{match_id}")
         tournament_service = TournamentServiceDB(self.db)
         sport_service = SportServiceDB(self.db)
@@ -107,7 +119,7 @@ class MatchServiceDB(BaseServiceDB):
     async def get_teams_by_match_id(
         self,
         match_id: int,
-    ):
+    ) -> dict | None:
         self.logger.debug(f"Get teams by {ITEM} id:{match_id}")
         try:
             async with self.db.async_session() as session:
@@ -141,14 +153,14 @@ class MatchServiceDB(BaseServiceDB):
                 detail=f"Internal server error fetching teams for match {match_id}",
             )
 
-    async def get_match_sponsor_line(self, match_id: int):
+    async def get_match_sponsor_line(self, match_id: int) -> list[SponsorLineDB] | None:
         self.logger.debug(f"Get sponsor_line by {ITEM} id:{match_id}")
         return await self.get_related_item_level_one_by_id(match_id, "sponsor_line")
 
     async def get_matchdata_by_match(
         self,
         match_id: int,
-    ):
+    ) -> list[MatchDataDB] | None:
         self.logger.debug(f"Get match_data by {ITEM} id:{match_id}")
         return await self.get_related_item_level_one_by_id(
             match_id,
@@ -158,7 +170,7 @@ class MatchServiceDB(BaseServiceDB):
     async def get_playclock_by_match(
         self,
         match_id: int,
-    ):
+    ) -> list[PlayClockDB] | None:
         self.logger.debug(f"Get match_playclock by {ITEM} id:{match_id}")
         return await self.get_related_item_level_one_by_id(
             match_id,
@@ -168,7 +180,7 @@ class MatchServiceDB(BaseServiceDB):
     async def get_gameclock_by_match(
         self,
         match_id: int,
-    ):
+    ) -> list[GameClockDB] | None:
         self.logger.debug(f"Get match_gameclock by {ITEM} id:{match_id}")
         return await self.get_related_item_level_one_by_id(
             match_id,
@@ -178,7 +190,7 @@ class MatchServiceDB(BaseServiceDB):
     async def get_teams_by_match(
         self,
         match_id: int,
-    ):
+    ) -> dict | None:
         self.logger.debug(f"Get teams v2 by {ITEM} id:{match_id}")
         match = await self.get_related_items(
             match_id,
@@ -208,7 +220,7 @@ class MatchServiceDB(BaseServiceDB):
     async def get_players_by_match(
         self,
         match_id: int,
-    ):
+    ) -> list[PlayerMatchDB]:
         self.logger.debug(f"Get players by {ITEM} id:{match_id}")
         try:
             async with self.db.async_session() as session:
@@ -236,7 +248,7 @@ class MatchServiceDB(BaseServiceDB):
                 detail=f"Internal server error fetching players for match {match_id}",
             )
 
-    async def get_player_by_match_full_data(self, match_id: int):
+    async def get_player_by_match_full_data(self, match_id: int) -> list[dict]:
         self.logger.debug(f"Get players with full data by {ITEM} id:{match_id}")
         try:
             from src.core.models.player_team_tournament import PlayerTeamTournamentDB
@@ -299,7 +311,7 @@ class MatchServiceDB(BaseServiceDB):
     async def get_scoreboard_by_match(
         self,
         match_id: int,
-    ):
+    ) -> list[ScoreboardDB] | None:
         self.logger.debug(f"Getting scoreboard for {ITEM} id:{match_id}")
         try:
             result = await self.get_related_item_level_one_by_id(

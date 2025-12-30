@@ -1,6 +1,7 @@
 from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy import select
 
+from src.core.models.base import Database
 from src.core.models import BaseServiceDB, MatchDataDB
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 from ..logging_config import setup_logging, get_logger
@@ -10,14 +11,14 @@ ITEM = "MATCHDATA"
 
 
 class MatchDataServiceDB(BaseServiceDB):
-    def __init__(self, database):
+    def __init__(self, database: Database) -> None:
         super().__init__(database, MatchDataDB)
         # self.match_manager = MatchDataManager()
         self._running_tasks = {}
         self.logger = get_logger("backend_logger_MatchDataServiceDB", self)
         self.logger.debug(f"Initialized MatchDataServiceDB")
 
-    async def create(self, item: MatchDataSchemaCreate):
+    async def create(self, item: MatchDataSchemaCreate) -> MatchDataDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
 
         async with self.db.async_session() as session:
@@ -60,7 +61,7 @@ class MatchDataServiceDB(BaseServiceDB):
         item_id: int,
         item: MatchDataSchemaUpdate,
         **kwargs,
-    ):
+    ) -> MatchDataDB:
         self.logger.debug(
             f"Update matchdata with item_id: {item_id}, new matchdata: {item}"
         )
@@ -87,7 +88,7 @@ class MatchDataServiceDB(BaseServiceDB):
                 detail=f"Error creating new matchdata with data: {item}",
             )
 
-    async def get_match_data_by_match_id(self, match_id: int):
+    async def get_match_data_by_match_id(self, match_id: int) -> MatchDataDB | None:
         self.logger.debug(f"Get {ITEM} by match id: {match_id}")
 
         async with self.db.async_session() as session:
@@ -114,7 +115,9 @@ class MatchDataServiceDB(BaseServiceDB):
                     detail=f"Error creating new matchdata with match id: {match_id}",
                 )
 
-    async def enable_match_data_clock_queues(self, match_data_id: int, clock_type: str):
+    async def enable_match_data_clock_queues(
+        self, match_data_id: int, clock_type: str
+    ) -> None:
         self.logger.debug(
             f"Enable matchdata clock queues for id: {match_data_id}, type: {clock_type}"
         )
@@ -122,10 +125,10 @@ class MatchDataServiceDB(BaseServiceDB):
 
     async def decrement_gameclock(
         self, background_tasks: BackgroundTasks, match_data_id: int
-    ):
+    ) -> None:
         self.logger.debug(f"Decrement gameclock for matchdata id: {match_data_id}")
 
     async def decrement_playclock(
         self, background_tasks: BackgroundTasks, match_data_id: int
-    ):
+    ) -> None:
         self.logger.debug(f"Decrement playclock for matchdata id: {match_data_id}")

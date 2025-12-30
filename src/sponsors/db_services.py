@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from src.core.models.base import Database
 from src.core.models import db, BaseServiceDB, SponsorDB
 from src.logging_config import get_logger, setup_logging
 from src.sponsors.schemas import SponsorSchemaUpdate, SponsorSchemaCreate
@@ -12,8 +13,8 @@ ITEM = "SPONSOR"
 class SponsorServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, SponsorDB)
         self.logger = get_logger("backend_logger_SponsorServiceDB")
         self.logger.debug(f"Initialized SponsorServiceDB")
@@ -21,7 +22,7 @@ class SponsorServiceDB(BaseServiceDB):
     async def create(
         self,
         item: SponsorSchemaCreate,
-    ):
+    ) -> SponsorDB:
         try:
             self.logger.debug(f"Creating {ITEM} {item}")
             sponsor = self.model(
@@ -62,7 +63,7 @@ class SponsorServiceDB(BaseServiceDB):
         item_id: int,
         item: SponsorSchemaUpdate,
         **kwargs,
-    ):
+    ) -> SponsorDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,

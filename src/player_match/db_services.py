@@ -1,8 +1,16 @@
+from typing import TYPE_CHECKING
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.models import BaseServiceDB, PlayerMatchDB
+from src.core.models.base import Database
+from src.core.models import BaseServiceDB, PlayerMatchDB, PlayerDB, PlayerTeamTournamentDB
+from ..player.db_services import PlayerServiceDB
+from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
+from ..logging_config import setup_logging, get_logger
+from ..player_team_tournament.db_services import PlayerTeamTournamentServiceDB
+from ..player.schemas import PlayerSchema
 from src.positions.db_services import PositionServiceDB
 from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 from ..logging_config import setup_logging, get_logger
@@ -17,8 +25,8 @@ ITEM = "PLAYER_MATCH"
 class PlayerMatchServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, PlayerMatchDB)
         self.logger = get_logger("backend_logger_PlayerMatchServiceDB")
         self.logger.debug(f"Initialized PlayerMatchServiceDB")
@@ -26,7 +34,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
     async def create_or_update_player_match(
         self,
         p: PlayerMatchSchemaCreate | PlayerMatchSchemaUpdate,
-    ):
+    ) -> PlayerMatchDB | None:
         try:
             self.logger.debug(f"Creat or update {ITEM}:{p}")
             if p.player_match_eesl_id and p.match_id:
@@ -73,7 +81,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
     async def create_new_player_match(
         self,
         p: PlayerMatchSchemaCreate,
-    ):
+    ) -> PlayerMatchDB:
         try:
             self.logger.debug(f"Create {ITEM} wit data {p}")
             player_match = self.model(
@@ -90,8 +98,8 @@ class PlayerMatchServiceDB(BaseServiceDB):
             self.logger.error(f"Error creating {ITEM}{ex}", exc_info=True)
 
     async def get_player_match_by_match_id_and_eesl_id(
-        self, match_id, player_match_eesl_id
-    ):
+        self, match_id: int, player_match_eesl_id: int | str
+    ) -> PlayerMatchDB:
         try:
             self.logger.debug(
                 f"Get {ITEM} by match id:{match_id} and eesl id:{player_match_eesl_id}"
@@ -119,7 +127,9 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 exc_info=True,
             )
 
-    async def update_player_match_by_eesl(self, match_id, eesl_id, new_player):
+    async def update_player_match_by_eesl(
+        self, match_id: int, eesl_id: int | str, new_player: PlayerMatchSchemaUpdate
+    ) -> PlayerMatchDB | None:
         try:
             player = await self.get_player_match_by_match_id_and_eesl_id(
                 match_id, eesl_id
@@ -134,7 +144,9 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 f"Error updating {ITEM}{ex} by match eesl{eesl_id}", exc_info=True
             )
 
-    async def get_players_match_by_match_id(self, match_id, player_team_tournament_id):
+    async def get_players_match_by_match_id(
+        self, match_id: int, player_team_tournament_id: int
+    ) -> PlayerMatchDB | None:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Get {ITEM} by match id:{match_id}")
@@ -155,7 +167,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                     f"Error getting {ITEM} by match id:{match_id} {ex}", exc_info=True
                 )
 
-    async def get_player_in_sport(self, player_id: int):
+    async def get_player_in_sport(self, player_id: int) -> PlayerDB | None:
         player_service = PlayerTeamTournamentServiceDB(self.db)
         try:
             self.logger.debug(f"Get player in sport by player_id:{player_id}")
@@ -180,7 +192,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 detail=f"Internal server error fetching player in sport",
             )
 
-    async def get_player_person_in_match(self, player_id: int):
+    async def get_player_person_in_match(self, player_id: int) -> PlayerSchema | None:
         player_service = PlayerServiceDB(self.db)
         try:
             self.logger.debug(
@@ -212,7 +224,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
     async def get_player_in_team_tournament(
         self,
         match_id: int,
-    ):
+    ) -> PlayerTeamTournamentDB | None:
         try:
             self.logger.debug(f"Get player_team_tournament by match_id:{match_id}")
             return await self.get_related_item_level_one_by_id(
@@ -238,7 +250,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 detail=f"Internal server error fetching player team tournament",
             )
 
-    async def get_player_in_match_full_data(self, match_player_id: int):
+    async def get_player_in_match_full_data(self, match_player_id: int) -> dict:
         try:
             self.logger.debug(f"Get {ITEM} in match with full data")
             match_player = await self.get_by_id(match_player_id)
@@ -277,9 +289,9 @@ class PlayerMatchServiceDB(BaseServiceDB):
 
     async def get_player_match_by_eesl_id(
         self,
-        value,
-        field_name="player_match_eesl_id",
-    ):
+        value: int | str,
+        field_name: str = "player_match_eesl_id",
+    ) -> PlayerMatchDB | None:
         self.logger.debug(f"Get {ITEM} {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
@@ -291,7 +303,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
         item_id: int,
         item: PlayerMatchSchemaUpdate,
         **kwargs,
-    ):
+    ) -> PlayerMatchDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,

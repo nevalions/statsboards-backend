@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models.base import Database
 from src.core.models import db, BaseServiceDB, TeamTournamentDB, TeamDB
 from src.logging_config import setup_logging, get_logger
 from src.team_tournament.schemas import TeamTournamentSchemaCreate
@@ -13,7 +14,7 @@ ITEM = "TEAM_TOURNAMENT"
 
 
 class TeamTournamentServiceDB(BaseServiceDB):
-    def __init__(self, database):
+    def __init__(self, database: Database) -> None:
         super().__init__(database, TeamTournamentDB)
         self.logger = get_logger("backend_logger_TeamTournamentServiceDB", self)
         self.logger.debug(f"Initialized TeamTournamentServiceDB")
@@ -21,7 +22,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
     async def create(
         self,
         item: TeamTournamentSchemaCreate,
-    ):
+    ) -> TeamTournamentDB:
         self.logger.debug(f"Creat {ITEM} relation:{item}")
         is_relation_exist = await self.get_team_tournament_relation(
             item.team_id,
@@ -35,7 +36,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
         )
         return await super().create(new_team_tournament)
 
-    async def get_team_tournament_relation(self, team_id: int, tournament_id: int):
+    async def get_team_tournament_relation(self, team_id: int, tournament_id: int) -> TeamTournamentDB | None:
         try:
             self.logger.debug(
                 f"Get {ITEM} relation: team_id:{team_id} tournament_id:{tournament_id}"
@@ -79,12 +80,8 @@ class TeamTournamentServiceDB(BaseServiceDB):
                 status_code=500,
                 detail=f"Internal server error deleting team tournament relation",
             )
-            raise HTTPException(
-                status_code=500,
-                detail=f"Internal server error fetching team tournament relation",
-            )
 
-    async def get_related_teams(self, tournament_id: int):
+    async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:
         try:
             self.logger.debug(
                 f"Get {ITEM} related teams for tournament_id:{tournament_id}"
@@ -121,7 +118,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
 
     async def delete_relation_by_team_and_tournament_id(
         self, team_id: int, tournament_id: int
-    ):
+    ) -> TeamTournamentDB:
         try:
             self.logger.debug(
                 f"Delete {ITEM} team_id:{team_id} tournament_id:{tournament_id}"
@@ -136,6 +133,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
                 item = result.scalars().first()
             await session.delete(item)
             await session.commit()
+            return item
         except Exception as ex:
             self.logger.error(
                 f"Error on delete_relation_by_team_and_tournament_id: {ex}"

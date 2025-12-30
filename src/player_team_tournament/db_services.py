@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.models import BaseServiceDB, PlayerTeamTournamentDB
+from src.core.models.base import Database
+from src.core.models import BaseServiceDB, PlayerTeamTournamentDB, PlayerDB
 from src.player.db_services import PlayerServiceDB
 
 from ..logging_config import get_logger, setup_logging
@@ -18,8 +21,8 @@ ITEM = "PLAYER_TEAM_TOURNAMENT"
 class PlayerTeamTournamentServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, PlayerTeamTournamentDB)
         self.logger = get_logger("backend_logger_PlayerTeamTournamentServiceDB")
         self.logger.debug("Initialized PlayerTeamTournamentServiceDB")
@@ -27,7 +30,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
     async def create(
         self,
         item: PlayerTeamTournamentSchemaCreate | PlayerTeamTournamentSchemaUpdate,
-    ):
+    ) -> PlayerTeamTournamentDB:
         try:
             player_team_tournament = self.model(
                 player_team_tournament_eesl_id=item.player_team_tournament_eesl_id,
@@ -51,7 +54,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
     async def create_or_update_player_team_tournament(
         self,
         p: PlayerTeamTournamentSchemaCreate | PlayerTeamTournamentSchemaUpdate,
-    ):
+    ) -> PlayerTeamTournamentDB | None:
         try:
             self.logger.debug(f"Creat or update {ITEM}:{p}")
             if p.player_team_tournament_eesl_id:
@@ -110,7 +113,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         self,
         eesl_field_name: str,
         p: PlayerTeamTournamentSchemaUpdate,
-    ):
+    ) -> PlayerTeamTournamentDB | None:
         try:
             self.logger.debug(f"Update {ITEM} by {eesl_field_name} {p}")
             if p.player_team_tournament_eesl_id is not None and isinstance(
@@ -147,7 +150,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
     async def create_new_player_team_tournament(
         self,
         p: PlayerTeamTournamentSchemaCreate,
-    ):
+    ) -> PlayerTeamTournamentDB:
         try:
             self.logger.debug(f"Create {ITEM} wit data {p}")
             player_team_tournament = self.model(
@@ -177,9 +180,9 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
 
     async def get_player_team_tournament_by_eesl_id(
         self,
-        value,
-        field_name="player_team_tournament_eesl_id",
-    ):
+        value: int | str,
+        field_name: str = "player_team_tournament_eesl_id",
+    ) -> PlayerTeamTournamentDB | None:
         try:
             self.logger.debug(f"Get {ITEM} by {field_name}: {value}")
             return await self.get_item_by_field_value(
@@ -196,8 +199,8 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
 
     async def get_player_team_tournaments_by_tournament_id(
-        self, tournament_id, player_id
-    ):
+        self, tournament_id: int, player_id: int
+    ) -> PlayerTeamTournamentDB:
         try:
             self.logger.debug(
                 f"Get {ITEM} by tournament id:{tournament_id} and player id:{player_id}"
@@ -224,7 +227,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 exc_info=True,
             )
 
-    async def get_player_team_tournament_with_person(self, player_id: int):
+    async def get_player_team_tournament_with_person(self, player_id: int) -> PlayerDB | None:
         player_service = PlayerServiceDB(self.db)
         try:
             return await self.get_nested_related_item_by_id(
@@ -253,7 +256,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         item_id: int,
         item: PlayerTeamTournamentSchemaUpdate,
         **kwargs,
-    ):
+    ) -> PlayerTeamTournamentDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,

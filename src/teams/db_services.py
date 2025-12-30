@@ -2,7 +2,8 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.models import BaseServiceDB, TeamDB, PlayerTeamTournamentDB
+from src.core.models.base import Database
+from src.core.models import BaseServiceDB, TeamDB, PlayerTeamTournamentDB, MatchDB
 from src.positions.db_services import PositionServiceDB
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
 from ..logging_config import setup_logging, get_logger
@@ -14,8 +15,8 @@ ITEM = "TEAM"
 class TeamServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, TeamDB)
         self.logger = get_logger("backend_logger_TeamServiceDB", self)
         self.logger.debug(f"Initialized TeamServiceDB")
@@ -23,7 +24,7 @@ class TeamServiceDB(BaseServiceDB):
     async def create(
         self,
         item: TeamSchemaCreate | TeamSchemaUpdate,
-    ):
+    ) -> TeamDB:
         try:
             team = self.model(
                 team_eesl_id=item.team_eesl_id,
@@ -50,14 +51,14 @@ class TeamServiceDB(BaseServiceDB):
     async def create_or_update_team(
         self,
         t: TeamSchemaCreate | TeamSchemaUpdate,
-    ):
+    ) -> TeamDB:
         return await super().create_or_update(t, eesl_field_name="team_eesl_id")
 
     async def get_team_by_eesl_id(
         self,
-        value,
-        field_name="team_eesl_id",
-    ):
+        value: int | str,
+        field_name: str = "team_eesl_id",
+    ) -> TeamDB | None:
         self.logger.debug(f"Get {ITEM} {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
@@ -67,7 +68,7 @@ class TeamServiceDB(BaseServiceDB):
     async def get_matches_by_team_id(
         self,
         team_id: int,
-    ):
+    ) -> list[MatchDB]:
         self.logger.debug(f"Get matches by {ITEM} id:{team_id}")
         return await self.get_related_item_level_one_by_id(
             team_id,
@@ -78,7 +79,7 @@ class TeamServiceDB(BaseServiceDB):
         self,
         team_id: int,
         tournament_id: int,
-    ):
+    ) -> list[PlayerTeamTournamentDB]:
         self.logger.debug(
             f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}"
         )
@@ -116,7 +117,7 @@ class TeamServiceDB(BaseServiceDB):
         self,
         team_id: int,
         tournament_id: int,
-    ):
+    ) -> list[dict]:
         self.logger.debug(
             f"Get players with person by {ITEM} id:{team_id} and tournament id:{tournament_id}"
         )
@@ -175,7 +176,7 @@ class TeamServiceDB(BaseServiceDB):
         item_id: int,
         item: TeamSchemaUpdate,
         **kwargs,
-    ):
+    ) -> TeamDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,

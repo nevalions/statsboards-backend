@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models.base import Database
 from src.core.models import BaseServiceDB, ScoreboardDB, MatchDataDB
 from .schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from ..logging_config import setup_logging, get_logger
@@ -13,18 +14,18 @@ setup_logging()
 
 
 class ScoreboardUpdateManager:
-    def __init__(self):
-        self.active_scoreboard_updates = {}
+    def __init__(self) -> None:
+        self.active_scoreboard_updates: dict[int, asyncio.Queue] = {}
         self.logger = get_logger("backend_logger_ScoreboardUpdateManager", self)
         self.logger.debug(f"Initialized ScoreboardUpdateManager")
 
-    async def enable_scoreboard_update_queue(self, scoreboard_id):
+    async def enable_scoreboard_update_queue(self, scoreboard_id: int) -> None:
         if scoreboard_id not in self.active_scoreboard_updates:
             self.logger.debug(f"Queue not found for Scoreboard ID:{scoreboard_id}")
             self.active_scoreboard_updates[scoreboard_id] = asyncio.Queue()
             self.logger.debug(f"Queue added for Scoreboard ID:{scoreboard_id}")
 
-    async def update_queue_scoreboard(self, scoreboard_id, updated_scoreboard):
+    async def update_queue_scoreboard(self, scoreboard_id: int, updated_scoreboard: ScoreboardDB) -> None:
         if scoreboard_id in self.active_scoreboard_updates:
             scoreboard_update_queue = self.active_scoreboard_updates[scoreboard_id]
             self.logger.debug(f"Queue updated for Scoreboard ID:{scoreboard_id}")
@@ -32,13 +33,13 @@ class ScoreboardUpdateManager:
 
 
 class ScoreboardServiceDB(BaseServiceDB):
-    def __init__(self, database):
+    def __init__(self, database: Database) -> None:
         super().__init__(database, ScoreboardDB)
         self.scoreboard_update_manager = ScoreboardUpdateManager()
         self.logger = get_logger("backend_logger_ScoreboardServiceDB", self)
         self.logger.debug(f"Initialized ScoreboardServiceDB")
 
-    async def create(self, item: ScoreboardSchemaCreate):
+    async def create(self, item: ScoreboardSchemaCreate) -> ScoreboardDB:
         self.logger.debug(f"Create scoreboard: {item}")
         async with self.db.async_session() as session:
             try:
@@ -127,7 +128,7 @@ class ScoreboardServiceDB(BaseServiceDB):
         item_id: int,
         item: ScoreboardSchemaUpdate,
         **kwargs,
-    ):
+    ) -> ScoreboardDB:
         self.logger.debug(f"Update scoreboard id:{item_id} data: {item}")
         updated_ = await super().update(
             item_id,
@@ -140,9 +141,9 @@ class ScoreboardServiceDB(BaseServiceDB):
 
     async def get_scoreboard_by_match_id(
         self,
-        value,
-        field_name="match_id",
-    ):
+        value: int | str,
+        field_name: str = "match_id",
+    ) -> ScoreboardDB | None:
         self.logger.debug(f"Get scoreboard by {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
@@ -152,7 +153,7 @@ class ScoreboardServiceDB(BaseServiceDB):
     async def create_or_update_scoreboard(
         self,
         scoreboard: Union[ScoreboardSchemaCreate, ScoreboardSchemaUpdate],
-    ):
+    ) -> ScoreboardDB:
         self.logger.debug(f"Create or update scoreboard: {scoreboard}")
         existing_scoreboard = await self.get_scoreboard_by_match_id(scoreboard.match_id)
 
@@ -180,8 +181,8 @@ class ScoreboardServiceDB(BaseServiceDB):
 
     async def get_scoreboard_by_matchdata_id(
         self,
-        matchdata_id,
-    ):
+        matchdata_id: int,
+    ) -> ScoreboardDB:
         async with self.db.async_session() as session:
             self.logger.debug(f"Get scoreboard by matchdata id: {matchdata_id}")
             query = select(MatchDataDB).where(MatchDataDB.id == matchdata_id)

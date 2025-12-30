@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models.base import Database
 from src.core.models import (
     BaseServiceDB,
     SponsorSponsorLineDB,
@@ -16,7 +17,7 @@ ITEM = "SPONSOR_SPONSOR_LINE"
 
 
 class SponsorSponsorLineServiceDB(BaseServiceDB):
-    def __init__(self, database):
+    def __init__(self, database: Database) -> None:
         super().__init__(database, SponsorSponsorLineDB)
         self.logger = get_logger("backend_logger_SponsorSponsorLineServiceDB", self)
         self.logger.debug(f"Initialized SponsorSponsorLineServiceDB")
@@ -24,7 +25,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
     async def create(
         self,
         item: SponsorSponsorLineSchemaCreate,
-    ):
+    ) -> SponsorSponsorLineDB | None:
         try:
             self.logger.debug(f"Creating {ITEM}")
             is_relation_exist = await self.get_sponsor_sponsor_line_relation(
@@ -57,7 +58,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
 
     async def get_sponsor_sponsor_line_relation(
         self, sponsor_id: int, sponsor_line_id: int
-    ):
+    ) -> SponsorSponsorLineDB | None:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Getting {ITEM}")
@@ -85,7 +86,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                     detail=f"Internal server error fetching {ITEM}",
                 )
 
-    async def get_related_sponsors(self, sponsor_line_id: int):
+    async def get_related_sponsors(self, sponsor_line_id: int) -> dict:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(
@@ -126,7 +127,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
 
     async def delete_relation_by_sponsor_and_sponsor_line_id(
         self, sponsor_id: int, sponsor_line_id: int
-    ):
+    ) -> SponsorSponsorLineDB:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Deleting {ITEM}")

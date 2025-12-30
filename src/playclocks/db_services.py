@@ -4,6 +4,7 @@ import asyncio
 from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy import select
 
+from src.core.models.base import Database
 from src.core.models import BaseServiceDB, PlayClockDB
 from .schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate, PlayClockSchemaBase
 from ..logging_config import setup_logging, get_logger
@@ -12,22 +13,22 @@ setup_logging()
 
 
 class ClockManager:
-    def __init__(self):
-        self.active_playclock_matches = {}
+    def __init__(self) -> None:
+        self.active_playclock_matches: dict[int, asyncio.Queue] = {}
         self.logger = get_logger("backend_logger_ClockManager", self)
         self.logger.debug(f"Initialized ClockManager")
 
-    async def start_clock(self, match_id):
+    async def start_clock(self, match_id: int) -> None:
         self.logger.debug("Start clock in clock manager")
         if match_id not in self.active_playclock_matches:
             self.active_playclock_matches[match_id] = asyncio.Queue()
 
-    async def end_clock(self, match_id):
+    async def end_clock(self, match_id: int) -> None:
         if match_id in self.active_playclock_matches:
             self.logger.debug("Stop clock in clock manager")
             del self.active_playclock_matches[match_id]
 
-    async def update_queue_clock(self, match_id, message):
+    async def update_queue_clock(self, match_id: int, message: PlayClockDB) -> None:
         if match_id in self.active_playclock_matches:
             self.logger.debug("Update clock in clock manager")
             queue = self.active_playclock_matches[match_id]
@@ -35,14 +36,14 @@ class ClockManager:
 
 
 class PlayClockServiceDB(BaseServiceDB):
-    def __init__(self, database, disable_background_tasks=False):
+    def __init__(self, database: Database, disable_background_tasks: bool = False) -> None:
         super().__init__(database, PlayClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
         self.logger = get_logger("backend_logger_PlayClockServiceDB", self)
         self.logger.debug(f"Initialized PlayClockServiceDB")
 
-    async def create(self, item: PlayClockSchemaCreate):
+    async def create(self, item: PlayClockSchemaCreate) -> PlayClockDB:
         self.logger.debug(f"Create playclock: {item}")
         async with self.db.async_session() as session:
             try:
@@ -78,7 +79,7 @@ class PlayClockServiceDB(BaseServiceDB):
     async def enable_match_data_clock_queues(
         self,
         item_id: int,
-    ):
+    ) -> asyncio.Queue:
         self.logger.debug(f"Enable matchdata playclock queues match id:{item_id}")
         playclock = await self.get_by_id(item_id)
 
@@ -102,7 +103,7 @@ class PlayClockServiceDB(BaseServiceDB):
         item_id: int,
         item: PlayClockSchemaUpdate,
         **kwargs,
-    ):
+    ) -> PlayClockDB:
         self.logger.debug(f"Update playclock id:{item_id} data: {item}")
         async with self.db.async_session() as session:
             try:
@@ -148,7 +149,7 @@ class PlayClockServiceDB(BaseServiceDB):
         item_id: int,
         item: PlayClockSchemaUpdate,
         **kwargs,
-    ):
+    ) -> PlayClockDB:
         self.logger.debug(
             f"Update playclock with None allowed id:{item_id} data: {item}"
         )
@@ -194,7 +195,7 @@ class PlayClockServiceDB(BaseServiceDB):
     async def get_playclock_status(
         self,
         item_id: int,
-    ):
+    ) -> str | None:
         self.logger.debug(f"Get playclock status for item id:{item_id}")
         playclock: PlayClockSchemaBase = await self.get_by_id(item_id)
         if playclock:
@@ -204,7 +205,7 @@ class PlayClockServiceDB(BaseServiceDB):
             self.logger.warning(f"Playclock not found: {item_id}")
             return None
 
-    async def get_playclock_by_match_id(self, match_id: int):
+    async def get_playclock_by_match_id(self, match_id: int) -> PlayClockDB | None:
         async with self.db.async_session() as session:
             self.logger.debug(f"Get playclock by match id:{match_id}")
             result = await session.scalars(
@@ -221,7 +222,7 @@ class PlayClockServiceDB(BaseServiceDB):
         self,
         background_tasks: BackgroundTasks,
         playclock_id: int,
-    ):
+    ) -> None:
         self.logger.debug(f"Decrement playclock by id:{playclock_id}")
 
         if self.disable_background_tasks:
@@ -238,7 +239,7 @@ class PlayClockServiceDB(BaseServiceDB):
         else:
             self.logger.warning(f"Playclock not found by id:{playclock_id}")
 
-    async def loop_decrement_playclock(self, playclock_id):
+    async def loop_decrement_playclock(self, playclock_id: int) -> PlayClockDB:
         self.logger.debug(f"Loop decrement playclock by id:{playclock_id}")
         next_time = time.monotonic()
         while True:
@@ -295,7 +296,7 @@ class PlayClockServiceDB(BaseServiceDB):
     async def decrement_playclock_one_second(
         self,
         item_id: int,
-    ):
+    ) -> int:
         self.logger.debug(
             f"Decrementing playclock on one second for playclock id: {item_id}"
         )
@@ -326,7 +327,7 @@ class PlayClockServiceDB(BaseServiceDB):
     async def trigger_update_playclock(
         self,
         playclock_id: int,
-    ):
+    ) -> None:
         self.logger.debug(f"Trigger update playclock for playclock id:{playclock_id}")
         playclock: PlayClockSchemaBase = await self.get_by_id(playclock_id)
 

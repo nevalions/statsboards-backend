@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 
+from src.core.models.base import Database
 from src.core.models import BaseServiceDB, PersonDB
 
 from ..logging_config import get_logger, setup_logging
@@ -12,8 +13,8 @@ ITEM = "PERSON"
 class PersonServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, PersonDB)
         self.logger = get_logger("backend_logger_PersonServiceDB", self)
         self.logger.debug("Initialized PersonServiceDB")
@@ -21,7 +22,7 @@ class PersonServiceDB(BaseServiceDB):
     async def create(
         self,
         item: PersonSchemaCreate | PersonSchemaUpdate,
-    ):
+    ) -> PersonDB:
         try:
             person = self.model(
                 person_eesl_id=item.person_eesl_id,
@@ -46,14 +47,14 @@ class PersonServiceDB(BaseServiceDB):
     async def create_or_update_person(
         self,
         p: PersonSchemaCreate | PersonSchemaUpdate,
-    ):
+    ) -> PersonDB | None:
         return await super().create_or_update(p, eesl_field_name="person_eesl_id")
 
     async def get_person_by_eesl_id(
         self,
-        value,
-        field_name="person_eesl_id",
-    ):
+        value: int | str,
+        field_name: str = "person_eesl_id",
+    ) -> PersonDB | None:
         self.logger.debug(f"Get {ITEM} {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
@@ -65,7 +66,7 @@ class PersonServiceDB(BaseServiceDB):
         item_id: int,
         item: PersonSchemaUpdate,
         **kwargs,
-    ):
+    ) -> PersonDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,

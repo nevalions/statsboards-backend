@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.models.base import Database
 from src.core.models import BaseServiceDB, FootballEventDB
 
 from ..logging_config import get_logger, setup_logging
@@ -14,13 +15,13 @@ ITEM = "FOOTBALL_EVENT"
 class FootballEventServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, FootballEventDB)
         self.logger = get_logger("backend_logger_FootballEventServiceDB", self)
         self.logger.debug("Initialized FootballEventServiceDB")
 
-    async def create(self, item: FootballEventSchemaCreate):
+    async def create(self, item: FootballEventSchemaCreate) -> FootballEventDB:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Creating {ITEM}")
@@ -102,7 +103,7 @@ class FootballEventServiceDB(BaseServiceDB):
         item_id: int,
         item: FootballEventSchemaUpdate,
         **kwargs,
-    ):
+    ) -> FootballEventDB:
         try:
             self.logger.debug(f"Updating {ITEM}")
             updated_ = await super().update(
@@ -118,7 +119,7 @@ class FootballEventServiceDB(BaseServiceDB):
             self.logger.error(f"Error updating {ITEM} {ex}", exc_info=True)
             raise
 
-    async def get_match_football_events_by_match_id(self, match_id: int):
+    async def get_match_football_events_by_match_id(self, match_id: int) -> list[FootballEventDB]:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Getting {ITEM}s by match id({match_id})")
@@ -131,6 +132,7 @@ class FootballEventServiceDB(BaseServiceDB):
                         return match_events
                     else:
                         return []
+                return []
             except HTTPException:
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:

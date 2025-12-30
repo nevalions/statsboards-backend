@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from src.core.models.base import Database
 from src.core.models import BaseServiceDB, PositionDB
 
 from .schemas import PositionSchemaCreate, PositionSchemaUpdate
@@ -13,8 +14,8 @@ ITEM = "POSITION"
 class PositionServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, PositionDB)
         self.logger = get_logger("backend_logger_PositionServiceDB", self)
         self.logger.debug(f"Initialized PositionServiceDB")
@@ -22,7 +23,7 @@ class PositionServiceDB(BaseServiceDB):
     async def create(
         self,
         p: PositionSchemaCreate,
-    ):
+    ) -> PositionDB:
         try:
             self.logger.debug(f"Creating new {ITEM} {p}")
             position = self.model(
@@ -32,13 +33,17 @@ class PositionServiceDB(BaseServiceDB):
             return await super().create(position)
         except Exception as ex:
             self.logger.error(f"Error creating new position {p} {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
+            )
 
     async def update(
         self,
         item_id: int,
         item: PositionSchemaUpdate,
         **kwargs,
-    ):
+    ) -> PositionDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,
@@ -46,7 +51,7 @@ class PositionServiceDB(BaseServiceDB):
             **kwargs,
         )
 
-    async def get_position_by_title(self, title: str):
+    async def get_position_by_title(self, title: str) -> PositionDB:
         async with self.db.async_session() as session:
             self.logger.debug(f"Getting position by title: {title}")
             try:

@@ -1,9 +1,14 @@
 from fastapi import HTTPException
 
+from src.core.models.base import Database
 from src.core.models import BaseServiceDB, PlayerDB
 
 from ..logging_config import get_logger, setup_logging
 from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.core.models import PlayerDB
 
 setup_logging()
 ITEM = "PLAYER"
@@ -12,8 +17,8 @@ ITEM = "PLAYER"
 class PlayerServiceDB(BaseServiceDB):
     def __init__(
         self,
-        database,
-    ):
+        database: Database,
+    ) -> None:
         super().__init__(database, PlayerDB)
         self.logger = get_logger("backend_logger_PlayerServiceDB", self)
         self.logger.debug("Initialized PlayerServiceDB")
@@ -21,7 +26,7 @@ class PlayerServiceDB(BaseServiceDB):
     async def create(
         self,
         item: PlayerSchemaCreate | PlayerSchemaUpdate,
-    ):
+    ) -> PlayerDB:
         try:
             player = self.model(
                 player_eesl_id=item.player_eesl_id,
@@ -42,21 +47,21 @@ class PlayerServiceDB(BaseServiceDB):
     async def create_or_update_player(
         self,
         p: PlayerSchemaCreate | PlayerSchemaUpdate,
-    ):
+    ) -> PlayerDB | None:
         return await super().create_or_update(p, eesl_field_name="player_eesl_id")
 
     async def get_player_by_eesl_id(
         self,
-        value,
-        field_name="player_eesl_id",
-    ):
+        value: int | str,
+        field_name: str = "player_eesl_id",
+    ) -> PlayerDB | None:
         self.logger.debug(f"Get {ITEM} {field_name}:{value}")
         return await self.get_item_by_field_value(
             value=value,
             field_name=field_name,
         )
 
-    async def get_player_with_person(self, player_id) -> PlayerSchema:
+    async def get_player_with_person(self, player_id: int) -> PlayerSchema:
         self.logger.debug(f"Get {ITEM} with person data {player_id}")
         try:
             player_with_person_data = await self.get_related_item_level_one_by_id(
@@ -77,13 +82,14 @@ class PlayerServiceDB(BaseServiceDB):
                 f"{ITEM} with id:{player_id} returned an error while getting person data: {ex}",
                 exc_info=True,
             )
+            raise
 
     async def update(
         self,
         item_id: int,
         item: PlayerSchemaUpdate,
         **kwargs,
-    ):
+    ) -> PlayerDB:
         self.logger.debug(f"Update {ITEM}:{item_id}")
         return await super().update(
             item_id,
