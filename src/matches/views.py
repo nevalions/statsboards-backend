@@ -893,6 +893,9 @@ class MatchAPIRouter(
             self.logger.debug(
                 f"Get and Save parsed matches from tournament eesl_id:{eesl_tournament_id} endpoint"
             )
+            from sqlalchemy import select
+            from src.core.models import TeamDB
+
             teams_service = TeamServiceDB(db)
             playclock_service = PlayClockServiceDB(db)
             gameclock_service = GameClockServiceDB(db)
@@ -911,20 +914,30 @@ class MatchAPIRouter(
                 created_matches_full_data = []
 
                 if matches_list:
+                    team_eesl_ids = set()
+                    for m in matches_list:
+                        team_eesl_ids.add(m["team_a_eesl_id"])
+                        team_eesl_ids.add(m["team_b_eesl_id"])
+
+                    async with db.async_session() as session:
+                        stmt = select(TeamDB).where(
+                            TeamDB.team_eesl_id.in_(list(team_eesl_ids))
+                        )
+                        results = await session.execute(stmt)
+                        teams_by_eesl_id = {
+                            team.team_eesl_id: team for team in results.scalars().all()
+                        }
+
                     for m in matches_list:
                         try:
                             self.logger.debug(f"Parsed match: {m}")
-                            team_a = await teams_service.get_team_by_eesl_id(
-                                m["team_a_eesl_id"]
-                            )
+                            team_a = teams_by_eesl_id.get(m["team_a_eesl_id"])
                             if team_a:
                                 self.logger.debug(f"team_a: {team_a}")
                             else:
                                 self.logger.error("Home team(a) not found")
                                 raise
-                            team_b = await teams_service.get_team_by_eesl_id(
-                                m["team_b_eesl_id"]
-                            )
+                            team_b = teams_by_eesl_id.get(m["team_b_eesl_id"])
                             if team_b:
                                 self.logger.debug(f"team_a: {team_b}")
                             else:
@@ -953,11 +966,12 @@ class MatchAPIRouter(
                             )
                             await gameclock_service.create(gameclock_schema)
 
-                            existing_match_data = (
-                                await match_data_service.get_match_data_by_match_id(
+                            existing_match_data = await asyncio.gather(
+                                match_data_service.get_match_data_by_match_id(
                                     created_match.id
                                 )
                             )
+                            existing_match_data = existing_match_data[0]
 
                             if existing_match_data is None:
                                 match_data_schema_create = MatchDataSchemaCreate(
@@ -968,7 +982,6 @@ class MatchAPIRouter(
                                 match_data = await match_data_service.create(
                                     match_data_schema_create
                                 )
-                                # print("match_data", match_data)
                             else:
                                 match_data_schema_update = MatchDataSchemaUpdate(
                                     match_id=created_match.id,
@@ -978,13 +991,13 @@ class MatchAPIRouter(
                                 match_data = await match_data_service.update(
                                     existing_match_data.id, match_data_schema_update
                                 )
-                                # print("match_data", match_data)
 
-                            existing_scoreboard = (
-                                await scoreboard_service.get_scoreboard_by_match_id(
+                            existing_scoreboard = await asyncio.gather(
+                                scoreboard_service.get_scoreboard_by_match_id(
                                     created_match.id
                                 )
                             )
+                            existing_scoreboard = existing_scoreboard[0]
 
                             if existing_scoreboard is None:
                                 scoreboard_schema = ScoreboardSchemaCreate(
@@ -997,7 +1010,6 @@ class MatchAPIRouter(
                                     team_b_game_title=team_b.title,
                                 )
                             else:
-                                # Update existing_scoreboard with default values where keys are missing
                                 existing_data = existing_scoreboard.__dict__
                                 default_data = ScoreboardSchemaCreate().model_dump()
 

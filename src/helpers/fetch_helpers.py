@@ -1,10 +1,13 @@
+import asyncio
 import datetime
 import logging
 from typing import List
 
 from fastapi import status
+from sqlalchemy import select
 
 from src.core import db
+from src.core.models import MatchDB, TeamDB
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.logging_config import setup_logging
@@ -30,10 +33,32 @@ async def fetch_list_of_matches_data(matches: List):
     all_match_data = []
 
     try:
+        if not matches:
+            return []
+
+        match_ids = [match.id for match in matches]
+
+        team_ids = set()
         for match in matches:
+            team_ids.add(match.team_a_id)
+            team_ids.add(match.team_b_id)
+
+        async with db.async_session() as session:
+            stmt = select(TeamDB).where(TeamDB.id.in_(list(team_ids)))
+            results = await session.execute(stmt)
+            teams = {team.id: team for team in results.scalars().all()}
+
+        match_data_list = await asyncio.gather(
+            *[match_service_db.get_matchdata_by_match(match_id) for match_id in match_ids]
+        )
+
+        for idx, match in enumerate(matches):
             match_id = match.id
-            match_teams_data = await match_service_db.get_teams_by_match(match_id)
-            match_data = await match_service_db.get_matchdata_by_match(match_id)
+            match_data = match_data_list[idx]
+            team_a = teams.get(match.team_a_id)
+            team_b = teams.get(match.team_b_id)
+
+            match_teams_data = {"team_a": team_a, "team_b": team_b}
 
             if match_data is None:
                 match_data_schema = MatchDataSchemaCreate(match_id=match_id)

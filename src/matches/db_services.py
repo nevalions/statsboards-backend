@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from src.core.models import BaseServiceDB, MatchDB, PlayerMatchDB, TeamDB
 from src.logging_config import get_logger, setup_logging
@@ -235,16 +236,43 @@ class MatchServiceDB(BaseServiceDB):
 
     async def get_player_by_match_full_data(self, match_id: int):
         self.logger.debug(f"Get players with full data by {ITEM} id:{match_id}")
-        player_service = PlayerMatchServiceDB(self.db)
-        players = await self.get_players_by_match(match_id)
-        players_with_data = []
         try:
-            if players:
+            from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+            from src.core.models.player import PlayerDB
+
+            async with self.db.async_session() as session:
+                stmt = (
+                    select(PlayerMatchDB)
+                    .where(PlayerMatchDB.match_id == match_id)
+                    .options(
+                        selectinload(PlayerMatchDB.player_team_tournament)
+                        .selectinload(PlayerTeamTournamentDB.player)
+                        .selectinload(PlayerDB.person),
+                        selectinload(PlayerMatchDB.match_position),
+                        selectinload(PlayerMatchDB.team),
+                    )
+                )
+
+                results = await session.execute(stmt)
+                players = results.scalars().all()
+
+                players_with_data = []
                 for player in players:
-                    p = await player_service.get_player_in_match_full_data(player.id)
-                    players_with_data.append(p)
+                    players_with_data.append(
+                        {
+                            "match_player": player,
+                            "player_team_tournament": player.player_team_tournament,
+                            "person": (
+                                player.player_team_tournament.player.person
+                                if player.player_team_tournament
+                                and player.player_team_tournament.player
+                                else None
+                            ),
+                            "position": player.match_position,
+                        }
+                    )
+
                 return players_with_data
-            return players_with_data
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
