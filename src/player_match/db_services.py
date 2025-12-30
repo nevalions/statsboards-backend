@@ -60,7 +60,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                         and p.match_id == player_match_from_db.match_id
                     ):
                         self.logger.debug(f"{ITEM} already in match, updating...")
-                        return await self.update_player_match(
+                        return await self.update(
                             player_match_from_db.id, p
                         )
                 self.logger.debug(f"{ITEM} does not exist, creating...")
@@ -127,7 +127,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 match_id, eesl_id
             )
             if player:
-                updated_player = await self.update_player_match(player.id, new_player)
+                updated_player = await self.update(player.id, new_player)
                 if updated_player:
                     return updated_player
             raise HTTPException(status_code=404, detail=f"{ITEM} not found to update")
