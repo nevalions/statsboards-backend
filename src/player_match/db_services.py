@@ -10,12 +10,10 @@ from src.core.models import (
     PlayerTeamTournamentDB,
 )
 from src.core.models.base import Database
-from src.positions.db_services import PositionServiceDB
+from src.core.service_registry import get_service_registry
 
 from ..logging_config import get_logger
-from ..player.db_services import PlayerServiceDB
 from ..player.schemas import PlayerSchema
-from ..player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 ITEM = "PLAYER_MATCH"
 
@@ -26,8 +24,15 @@ class PlayerMatchServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, PlayerMatchDB)
-        self.logger = get_logger("backend_logger_PlayerMatchServiceDB")
+        self.logger = get_logger("backend_logger_PlayerMatchServiceDB", self)
         self.logger.debug("Initialized PlayerMatchServiceDB")
+        self._service_registry = None
+
+    @property
+    def service_registry(self):
+        if self._service_registry is None:
+            self._service_registry = get_service_registry()
+        return self._service_registry
 
     async def create_or_update_player_match(
         self,
@@ -280,14 +285,82 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 return None
 
     async def get_player_in_sport(self, player_id: int) -> PlayerDB | None:
-        player_service = PlayerTeamTournamentServiceDB(self.db)
+        player_team_tournament_service = self.service_registry.get("player_team_tournament")
         try:
             self.logger.debug(f"Get player in sport by player_id:{player_id}")
             return await self.get_nested_related_item_by_id(
                 player_id,
-                player_service,
+                player_team_tournament_service,
                 "player_team_tournament",
                 "player",
+            )
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Error getting player in sport {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail="Database error fetching player in sport",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error getting player in sport {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided for player in sport",
+            )
+        except NotFoundError as ex:
+            self.logger.info(f"Not found getting player in sport {ex}", exc_info=True)
+            return None
+        except Exception as ex:
+            self.logger.critical(f"Unexpected error getting player in sport {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error fetching player in sport",
+            )
+
+    async def get_player_person_in_match(self, player_id: int) -> PlayerSchema | None:
+        player_service = self.service_registry.get("player")
+        try:
+            self.logger.debug(
+                f"Get {ITEM} in sport with person by player_id:{player_id}"
+            )
+            p = await self.get_player_in_sport(player_id)
+            if p:
+                return await player_service.get_player_with_person(p.id)
+            return None
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Error getting {ITEM} in sport with person {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Database error fetching player person in match",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error getting {ITEM} in sport with person {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided for player person in match",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found getting {ITEM} in sport with person {ex}", exc_info=True
+            )
+            return None
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error getting {ITEM} in sport with person {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error fetching player person in match",
             )
         except HTTPException:
             raise
@@ -405,7 +478,8 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 match_player_id
             )
             person = await self.get_player_person_in_match(match_player_id)
-            position = await PositionServiceDB(self.db).get_by_id(
+            position_service = self.service_registry.get("position")
+            position = await position_service.get_by_id(
                 match_player.match_position_id
             )
 

@@ -18,10 +18,8 @@ from src.core.models import (
     handle_service_exceptions,
 )
 from src.core.models.base import Database
+from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
-from src.sports.db_services import SportServiceDB
-from src.teams.db_services import TeamServiceDB
-from src.tournaments.db_services import TournamentServiceDB
 
 from .schemas import MatchSchemaCreate, MatchSchemaUpdate
 ITEM = "MATCH"
@@ -32,6 +30,13 @@ class MatchServiceDB(BaseServiceDB):
         super().__init__(database, MatchDB)
         self.logger = get_logger("backend_logger_MatchServiceDB", self)
         self.logger.debug("Initialized MatchServiceDB")
+        self._service_registry = None
+
+    @property
+    def service_registry(self):
+        if self._service_registry is None:
+            self._service_registry = get_service_registry()
+        return self._service_registry
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(
@@ -85,8 +90,8 @@ class MatchServiceDB(BaseServiceDB):
     )
     async def get_sport_by_match_id(self, match_id: int) -> SportDB | None:
         self.logger.debug(f"Get sport by {ITEM} id:{match_id}")
-        tournament_service = TournamentServiceDB(self.db)
-        sport_service = SportServiceDB(self.db)
+        tournament_service = self.service_registry.get("tournament")
+        sport_service = self.service_registry.get("sport")
         match = await self.get_by_id(match_id)
         if match:
             tournament = await tournament_service.get_by_id(match.tournament_id)
@@ -105,7 +110,7 @@ class MatchServiceDB(BaseServiceDB):
     ) -> dict | None:
         self.logger.debug(f"Get teams by {ITEM} id:{match_id}")
         async with self.db.async_session():
-            team_service = TeamServiceDB(self.db)
+            team_service = self.service_registry.get("team")
             match = await self.get_by_id(match_id)
             if match:
                 home_team = await team_service.get_by_id(match.team_a_id)

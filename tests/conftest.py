@@ -6,6 +6,8 @@ import pytest_asyncio
 
 from src.core import settings
 from src.core.models.base import Base, Database
+from src.core.service_registry import init_service_registry
+from src.core.service_initialization import register_all_services
 
 db_url = settings.test_db.test_db_url
 
@@ -29,6 +31,10 @@ async def test_db():
     assert "test" in db_url_str, "Test DB URL must contain 'test'"
 
     database = Database(db_url_str, echo=False)
+
+    # Initialize service registry for each test
+    init_service_registry(database)
+    register_all_services(database)
 
     # Create tables at start of each test (faster than migrations)
     async with database.engine.begin() as conn:

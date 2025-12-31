@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from src.core.config import uploads_path
 from src.core.exception_handler import register_exception_handlers
 from src.core.models.base import db
+from src.core.service_registry import init_service_registry
+from src.core.service_initialization import register_all_services
 from src.utils.websocket.websocket_manager import ws_manager
 from src.core.router_registry import RouterRegistry, configure_routers
 from src.logging_config import logs_dir, setup_logging
@@ -34,6 +36,9 @@ async def lifespan(_app: FastAPI):
     """
     db_logger.info("Starting application lifespan.")
     try:
+        init_service_registry(db)
+        register_all_services(db)
+        logger.info("Service registry initialized and all services registered")
         await db.test_connection()
         yield
     except Exception as e:

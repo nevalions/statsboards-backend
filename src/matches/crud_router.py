@@ -2,21 +2,14 @@ from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter
-from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.helpers.file_service import file_service
 from src.logging_config import get_logger
-from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
-from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate
-from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
-from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
-from src.sponsors.db_services import SponsorServiceDB
-from src.teams.db_services import TeamServiceDB
 from src.teams.schemas import UploadResizeTeamLogoResponse, UploadTeamLogoResponse
-from src.tournaments.db_services import TournamentServiceDB
+from src.core.service_registry import get_service_registry
 from .db_services import MatchServiceDB
 from .schemas import (
     MatchSchema,
@@ -40,6 +33,13 @@ class MatchCRUDRouter(
         )
         self.logger = get_logger("backend_logger_MatchCRUDRouter", self)
         self.logger.debug("Initialized MatchCRUDRouter")
+        self._service_registry = None
+
+    @property
+    def service_registry(self):
+        if self._service_registry is None:
+            self._service_registry = get_service_registry()
+        return self._service_registry
 
     def route(self):
         router = super().route()
@@ -68,13 +68,13 @@ class MatchCRUDRouter(
             self.logger.debug(
                 f"Create or update match with full data endpoint got data: {data}"
             )
-            teams_service = TeamServiceDB(self.service.db)
-            tournament_service = TournamentServiceDB(self.service.db)
-            sponsor_service = SponsorServiceDB(self.service.db)
-            match_db_service = MatchDataServiceDB(self.service.db)
-            PlayClockServiceDB(self.service.db)
-            GameClockServiceDB(self.service.db)
-            scoreboard_db_service = ScoreboardServiceDB(self.service.db)
+            teams_service = self.service_registry.get("team")
+            tournament_service = self.service_registry.get("tournament")
+            sponsor_service = self.service_registry.get("sponsor")
+            match_db_service = self.service_registry.get("matchdata")
+            self.service_registry.get("playclock")
+            self.service_registry.get("gameclock")
+            scoreboard_db_service = self.service_registry.get("scoreboard")
 
             new_match = await self.service.create_or_update_match(data)
 
@@ -202,9 +202,8 @@ class MatchCRUDRouter(
             self.logger.debug(f"Get sponsor_line by match id:{match_id} endpoint")
             sponsor_line = await self.service.get_match_sponsor_line(match_id)
             if sponsor_line:
-                full_sponsor_line = await SponsorSponsorLineServiceDB(
-                    self.service.db
-                ).get_related_sponsors(sponsor_line.id)
+                sponsor_sponsor_line_service = self.service_registry.get("sponsor_sponsor_line")
+                full_sponsor_line = await sponsor_sponsor_line_service.get_related_sponsors(sponsor_line.id)
                 return full_sponsor_line
 
         @router.get(
@@ -316,13 +315,13 @@ class MatchCRUDRouter(
             self.logger.debug(
                 f"Creat match with full data and scoreboard endpoint {data}"
             )
-            teams_service = TeamServiceDB(self.service.db)
-            tournament_service = TournamentServiceDB(self.service.db)
-            sponsor_service = SponsorServiceDB(self.service.db)
-            match_db_service = MatchDataServiceDB(self.service.db)
-            playclock_service = PlayClockServiceDB(self.service.db)
-            gameclock_service = GameClockServiceDB(self.service.db)
-            scoreboard_db_service = ScoreboardServiceDB(self.service.db)
+            teams_service = self.service_registry.get("team")
+            tournament_service = self.service_registry.get("tournament")
+            sponsor_service = self.service_registry.get("sponsor")
+            match_db_service = self.service_registry.get("matchdata")
+            playclock_service = self.service_registry.get("playclock")
+            gameclock_service = self.service_registry.get("gameclock")
+            scoreboard_db_service = self.service_registry.get("scoreboard")
 
             try:
                 self.logger.debug(f"Creating simple match: {data}")

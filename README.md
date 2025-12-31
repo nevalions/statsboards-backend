@@ -10,9 +10,10 @@ A FastAPI-based backend service for sports statistics and scoreboarding, designe
 - **Database Integration**: PostgreSQL with async SQLAlchemy ORM
 - **External Data Integration**: EESL system integration for data synchronization
 - **File Management**: Secure file upload and static file serving
-- **Production Ready**: Docker deployment with nginx reverse proxy and SSL support
-- **Robust Error Handling**: Structured exception hierarchy and global error handlers
-- **Comprehensive Logging**: Standardized logging levels across all services
+ - **Production Ready**: Docker deployment with nginx reverse proxy and SSL support
+ - **Robust Error Handling**: Structured exception hierarchy and global error handlers
+ - **Comprehensive Logging**: Standardized logging levels across all services
+ - **Service Registry Pattern**: Dependency injection for decoupled service architecture
 
 ## Tech Stack
 
@@ -180,7 +181,9 @@ src/
 │   │   └── [model files]     # Database model definitions
 │   ├── exceptions.py          # Custom exception hierarchy
 │   ├── exception_handler.py    # Global exception handlers
-│   └── base_router.py         # Base FastAPI router classes
+│   ├── base_router.py         # Base FastAPI router classes
+│   ├── service_registry.py    # Service registry for dependency injection
+│   └── service_initialization.py  # Service registration
 ├── teams/                      # Team management
 │   ├── db_services.py         # Team service layer
 │   ├── schemas.py            # Pydantic schemas
@@ -244,6 +247,7 @@ AGENTS.md                       # Development guidelines for AI assistants
 
 ### Code Quality
 - Consistent service layer pattern with `BaseServiceDB`
+- Service registry pattern for dependency injection and decoupling
 - Comprehensive test coverage (500+ tests)
 - Type hints throughout codebase
 - Async/await for all database operations
@@ -299,6 +303,9 @@ The project uses `AGENTS.md` as a comprehensive development guide for AI assista
 
 ### Service Layer Pattern
 - All service classes inherit from `BaseServiceDB`
+- Use service registry for cross-service dependencies (never import other services directly)
+- Access dependencies via `self.service_registry.get("service_name")`
+- Registry uses lazy initialization to avoid circular dependencies
 - Use async/await for all database operations
 - Return database model objects, not dictionaries
 - Use structured logging with consistent format
@@ -385,6 +392,14 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 - PostgreSQL requirement for tests (not SQLite)
 - Factory pattern for test data generation
 - Comprehensive test coverage across all services
+
+### Service Layer Decoupling
+- Implemented service registry pattern for dependency injection
+- Services no longer directly import or instantiate other services
+- Centralized service registration in `src/core/service_initialization.py`
+- Lazy initialization to avoid circular dependencies
+- Improved testability through dependency injection
+- See `SERVICE_LAYER_DECOUPLING.md` for complete documentation
 
 ## License
 

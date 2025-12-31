@@ -131,6 +131,12 @@ python src/run_prod_server.py
 - Return database model objects, not dictionaries
 - Raise `HTTPException` for client-facing errors
 - Use `async/await` for all database operations
+- **Use Service Registry for cross-service dependencies**:
+  - Never directly import and instantiate other services
+  - Access dependencies through `self.service_registry.get("service_name")`
+  - Example: `team_service = self.service_registry.get("team")`
+  - Registry is lazily initialized to avoid order issues
+  - See `SERVICE_LAYER_DECOUPLING.md` for full documentation
 
 ### Router Pattern
 
