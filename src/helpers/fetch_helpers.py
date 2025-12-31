@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+from typing import Any
 
 from fastapi import status
 from sqlalchemy import select
@@ -21,7 +22,7 @@ logger = logging.getLogger("backend_logger_helpers")
 fetch_data_logger = logging.getLogger("backend_fetch_data_helpers")
 
 
-async def fetch_list_of_matches_data(matches: list):
+async def fetch_list_of_matches_data(matches: list[Any]) -> list[dict[str, Any]] | None:
     fetch_data_logger.debug("Fetching list of matches data")
     from src.matches.db_services import MatchServiceDB
 
@@ -82,7 +83,7 @@ async def fetch_list_of_matches_data(matches: list):
         )
 
 
-async def fetch_match_data(match_id: int):
+async def fetch_match_data(match_id: int) -> dict[str, Any] | None:
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Fetching matchdata by mathc_id:{match_id}")
@@ -117,7 +118,7 @@ async def fetch_match_data(match_id: int):
         fetch_data_logger.error(f"Error while fetching matchdata: {e}", exc_info=True)
 
 
-async def fetch_with_scoreboard_data(match_id: int):
+async def fetch_with_scoreboard_data(match_id: int) -> dict[str, Any] | None:
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Starting fetching match data with match_id {match_id}")
@@ -183,7 +184,7 @@ async def fetch_with_scoreboard_data(match_id: int):
         )
 
 
-async def fetch_gameclock(match_id: int):
+async def fetch_gameclock(match_id: int) -> dict[str, Any] | None:
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Starting fetching gemeclock with match_id:{match_id}")
@@ -214,7 +215,7 @@ async def fetch_gameclock(match_id: int):
         fetch_data_logger.error(f"Error while fetching gameclock: {e}", exc_info=True)
 
 
-async def fetch_playclock(match_id: int):
+async def fetch_playclock(match_id: int) -> dict[str, Any] | None:
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Starting fetching playclock with match_id:{match_id}")
@@ -250,7 +251,7 @@ async def fetch_matches_with_data_by_tournament_paginated(
     limit: int = 7,
     order_exp: str = "id",
     order_exp_two: str = "id",
-):
+) -> Any:
     fetch_data_logger.debug("Fetching list of matches with full data")
 
     tournament_service_db = TournamentServiceDB(db)
@@ -295,7 +296,7 @@ async def fetch_matches_with_data_by_tournament_paginated(
         }
 
 
-def instance_to_dict(instance):
+def instance_to_dict(instance: dict[str, Any]) -> dict[str, Any] | None:
     logger.debug(f"Instance to dictionary convert instance: {instance}")
     logger.debug(f"Instance to dictionary convert instance type: {type(instance)}")
     try:
@@ -311,7 +312,7 @@ def instance_to_dict(instance):
         return None
 
 
-def deep_dict_convert(obj):
+def deep_dict_convert(obj: dict[str, Any]) -> dict[str, Any] | None:
     logger.debug(f"Deep dictionary convert object: {obj}")
     logger.debug(f"Deep dictionary convert object type: {type(obj)}")
     try:

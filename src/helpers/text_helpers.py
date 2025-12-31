@@ -50,7 +50,7 @@ days = {
 }
 
 
-def ru_to_eng_datetime_month(ru):
+def ru_to_eng_datetime_month(ru: str) -> str | None:
     try:
         logger.debug(f"Converting ru to eng datetime month {ru}")
         s = ru.split(" ")
@@ -62,7 +62,7 @@ def ru_to_eng_datetime_month(ru):
         )
 
 
-def ru_to_eng_datetime_month_day_time(ru, year="2023"):
+def ru_to_eng_datetime_month_day_time(ru: str, year: str = "2023") -> str | None:
     try:
         logger.debug("Converting ru to eng datetime month day time")
         s = ru.strip().lower().split("/")
@@ -79,7 +79,7 @@ def ru_to_eng_datetime_month_day_time(ru, year="2023"):
         )
 
 
-def safe_int_conversion(score_str):
+def safe_int_conversion(score_str: str) -> int:
     try:
         logger.debug(f"Safe converting to int {score_str}")
         return int(score_str.strip())

@@ -1,8 +1,8 @@
 import asyncio
 import json
 import logging
+from collections.abc import Callable, Coroutine
 from typing import Any
-from collections.abc import Coroutine
 
 import asyncpg
 from starlette.websockets import WebSocket
@@ -303,7 +303,7 @@ connection_manager = ConnectionManager()
 
 
 async def process_client_queue(
-    client_id: str | int, handlers: dict[str | int, Coroutine[Any, Any, None]]
+    client_id: str | int, handlers: dict[str | int, Callable[[], None]]
 ):
     client_id_str = str(client_id)
     if client_id_str in connection_manager.queues:

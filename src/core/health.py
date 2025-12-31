@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from src.core.models import db
 
@@ -5,7 +7,7 @@ router = APIRouter(prefix="/health", tags=["health"])
 
 
 @router.get("/db-pool")
-async def get_db_pool_status():
+async def get_db_pool_status() -> dict[str, Any]:
     try:
         pool_status = db.get_pool_status()
         return {
@@ -20,7 +22,7 @@ async def get_db_pool_status():
 
 
 @router.get("/db")
-async def test_db_connection():
+async def test_db_connection() -> dict[str, str]:
     try:
         await db.test_connection()
         return {

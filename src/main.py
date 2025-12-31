@@ -57,7 +57,7 @@ register_exception_handlers(app)
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, object]:
     """
     Health check endpoint for monitoring and load balancers.
 

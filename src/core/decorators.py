@@ -1,6 +1,7 @@
 import asyncio
 import functools
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -10,16 +11,18 @@ from src.core.exceptions import (
     NotFoundError,
 )
 
+T = TypeVar("T")
+
 
 def handle_service_exceptions(
     item_name: str | None = None,
     operation: str = "operation",
     reraise_not_found: bool = False,
-    return_value_on_not_found: Any = None,
+    return_value_on_not_found: T | None = None,
 ):
     def decorator(method: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(method)
-        async def async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        async def async_wrapper(self: object, *args: object, **kwargs: object) -> T | None:
             logger = getattr(self, "logger", None)
             model = getattr(self, "model", None)
             actual_item_name = item_name or (model.__name__ if model else "item")
@@ -73,7 +76,7 @@ def handle_service_exceptions(
                 raise HTTPException(status_code=500, detail="Internal server error")
 
         @functools.wraps(method)
-        def sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        def sync_wrapper(self: object, *args: object, **kwargs: object) -> T | None:
             logger = getattr(self, "logger", None)
             model = getattr(self, "model", None)
             actual_item_name = item_name or (model.__name__ if model else "item")
