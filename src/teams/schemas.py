@@ -1,35 +1,35 @@
 from typing import Annotated
 
 from fastapi import Path
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TeamSchemaBase(BaseModel):
-    team_eesl_id: int | None = None
-    title: Annotated[str, Path(max_length=50)] = "Team"
-    city: Annotated[str, Path(max_length=50)] | None = "City"
-    description: str | None = ""
-    team_logo_url: Annotated[str, Path(max_length=500)] | None = ""
-    team_logo_icon_url: Annotated[str, Path(max_length=500)] | None = ""
-    team_logo_web_url: Annotated[str, Path(max_length=500)] | None = ""
-    team_color: Annotated[str, Path(max_length=10)] = "#c01c28"
-    sponsor_line_id: int | None = None
-    main_sponsor_id: int | None = None
-    sport_id: int
+    team_eesl_id: int | None = Field(None, examples=[12345])
+    title: Annotated[str, Path(max_length=50)] = Field("Team", examples=["Manchester United"])
+    city: Annotated[str, Path(max_length=50)] | None = Field("City", examples=["Manchester"])
+    description: str | None = Field("", examples=["Premier League football club"])
+    team_logo_url: Annotated[str, Path(max_length=500)] | None = Field("", examples=["https://example.com/logos/manchester-united.png"])
+    team_logo_icon_url: Annotated[str, Path(max_length=500)] | None = Field("", examples=["https://example.com/icons/manchester-united-icon.png"])
+    team_logo_web_url: Annotated[str, Path(max_length=500)] | None = Field("", examples=["https://example.com/web/manchester-united.png"])
+    team_color: Annotated[str, Path(max_length=10)] = Field("#c01c28", examples=["#DA291C", "#6CABDD"])
+    sponsor_line_id: int | None = Field(None, examples=[1])
+    main_sponsor_id: int | None = Field(None, examples=[5])
+    sport_id: int = Field(..., examples=[1])
 
 
 class TeamSchemaUpdate(BaseModel):
-    team_eesl_id: int | None = None
-    title: str | None = None
-    city: str | None = None
-    description: str | None = None
-    team_logo_url: str | None = None
-    team_logo_icon_url: str | None = None
-    team_logo_web_url: str | None = None
-    team_color: str | None = None
-    sponsor_line_id: int | None = None
-    main_sponsor_id: int | None = None
-    sport_id: int | None = None
+    team_eesl_id: int | None = Field(None, examples=[12345])
+    title: str | None = Field(None, examples=["Manchester United"])
+    city: str | None = Field(None, examples=["Manchester"])
+    description: str | None = Field(None, examples=["Premier League football club"])
+    team_logo_url: str | None = Field(None, examples=["https://example.com/logos/manchester-united.png"])
+    team_logo_icon_url: str | None = Field(None, examples=["https://example.com/icons/manchester-united-icon.png"])
+    team_logo_web_url: str | None = Field(None, examples=["https://example.com/web/manchester-united.png"])
+    team_color: str | None = Field(None, examples=["#DA291C", "#6CABDD"])
+    sponsor_line_id: int | None = Field(None, examples=[1])
+    main_sponsor_id: int | None = Field(None, examples=[5])
+    sport_id: int | None = Field(None, examples=[1])
 
 
 class TeamSchemaCreate(TeamSchemaBase):
@@ -39,14 +39,14 @@ class TeamSchemaCreate(TeamSchemaBase):
 class TeamSchema(TeamSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: int = Field(..., examples=[1])
 
 
 class UploadTeamLogoResponse(BaseModel):
-    logoUrl: str
+    logoUrl: str = Field(..., examples=["https://example.com/uploads/logos/manchester-united.png"])
 
 
 class UploadResizeTeamLogoResponse(BaseModel):
-    original: str
-    icon: str
-    webview: str
+    original: str = Field(..., examples=["https://example.com/uploads/logos/manchester-united.png"])
+    icon: str = Field(..., examples=["https://example.com/uploads/icons/manchester-united-icon.png"])
+    webview: str = Field(..., examples=["https://example.com/uploads/web/manchester-united.png"])

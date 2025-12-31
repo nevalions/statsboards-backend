@@ -1,16 +1,16 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PlayerSchemaBase(BaseModel):
-    sport_id: int | None
-    person_id: int | None
-    player_eesl_id: int | None = None
+    sport_id: int | None = Field(None, examples=[1])
+    person_id: int | None = Field(None, examples=[1])
+    player_eesl_id: int | None = Field(None, examples=[98765])
 
 
 class PlayerSchemaUpdate(BaseModel):
-    sport_id: int | None = None
-    person_id: int | None = None
-    player_eesl_id: int | None = None
+    sport_id: int | None = Field(None, examples=[1])
+    person_id: int | None = Field(None, examples=[1])
+    player_eesl_id: int | None = Field(None, examples=[98765])
 
 
 class PlayerSchemaCreate(PlayerSchemaBase):
@@ -20,4 +20,4 @@ class PlayerSchemaCreate(PlayerSchemaBase):
 class PlayerSchema(PlayerSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: int = Field(..., examples=[1])

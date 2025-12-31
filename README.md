@@ -1,20 +1,28 @@
 # StatsBoards Backend
 
-A FastAPI-based backend service for sports statistics and scoreboarding, designed to manage football (soccer) tournaments, matches, teams, and real-time game data.
+A FastAPI-based backend service for sports statistics and scoreboarding, designed to manage multi-sport tournaments, matches, teams, and real-time game data.
+
+## Supported Sports
+
+Currently implements:
+- **American Football** - Full game statistics including downs, yards, plays, and scoring
+- **Flag Football** - Adapted rules and statistics for flag football leagues
+- **Extensible Architecture** - Easy to add new sports through the sport management system
 
 ## Features
 
 - **Real-time Updates**: WebSocket support for live match data, scoreboards, and game clocks
-- **Comprehensive Data Management**: Teams, players, tournaments, seasons, and match statistics
+- **Multi-Sport Support**: Manages American football, flag football, and extensible for other sports
+- **Comprehensive Data Management**: Teams, players, tournaments, seasons, and detailed match statistics
 - **RESTful API**: Well-structured API endpoints following OpenAPI specifications
 - **Database Integration**: PostgreSQL with async SQLAlchemy ORM
 - **External Data Integration**: EESL system integration for data synchronization
 - **File Management**: Secure file upload and static file serving
- - **Production Ready**: Docker deployment with nginx reverse proxy and SSL support
- - **Robust Error Handling**: Structured exception hierarchy and global error handlers
- - **Comprehensive Logging**: Standardized logging levels across all services
- - **Service Registry Pattern**: Dependency injection for decoupled service architecture
- - **Configuration Validation**: Automatic validation of database settings, paths, and environment variables on startup
+- **Production Ready**: Docker deployment with nginx reverse proxy and SSL support
+- **Robust Error Handling**: Structured exception hierarchy and global error handlers
+- **Comprehensive Logging**: Standardized logging levels across all services
+- **Service Registry Pattern**: Dependency injection for decoupled service architecture
+- **Configuration Validation**: Automatic validation of database settings, paths, and environment variables on startup
 
 ## Tech Stack
 
@@ -231,8 +239,8 @@ AGENTS.md                       # Development guidelines for AI assistants
 - Player statistics tracking across matches and tournaments
 - Tournament and season management
 - Sponsor and advertisement management with logo uploads
-- Position and sport management
-- Match data with detailed event tracking
+- Position and sport management (American football, flag football)
+- Match data with detailed event tracking (downs, yards, plays, scores, turnovers)
 
 ### Error Handling & Logging
 - Structured custom exception hierarchy

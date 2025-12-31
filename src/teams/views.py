@@ -31,7 +31,17 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
     def route(self):
         router = super().route()
 
-        @router.post("/", response_model=TeamSchema)
+        @router.post(
+            "/",
+            response_model=TeamSchema,
+            summary="Create a new team",
+            description="Creates a new team with optional tournament association. Returns the created team with its ID.",
+            responses={
+                200: {"description": "Team created successfully"},
+                400: {"description": "Bad request - validation error or creation failed"},
+                500: {"description": "Internal server error"},
+            },
+        )
         async def create_team_endpoint(
             team: TeamSchemaCreate,
             tour_id: int | None = None,
@@ -67,7 +77,16 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     )
             return TeamSchema.model_validate(new_team)
 
-        @router.get("/eesl_id/{eesl_id}", response_model=TeamSchema)
+        @router.get(
+            "/eesl_id/{eesl_id}",
+            response_model=TeamSchema,
+            summary="Get team by EESL ID",
+            description="Retrieves a team by its external EESL identifier.",
+            responses={
+                200: {"description": "Team found"},
+                404: {"description": "Team not found with specified EESL ID"},
+            },
+        )
         async def get_team_by_eesl_id_endpoint(
             eesl_id: int,
         ):
@@ -84,6 +103,13 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         @router.put(
             "/{item_id}/",
             response_model=TeamSchema,
+            summary="Update team",
+            description="Updates an existing team by ID. Only provided fields are updated.",
+            responses={
+                200: {"description": "Team updated successfully"},
+                404: {"description": "Team not found"},
+                400: {"description": "Bad request - validation error"},
+            },
         )
         async def update_team_endpoint(
             item_id: int,

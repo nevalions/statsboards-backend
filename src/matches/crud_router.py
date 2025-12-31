@@ -47,6 +47,13 @@ class MatchCRUDRouter(
         @router.post(
             "/",
             response_model=MatchSchema,
+            summary="Create a new match",
+            description="Creates a new match between two teams. Returns the created match with its ID.",
+            responses={
+                200: {"description": "Match created successfully"},
+                409: {"description": "Conflict - match creation failed"},
+                400: {"description": "Bad request - validation error"},
+            },
         )
         async def create_match_endpoint(
             match: MatchSchemaCreate,
@@ -61,6 +68,13 @@ class MatchCRUDRouter(
 
         @router.post(
             "/create_with_full_data/",
+            summary="Create match with full data",
+            description="Creates a match and automatically creates associated match data, playclock, gameclock, and scoreboard.",
+            responses={
+                200: {"description": "Match created with full data successfully"},
+                400: {"description": "Bad request - validation error"},
+                500: {"description": "Internal server error"},
+            },
         )
         async def create_match_with_full_data_endpoint(
             data: MatchSchemaCreate,

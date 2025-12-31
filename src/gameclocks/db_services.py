@@ -205,12 +205,12 @@ class GameClockServiceDB(BaseServiceDB):
 
             if (
                 gameclock_status != "running"
-            ):  # If game clock is not running, stop the loop
+            ):
                 break
 
             gameclock_obj: GameClockSchemaBase = await self.get_by_id(
                 gameclock_id
-            )  # Get current game clock object
+            )
             updated_gameclock = max(0, gameclock_obj.gameclock - 1)
             self.logger.debug(f"Updated gameclock: {updated_gameclock}")
 

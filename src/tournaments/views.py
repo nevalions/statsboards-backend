@@ -45,6 +45,12 @@ class TournamentAPIRouter(
         @router.post(
             "/",
             response_model=TournamentSchema,
+            summary="Create a new tournament",
+            description="Creates a new tournament associated with a season and sport.",
+            responses={
+                200: {"description": "Tournament created successfully"},
+                400: {"description": "Bad request - validation error"},
+            },
         )
         async def create_tournament_endpoint(item: TournamentSchemaCreate):
             self.logger.debug(f"Create or update tournament endpoint got data: {item}")
@@ -54,6 +60,13 @@ class TournamentAPIRouter(
         @router.put(
             "/{item_id}/",
             response_model=TournamentSchema,
+            summary="Update tournament",
+            description="Updates an existing tournament by ID. Only provided fields are updated.",
+            responses={
+                200: {"description": "Tournament updated successfully"},
+                404: {"description": "Tournament not found"},
+                400: {"description": "Bad request - validation error"},
+            },
         )
         async def update_tournament_endpoint(
             item_id: int,
@@ -70,6 +83,12 @@ class TournamentAPIRouter(
         @router.get(
             "/eesl_id/{eesl_id}",
             response_model=TournamentSchema,
+            summary="Get tournament by EESL ID",
+            description="Retrieves a tournament by its external EESL identifier.",
+            responses={
+                200: {"description": "Tournament found"},
+                404: {"description": "Tournament not found with specified EESL ID"},
+            },
         )
         async def get_tournament_by_eesl_id_endpoint(eesl_id: int):
             self.logger.debug(
@@ -83,12 +102,28 @@ class TournamentAPIRouter(
                 )
             return TournamentSchema.model_validate(tournament)
 
-        @router.get("/id/{tournament_id}/teams/")
+        @router.get(
+            "/id/{tournament_id}/teams/",
+            summary="Get teams in tournament",
+            description="Retrieves all teams participating in a specific tournament.",
+            responses={
+                200: {"description": "Teams retrieved successfully"},
+                404: {"description": "Tournament not found"},
+            },
+        )
         async def get_teams_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get teams by tournament id:{tournament_id} endpoint")
             return await self.service.get_teams_by_tournament(tournament_id)
 
-        @router.get("/id/{tournament_id}/players/")
+        @router.get(
+            "/id/{tournament_id}/players/",
+            summary="Get players in tournament",
+            description="Retrieves all players participating in a specific tournament.",
+            responses={
+                200: {"description": "Players retrieved successfully"},
+                404: {"description": "Tournament not found"},
+            },
+        )
         async def get_players_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get players by tournament id:{tournament_id} endpoint")
             return await self.service.get_players_by_tournament(tournament_id)
