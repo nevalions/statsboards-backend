@@ -188,4 +188,4 @@ class TestTeamTournamentServiceDB:
                 team.id, tournament.id
             )
 
-        assert exc_info.value.status_code == 400
+        assert exc_info.value.status_code == 404

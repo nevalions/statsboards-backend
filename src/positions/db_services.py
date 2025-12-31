@@ -93,11 +93,30 @@ class PositionServiceDB(BaseServiceDB):
                     status_code=500,
                     detail=f"Database error fetching position by title: {title}",
                 )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error getting position by title: {title} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data for position title",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found getting position by title: {title} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=404,
+                    detail=str(ex),
+                )
             except Exception as ex:
-                self.logger.error(
-                    f"Error getting position by title: {title} {ex}", exc_info=True
+                self.logger.critical(
+                    f"Unexpected error getting position by title: {title} {ex}",
+                    exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Internal server error fetching position by title: {title}",
+                    detail="Internal server error fetching position by title: {title}",
                 )

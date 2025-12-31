@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, TeamDB, TeamTournamentDB
 from src.core.models.base import Database
 from src.logging_config import get_logger, setup_logging
@@ -53,32 +54,34 @@ class TeamTournamentServiceDB(BaseServiceDB):
             return team_tournament
         except HTTPException:
             raise
-        except (IntegrityError, SQLAlchemyError) as e:
+        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Error on get_team_tournament_relation {e}", exc_info=True
+                f"Database error on get_team_tournament_relation {ex}", exc_info=True
             )
             raise HTTPException(
                 status_code=500,
                 detail="Database error fetching team tournament relation",
             )
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            self.logger.error(
-                f"Error on delete_relation_by_team_and_tournament_id: {e}"
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error on get_team_tournament_relation: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data for team tournament relation",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found on get_team_tournament_relation: {ex}", exc_info=True
+            )
+            return None
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error on get_team_tournament_relation: {ex}", exc_info=True
             )
             raise HTTPException(
                 status_code=500,
-                detail="Database error deleting team tournament relation",
-            )
-        except Exception as e:
-            self.logger.error(
-                f"Error on delete_relation_by_team_and_tournament_id: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error deleting team tournament relation",
+                detail="Internal server error fetching team tournament relation",
             )
 
     async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:
@@ -99,16 +102,31 @@ class TeamTournamentServiceDB(BaseServiceDB):
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Error on get_related_teams: {ex}",
+                f"Database error on get_related_teams: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
                 detail=f"Database error fetching related teams for tournament {tournament_id}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error on get_related_teams: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data for related teams",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found on get_related_teams: {ex}",
+                exc_info=True,
+            )
+            return []
         except Exception as ex:
-            self.logger.error(
-                f"Error on get_related_teams: {ex}",
+            self.logger.critical(
+                f"Unexpected error on get_related_teams: {ex}",
                 exc_info=True,
             )
             raise HTTPException(
@@ -131,14 +149,50 @@ class TeamTournamentServiceDB(BaseServiceDB):
                     )
                 )
                 item = result.scalars().first()
-            await session.delete(item)
-            await session.commit()
-            return item
-        except Exception as ex:
+
+                if not item:
+                    raise NotFoundError(
+                        f"Team tournament relation not found for team_id:{team_id} tournament_id:{tournament_id}"
+                    )
+
+                await session.delete(item)
+                await session.commit()
+                return item
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
-                f"Error on delete_relation_by_team_and_tournament_id: {ex}"
+                f"Database error on delete_relation_by_team_and_tournament_id: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Database error deleting team tournament relation",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error on delete_relation_by_team_and_tournament_id: {ex}",
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=400,
-                detail=f"Error on delete connection team id: {team_id} and tournament id {tournament_id}",
+                detail="Invalid data for team tournament relation",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found on delete_relation_by_team_and_tournament_id: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=404,
+                detail=str(ex),
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error on delete_relation_by_team_and_tournament_id: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error deleting team tournament relation",
             )

@@ -116,18 +116,16 @@ class TeamServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
-                    self.logger.error(
-                        f"Error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
-                    )
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Database error fetching players for team {team_id} and tournament {tournament_id}",
-                    )
-        except HTTPException:
-            raise
+            self.logger.error(
+                f"Database error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching players for team {team_id} and tournament {tournament_id}",
+            )
         except (ValueError, KeyError, TypeError) as ex:
             self.logger.warning(
-                f"Data error fetching players for team {team_id} and tournament {tournament_id}: {ex}",
+                f"Data error on get_players_by_team_id_tournament_id: {ex}",
                 exc_info=True
             )
             raise HTTPException(
@@ -136,13 +134,10 @@ class TeamServiceDB(BaseServiceDB):
             )
         except NotFoundError as ex:
             self.logger.info(
-                f"Resource not found: {ex}",
+                f"Not found on get_players_by_team_id_tournament_id: {ex}",
                 exc_info=True
             )
-            raise HTTPException(
-                status_code=404,
-                detail=str(ex),
-            )
+            return []
         except Exception as ex:
             self.logger.critical(
                 f"Unexpected error in {self.__class__.__name__}.get_players_by_team_id_tournament_id({team_id}, {tournament_id}): {ex}",
@@ -193,17 +188,6 @@ class TeamServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
-                    self.logger.error(
-                        f"Error on get_players_by_team_id_tournament_id_with_person: {ex}",
-                        exc_info=True,
-                    )
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Database error fetching players with person data",
-                    )
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
             self.logger.error(
                 f"Database error on get_players_by_team_id_tournament_id_with_person: {ex}",
                 exc_info=True,
@@ -223,13 +207,10 @@ class TeamServiceDB(BaseServiceDB):
             )
         except NotFoundError as ex:
             self.logger.info(
-                f"Resource not found: {ex}",
+                f"Not found on get_players_by_team_id_tournament_id_with_person: {ex}",
                 exc_info=True
             )
-            raise HTTPException(
-                status_code=404,
-                detail=str(ex),
-            )
+            return []
         except Exception as ex:
             self.logger.critical(
                 f"Unexpected error in {self.__class__.__name__}.get_players_by_team_id_tournament_id_with_person({team_id}, {tournament_id}): {ex}",

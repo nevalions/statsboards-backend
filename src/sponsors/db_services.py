@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, SponsorDB
 from src.core.models.base import Database
 from src.logging_config import get_logger, setup_logging
@@ -41,19 +42,23 @@ class SponsorServiceDB(BaseServiceDB):
             return result
         except HTTPException:
             raise
-        except IntegrityError as e:
-            self.logger.error(f"Integrity error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"Conflict: {ITEM} with provided data already exists",
-            )
-        except SQLAlchemyError as e:
+        except (IntegrityError, SQLAlchemyError) as e:
             self.logger.error(f"Database error creating {ITEM}: {e}", exc_info=True)
             raise HTTPException(
-                status_code=500, detail=f"Database error creating {ITEM}"
+                status_code=409,
+                detail=f"Database error creating {ITEM}",
             )
+        except (ValueError, KeyError, TypeError) as e:
+            self.logger.warning(f"Data error creating {ITEM}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided for sponsor",
+            )
+        except NotFoundError as e:
+            self.logger.info(f"Not found creating {ITEM}: {e}", exc_info=True)
+            raise HTTPException(status_code=404, detail=str(e))
         except Exception as e:
-            self.logger.error(f"Unexpected error creating {ITEM}: {e}", exc_info=True)
+            self.logger.critical(f"Unexpected error creating {ITEM}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Internal server error creating {ITEM}"
             )
