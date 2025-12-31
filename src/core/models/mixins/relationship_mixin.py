@@ -119,24 +119,28 @@ class RelationshipMixin:
                         )
                         return list(getattr(parent, child_relation))
                     except HTTPException:
+                        await session.rollback()
                         raise
                     except (IntegrityError, SQLAlchemyError) as ex:
                         self.logger.error(
                             f"Database error creating relation between {parent_model.__name__} and {child_model.__name__}: {ex} for model {self.model.__name__}",
                             exc_info=True,
                         )
+                        await session.rollback()
                         return None
                     except (ValueError, KeyError, TypeError) as ex:
                         self.logger.warning(
                             f"Data error creating relation between {parent_model.__name__} and {child_model.__name__}: {ex} for model {self.model.__name__}",
                             exc_info=True,
                         )
+                        await session.rollback()
                         return None
                     except Exception as ex:
                         self.logger.critical(
                             f"Unexpected error in {self.__class__.__name__}.create_m2m_relation: {ex}",
                             exc_info=True,
                         )
+                        await session.rollback()
                         return None
                 else:
                     raise HTTPException(

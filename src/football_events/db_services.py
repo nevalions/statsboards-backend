@@ -81,26 +81,31 @@ class FootballEventServiceDB(BaseServiceDB):
                     f"returned some error",
                 )
             except HTTPException:
+                await session.rollback()
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
                     f"Database error creating {ITEM}: {ex}", exc_info=True
                 )
+                await session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error creating football event for match {item.match_id}",
                 )
             except (ValueError, KeyError, TypeError) as ex:
                 self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
+                await session.rollback()
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided for football event",
                 )
             except NotFoundError as ex:
                 self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
+                await session.rollback()
                 raise HTTPException(status_code=404, detail=str(ex))
             except Exception as ex:
                 self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
+                await session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error creating football event",
@@ -159,28 +164,33 @@ class FootballEventServiceDB(BaseServiceDB):
                         return []
                 return []
             except HTTPException:
+                await session.rollback()
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
                     f"Database error getting {ITEM}s with match id:{match_id} {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 return []
             except (ValueError, KeyError, TypeError) as ex:
                 self.logger.warning(
                     f"Data error getting {ITEM}s with match id:{match_id} {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 return []
             except NotFoundError as ex:
                 self.logger.info(
                     f"Not found {ITEM}s with match id:{match_id} {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 return []
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error getting {ITEM}s with match id:{match_id} {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 return []

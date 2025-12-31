@@ -24,6 +24,7 @@ from src.core.models.mixins import (
     SerializationMixin,
 )
 from src.logging_config import get_logger
+
 db_logger_helper = logging.getLogger("backend_logger_base_db")
 
 
@@ -63,7 +64,34 @@ class Database:
             )
             raise
 
+    def get_pool_status(self) -> dict[str, Any]:
+        pool = self.engine.pool
+        status = {}
+
+        try:
+            status["pool_size"] = pool.size()  # type: ignore[attr-defined]
+        except (AttributeError, TypeError):
+            pass
+
+        try:
+            status["checked_in"] = pool.checkedin()  # type: ignore[attr-defined]
+        except (AttributeError, TypeError):
+            pass
+
+        try:
+            status["checked_out"] = pool.checkedout()  # type: ignore[attr-defined]
+        except (AttributeError, TypeError):
+            pass
+
+        try:
+            status["overflow"] = pool.overflow()  # type: ignore[attr-defined]
+        except (AttributeError, TypeError):
+            pass
+
+        return status
+
     async def close(self):
+        self.logger.info(f"Final pool status: {self.get_pool_status()}")
         await self.engine.dispose()
         self.logger.info("Database connection closed.")
 

@@ -142,11 +142,11 @@ class PlayerMatchServiceDB(BaseServiceDB):
     async def get_player_match_by_match_id_and_eesl_id(
         self, match_id: int, player_match_eesl_id: int | str
     ) -> PlayerMatchDB | None:
-        try:
-            self.logger.debug(
-                f"Get {ITEM} by match id:{match_id} and eesl id:{player_match_eesl_id}"
-            )
-            async with self.db.async_session() as session:
+        self.logger.debug(
+            f"Get {ITEM} by match id:{match_id} and eesl id:{player_match_eesl_id}"
+        )
+        async with self.db.async_session() as session:
+            try:
                 stmt = (
                     select(PlayerMatchDB)
                     .where(PlayerMatchDB.match_id == match_id)
@@ -163,35 +163,40 @@ class PlayerMatchServiceDB(BaseServiceDB):
                         status_code=404,
                         detail=f"{ITEM} not found",
                     )
-        except HTTPException as ex:
-            if ex.status_code == 404:
-                self.logger.info(f"{ITEM} not found, returning None")
+            except HTTPException as ex:
+                if ex.status_code == 404:
+                    self.logger.info(f"{ITEM} not found, returning None")
+                    return None
+                await session.rollback()
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Error getting {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
+                    exc_info=True,
+                )
+                await session.rollback()
                 return None
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Error getting {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
-                exc_info=True,
-            )
-            return None
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(
-                f"Data error getting {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
-                exc_info=True,
-            )
-            return None
-        except NotFoundError as ex:
-            self.logger.info(
-                f"Not found {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
-                exc_info=True,
-            )
-            return None
-        except Exception as ex:
-            self.logger.critical(
-                f"Unexpected error getting {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
-                exc_info=True,
-            )
-            return None
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error getting {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
+                    exc_info=True,
+                )
+                await session.rollback()
+                return None
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
+                    exc_info=True,
+                )
+                await session.rollback()
+                return None
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error getting {ITEM} by match id{match_id} and eesl id:{player_match_eesl_id} {ex}",
+                    exc_info=True,
+                )
+                await session.rollback()
+                return None
 
     async def update_player_match_by_eesl(
         self, match_id: int, eesl_id: int | str, new_player: PlayerMatchSchemaUpdate
@@ -231,9 +236,9 @@ class PlayerMatchServiceDB(BaseServiceDB):
     async def get_players_match_by_match_id(
         self, match_id: int, player_team_tournament_id: int
     ) -> PlayerMatchDB | None:
+        self.logger.debug(f"Get {ITEM} by match id:{match_id}")
         async with self.db.async_session() as session:
             try:
-                self.logger.debug(f"Get {ITEM} by match id:{match_id}")
                 stmt = (
                     select(PlayerMatchDB)
                     .where(PlayerMatchDB.match_id == match_id)
@@ -247,26 +252,31 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 players = results.scalars().one_or_none()
                 return players
             except HTTPException:
+                await session.rollback()
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
                     f"Error getting {ITEM} by match id:{match_id} {ex}", exc_info=True
                 )
+                await session.rollback()
                 return None
             except (ValueError, KeyError, TypeError) as ex:
                 self.logger.warning(
                     f"Data error getting {ITEM} by match id:{match_id} {ex}", exc_info=True
                 )
+                await session.rollback()
                 return None
             except NotFoundError as ex:
                 self.logger.info(
                     f"Not found {ITEM} by match id:{match_id} {ex}", exc_info=True
                 )
+                await session.rollback()
                 return None
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error getting {ITEM} by match id:{match_id} {ex}", exc_info=True
                 )
+                await session.rollback()
                 return None
 
     async def get_player_in_sport(self, player_id: int) -> PlayerDB | None:

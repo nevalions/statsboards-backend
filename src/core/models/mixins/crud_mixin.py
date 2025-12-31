@@ -16,6 +16,7 @@ class CRUDMixin:
         logger: logging.LoggerAdapter
         model: type["Base"]
         db: "Database"
+
     async def create(self, item):
         async with self.db.async_session() as session:
             self.logger.debug(
@@ -34,6 +35,9 @@ class CRUDMixin:
                     f"Integrity error creating {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
+                raise
+            except Exception:
                 await session.rollback()
                 raise
 
@@ -187,12 +191,14 @@ class CRUDMixin:
                 )
                 return updated_item
             except HTTPException:
+                await session.rollback()
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
                     f"Database error updating element with ID: {item_id} for {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error updating {self.model.__name__}",
@@ -202,6 +208,7 @@ class CRUDMixin:
                     f"Data error updating element with ID: {item_id} for {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided",
@@ -211,6 +218,7 @@ class CRUDMixin:
                     f"Unexpected error in {self.__class__.__name__}.update({item_id}): {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error",
@@ -233,12 +241,14 @@ class CRUDMixin:
                 )
                 return db_item
             except HTTPException:
+                await session.rollback()
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
                     f"Database error deleting element with ID: {item_id} for {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error deleting {self.model.__name__}",
@@ -248,6 +258,7 @@ class CRUDMixin:
                     f"Data error deleting element with ID: {item_id} for {self.model.__name__}: {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided",
@@ -257,6 +268,7 @@ class CRUDMixin:
                     f"Unexpected error in {self.__class__.__name__}.delete({item_id}): {ex}",
                     exc_info=True,
                 )
+                await session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error",
