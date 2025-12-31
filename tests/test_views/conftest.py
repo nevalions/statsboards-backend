@@ -84,6 +84,9 @@ async def test_app(test_db):
     from src.tournaments.db_services import TournamentServiceDB
     from src.tournaments.views import TournamentAPIRouter
 
+    from src.core.health import router as health_router
+
+    app.include_router(health_router)
     app.include_router(FootballEventAPIRouter(FootballEventServiceDB(test_db)).route())
     app.include_router(SeasonAPIRouter(SeasonServiceDB(test_db)).route())
     app.include_router(SportAPIRouter(SportServiceDB(test_db)).route())
