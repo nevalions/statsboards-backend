@@ -2,6 +2,7 @@ __all__ = (
     "db",
     "Base",
     "BaseServiceDB",
+    "handle_service_exceptions",
     "SportDB",
     "SeasonDB",
     "SeasonSportRelationMixin",
@@ -24,7 +25,7 @@ __all__ = (
     "FootballEventDB",
 )
 
-from .base import Base, BaseServiceDB, db
+from .base import Base, BaseServiceDB, db, handle_service_exceptions
 from .football_event import FootballEventDB
 from .gameclock import GameClockDB
 from .match import MatchDB

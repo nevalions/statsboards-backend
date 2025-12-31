@@ -174,9 +174,44 @@ python src/run_prod_server.py
   - `FileOperationError`: File operations (500)
   - `ParsingError`: Data parsing failures (400)
 
-- Use try/except blocks for database operations
-- Log errors with `exc_info=True` for stack traces
-- Catch specific exceptions in this order:
+**PREFERRED**: Use `@handle_service_exceptions` decorator to eliminate boilerplate:
+  ```python
+  from src.core.models import handle_service_exceptions
+
+  # For create/update operations (raise NotFoundError)
+  @handle_service_exceptions(item_name=ITEM, operation="creating")
+  async def create(self, item: TeamSchemaCreate) -> TeamDB:
+      team = self.model(**item.model_dump())
+      return await super().create(team)
+
+  # For fetch operations that return None on NotFound
+  @handle_service_exceptions(
+      item_name=ITEM,
+      operation="fetching players",
+      return_value_on_not_found=[]
+  )
+  async def get_players_by_team_id(self, team_id: int) -> list[PlayerDB]:
+      async with self.db.async_session() as session:
+          stmt = select(PlayerDB).where(PlayerDB.team_id == team_id)
+          results = await session.execute(stmt)
+          return results.scalars().all()
+
+  # For fetch operations that raise NotFoundError
+  @handle_service_exceptions(
+      item_name=ITEM,
+      operation="fetching by ID",
+      reraise_not_found=True
+  )
+  async def get_by_id(self, item_id: int) -> TeamDB:
+      return await super().get_by_id(item_id)
+  ```
+
+- **MANUAL** try/except blocks should only be used for special cases:
+  - Custom error handling that doesn't fit decorator pattern
+  - Methods with complex exception handling logic
+  - When you need to perform cleanup before re-raising
+
+- For manual try/except, catch specific exceptions in this order:
   ```python
   try:
       # business logic

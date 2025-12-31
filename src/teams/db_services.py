@@ -3,7 +3,13 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.exceptions import NotFoundError
-from src.core.models import BaseServiceDB, MatchDB, PlayerTeamTournamentDB, TeamDB
+from src.core.models import (
+    BaseServiceDB,
+    MatchDB,
+    PlayerTeamTournamentDB,
+    TeamDB,
+    handle_service_exceptions,
+)
 from src.core.models.base import Database
 from src.positions.db_services import PositionServiceDB
 
@@ -23,49 +29,26 @@ class TeamServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_TeamServiceDB", self)
         self.logger.debug("Initialized TeamServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(
         self,
         item: TeamSchemaCreate | TeamSchemaUpdate,
     ) -> TeamDB:
-        try:
-            team = self.model(
-                team_eesl_id=item.team_eesl_id,
-                title=item.title,
-                city=item.city,
-                description=item.description,
-                team_logo_url=item.team_logo_url,
-                team_logo_icon_url=item.team_logo_icon_url,
-                team_logo_web_url=item.team_logo_web_url,
-                team_color=item.team_color,
-                sponsor_line_id=item.sponsor_line_id,
-                main_sponsor_id=item.main_sponsor_id,
-                sport_id=item.sport_id,
-            )
-            self.logger.debug(f"Starting to create TeamDB with data: {team.__dict__}")
-            return await super().create(team)
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(f"Database error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error creating {self.model.__name__}",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided",
-            )
-        except Exception as ex:
-            self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.create: {ex}",
-                exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
-            )
+        team = self.model(
+            team_eesl_id=item.team_eesl_id,
+            title=item.title,
+            city=item.city,
+            description=item.description,
+            team_logo_url=item.team_logo_url,
+            team_logo_icon_url=item.team_logo_icon_url,
+            team_logo_web_url=item.team_logo_web_url,
+            team_color=item.team_color,
+            sponsor_line_id=item.sponsor_line_id,
+            main_sponsor_id=item.main_sponsor_id,
+            sport_id=item.sport_id,
+        )
+        self.logger.debug(f"Starting to create TeamDB with data: {team.__dict__}")
+        return await super().create(team)
 
     async def create_or_update_team(
         self,
@@ -94,6 +77,11 @@ class TeamServiceDB(BaseServiceDB):
             "matches",
         )
 
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="getting players by team_id_tournament_id",
+        return_value_on_not_found=[],
+    )
     async def get_players_by_team_id_tournament_id(
         self,
         team_id: int,
@@ -102,52 +90,22 @@ class TeamServiceDB(BaseServiceDB):
         self.logger.debug(
             f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}"
         )
-        try:
-            async with self.db.async_session() as session:
-                stmt = (
-                    select(PlayerTeamTournamentDB)
-                    .where(PlayerTeamTournamentDB.team_id == team_id)
-                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
-                )
-
-                results = await session.execute(stmt)
-                players = results.scalars().all()
-                return players
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Database error on get_players_by_team_id_tournament_id: {ex}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error fetching players for team {team_id} and tournament {tournament_id}",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(
-                f"Data error on get_players_by_team_id_tournament_id: {ex}",
-                exc_info=True
-            )
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided",
-            )
-        except NotFoundError as ex:
-            self.logger.info(
-                f"Not found on get_players_by_team_id_tournament_id: {ex}",
-                exc_info=True
-            )
-            return []
-        except Exception as ex:
-            self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.get_players_by_team_id_tournament_id({team_id}, {tournament_id}): {ex}",
-                exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerTeamTournamentDB)
+                .where(PlayerTeamTournamentDB.team_id == team_id)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
             )
 
+            results = await session.execute(stmt)
+            players = results.scalars().all()
+            return players
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="getting players with person by team_id_tournament_id",
+        return_value_on_not_found=[],
+    )
     async def get_players_by_team_id_tournament_id_with_person(
         self,
         team_id: int,
@@ -156,70 +114,32 @@ class TeamServiceDB(BaseServiceDB):
         self.logger.debug(
             f"Get players with person by {ITEM} id:{team_id} and tournament id:{tournament_id}"
         )
-        try:
-            from src.player_team_tournament.db_services import (
-                PlayerTeamTournamentServiceDB,
-            )
+        from src.player_team_tournament.db_services import (
+            PlayerTeamTournamentServiceDB,
+        )
 
-            player_service = PlayerTeamTournamentServiceDB(self.db)
-            position_service = PositionServiceDB(self.db)
-            players = await self.get_players_by_team_id_tournament_id(
-                team_id, tournament_id
-            )
+        player_service = PlayerTeamTournamentServiceDB(self.db)
+        position_service = PositionServiceDB(self.db)
+        players = await self.get_players_by_team_id_tournament_id(
+            team_id, tournament_id
+        )
 
-            players_full_data = []
-            if players:
-                for p in players:
-                    person = (
-                        await player_service.get_player_team_tournament_with_person(
-                            p.id
-                        )
-                    )
-                    position = await position_service.get_by_id(p.position_id)
-                    # players_full_data.append(person)
-                    # players_full_data.append(p)
-                    player_full_data = {
-                        "player_team_tournament": p,
-                        "person": person,
-                        "position": position,
-                    }
-                    players_full_data.append(player_full_data)
-            return players_full_data
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Database error on get_players_by_team_id_tournament_id_with_person: {ex}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Database error fetching players with person data",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(
-                f"Data error on get_players_by_team_id_tournament_id_with_person: {ex}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided",
-            )
-        except NotFoundError as ex:
-            self.logger.info(
-                f"Not found on get_players_by_team_id_tournament_id_with_person: {ex}",
-                exc_info=True
-            )
-            return []
-        except Exception as ex:
-            self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.get_players_by_team_id_tournament_id_with_person({team_id}, {tournament_id}): {ex}",
-                exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
-            )
+        players_full_data = []
+        if players:
+            for p in players:
+                person = await player_service.get_player_team_tournament_with_person(
+                    p.id
+                )
+                position = await position_service.get_by_id(p.position_id)
+                # players_full_data.append(person)
+                # players_full_data.append(p)
+                player_full_data = {
+                    "player_team_tournament": p,
+                    "person": person,
+                    "position": position,
+                }
+                players_full_data.append(player_full_data)
+        return players_full_data
 
     async def update(
         self,

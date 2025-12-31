@@ -226,15 +226,23 @@ class PlayerMatchAPIRouter(
                     self.logger.debug("Got parse match and match in db")
                     existing_player_ids = set()
                     for home_player in parsed_match["roster_a"]:
-                        position: PositionSchemaBase = (
-                            await position_service.get_position_by_title(
-                                home_player["player_position"]
+                        player_position = home_player.get("player_position", "").strip()
+                        if not player_position:
+                            self.logger.debug(
+                                f"Skipping home player {home_player.get('player_eesl_id')} - no position"
                             )
-                        )
-                        if position is None:
+                            continue
+
+                        try:
+                            position: PositionSchemaBase = (
+                                await position_service.get_position_by_title(
+                                    player_position
+                                )
+                            )
+                        except HTTPException:
                             self.logger.debug("No position found for home player")
                             position_schema = {
-                                "title": home_player["player_position"],
+                                "title": player_position,
                                 "sport_id": 1,
                             }
                             self.logger.debug("Creating new position for home player")
@@ -374,21 +382,21 @@ class PlayerMatchAPIRouter(
                             self.logger.debug("Player in match exist")
                             if exist_player_in_match.is_start:
                                 self.logger.warning("Player in match is in Start")
-                                player_schema["player_match_eesl_id"] = (
-                                    exist_player_in_match.player_match_eesl_id
-                                )
-                                player_schema["player_team_tournament_id"] = (
-                                    exist_player_in_match.player_team_tournament_id
-                                )
-                                player_schema["match_position_id"] = (
-                                    exist_player_in_match.match_position_id
-                                )
-                                player_schema["match_id"] = (
-                                    exist_player_in_match.match_id
-                                )
-                                player_schema["match_number"] = (
-                                    exist_player_in_match.match_number
-                                )
+                                player_schema[
+                                    "player_match_eesl_id"
+                                ] = exist_player_in_match.player_match_eesl_id
+                                player_schema[
+                                    "player_team_tournament_id"
+                                ] = exist_player_in_match.player_team_tournament_id
+                                player_schema[
+                                    "match_position_id"
+                                ] = exist_player_in_match.match_position_id
+                                player_schema[
+                                    "match_id"
+                                ] = exist_player_in_match.match_id
+                                player_schema[
+                                    "match_number"
+                                ] = exist_player_in_match.match_number
                                 player_schema["team_id"] = exist_player_in_match.team_id
                                 player_schema["is_start"] = True
                                 position = await PositionServiceDB(db).get_by_id(
@@ -409,13 +417,21 @@ class PlayerMatchAPIRouter(
                         )
 
                     for away_player in parsed_match["roster_b"]:
-                        position = await position_service.get_position_by_title(
-                            away_player["player_position"]
-                        )
-                        if position is None:
+                        player_position = away_player.get("player_position", "").strip()
+                        if not player_position:
+                            self.logger.debug(
+                                f"Skipping away player {away_player.get('player_eesl_id')} - no position"
+                            )
+                            continue
+
+                        try:
+                            position = await position_service.get_position_by_title(
+                                player_position
+                            )
+                        except HTTPException:
                             self.logger.debug("No position for away player")
                             position_schema = {
-                                "title": away_player["player_position"],
+                                "title": player_position,
                                 "sport_id": 1,
                             }
                             self.logger.debug("Creating new position for away player")
@@ -553,21 +569,21 @@ class PlayerMatchAPIRouter(
                             self.logger.debug("Player in already in match")
                             if exist_player_in_match.is_start:
                                 self.logger.warning("Player in start")
-                                player_schema["player_match_eesl_id"] = (
-                                    exist_player_in_match.player_match_eesl_id
-                                )
-                                player_schema["player_team_tournament_id"] = (
-                                    exist_player_in_match.player_team_tournament_id
-                                )
-                                player_schema["match_position_id"] = (
-                                    exist_player_in_match.match_position_id
-                                )
-                                player_schema["match_id"] = (
-                                    exist_player_in_match.match_id
-                                )
-                                player_schema["match_number"] = (
-                                    exist_player_in_match.match_number
-                                )
+                                player_schema[
+                                    "player_match_eesl_id"
+                                ] = exist_player_in_match.player_match_eesl_id
+                                player_schema[
+                                    "player_team_tournament_id"
+                                ] = exist_player_in_match.player_team_tournament_id
+                                player_schema[
+                                    "match_position_id"
+                                ] = exist_player_in_match.match_position_id
+                                player_schema[
+                                    "match_id"
+                                ] = exist_player_in_match.match_id
+                                player_schema[
+                                    "match_number"
+                                ] = exist_player_in_match.match_number
                                 player_schema["team_id"] = exist_player_in_match.team_id
                                 player_schema["is_start"] = True
                                 position = await PositionServiceDB(db).get_by_id(
