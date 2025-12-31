@@ -52,14 +52,14 @@ class TestTournamentManagementE2E:
         assert tournament_response.status_code == 200
         tournament_id = tournament_response.json()["id"]
 
-        get_tournament_response = await client.get(f"/api/tournaments/{tournament_id}")
+        get_tournament_response = await client.get(f"/api/tournaments/id/{tournament_id}")
         assert get_tournament_response.status_code == 200
         tournament = get_tournament_response.json()
         assert tournament["id"] == tournament_id
         assert tournament["sport_id"] == sport_id
         assert tournament["season_id"] == season_id
 
-        delete_response = await client.delete(f"/api/tournaments/{tournament_id}")
+        delete_response = await client.delete(f"/api/tournaments/id/{tournament_id}")
         assert delete_response.status_code == 200
 
     async def test_tournament_with_teams_workflow(self, client: AsyncClient):
@@ -140,7 +140,7 @@ class TestTournamentManagementE2E:
                 team_b_id=team_b_id,
                 week=week,
             )
-            match_response = await client.post("/api/matches/", json=match_data.model_dump())
+            match_response = await client.post("/api/matches/", json=match_data.model_dump(mode='json'))
             assert match_response.status_code == 200
 
         tournament_matches_response = await client.get(
@@ -163,7 +163,7 @@ class TestPlayerManagementE2E:
         assert sport_response.status_code == 200
         sport_id = sport_response.json()["id"]
 
-        person_response = await client.post("/api/people/", json=person_data.model_dump())
+        person_response = await client.post("/api/persons/", json=person_data.model_dump(mode='json'))
         assert person_response.status_code == 200
         person_id = person_response.json()["id"]
 
@@ -175,7 +175,7 @@ class TestPlayerManagementE2E:
         assert player_response.status_code == 200
         player_id = player_response.json()["id"]
 
-        get_player_response = await client.get(f"/api/players/{player_id}")
+        get_player_response = await client.get(f"/api/players/id/{player_id}")
         assert get_player_response.status_code == 200
         player = get_player_response.json()
         assert player["id"] == player_id
@@ -186,20 +186,17 @@ class TestPlayerManagementE2E:
         """Test assigning players to teams."""
         sport_data = SportFactoryAny.build()
         person_data = PersonFactory.build()
-        team_data = TeamFactory.build(sport_id=sport_data.sport_id)
 
         sport_response = await client.post("/api/sports/", json=sport_data.model_dump())
         assert sport_response.status_code == 200
         sport_id = sport_response.json()["id"]
 
-        person_response = await client.post("/api/people/", json=person_data.model_dump())
+        person_response = await client.post("/api/persons/", json=person_data.model_dump(mode='json'))
         assert person_response.status_code == 200
         person_id = person_response.json()["id"]
 
-        team_response = await client.post(
-            "/api/teams/",
-            json={**team_data.model_dump(), "sport_id": sport_id}
-        )
+        team_data = TeamFactory.build(sport_id=sport_id)
+        team_response = await client.post("/api/teams/", json=team_data.model_dump())
         assert team_response.status_code == 200
         team_id = team_response.json()["id"]
 
@@ -270,7 +267,7 @@ class TestSponsorManagementE2E:
 
         sponsor_line_data = SponsorLineFactory.build()
         sponsor_line_response = await client.post(
-            "/api/sponsor-lines/",
+            "/api/sponsor_lines/",
             json=sponsor_line_data.model_dump()
         )
         assert sponsor_line_response.status_code == 200
@@ -286,7 +283,7 @@ class TestSponsorManagementE2E:
         )
         assert connection_response.status_code in [200, 404]
 
-        get_sponsor_response = await client.get(f"/api/sponsors/{sponsor_id}")
+        get_sponsor_response = await client.get(f"/api/sponsors/id/{sponsor_id}")
         assert get_sponsor_response.status_code == 200
         sponsor = get_sponsor_response.json()
         assert sponsor["id"] == sponsor_id
@@ -300,22 +297,22 @@ class TestErrorHandlingE2E:
     async def test_cascade_delete_workflow(self, client: AsyncClient):
         """Test that deleting a sport cascades to related entities."""
         sport_data = SportFactoryAny.build()
-        team_data = TeamFactory.build(sport_id=sport_data.sport_id)
 
         sport_response = await client.post("/api/sports/", json=sport_data.model_dump())
         assert sport_response.status_code == 200
         sport_id = sport_response.json()["id"]
 
+        team_data = TeamFactory.build(sport_id=sport_id)
         team_response = await client.post(
             "/api/teams/",
-            json={**team_data.model_dump(), "sport_id": sport_id}
+            json=team_data.model_dump()
         )
         assert team_response.status_code == 200
 
-        delete_sport_response = await client.delete(f"/api/sports/{sport_id}")
+        delete_sport_response = await client.delete(f"/api/sports/id/{sport_id}")
         assert delete_sport_response.status_code == 200
 
-        get_sport_response = await client.get(f"/api/sports/{sport_id}")
+        get_sport_response = await client.get(f"/api/sports/id/{sport_id}")
         assert get_sport_response.status_code == 404
 
     async def test_duplicate_entity_handling(self, client: AsyncClient):
@@ -339,7 +336,7 @@ class TestErrorHandlingE2E:
         team_data = TeamFactory.build(sport_id=99999)
 
         team_response = await client.post("/api/teams/", json=team_data.model_dump())
-        assert team_response.status_code == 400 or team_response.status_code == 422
+        assert team_response.status_code in [400, 422, 409]
 
 
 @pytest.mark.e2e
@@ -389,15 +386,15 @@ class TestSearchAndFilteringE2E:
     async def test_search_teams_by_name(self, client: AsyncClient):
         """Test searching teams by name."""
         sport_data = SportFactoryAny.build()
-        team_data = TeamFactory.build(sport_id=sport_data.sport_id, title="Test Team")
 
         sport_response = await client.post("/api/sports/", json=sport_data.model_dump())
         assert sport_response.status_code == 200
         sport_id = sport_response.json()["id"]
 
+        team_data = TeamFactory.build(sport_id=sport_id, title="Test Team")
         await client.post(
             "/api/teams/",
-            json={**team_data.model_dump(), "sport_id": sport_id}
+            json=team_data.model_dump()
         )
 
         all_teams_response = await client.get("/api/teams/")

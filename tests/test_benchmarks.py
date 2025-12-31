@@ -24,17 +24,17 @@ class TestSeasonServicePerformance:
         self, test_season_service, benchmark
     ):
         """Benchmark single season creation."""
-        season_data = SeasonFactoryAny.build()
+        season_data = SeasonFactoryAny.build(year=2999)
 
         async def create_season():
             return await test_season_service.create(season_data)
 
-        result = benchmark(create_season)
+        result = await benchmark.pedantic(create_season)
         assert result is not None
 
     async def test_create_season_bulk(self, test_season_service, benchmark):
         """Benchmark bulk season creation (100 seasons)."""
-        seasons_data = [SeasonFactoryAny.build() for _ in range(100)]
+        seasons_data = [SeasonFactoryAny.build(year=2900 + i) for i in range(100)]
 
         async def create_bulk_seasons():
             results = []
@@ -43,21 +43,21 @@ class TestSeasonServicePerformance:
                 results.append(result)
             return results
 
-        results = benchmark(create_bulk_seasons)
+        results = await benchmark.pedantic(create_bulk_seasons)
         assert len(results) == 100
 
     async def test_get_all_seasons(
         self, test_season_service, test_db, benchmark
     ):
         """Benchmark fetching all seasons from database."""
-        for _ in range(50):
-            season_data = SeasonFactoryAny.build()
+        for i in range(50):
+            season_data = SeasonFactoryAny.build(year=1950 + i)
             await test_season_service.create(season_data)
 
         async def get_all():
-            return await test_season_service.get_all()
+            return await test_season_service.get_all_elements()
 
-        results = benchmark(get_all)
+        results = await benchmark.pedantic(get_all)
         assert len(results) >= 50
 
     async def test_get_season_by_id(
@@ -67,7 +67,7 @@ class TestSeasonServicePerformance:
         async def get_by_id():
             return await test_season_service.get_by_id(season.id)
 
-        result = benchmark(get_by_id)
+        result = await benchmark.pedantic(get_by_id)
         assert result.id == season.id
 
 
@@ -81,13 +81,15 @@ class TestTournamentServicePerformance:
     ):
         """Benchmark single tournament creation."""
         tournament_data = TournamentFactory.build(
-            sport_id=sport.id, season_id=season.id
+            sport_id=sport.id,
+            season_id=season.id,
+            title=f"Test Tournament {5000}"
         )
 
         async def create_tournament():
             return await test_tournament_service.create(tournament_data)
 
-        result = benchmark(create_tournament)
+        result = await benchmark.pedantic(create_tournament)
         assert result is not None
 
     async def test_create_tournament_bulk(
@@ -110,7 +112,7 @@ class TestTournamentServicePerformance:
                 results.append(result)
             return results
 
-        results = benchmark(create_bulk_tournaments)
+        results = await benchmark.pedantic(create_bulk_tournaments)
         assert len(results) == 100
 
     async def test_get_all_tournaments(
@@ -118,9 +120,9 @@ class TestTournamentServicePerformance:
     ):
         """Benchmark fetching all tournaments from database."""
         async def get_all():
-            return await test_tournament_service.get_all()
+            return await test_tournament_service.get_all_elements()
 
-        results = benchmark(get_all)
+        results = await benchmark.pedantic(get_all)
         assert len(results) >= 1
 
     async def test_get_tournament_by_id(
@@ -130,5 +132,5 @@ class TestTournamentServicePerformance:
         async def get_by_id():
             return await test_tournament_service.get_by_id(tournament.id)
 
-        result = benchmark(get_by_id)
+        result = await benchmark.pedantic(get_by_id)
         assert result.id == tournament.id

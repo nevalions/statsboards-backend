@@ -98,46 +98,62 @@ async def test_app(test_db):
     """Create FastAPI test app with all routers."""
     from src.matches.views import api_match_crud_router, api_match_websocket_router, api_match_parser_router
     from src.football_events.views import FootballEventAPIRouter
+    from src.football_events.db_services import FootballEventServiceDB
     from src.gameclocks.views import GameClockAPIRouter
+    from src.gameclocks.db_services import GameClockServiceDB
     from src.matchdata.views import MatchDataAPIRouter
+    from src.matchdata.db_services import MatchDataServiceDB
     from src.person.views import PersonAPIRouter
+    from src.person.db_services import PersonServiceDB
     from src.playclocks.views import PlayClockAPIRouter
+    from src.playclocks.db_services import PlayClockServiceDB
     from src.player.views import PlayerAPIRouter
+    from src.player.db_services import PlayerServiceDB
     from src.player_match import api_player_match_router
     from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
+    from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
     from src.positions.views import PositionAPIRouter
+    from src.positions.db_services import PositionServiceDB
     from src.scoreboards.views import ScoreboardAPIRouter
+    from src.scoreboards.db_services import ScoreboardServiceDB
     from src.seasons.views import SeasonAPIRouter
+    from src.seasons.db_services import SeasonServiceDB
     from src.sponsor_lines.views import SponsorLineAPIRouter
+    from src.sponsor_lines.db_services import SponsorLineServiceDB
     from src.sponsor_sponsor_line_connection import api_sponsor_sponsor_line_router
     from src.sponsors.views import SponsorAPIRouter
+    from src.sponsors.db_services import SponsorServiceDB
     from src.sports.views import SportAPIRouter
+    from src.sports.db_services import SportServiceDB
     from src.team_tournament.views import TeamTournamentRouter
+    from src.team_tournament.db_services import TeamTournamentServiceDB
     from src.teams.views import TeamAPIRouter
+    from src.teams.db_services import TeamServiceDB
     from src.tournaments.views import TournamentAPIRouter
+    from src.tournaments.db_services import TournamentServiceDB
 
     app = FastAPI()
     app.include_router(api_match_crud_router)
     app.include_router(api_match_websocket_router)
     app.include_router(api_match_parser_router)
-    app.include_router(FootballEventAPIRouter(test_db).route())
-    app.include_router(GameClockAPIRouter(test_db).route())
-    app.include_router(MatchDataAPIRouter(test_db).route())
-    app.include_router(PersonAPIRouter(test_db).route())
-    app.include_router(PlayClockAPIRouter(test_db).route())
-    app.include_router(PlayerAPIRouter(test_db).route())
+    app.include_router(FootballEventAPIRouter(FootballEventServiceDB(test_db)).route())
+    app.include_router(GameClockAPIRouter(GameClockServiceDB(test_db)).route())
+    app.include_router(MatchDataAPIRouter(MatchDataServiceDB(test_db)).route())
+    app.include_router(PersonAPIRouter(PersonServiceDB(test_db)).route())
+    app.include_router(PlayClockAPIRouter(PlayClockServiceDB(test_db)).route())
+    app.include_router(PlayerAPIRouter(PlayerServiceDB(test_db)).route())
     app.include_router(api_player_match_router)
-    app.include_router(PlayerTeamTournamentAPIRouter(test_db).route())
-    app.include_router(PositionAPIRouter(test_db).route())
-    app.include_router(ScoreboardAPIRouter(test_db).route())
-    app.include_router(SeasonAPIRouter(test_db).route())
-    app.include_router(SponsorLineAPIRouter(test_db).route())
+    app.include_router(PlayerTeamTournamentAPIRouter(PlayerTeamTournamentServiceDB(test_db)).route())
+    app.include_router(PositionAPIRouter(PositionServiceDB(test_db)).route())
+    app.include_router(ScoreboardAPIRouter(ScoreboardServiceDB(test_db)).route())
+    app.include_router(SeasonAPIRouter(SeasonServiceDB(test_db)).route())
+    app.include_router(SponsorLineAPIRouter(SponsorLineServiceDB(test_db)).route())
     app.include_router(api_sponsor_sponsor_line_router)
-    app.include_router(SponsorAPIRouter(test_db).route())
-    app.include_router(SportAPIRouter(test_db).route())
-    app.include_router(TeamTournamentRouter(test_db).route())
-    app.include_router(TeamAPIRouter(test_db).route())
-    app.include_router(TournamentAPIRouter(test_db).route())
+    app.include_router(SponsorAPIRouter(SponsorServiceDB(test_db)).route())
+    app.include_router(SportAPIRouter(SportServiceDB(test_db)).route())
+    app.include_router(TeamTournamentRouter(TeamTournamentServiceDB(test_db)).route())
+    app.include_router(TeamAPIRouter(TeamServiceDB(test_db)).route())
+    app.include_router(TournamentAPIRouter(TournamentServiceDB(test_db)).route())
 
     yield app
 
