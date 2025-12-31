@@ -327,3 +327,50 @@ class TestPlayerMatchViews:
         response = await client.get("/api/players_match/id/99999")
 
         assert response.status_code == 404
+
+    async def test_create_parsed_eesl_match_with_timeout_skip(
+        self, client, test_db, monkeypatch
+    ):
+        """Test that match parsing skips players when collect_player_full_data_eesl times out."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team = await team_service.create(
+            TeamFactory.build(sport_id=sport.id, team_eesl_id=100)
+        )
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id,
+                team_a_id=team.id,
+                team_b_id=team.id,
+                match_eesl_id=123,
+            )
+        )
+
+        position_service = PositionServiceDB(test_db)
+        position = await position_service.create(
+            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        )
+
+        async def mock_timeout_return_none(*args, **kwargs):
+            return None
+
+        monkeypatch.setattr(
+            "src.player_match.views.collect_player_full_data_eesl",
+            mock_timeout_return_none,
+        )
+
+        response = await client.get("/api/players_match/pars_and_create/match/123")
+
+        assert response.status_code == 200

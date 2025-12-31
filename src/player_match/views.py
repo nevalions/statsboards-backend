@@ -233,6 +233,11 @@ class PlayerMatchAPIRouter(
                             player_in_team = await collect_player_full_data_eesl(
                                 home_player["player_eesl_id"]
                             )
+                            if player_in_team is None:
+                                self.logger.warning(
+                                    f"Failed to fetch player data for {home_player['player_eesl_id']}, skipping"
+                                )
+                                continue
                             person_schema = PersonSchemaCreate(
                                 **player_in_team["person"]
                             )
@@ -422,6 +427,11 @@ class PlayerMatchAPIRouter(
                             player_in_team = await collect_player_full_data_eesl(
                                 away_player["player_eesl_id"]
                             )
+                            if player_in_team is None:
+                                self.logger.warning(
+                                    f"Failed to fetch player data for {away_player['player_eesl_id']}, skipping"
+                                )
+                                continue
                             person_schema = PersonSchemaCreate(
                                 **player_in_team["person"]
                             )

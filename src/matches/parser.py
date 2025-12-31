@@ -91,14 +91,14 @@ class MatchParser:
                         if team_a:
                             self.logger.debug(f"team_a: {team_a}")
                         else:
-                            self.logger.error("Home team(a) not found")
-                            raise
+                            self.logger.error(f"Home team(a) not found - EESL ID: {m['team_a_eesl_id']}")
+                            continue
                         team_b = teams_by_eesl_id.get(m["team_b_eesl_id"])
                         if team_b:
                             self.logger.debug(f"team_a: {team_b}")
                         else:
-                            self.logger.error("Away team(b) not found")
-                            raise
+                            self.logger.error(f"Away team(b) not found - EESL ID: {m['team_b_eesl_id']}")
+                            continue
                         match = {
                             "week": m["week"],
                             "match_eesl_id": m["match_eesl_id"],
