@@ -104,6 +104,25 @@ class TestUploadService:
         assert "Unsupported file type" in exc_info.value.detail
 
     @pytest.mark.asyncio
+    async def test_validate_file_size_valid(self, upload_service):
+        """Test file size validation with valid size."""
+        upload_file = Mock(spec=UploadFile)
+        upload_file.file = BytesIO(b"test data")
+        await upload_service.validate_file_size(upload_file)
+
+    @pytest.mark.asyncio
+    async def test_validate_file_size_too_large(self, upload_service):
+        """Test file size validation with file exceeding max size."""
+        upload_file = Mock(spec=UploadFile)
+        large_size = 11 * 1024 * 1024  # 11MB
+        large_data = b"x" * large_size
+        upload_file.file = BytesIO(large_data)
+        with pytest.raises(HTTPException) as exc_info:
+            await upload_service.validate_file_size(upload_file)
+        assert exc_info.value.status_code == 413
+        assert "File too large" in exc_info.value.detail
+
+    @pytest.mark.asyncio
     async def test_upload_file(self, upload_service, temp_upload_dir):
         """Test uploading file."""
         dest = temp_upload_dir / "test.jpg"

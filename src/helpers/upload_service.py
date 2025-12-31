@@ -19,9 +19,22 @@ class ImageData(TypedDict):
 
 
 class UploadService:
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
     def __init__(self, fs_service: FileSystemService):
         self.fs_service = fs_service
         self.logger = get_logger("backend_logger_upload", self)
+
+    async def validate_file_size(self, upload_file: UploadFile) -> None:
+        upload_file.file.seek(0, 2)  # Seek to end
+        size = upload_file.file.tell()
+        upload_file.file.seek(0)  # Reset
+
+        if size > self.MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Max size: {self.MAX_FILE_SIZE} bytes",
+            )
 
     async def sanitize_filename(self, filename: str) -> str:
         self.logger.debug(f"Sanitizing filename: {filename}")
@@ -51,7 +64,9 @@ class UploadService:
         return original_filename
 
     async def is_image_type(self, upload_file: UploadFile) -> None:
-        if not upload_file.content_type or not upload_file.content_type.startswith("image/"):
+        if not upload_file.content_type or not upload_file.content_type.startswith(
+            "image/"
+        ):
             self.logger.error("Uploaded file type not an image", exc_info=True)
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
@@ -72,6 +87,7 @@ class UploadService:
     async def upload_image_and_return_data(
         self, sub_folder: str, upload_file: UploadFile
     ) -> ImageData:
+        await self.validate_file_size(upload_file)
         upload_dir = await self.fs_service.get_and_create_upload_dir(sub_folder)
         timestamp = await self.get_timestamp()
         unsanitized_filename = await self.get_filename(timestamp, upload_file)
