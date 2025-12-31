@@ -5,7 +5,7 @@ from fastapi import Depends, File, HTTPException, Path, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.core import BaseRouter, MinimalBaseRouter, db
-from src.core.config import templates
+# from src.core.config import templates
 from src.helpers.fetch_helpers import (
     fetch_list_of_matches_data,
     fetch_matches_with_data_by_tournament_paginated,
@@ -330,73 +330,73 @@ class TournamentAPIRouter(
         return router
 
 
-class TournamentTemplateRouter(
-    MinimalBaseRouter[TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate]
-):
-    def __init__(self, service: TournamentServiceDB):
-        super().__init__(
-            "/tournaments",
-            ["tournaments-templ"],
-            service,
-        )
-
-    def route(self):
-        router = super().route()
-
-        @router.get(
-            "/id/{tournament_id}/matches/create/",
-            response_class=HTMLResponse,
-        )
-        async def create_match_in_tournament_endpoint(
-            tournament_id: int,
-            request: Request,
-        ):
-            tournament = await self.service.get_by_id(tournament_id)
-            season_service_db = SeasonServiceDB(db)
-            season = await season_service_db.get_by_id(tournament.season_id)
-            tournament_dict = self.service.to_dict(tournament)
-            season_dict = season_service_db.to_dict(season)
-
-            return templates.TemplateResponse(
-                "/matches/display/create-match.html",
-                {
-                    "request": request,
-                    "tournament": json.dumps(tournament_dict),
-                    "season": json.dumps(season_dict),
-                    "tournament_id": tournament_id,
-                    "season_id": season.id,
-                    "tournament_title": tournament.title,
-                },
-                status_code=200,
-            )
-
-        @router.get(
-            "/id/{tournament_id}/matches/all/",
-            response_class=HTMLResponse,
-        )
-        async def get_all_tournament_matches_endpoint(
-            tournament_id: int,
-            request: Request,
-        ):
-            tournament = await self.service.get_by_id(tournament_id)
-            if tournament is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Tournament id: {tournament_id} not found",
-                )
-            template = templates.TemplateResponse(
-                name="/matches/display/all-tournament-matches.html",
-                context={
-                    "request": request,
-                    "tournament_id": tournament_id,
-                    "tournament_title": tournament.title,
-                },
-                status_code=200,
-            )
-            return template
-
-        return router
+# class TournamentTemplateRouter(
+#     MinimalBaseRouter[TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate]
+# ):
+#     def __init__(self, service: TournamentServiceDB):
+#         super().__init__(
+#             "/tournaments",
+#             ["tournaments-templ"],
+#             service,
+#         )
+#
+#     def route(self):
+#         router = super().route()
+#
+#         # @router.get(
+#         #     "/id/{tournament_id}/matches/create/",
+#         #     response_class=HTMLResponse,
+#         # )
+#         # async def create_match_in_tournament_endpoint(
+#         #     tournament_id: int,
+#         #     request: Request,
+#         # ):
+#         #     tournament = await self.service.get_by_id(tournament_id)
+#         #     season_service_db = SeasonServiceDB(db)
+#         #     season = await season_service_db.get_by_id(tournament.season_id)
+#         #     tournament_dict = self.service.to_dict(tournament)
+#         #     season_dict = season_service_db.to_dict(season)
+#         #
+#         #     return templates.TemplateResponse(
+#         #         "/matches/display/create-match.html",
+#         #         {
+#         #             "request": request,
+#         #             "tournament": json.dumps(tournament_dict),
+#         #             "season": json.dumps(season_dict),
+#         #             "tournament_id": tournament_id,
+#         #             "season_id": season.id,
+#         #             "tournament_title": tournament.title,
+#         #         },
+#         #         status_code=200,
+#         #     )
+#
+#         # @router.get(
+#         #     "/id/{tournament_id}/matches/all/",
+#         #     response_class=HTMLResponse,
+#         # )
+#         # async def get_all_tournament_matches_endpoint(
+#         #     tournament_id: int,
+#         #     request: Request,
+#         # ):
+#         #     tournament = await self.service.get_by_id(tournament_id)
+#         #     if tournament is None:
+#         #         raise HTTPException(
+#         #             status_code=404,
+#         #             detail=f"Tournament id: {tournament_id} not found",
+#         #         )
+#         #     template = templates.TemplateResponse(
+#         #         name="/matches/display/all-tournament-matches.html",
+#         #         context={
+#         #             "request": request,
+#         #             "tournament_id": tournament_id,
+#         #             "tournament_title": tournament.title,
+#         #         },
+#         #         status_code=200,
+#         #     )
+#         #     return template
+#
+#         return router
 
 
 api_tournament_router = TournamentAPIRouter(TournamentServiceDB(db)).route()
-template_tournament_router = TournamentTemplateRouter(TournamentServiceDB(db)).route()
+# template_tournament_router = TournamentTemplateRouter(TournamentServiceDB(db)).route()

@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi.templating import Jinja2Templates
 from pydantic import Field, PostgresDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -15,20 +14,11 @@ logger = logging.getLogger("backend_logger_config")
 
 SSL_KEY = os.getenv("SSL_KEYFILE")
 SSL_CER = os.getenv("SSL_CERTFILE")
-# Set the template and static folders
+# Set the static folders
 parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 more_parent_path = os.path.dirname(parent_path)
-one_more_parent_path = os.path.dirname(more_parent_path)
-template_path = os.path.join(one_more_parent_path, "statsboards-frontend/frontend")
-# scoreboard_template_path = os.path.join(template_path, "scoreboards")
-# match_template_path = os.path.join(template_path, "matches")
 static_main_path = os.path.join(more_parent_path, "static")
 uploads_path = os.path.join(static_main_path, "uploads")
-
-static_path = os.path.join(template_path, "static")
-# static_path_scoreboard = os.path.join(static_path, "scoreboards")
-
-templates = Jinja2Templates(directory=template_path)
 
 
 class DbSettings(BaseSettings):
@@ -236,11 +226,6 @@ class Settings(BaseSettings):
             ("uploads_path", uploads_path, "required"),
         ]
 
-        optional_paths = [
-            ("template_path", template_path),
-            ("static_path", static_path),
-        ]
-
         if self.ssl_keyfile and SSL_KEY:
             paths_to_validate.append(("ssl_keyfile", SSL_KEY, "required"))
         if self.ssl_certfile and SSL_CER:
@@ -259,16 +244,6 @@ class Settings(BaseSettings):
             elif path_value and not os.access(path_value, os.R_OK):
                 validation_errors.append(
                     f"Path '{path_name}' is not readable: {path_value}"
-                )
-
-        for path_name, path_value in optional_paths:
-            if path_value and not Path(path_value).exists():
-                logger.warning(
-                    f"Optional path '{path_name}' does not exist: {path_value}"
-                )
-            elif path_value and not os.access(path_value, os.R_OK):
-                logger.warning(
-                    f"Optional path '{path_name}' is not readable: {path_value}"
                 )
 
         if validation_errors:

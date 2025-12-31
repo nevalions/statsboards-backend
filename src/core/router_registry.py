@@ -138,9 +138,9 @@ def configure_routers(registry: RouterRegistry) -> RouterRegistry:
     registry.register_router("src.sports", "api_sport_router", priority=10)
     registry.register_router("src.seasons", "api_season_router", priority=20)
     registry.register_router("src.tournaments", "api_tournament_router", priority=30)
-    registry.register_router(
-        "src.tournaments", "template_tournament_router", priority=31
-    )
+    # registry.register_router(
+    #     "src.tournaments", "template_tournament_router", priority=31
+    # )
     registry.register_router("src.teams", "api_team_router", priority=40)
     registry.register_router(
         "src.team_tournament", "api_team_tournament_router", priority=50
@@ -148,7 +148,7 @@ def configure_routers(registry: RouterRegistry) -> RouterRegistry:
     registry.register_router("src.matches", "api_match_crud_router", priority=60)
     registry.register_router("src.matches", "api_match_websocket_router", priority=61)
     registry.register_router("src.matches", "api_match_parser_router", priority=62)
-    registry.register_router("src.matches", "template_match_router", priority=63)
+    # registry.register_router("src.matches", "template_match_router", priority=63)
     registry.register_router("src.matchdata", "api_matchdata_router", priority=70)
     registry.register_router("src.playclocks", "api_playclock_router", priority=80)
     registry.register_router("src.gameclocks", "api_gameclock_router", priority=81)
