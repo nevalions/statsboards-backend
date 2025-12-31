@@ -218,6 +218,7 @@ class TestConnectionManager:
         await connection_manager.disconnect(client_match2_a)
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 class TestWebSocketEndpointIntegration:
     async def test_websocket_endpoint_connection_and_initial_data(
@@ -594,7 +595,7 @@ class TestWebSocketCleanup:
 class TestMatchDataWebSocketManagerErrorScenarios:
     async def test_ws_manager_database_connection_failure(self):
         """Test MatchDataWebSocketManager handles database connection failures."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://invalid:invalid@invalid:5432/invalid"
@@ -610,7 +611,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
         """Test that maintain_connection attempts to reconnect after connection loss."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         call_count = 0
 
@@ -641,7 +642,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
         """Test ws_manager startup handles connection errors gracefully."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://invalid:invalid@invalid:5432/invalid"
@@ -660,7 +661,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
         """Test that shutdown properly closes active connection and cancels retry task."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -681,7 +682,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
     async def test_ws_manager_disconnect_nonexistent_client(self):
         """Test disconnect handles nonexistent clients gracefully."""
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -693,7 +694,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
         """Test disconnect handles partial cleanup when only some queues exist."""
         import asyncio
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -715,7 +716,7 @@ class TestWebSocketListenerErrorScenarios:
         """Test _base_listener handles empty payload gracefully."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -738,7 +739,7 @@ class TestWebSocketListenerErrorScenarios:
         """Test _base_listener handles invalid JSON payload."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -761,7 +762,7 @@ class TestWebSocketListenerErrorScenarios:
         """Test _base_listener handles payload without match_id."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -785,7 +786,7 @@ class TestWebSocketListenerErrorScenarios:
         """Test _base_listener handles exceptions when putting to queue."""
         from unittest.mock import AsyncMock, patch
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -810,7 +811,7 @@ class TestWebSocketListenerErrorScenarios:
         """Test playclock_listener properly delegates to _base_listener."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -833,7 +834,7 @@ class TestWebSocketListenerErrorScenarios:
         """Test match_data_listener properly delegates to _base_listener."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -856,7 +857,7 @@ class TestWebSocketListenerErrorScenarios:
         """Test gameclock_listener properly delegates to _base_listener."""
         from unittest.mock import AsyncMock
 
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         manager = MatchDataWebSocketManager(
             db_url="postgresql://test:test@localhost:5432/test"
@@ -1136,7 +1137,7 @@ class TestWebSocketConnectionErrorHandling:
 class TestDatabaseNotificationFlow:
     async def test_matchdata_database_notification_flow(self, test_db):
         """Test full flow from database change to notification delivery."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matchdata.db_services import MatchDataServiceDB
         from src.matchdata.schemas import MatchDataSchemaCreate
         from src.matches.db_services import MatchServiceDB
@@ -1208,7 +1209,7 @@ class TestDatabaseNotificationFlow:
 
     async def test_playclock_database_notification_flow(self, test_db):
         """Test playclock database notification flow."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1279,7 +1280,7 @@ class TestDatabaseNotificationFlow:
 
     async def test_gameclock_database_notification_flow(self, test_db):
         """Test gameclock database notification flow."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.gameclocks.db_services import GameClockServiceDB
         from src.gameclocks.schemas import GameClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
@@ -1350,7 +1351,7 @@ class TestDatabaseNotificationFlow:
 
     async def test_multiple_clients_receive_same_notification(self, test_db):
         """Test that multiple clients subscribed to same match all receive notification."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1429,7 +1430,7 @@ class TestDatabaseNotificationFlow:
 
     async def test_client_only_receives_relevant_match_notifications(self, test_db):
         """Test that clients only receive notifications for matches they're subscribed to."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1519,7 +1520,7 @@ class TestDatabaseNotificationFlow:
 
     async def test_database_notification_with_update_operation(self, test_db):
         """Test database notification flow with UPDATE operation."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1603,7 +1604,7 @@ class TestDatabaseNotificationFlow:
 
     async def test_multiple_notification_types_single_match(self, test_db):
         """Test that different notification types work for the same match."""
-        from src.core.models.base import MatchDataWebSocketManager
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.gameclocks.db_services import GameClockServiceDB
         from src.gameclocks.schemas import GameClockSchemaCreate
         from src.matches.db_services import MatchServiceDB

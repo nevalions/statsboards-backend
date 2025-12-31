@@ -3,7 +3,7 @@ from pathlib import Path
 from src.core.config import uploads_path
 
 
-def photo_files_exist(person_photo_url: str) -> bool:
+def photo_files_exist(person_photo_url: str | None) -> bool:
     """Check if photo files exist on disk and have valid size."""
     if not person_photo_url:
         return False
