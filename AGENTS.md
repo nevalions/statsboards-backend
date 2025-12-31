@@ -97,6 +97,15 @@ python src/runserver.py
 python src/run_prod_server.py
 ```
 
+### Configuration Validation
+
+```bash
+# Validate configuration before starting application
+python validate_config.py
+
+# Configuration validation also runs automatically on application startup
+```
+
 ## Code Style Guidelines
 
 ### Import Organization
@@ -344,6 +353,35 @@ Each domain module must contain:
 - Always run lint and test commands before considering a task complete
 - Never hardcode credentials or secrets - use environment variables
 - Use Pydantic Settings for configuration in `src/core/config.py`
+
+### Configuration Validation
+
+The application includes comprehensive configuration validation that runs automatically on startup:
+
+- **Database Settings Validation**:
+  - Validates required fields (host, user, password, name) are not empty
+  - Validates port is between 1 and 65535
+  - Validates connection strings are valid
+  - Main database validation is skipped when `TESTING` environment variable is set
+
+- **Application Settings Validation**:
+  - Validates CORS origins format (must start with http://, https://, or *)
+  - Validates SSL files: both SSL_KEYFILE and SSL_CERTFILE must be provided together or neither
+
+- **Path Validation**:
+  - Required paths: static_main_path, uploads_path (must exist and be readable)
+  - Optional paths: template_path, static_path, SSL files (logged as warnings if missing)
+
+- **Database Connection Validation**:
+  - Tests basic database connectivity
+  - Logs PostgreSQL version
+  - Logs current database name
+  - Logs current database user
+  - Runs automatically on application startup via FastAPI lifespan
+
+Run `python validate_config.py` to manually validate configuration before starting the application.
+
+See `CONFIGURATION_VALIDATION.md` for complete documentation.
 
 **Note**: Do not add AGENTS.md to README.md - this file is for development reference only.
 **Note**: all commits must be by linroot with email nevalions@gmail.com

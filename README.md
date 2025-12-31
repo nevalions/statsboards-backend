@@ -14,6 +14,7 @@ A FastAPI-based backend service for sports statistics and scoreboarding, designe
  - **Robust Error Handling**: Structured exception hierarchy and global error handlers
  - **Comprehensive Logging**: Standardized logging levels across all services
  - **Service Registry Pattern**: Dependency injection for decoupled service architecture
+ - **Configuration Validation**: Automatic validation of database settings, paths, and environment variables on startup
 
 ## Tech Stack
 
@@ -24,6 +25,7 @@ A FastAPI-based backend service for sports statistics and scoreboarding, designe
 - **Testing**: pytest with pytest-asyncio
 - **Deployment**: Docker, Gunicorn, Nginx
 - **Code Quality**: Black, PyLint
+- **Configuration**: Pydantic Settings with validation
 
 ## Quick Start
 
@@ -328,6 +330,23 @@ Key environment variables (see `.env.example`):
 - `REDIS_URL`: Redis connection string
 - `ALLOWED_ORIGINS`: CORS allowed origins
 - `LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR)
+
+### Configuration Validation
+
+The application includes comprehensive configuration validation that runs automatically on startup:
+
+- **Database Settings**: Validates connection parameters and connectivity
+- **Paths**: Checks required paths exist and are accessible
+- **SSL Configuration**: Ensures SSL certificate files are provided together
+- **CORS Origins**: Validates CORS origin format
+
+Run configuration validation manually:
+
+```bash
+python validate_config.py
+```
+
+Configuration validation also runs automatically on application startup before services are initialized. See `CONFIGURATION_VALIDATION.md` for complete documentation.
 
 ### Logging
 

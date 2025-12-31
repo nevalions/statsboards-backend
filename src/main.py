@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.core.config import uploads_path
+from src.core.config import settings, uploads_path
 from src.core.exception_handler import register_exception_handlers
 from src.core.models.base import db
 from src.core.service_registry import init_service_registry
@@ -36,10 +36,11 @@ async def lifespan(_app: FastAPI):
     """
     db_logger.info("Starting application lifespan.")
     try:
+        settings.validate_all()
         init_service_registry(db)
         register_all_services(db)
         logger.info("Service registry initialized and all services registered")
-        await db.test_connection()
+        await db.validate_database_connection()
         yield
     except Exception as e:
         db_logger.critical(f"Critical error during startup: {e}", exc_info=True)

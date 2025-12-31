@@ -64,6 +64,36 @@ class Database:
             )
             raise
 
+    async def validate_database_connection(self) -> None:
+        """
+        Validate database connectivity on startup.
+        Performs comprehensive checks including connection test and basic query execution.
+        """
+        self.logger.info("Starting database connection validation")
+
+        try:
+            await self.test_connection()
+
+            async with self.engine.connect() as connection:
+                result = await connection.execute(text("SELECT version()"))
+                version = result.scalar()
+                self.logger.info(f"Connected to PostgreSQL version: {version}")
+
+                result = await connection.execute(text("SELECT current_database()"))
+                db_name = result.scalar()
+                self.logger.info(f"Using database: {db_name}")
+
+                result = await connection.execute(text("SELECT current_user"))
+                user = result.scalar()
+                self.logger.info(f"Connected as user: {user}")
+
+            self.logger.info("Database connection validation complete")
+        except Exception as e:
+            self.logger.critical(
+                f"Database connection validation failed: {e}", exc_info=True
+            )
+            raise
+
     def get_pool_status(self) -> dict[str, Any]:
         pool = self.engine.pool
         status = {}
