@@ -9,7 +9,8 @@ from fastapi.staticfiles import StaticFiles
 
 from src.core.config import uploads_path
 from src.core.exception_handler import register_exception_handlers
-from src.core.models.base import db, ws_manager
+from src.core.models.base import db
+from src.utils.websocket.websocket_manager import ws_manager
 from src.core.router_registry import RouterRegistry, configure_routers
 from src.logging_config import logs_dir, setup_logging
 

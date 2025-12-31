@@ -6,7 +6,7 @@ import asyncpg
 import pytest
 from starlette.websockets import WebSocket
 
-from src.core.models.base import connection_manager
+from src.utils.websocket.websocket_manager import connection_manager
 from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from tests.factories import (
