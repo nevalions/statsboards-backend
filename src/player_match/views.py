@@ -51,7 +51,7 @@ def photo_files_exist(person_photo_url: str) -> bool:
                         return True
 
             return False
-    except Exception:
+    except (OSError, ValueError, AttributeError):
         pass
 
     return False

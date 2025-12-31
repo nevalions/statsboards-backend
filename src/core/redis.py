@@ -14,7 +14,7 @@ class RedisService:
                 self.redis_url, decode_responses=True
             )
             return redis_connection
-        except Exception:
+        except (aioredis.ConnectionError, OSError, ValueError) as e:
             raise
 
     async def create_match_event_queue(self, match_data_id) -> MatchEventQueue:

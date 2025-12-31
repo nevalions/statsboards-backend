@@ -114,7 +114,7 @@ class MatchDataWebSocketManager:
             if self.connection:
                 try:
                     await self.connection.close()
-                except Exception:
+                except (asyncpg.PostgresConnectionError, OSError):
                     pass
 
             self.connection = await asyncpg.connect(self.db_url)
@@ -124,7 +124,7 @@ class MatchDataWebSocketManager:
             await self.setup_listeners()
             self.is_connected = True
 
-        except Exception as e:
+        except (asyncpg.PostgresConnectionError, OSError) as e:
             self.logger.error(f"Database connection error: {str(e)}", exc_info=True)
             self.is_connected = False
             raise

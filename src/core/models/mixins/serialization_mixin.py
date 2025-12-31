@@ -9,7 +9,7 @@ class SerializationMixin:
                 return order.desc()
             else:
                 return order.asc()
-        except Exception:
+        except (AttributeError, TypeError):
             return None
 
     @staticmethod
@@ -18,7 +18,7 @@ class SerializationMixin:
             if isinstance(obj, datetime):
                 return obj.isoformat()
             raise TypeError(f"Type {type(obj)} not serializable")
-        except Exception:
+        except TypeError:
             return None
 
     @staticmethod
@@ -35,5 +35,5 @@ class SerializationMixin:
                 return data
             else:
                 raise TypeError("Unsupported type")
-        except Exception:
+        except (AttributeError, TypeError):
             return None

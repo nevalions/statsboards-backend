@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 from unittest.mock import AsyncMock
 
+import asyncpg
 import pytest
 from starlette.websockets import WebSocket
 
@@ -604,7 +605,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
         try:
             await manager.connect_to_db()
             assert False, "Should have raised an exception for invalid connection"
-        except Exception:
+        except (asyncpg.PostgresConnectionError, OSError):
             pass
 
     async def test_ws_manager_maintain_connection_reconnect_after_failure(self):
@@ -647,12 +648,14 @@ class TestMatchDataWebSocketManagerErrorScenarios:
         manager = MatchDataWebSocketManager(
             db_url="postgresql://invalid:invalid@invalid:5432/invalid"
         )
-        manager.connect_to_db = AsyncMock(side_effect=Exception("Connection failed"))
+        manager.connect_to_db = AsyncMock(
+            side_effect=asyncpg.PostgresConnectionError("Connection failed")
+        )
 
         try:
             await manager.startup()
             assert False, "Should have raised an exception"
-        except Exception:
+        except (asyncpg.PostgresConnectionError, OSError):
             pass
 
     async def test_ws_manager_shutdown_during_active_connection(self):
@@ -1020,7 +1023,7 @@ class TestWebSocketConnectionErrorHandling:
 
         mock_websocket = AsyncMock(spec=WebSocket)
         mock_websocket.application_state = WebSocketState.CONNECTED
-        mock_websocket.send_json = AsyncMock(side_effect=Exception("Send failed"))
+        mock_websocket.send_json = AsyncMock(side_effect=RuntimeError("Send failed"))
 
         await connection_manager.connect(mock_websocket, client_id, match_id)
 
@@ -1032,7 +1035,7 @@ class TestWebSocketConnectionErrorHandling:
 
         try:
             await mock_websocket.send_json(msg)
-        except Exception:
+        except RuntimeError:
             pass
 
         await connection_manager.disconnect(client_id)
@@ -1045,14 +1048,14 @@ class TestWebSocketConnectionErrorHandling:
         match_id = 1
 
         mock_websocket = AsyncMock(spec=WebSocket)
-        mock_websocket.close = AsyncMock(side_effect=Exception("Close failed"))
+        mock_websocket.close = AsyncMock(side_effect=RuntimeError("Close failed"))
 
         await connection_manager.connect(mock_websocket, client_id, match_id)
 
         try:
             await connection_manager.disconnect(client_id)
             assert False, "Should have raised exception when closing fails"
-        except Exception as e:
+        except RuntimeError as e:
             assert "Close failed" in str(e)
 
         active_connections = await connection_manager.get_active_connections()
