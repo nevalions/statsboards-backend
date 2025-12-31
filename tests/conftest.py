@@ -4,6 +4,9 @@ import shutil
 import pytest
 import pytest_asyncio
 
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
+
 from src.core import settings
 from src.core.models.base import Base, Database
 from src.core.service_registry import init_service_registry
@@ -20,6 +23,15 @@ def pytest_configure(config):
     """Configure custom pytest markers."""
     config.addinivalue_line(
         "markers", "integration: marks test as integration test (hits real website)"
+    )
+    config.addinivalue_line(
+        "markers", "benchmark: marks test as performance benchmark"
+    )
+    config.addinivalue_line(
+        "markers", "e2e: marks test as end-to-end integration test"
+    )
+    config.addinivalue_line(
+        "markers", "slow: marks test as slow-running"
     )
 
 
@@ -79,3 +91,60 @@ def test_uploads_path(test_downloads_dir, monkeypatch):
 
     monkeypatch.setattr(config_module, "uploads_path", test_downloads_dir)
     return test_downloads_dir
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_app(test_db):
+    """Create FastAPI test app with all routers."""
+    from src.matches.views import api_match_crud_router, api_match_websocket_router, api_match_parser_router
+    from src.football_events.views import FootballEventAPIRouter
+    from src.gameclocks.views import GameClockAPIRouter
+    from src.matchdata.views import MatchDataAPIRouter
+    from src.person.views import PersonAPIRouter
+    from src.playclocks.views import PlayClockAPIRouter
+    from src.player.views import PlayerAPIRouter
+    from src.player_match import api_player_match_router
+    from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
+    from src.positions.views import PositionAPIRouter
+    from src.scoreboards.views import ScoreboardAPIRouter
+    from src.seasons.views import SeasonAPIRouter
+    from src.sponsor_lines.views import SponsorLineAPIRouter
+    from src.sponsor_sponsor_line_connection import api_sponsor_sponsor_line_router
+    from src.sponsors.views import SponsorAPIRouter
+    from src.sports.views import SportAPIRouter
+    from src.team_tournament.views import TeamTournamentRouter
+    from src.teams.views import TeamAPIRouter
+    from src.tournaments.views import TournamentAPIRouter
+
+    app = FastAPI()
+    app.include_router(api_match_crud_router)
+    app.include_router(api_match_websocket_router)
+    app.include_router(api_match_parser_router)
+    app.include_router(FootballEventAPIRouter(test_db).route())
+    app.include_router(GameClockAPIRouter(test_db).route())
+    app.include_router(MatchDataAPIRouter(test_db).route())
+    app.include_router(PersonAPIRouter(test_db).route())
+    app.include_router(PlayClockAPIRouter(test_db).route())
+    app.include_router(PlayerAPIRouter(test_db).route())
+    app.include_router(api_player_match_router)
+    app.include_router(PlayerTeamTournamentAPIRouter(test_db).route())
+    app.include_router(PositionAPIRouter(test_db).route())
+    app.include_router(ScoreboardAPIRouter(test_db).route())
+    app.include_router(SeasonAPIRouter(test_db).route())
+    app.include_router(SponsorLineAPIRouter(test_db).route())
+    app.include_router(api_sponsor_sponsor_line_router)
+    app.include_router(SponsorAPIRouter(test_db).route())
+    app.include_router(SportAPIRouter(test_db).route())
+    app.include_router(TeamTournamentRouter(test_db).route())
+    app.include_router(TeamAPIRouter(test_db).route())
+    app.include_router(TournamentAPIRouter(test_db).route())
+
+    yield app
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client(test_app):
+    """Create test client that uses app with test database."""
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac

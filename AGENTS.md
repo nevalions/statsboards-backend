@@ -52,6 +52,44 @@ pytest --cov=src
 
 # Run async tests only
 pytest tests/ -k "async"
+
+# Run tests with coverage (HTML report)
+pytest --cov=src --cov-report=html
+
+# Run tests with coverage (terminal report)
+pytest --cov=src --cov-report=term-missing
+
+# Run tests with coverage (XML report for CI/CD)
+pytest --cov=src --cov-report=xml
+
+# Run property-based tests
+pytest tests/test_property_based.py
+
+# Run performance benchmarks
+pytest tests/test_benchmarks.py -m benchmark
+
+# Run E2E integration tests
+pytest tests/test_e2e.py -m e2e
+
+# Run utils tests
+pytest tests/test_utils.py
+
+# Run tests in parallel with pytest-xdist
+pytest -n auto
+
+# Run tests matching a specific marker
+pytest -m integration
+pytest -m benchmark
+pytest -m e2e
+pytest -m "not slow"
+
+# Run benchmarks with comparison to baseline
+pytest tests/test_benchmarks.py -m benchmark --benchmark-only --benchmark-compare
+
+# Run specific test types
+pytest -k "property"
+pytest -k "benchmark"
+pytest -k "e2e"
 ```
 
 **Note:** The `pytest.ini` file includes performance optimizations (`-x -v --tb=short`) for faster test execution:
@@ -295,6 +333,51 @@ python validate_config.py
 - Use helper functions from `tests/testhelpers.py` for assertions
 - Test both success and error paths
 
+### Testing Enhancements
+
+The project includes several enhanced testing approaches:
+
+**1. Test Factories with SubFactory** (`tests/factories.py`):
+   - Basic factories: `SportFactoryAny`, `SeasonFactoryAny`, `TournamentFactory`, etc.
+   - Enhanced factories with relations: `TournamentFactoryWithRelations`, `TeamFactoryWithRelations`, etc.
+   - Use SubFactory for automatic creation of related entities
+   - Example: `TournamentFactoryWithRelations.build()` creates sport, season, and tournament
+
+**2. Performance Benchmarks** (`tests/test_benchmarks.py`):
+   - Benchmarked operations: CRUD operations, bulk inserts, complex queries
+   - Run with: `pytest tests/test_benchmarks.py -m benchmark`
+   - Compare with baseline: `pytest tests/test_benchmarks.py -m benchmark --benchmark-compare`
+   - Focuses on critical service operations
+
+**3. Property-Based Testing** (`tests/test_property_based.py`):
+   - Tests with Hypothesis for edge cases across wide input ranges
+   - Critical functions tested: `safe_int_conversion`, `hex_to_rgb`, `convert_cyrillic_filename`, etc.
+   - Run with: `pytest tests/test_property_based.py`
+   - Catches edge cases traditional tests might miss
+
+**4. E2E Integration Tests** (`tests/test_e2e.py`):
+   - Complete workflows across multiple services and endpoints
+   - Scenarios: tournament management, player management, error handling
+   - Run with: `pytest tests/test_e2e.py -m e2e`
+   - Tests realistic user journeys
+
+**5. Utils and Logging Tests** (`tests/test_utils.py`):
+   - Tests for `src.logging_config` module: ContextFilter, ClassNameAdapter
+   - Tests for `src.utils.websocket.websocket_manager`: MatchDataWebSocketManager
+   - Run with: `pytest tests/test_utils.py`
+
+**Test Markers** (defined in pytest.ini):
+   - `@pytest.mark.integration`: Tests that hit real websites or write to production folders
+   - `@pytest.mark.benchmark`: Performance benchmark tests
+   - `@pytest.mark.e2e`: End-to-end integration tests
+   - `@pytest.mark.slow`: Tests that take longer to run
+
+**Test Coverage**:
+   - Configuration: `.coveragerc` for coverage settings
+   - HTML report: `pytest --cov=src --cov-report=html` (view in `htmlcov/index.html`)
+   - Terminal report: `pytest --cov=src --cov-report=term-missing`
+   - XML report: `pytest --cov=src --cov-report=xml` (for CI/CD)
+
 **Important:** Do NOT use SQLite for tests. Tests must use PostgreSQL because:
 
 - WebSocket functionality requires PostgreSQL LISTEN/NOTIFY features
@@ -382,6 +465,80 @@ The application includes comprehensive configuration validation that runs automa
 Run `python validate_config.py` to manually validate configuration before starting the application.
 
 See `CONFIGURATION_VALIDATION.md` for complete documentation.
+
+## Testing Enhancement Summary
+
+The project has been enhanced with comprehensive testing capabilities:
+
+### 1. Coverage Reporting
+- **pytest-cov** added for code coverage tracking
+- **.coveragerc** configuration with proper exclusions
+- HTML, terminal, and XML report formats supported
+- Run with: `pytest --cov=src --cov-report=html`
+
+### 2. Performance Benchmarking
+- **pytest-benchmark** for measuring critical operation performance
+- Benchmark tests in `tests/test_benchmarks.py`
+- Tests CRUD operations, bulk inserts, and complex queries
+- Baseline comparison support for performance regression detection
+- Run with: `pytest tests/test_benchmarks.py -m benchmark`
+
+### 3. Property-Based Testing
+- **Hypothesis** for testing across wide input ranges
+- Property-based tests in `tests/test_property_based.py`
+- Tests critical utility functions for edge cases
+- Validates invariants and properties that should always hold true
+- Run with: `pytest tests/test_property_based.py`
+
+### 4. Enhanced Test Factories
+- **SubFactory** support for automatic related entity creation
+- New factories: `TournamentFactoryWithRelations`, `TeamFactoryWithRelations`, etc.
+- Simplifies test setup for complex scenarios
+- Reduces test code duplication
+
+### 5. E2E Integration Tests
+- End-to-end tests in `tests/test_e2e.py`
+- Tests complete workflows across multiple services and endpoints
+- Validates realistic user scenarios
+- Tests error handling and cascade delete behaviors
+- Run with: `pytest tests/test_e2e.py -m e2e`
+
+### 6. Utils and Logging Tests
+- Tests for `src.logging_config`: ContextFilter, ClassNameAdapter
+- Tests for `src.utils.websocket.websocket_manager`: MatchDataWebSocketManager
+- Ensures core utilities work correctly
+- Run with: `pytest tests/test_utils.py`
+
+### Test Markers
+- `@pytest.mark.integration`: Integration tests (external dependencies)
+- `@pytest.mark.benchmark`: Performance benchmarks
+- `@pytest.mark.e2e`: End-to-end integration tests
+- `@pytest.mark.slow`: Slow-running tests
+- `@pytest.mark.property`: Property-based tests
+
+### Running Tests
+```bash
+# Coverage reports
+pytest --cov=src --cov-report=html          # HTML report
+pytest --cov=src --cov-report=term-missing    # Terminal report
+pytest --cov=src --cov-report=xml            # CI/CD XML report
+
+# Specialized test runs
+pytest tests/test_benchmarks.py -m benchmark               # Benchmarks only
+pytest tests/test_benchmarks.py -m benchmark --benchmark-compare  # Compare baseline
+pytest tests/test_property_based.py                          # Property-based tests
+pytest tests/test_e2e.py -m e2e                         # E2E tests
+pytest tests/test_utils.py                                    # Utils tests
+
+# By marker
+pytest -m integration    # Integration tests only
+pytest -m benchmark      # Benchmarks only
+pytest -m e2e           # E2E tests only
+pytest -m "not slow"    # Skip slow tests
+
+# Parallel execution
+pytest -n auto          # Run tests in parallel
+```
 
 **Note**: Do not add AGENTS.md to README.md - this file is for development reference only.
 **Note**: all commits must be by linroot with email nevalions@gmail.com
