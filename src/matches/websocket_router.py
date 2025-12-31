@@ -1,6 +1,6 @@
-from fastapi import WebSocket
+from fastapi import APIRouter, WebSocket
 
-from src.core import BaseRouter
+from src.core import MinimalBaseRouter
 from src.logging_config import get_logger
 from ..websocket.match_handler import match_websocket_handler
 from .db_services import MatchServiceDB
@@ -12,7 +12,7 @@ from .schemas import (
 
 
 class MatchWebSocketRouter(
-    BaseRouter[
+    MinimalBaseRouter[
         MatchSchema,
         MatchSchemaCreate,
         MatchSchemaUpdate,
@@ -28,7 +28,7 @@ class MatchWebSocketRouter(
         self.logger.debug("Initialized MatchWebSocketRouter")
 
     def route(self):
-        router = super().route()
+        router = APIRouter(prefix=self.prefix, tags=self.tags)
 
         @router.websocket("/ws/id/{match_id}/{client_id}/")
         async def websocket_endpoint(

@@ -1,4 +1,6 @@
-from src.core import BaseRouter
+from fastapi import APIRouter
+
+from src.core import MinimalBaseRouter
 from src.logging_config import get_logger
 from src.matches.parser import match_parser
 from .db_services import MatchServiceDB
@@ -10,7 +12,7 @@ from .schemas import (
 
 
 class MatchParserRouter(
-    BaseRouter[
+    MinimalBaseRouter[
         MatchSchema,
         MatchSchemaCreate,
         MatchSchemaUpdate,
@@ -26,7 +28,7 @@ class MatchParserRouter(
         self.logger.debug("Initialized MatchParserRouter")
 
     def route(self):
-        router = super().route()
+        router = APIRouter(prefix=self.prefix, tags=self.tags)
 
         @router.get(
             "/pars/tournament/{eesl_tournament_id}",

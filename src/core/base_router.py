@@ -53,12 +53,13 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType]):
     def route(self):
         router = super().route()
+        model_name = self.service.model.__name__.lower()
 
-        @router.get("/")
+        @router.get("/", operation_id=f"get_all_{model_name}")
         async def get_all_elem():
             return await self.service.get_all_elements()
 
-        @router.get("/id/{model_id}")
+        @router.get("/id/{model_id}", operation_id=f"get_{model_name}_by_id")
         async def get_by_id(model_id: int):
             model = await self.service.get_by_id(model_id)
             if model is None:
@@ -68,7 +69,7 @@ class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType
                 )
             return model
 
-        @router.delete("/id/{model_id}")
+        @router.delete("/id/{model_id}", operation_id=f"delete_{model_name}")
         async def delete(model_id: int):
             return await self.service.delete(model_id)
 
