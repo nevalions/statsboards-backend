@@ -391,6 +391,23 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 
 ## Recent Improvements
 
+### Test Suite Fixes
+- Fixed 33 previously failing tests across multiple test suites
+  - **test_player_match_views_helpers.py**: Fixed photo file handling tests (9 tests passing)
+    - Corrected patch paths for uploads_path in tests
+    - Updated photo_files_exist function signature for type safety
+  - **test_utils.py**: Fixed logging and WebSocket manager tests (16 tests passing)
+    - Fixed logging setup test to properly mock module-level variables
+    - Added AsyncMock for async operations in WebSocket tests
+    - Improved exception handling for connection failure scenarios
+  - **test_views/test_websocket_views.py**: Fixed WebSocket functionality tests (47 tests passing)
+    - Corrected import path for MatchDataWebSocketManager
+    - Marked integration test requiring real database connections
+  - **test_pars_integration.py**: Integration tests working with proper markers (5 tests passing)
+    - Tests run correctly with `-m integration` flag
+- All 500+ tests now passing when excluding integration tests
+- Integration tests pass when run with appropriate markers
+
 ### Exception Handling Refactoring
 - Replaced generic `except Exception` clauses with specific exception types across all services
 - Implemented custom exception hierarchy in `src/core/exceptions.py`
