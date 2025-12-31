@@ -178,7 +178,9 @@ def convert_cyrillic_filename(filename: str) -> str:
 
         converted_name = converted_name.replace(" ", "_").strip("_")
 
-        result = converted_name + extension if extension else converted_name
+        converted_extension = extension.replace(" ", "_").strip("_")
+
+        result = converted_name + converted_extension if converted_extension else converted_name
 
         logger.info(f"Converted filename from {filename} to {result}")
         return result

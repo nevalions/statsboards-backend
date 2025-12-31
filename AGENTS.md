@@ -31,8 +31,11 @@ docker-compose -f docker-compose.test-db-only.yml up -d
 Then run tests:
 
 ```bash
-# Run all tests
+# Run all tests (parallel by default with pytest-xdist)
 pytest
+
+# Run tests sequentially (for debugging)
+pytest -n 0
 
 # Run tests for specific directory
 pytest tests/test_db_services/
@@ -92,11 +95,13 @@ pytest -k "benchmark"
 pytest -k "e2e"
 ```
 
-**Note:** The `pytest.ini` file includes performance optimizations (`-x -v --tb=short`) for faster test execution:
+**Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n auto`) for faster test execution:
 - `-x`: Stop on first failure
-- `-v`: Verbose output
 - `--tb=short`: Shortened traceback format
+- `-n auto`: Run tests in parallel using pytest-xdist (uses all available CPU cores)
 - `log_cli=false`: Live logs disabled by default (use `-o log_cli=true` to enable for debugging)
+- Session-scoped database engine: Tables created once per session instead of per-test
+- Transaction rollback per test: Fast cleanup without table drops
 
 **Note:** Database echo is disabled in test fixtures for faster test execution.
 
@@ -387,19 +392,18 @@ The project includes several enhanced testing approaches:
 
 ### PostgreSQL Test Performance Optimization
 
-Current optimizations already implemented:
+Current optimizations implemented:
 
-- Database echo disabled in test fixtures (tests/conftest.py:22)
-- Transaction rollback per test (fast cleanup without table drops)
-- No Alembic migrations (direct table creation)
-
-Additional optimization opportunities:
-
-- Session-scoped database engine (create tables once per session)
-- PostgreSQL connection pool tuning (pool_size, max_overflow)
-- PostgreSQL performance tuning (fsync=off, synchronous_commit=off)
-- Parallel test execution with pytest-xdist (`-n auto`)
-- Docker PostgreSQL performance settings in docker-compose.test-db-only.yml
+- Database echo disabled in test fixtures (tests/conftest.py)
+- Session-scoped database engine: Tables created once per session (major speedup)
+- Transaction rollback per test: Fast cleanup without table drops
+- No Alembic migrations: Direct table creation
+- Parallel test execution with pytest-xdist: `-n auto` runs tests on all CPU cores
+- PostgreSQL performance tuning in docker-compose.test-db-only.yml:
+  - fsync=off, synchronous_commit=off, full_page_writes=off
+  - wal_level=minimal, max_wal_senders=0
+  - autovacuum=off, track_functions=none, track_counts=off
+  - tmpfs for PostgreSQL data (in-memory storage)
 
 ### File Structure Per Domain
 

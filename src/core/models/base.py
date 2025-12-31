@@ -34,7 +34,15 @@ class Database:
         self.logger.info(f"Initializing Database with URL: {db_url}, Echo: {echo}")
 
         try:
-            self.engine: AsyncEngine = create_async_engine(url=db_url, echo=echo)
+            pool_size = 3 if "test" in db_url else 5
+            max_overflow = 5 if "test" in db_url else 10
+            self.engine: AsyncEngine = create_async_engine(
+                url=db_url,
+                echo=echo,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
+                pool_pre_ping=True,
+            )
             self.async_session: Any = async_sessionmaker(
                 bind=self.engine, class_=AsyncSession, expire_on_commit=False
             )
