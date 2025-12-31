@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import (
     BaseServiceDB,
     SponsorDB,
@@ -45,13 +46,22 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:
-            self.logger.error(f"Error creating {ITEM}: {e}", exc_info=True)
+            self.logger.error(f"Database error creating {ITEM}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail=f"Database error creating {ITEM}",
             )
+        except (ValueError, KeyError, TypeError) as e:
+            self.logger.warning(f"Data error creating {ITEM}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for {ITEM}",
+            )
+        except NotFoundError as e:
+            self.logger.info(f"Not found creating {ITEM}: {e}", exc_info=True)
+            return None
         except Exception as e:
-            self.logger.error(f"Error creating {ITEM}: {e}", exc_info=True)
+            self.logger.critical(f"Unexpected error creating {ITEM}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail=f"Internal server error creating {ITEM}",
@@ -75,13 +85,22 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
             except HTTPException:
                 raise
             except (IntegrityError, SQLAlchemyError) as e:
-                self.logger.error(f"Error getting {ITEM}: {e}", exc_info=True)
+                self.logger.error(f"Database error getting {ITEM}: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error fetching {ITEM}",
                 )
+            except (ValueError, KeyError, TypeError) as e:
+                self.logger.warning(f"Data error getting {ITEM}: {e}", exc_info=True)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid data provided for {ITEM}",
+                )
+            except NotFoundError as e:
+                self.logger.info(f"Not found getting {ITEM}: {e}", exc_info=True)
+                return None
             except Exception as e:
-                self.logger.error(f"Error getting {ITEM}: {e}", exc_info=True)
+                self.logger.critical(f"Unexpected error getting {ITEM}: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail=f"Internal server error fetching {ITEM}",
@@ -109,16 +128,31 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                 raise
             except (IntegrityError, SQLAlchemyError) as e:
                 self.logger.error(
-                    f"Error getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
+                    f"Database error getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error fetching sponsors by sponsor line {sponsor_line_id}",
                 )
+            except (ValueError, KeyError, TypeError) as e:
+                self.logger.warning(
+                    f"Data error getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid data provided for sponsor sponsors",
+                )
+            except NotFoundError as e:
+                self.logger.info(
+                    f"Not found getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
+                    exc_info=True,
+                )
+                return {"sponsor_line": None, "sponsors": []}
             except Exception as e:
-                self.logger.error(
-                    f"Error getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
+                self.logger.critical(
+                    f"Unexpected error getting related sponsors by sponsor line id:{sponsor_line_id}: {e}",
                     exc_info=True,
                 )
                 raise HTTPException(
@@ -156,13 +190,22 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
             except HTTPException:
                 raise
             except (IntegrityError, SQLAlchemyError) as e:
-                self.logger.error(f"Error deleting {ITEM}: {e}", exc_info=True)
+                self.logger.error(f"Database error deleting {ITEM}: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error deleting {ITEM}",
                 )
+            except (ValueError, KeyError, TypeError) as e:
+                self.logger.warning(f"Data error deleting {ITEM}: {e}", exc_info=True)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid data provided for {ITEM}",
+                )
+            except NotFoundError as e:
+                self.logger.info(f"Not found deleting {ITEM}: {e}", exc_info=True)
+                raise HTTPException(status_code=404, detail=str(e))
             except Exception as e:
-                self.logger.error(f"Error deleting {ITEM}: {e}", exc_info=True)
+                self.logger.critical(f"Unexpected error deleting {ITEM}: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail=f"Internal server error deleting {ITEM}",

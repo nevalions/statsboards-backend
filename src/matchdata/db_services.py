@@ -1,6 +1,8 @@
 from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, MatchDataDB
 from src.core.models.base import Database
 
@@ -46,9 +48,30 @@ class MatchDataServiceDB(BaseServiceDB):
                     f"Matchdata created successfully. Result: {match_data}"
                 )
                 return match_data
-            except Exception as ex:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error creating new match data({match_data}): {ex}", exc_info=True
+                    f"Database error creating new match data: {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Database error creating matchdata data({item})",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error creating new match data: {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid data provided for matchdata",
+                )
+            except NotFoundError as ex:
+                self.logger.info(f"Not found creating new match data: {ex}", exc_info=True)
+                raise HTTPException(status_code=404, detail=str(ex))
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error creating new match data: {ex}", exc_info=True
                 )
                 raise HTTPException(
                     status_code=409,
@@ -82,8 +105,23 @@ class MatchDataServiceDB(BaseServiceDB):
             return updated_
         except HTTPException:
             raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Database error creating new match data: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Database error updating matchdata with data: {item}",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error updating match data: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for matchdata",
+            )
+        except NotFoundError as ex:
+            self.logger.info(f"Not found updating match data: {ex}", exc_info=True)
+            raise HTTPException(status_code=404, detail=str(ex))
         except Exception as ex:
-            self.logger.error(f"Error creating new match data: {ex}", exc_info=True)
+            self.logger.critical(f"Unexpected error creating new match data: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=409,
                 detail=f"Error creating new matchdata with data: {item}",
@@ -107,14 +145,28 @@ class MatchDataServiceDB(BaseServiceDB):
                         f"No matchdata in match with match_id: {match_id}"
                     )
                     return None
-            except Exception as ex:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error getting {ITEM} with match id:{match_id} {ex}", exc_info=True
+                    f"Database error getting {ITEM} with match id:{match_id} {ex}", exc_info=True
                 )
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Error creating new matchdata with match id: {match_id}",
+                return None
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error getting {ITEM} with match id:{match_id} {ex}", exc_info=True
                 )
+                return None
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found {ITEM} with match id:{match_id} {ex}", exc_info=True
+                )
+                return None
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error getting {ITEM} with match id:{match_id} {ex}", exc_info=True
+                )
+                return None
 
     async def enable_match_data_clock_queues(
         self, match_data_id: int, clock_type: str

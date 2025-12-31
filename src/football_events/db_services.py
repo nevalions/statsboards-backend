@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, FootballEventDB
 from src.core.models.base import Database
 
@@ -91,8 +92,17 @@ class FootballEventServiceDB(BaseServiceDB):
                     status_code=500,
                     detail=f"Database error creating football event for match {item.match_id}",
                 )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided for football event",
+                )
+            except NotFoundError as ex:
+                self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
+                raise HTTPException(status_code=404, detail=str(ex))
             except Exception as ex:
-                self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+                self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error creating football event",
@@ -115,8 +125,23 @@ class FootballEventServiceDB(BaseServiceDB):
             return updated_
         except HTTPException:
             raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Database error updating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error updating football event",
+            )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error updating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid data provided for football event",
+            )
+        except NotFoundError as ex:
+            self.logger.info(f"Not found updating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(status_code=404, detail=str(ex))
         except Exception as ex:
-            self.logger.error(f"Error updating {ITEM} {ex}", exc_info=True)
+            self.logger.critical(f"Unexpected error updating {ITEM}: {ex}", exc_info=True)
             raise
 
     async def get_match_football_events_by_match_id(
@@ -139,19 +164,25 @@ class FootballEventServiceDB(BaseServiceDB):
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error getting {ITEM}s with match id:{match_id} {ex}",
+                    f"Database error getting {ITEM}s with match id:{match_id} {ex}",
                     exc_info=True,
                 )
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Database error fetching football events for match {match_id}",
+                return []
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error getting {ITEM}s with match id:{match_id} {ex}",
+                    exc_info=True,
                 )
+                return []
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found {ITEM}s with match id:{match_id} {ex}",
+                    exc_info=True,
+                )
+                return []
             except Exception as ex:
-                self.logger.error(
-                    f"Error getting {ITEM}s with match id:{match_id} {ex}",
+                self.logger.critical(
+                    f"Unexpected error getting {ITEM}s with match id:{match_id} {ex}",
                     exc_info=True,
                 )
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Internal server error fetching football events for match {match_id}",
-                )
+                return []
