@@ -14,10 +14,7 @@ from src.core.config import uploads_path
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import convert_cyrillic_filename, ru_to_eng_datetime_month
-from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
-
-setup_logging()
 logger = logging.getLogger("backend_logger_parse_players_from_eesl")
 ITEM_GOT = "PLAYER"
 

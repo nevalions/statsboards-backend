@@ -3,7 +3,7 @@ from fastapi import File, HTTPException, UploadFile
 from src.core import BaseRouter, db
 
 from ..helpers.file_service import file_service
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from ..pars_eesl.pars_tournament import (
     ParsedTeamData,
     parse_tournament_teams_index_page_eesl,
@@ -19,8 +19,6 @@ from .schemas import (
     UploadResizeTeamLogoResponse,
     UploadTeamLogoResponse,
 )
-
-setup_logging()
 
 
 # Team backend

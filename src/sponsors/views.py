@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from src.core import BaseRouter, db
 from src.helpers.file_service import file_service
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .db_services import SponsorServiceDB
 from .schemas import (
     SponsorSchema,
@@ -12,8 +12,6 @@ from .schemas import (
     SponsorSchemaUpdate,
     UploadSponsorLogoResponse,
 )
-
-setup_logging()
 
 
 class SponsorAPIRouter(

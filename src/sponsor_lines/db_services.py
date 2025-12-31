@@ -5,10 +5,8 @@ from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, SponsorLineDB
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import SponsorLineSchemaCreate, SponsorLineSchemaUpdate
-
-setup_logging()
 ITEM = "SPONSOR_LINE"
 
 

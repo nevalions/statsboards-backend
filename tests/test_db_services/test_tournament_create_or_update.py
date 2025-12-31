@@ -1,7 +1,6 @@
 import pytest
 
 from src.core.models.base import Database
-from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sports.db_services import SportServiceDB
@@ -10,7 +9,6 @@ from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaUpdate
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
-setup_logging()
 
 
 @pytest.fixture(scope="function")

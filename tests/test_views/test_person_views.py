@@ -3,12 +3,10 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from src.logging_config import setup_logging
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaUpdate
 from tests.factories import PersonFactory
 
-setup_logging()
 
 
 def create_test_image():

@@ -7,13 +7,11 @@ from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PlayerDB
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
 
 if TYPE_CHECKING:
     from src.core.models import PlayerDB
-
-setup_logging()
 ITEM = "PLAYER"
 
 

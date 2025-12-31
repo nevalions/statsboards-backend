@@ -12,10 +12,8 @@ from src.core.models import (
 )
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import SportSchemaCreate, SportSchemaUpdate
-
-setup_logging()
 ITEM = "SPORT"
 
 

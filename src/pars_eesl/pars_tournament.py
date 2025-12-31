@@ -8,10 +8,7 @@ from bs4 import BeautifulSoup
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import months, safe_int_conversion
-from src.logging_config import setup_logging
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
-
-setup_logging()
 logger = logging.getLogger("backend_logger_parser_eesl")
 ITEM_PARSED = "TOURNAMENT"
 ITEM_GOT = "TEAM"

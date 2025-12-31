@@ -7,11 +7,9 @@ from src.pars_eesl.pars_all_players_from_eesl import (
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .db_services import PlayerServiceDB
 from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
-
-setup_logging()
 
 
 class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate]):

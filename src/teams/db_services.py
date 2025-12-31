@@ -13,10 +13,8 @@ from src.core.models import (
 from src.core.models.base import Database
 from src.positions.db_services import PositionServiceDB
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
-
-setup_logging()
 ITEM = "TEAM"
 
 

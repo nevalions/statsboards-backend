@@ -9,11 +9,9 @@ from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PlayClockDB
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .clock_manager import ClockManager
 from .schemas import PlayClockSchemaBase, PlayClockSchemaCreate, PlayClockSchemaUpdate
-
-setup_logging()
 
 
 class PlayClockServiceDB(BaseServiceDB):

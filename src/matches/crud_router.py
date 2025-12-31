@@ -5,7 +5,7 @@ from src.core import BaseRouter
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.helpers.file_service import file_service
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 from src.playclocks.db_services import PlayClockServiceDB
@@ -23,8 +23,6 @@ from .schemas import (
     MatchSchemaCreate,
     MatchSchemaUpdate,
 )
-
-setup_logging()
 
 
 class MatchCRUDRouter(

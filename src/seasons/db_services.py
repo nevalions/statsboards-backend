@@ -13,11 +13,9 @@ from src.core.models import (
     TournamentDB,
 )
 from src.core.models.base import Database
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
 
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
-
-setup_logging()
 ITEM = "SEASON"
 
 

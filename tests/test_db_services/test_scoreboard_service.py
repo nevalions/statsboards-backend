@@ -1,6 +1,5 @@
 import pytest
 
-from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
@@ -16,7 +15,6 @@ from tests.factories import (
     TournamentFactory,
 )
 
-setup_logging()
 
 
 @pytest.mark.asyncio

@@ -5,7 +5,6 @@ from src.football_events.schemas import (
     FootballEventSchemaCreate,
     FootballEventSchemaUpdate,
 )
-from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
@@ -19,7 +18,6 @@ from tests.factories import (
     TournamentFactory,
 )
 
-setup_logging()
 
 
 @pytest.mark.asyncio

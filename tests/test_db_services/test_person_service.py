@@ -1,12 +1,10 @@
 import pytest
 
 from src.core.models.base import Database
-from src.logging_config import setup_logging
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaUpdate
 from tests.factories import PersonFactory
 
-setup_logging()
 
 
 @pytest.mark.asyncio

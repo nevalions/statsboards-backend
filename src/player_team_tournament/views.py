@@ -2,7 +2,7 @@ from fastapi import HTTPException
 
 from src.core import BaseRouter, db
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from ..pars_eesl.pars_all_players_from_eesl import collect_player_full_data_eesl
 from ..pars_eesl.parse_player_team_tournament import (
     parse_players_from_team_tournament_eesl_and_create_jsons,
@@ -21,8 +21,6 @@ from .schemas import (
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
 )
-
-setup_logging()
 
 
 class PlayerTeamTournamentAPIRouter(

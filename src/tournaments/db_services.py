@@ -14,11 +14,9 @@ from src.core.models import (
 )
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from ..sponsor_lines.db_services import SponsorLineServiceDB
 from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
-
-setup_logging()
 ITEM = "TOURNAMENT"
 
 

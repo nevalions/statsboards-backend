@@ -1,6 +1,5 @@
 import pytest
 
-from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
@@ -16,7 +15,6 @@ from tests.factories import (
     TournamentFactory,
 )
 
-setup_logging()
 
 
 @pytest.mark.asyncio

@@ -3,7 +3,6 @@ import logging
 import pytest
 import pytest_asyncio
 
-from src.logging_config import setup_logging
 from src.positions.db_services import PositionServiceDB
 from src.seasons.db_services import SeasonServiceDB
 from src.sponsor_lines.db_services import SponsorLineServiceDB
@@ -18,8 +17,6 @@ from tests.factories import (
     SportFactorySample,
     TournamentFactory,
 )
-
-setup_logging()
 test_logger = logging.getLogger("backend_logger_tests")
 
 

@@ -4,7 +4,6 @@ import pytest
 import pytest_asyncio
 
 from src.core.models.base import Database
-from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
 from src.matches.schemas import MatchSchemaUpdate
 from src.seasons.db_services import SeasonServiceDB
@@ -22,7 +21,6 @@ from tests.factories import (
     TournamentFactory,
 )
 
-setup_logging()
 
 
 @pytest.fixture(scope="function")

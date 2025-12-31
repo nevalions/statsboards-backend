@@ -1,7 +1,7 @@
 from fastapi import WebSocket
 
 from src.core import BaseRouter
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
 from ..websocket.match_handler import match_websocket_handler
 from .db_services import MatchServiceDB
 from .schemas import (
@@ -9,8 +9,6 @@ from .schemas import (
     MatchSchemaCreate,
     MatchSchemaUpdate,
 )
-
-setup_logging()
 
 
 class MatchWebSocketRouter(

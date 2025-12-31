@@ -2,10 +2,8 @@ import pytest
 from fastapi import HTTPException
 
 from src.core.models.season import SeasonDB
-from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 
-setup_logging()
 
 
 class TestCRUDMixin:

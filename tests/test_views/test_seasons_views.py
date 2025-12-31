@@ -1,11 +1,9 @@
 import pytest
 
-from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaUpdate
 from tests.factories import SeasonFactorySample
 
-setup_logging()
 
 
 @pytest.mark.asyncio

@@ -4,10 +4,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, SponsorDB
 from src.core.models.base import Database
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
 from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
-
-setup_logging()
 ITEM = "SPONSOR"
 
 

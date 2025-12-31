@@ -3,11 +3,9 @@ from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .db_services import SeasonServiceDB
 from .schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
-
-setup_logging()
 
 
 class SeasonAPIRouter(

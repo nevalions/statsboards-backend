@@ -10,11 +10,9 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core import BaseRouter, db
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .db_services import PlayClockServiceDB
 from .schemas import PlayClockSchema, PlayClockSchemaCreate, PlayClockSchemaUpdate
-
-setup_logging()
 
 
 class PlayClockAPIRouter(

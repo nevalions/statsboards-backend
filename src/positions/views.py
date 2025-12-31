@@ -2,11 +2,9 @@ from fastapi import HTTPException
 
 from src.core import BaseRouter, db
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .db_services import PositionServiceDB
 from .schemas import PositionSchema, PositionSchemaCreate, PositionSchemaUpdate
-
-setup_logging()
 
 
 class PositionAPIRouter(

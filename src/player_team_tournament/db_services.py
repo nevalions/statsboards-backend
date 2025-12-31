@@ -7,13 +7,11 @@ from src.core.models import BaseServiceDB, PlayerDB, PlayerTeamTournamentDB
 from src.core.models.base import Database
 from src.player.db_services import PlayerServiceDB
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import (
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
 )
-
-setup_logging()
 ITEM = "PLAYER_TEAM_TOURNAMENT"
 
 

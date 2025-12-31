@@ -3,14 +3,12 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaUpdate
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
-setup_logging()
 
 
 def create_test_image():

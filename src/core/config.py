@@ -6,10 +6,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.logging_config import setup_logging
-
 load_dotenv()
-setup_logging()
 logger = logging.getLogger("backend_logger_config")
 
 SSL_KEY = os.getenv("SSL_KEYFILE")

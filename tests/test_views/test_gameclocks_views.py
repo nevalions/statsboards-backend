@@ -2,7 +2,6 @@ import pytest
 
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate, GameClockSchemaUpdate
-from src.logging_config import setup_logging
 from src.matches.db_services import MatchServiceDB
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
@@ -15,8 +14,6 @@ from tests.factories import (
     TeamFactory,
     TournamentFactory,
 )
-
-setup_logging()
 
 
 @pytest.mark.asyncio

@@ -6,10 +6,8 @@ from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, FootballEventDB
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
-
-setup_logging()
 ITEM = "FOOTBALL_EVENT"
 
 

@@ -5,10 +5,8 @@ from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PersonDB
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import PersonSchemaCreate, PersonSchemaUpdate
-
-setup_logging()
 ITEM = "PERSON"
 
 

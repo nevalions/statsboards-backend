@@ -12,13 +12,11 @@ from src.core.models import (
 from src.core.models.base import Database
 from src.positions.db_services import PositionServiceDB
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from ..player.db_services import PlayerServiceDB
 from ..player.schemas import PlayerSchema
 from ..player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
-
-setup_logging()
 ITEM = "PLAYER_MATCH"
 
 

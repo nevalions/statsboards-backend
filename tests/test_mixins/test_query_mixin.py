@@ -1,12 +1,10 @@
 import pytest
 from fastapi import HTTPException
 
-from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from tests.factories import SeasonFactorySample, SportFactorySample
 
-setup_logging()
 
 
 class TestQueryMixin:

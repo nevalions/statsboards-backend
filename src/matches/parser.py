@@ -7,7 +7,7 @@ from src.core import db
 from src.core.models import TeamDB
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
 from src.pars_eesl.pars_tournament import (
@@ -19,8 +19,6 @@ from src.playclocks.schemas import PlayClockSchemaCreate
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from src.tournaments.db_services import TournamentServiceDB
-
-setup_logging()
 
 
 class MatchParser:

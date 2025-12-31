@@ -3,7 +3,7 @@ from fastapi import File, HTTPException, UploadFile
 from src.core import BaseRouter, db
 
 from ..helpers.file_service import file_service
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .db_services import PersonServiceDB
 from .schemas import (
     PersonSchema,
@@ -12,8 +12,6 @@ from .schemas import (
     UploadPersonPhotoResponse,
     UploadResizePersonPhotoResponse,
 )
-
-setup_logging()
 
 
 class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaUpdate]):

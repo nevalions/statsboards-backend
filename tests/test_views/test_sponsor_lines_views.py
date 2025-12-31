@@ -1,11 +1,9 @@
 import pytest
 
-from src.logging_config import setup_logging
 from src.sponsor_lines.db_services import SponsorLineServiceDB
 from src.sponsor_lines.schemas import SponsorLineSchemaUpdate
 from tests.factories import SponsorLineFactory
 
-setup_logging()
 
 
 @pytest.mark.asyncio

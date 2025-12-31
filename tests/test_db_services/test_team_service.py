@@ -2,14 +2,12 @@ import pytest
 from fastapi import HTTPException
 
 from src.core.models.base import Database
-from src.logging_config import setup_logging
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate
 from src.teams.db_services import TeamServiceDB
 from src.teams.schemas import TeamSchemaCreate, TeamSchemaUpdate
 from tests.factories import SportFactorySample, TeamFactory
 
-setup_logging()
 
 
 @pytest.fixture(scope="function")

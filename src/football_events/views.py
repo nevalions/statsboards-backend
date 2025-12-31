@@ -4,15 +4,13 @@ from fastapi import (
 
 from src.core import BaseRouter, db
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .db_services import FootballEventServiceDB
 from .schemas import (
     FootballEventSchema,
     FootballEventSchemaCreate,
     FootballEventSchemaUpdate,
 )
-
-setup_logging()
 ITEM = "FOOTBALL_EVENT"
 
 

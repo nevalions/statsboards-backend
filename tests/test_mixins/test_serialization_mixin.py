@@ -1,9 +1,7 @@
 from datetime import datetime
 
 from src.core.models.mixins import SerializationMixin
-from src.logging_config import setup_logging
 
-setup_logging()
 
 
 class TestSerializationMixin:

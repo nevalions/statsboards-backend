@@ -1,12 +1,10 @@
 import pytest
 
-from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
-setup_logging()
 
 
 class TestBaseServiceDBIntegration:

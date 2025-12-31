@@ -1,9 +1,7 @@
 import asyncio
 
 from src.core.models import PlayClockDB
-from src.logging_config import get_logger, setup_logging
-
-setup_logging()
+from src.logging_config import get_logger
 
 
 class ClockManager:

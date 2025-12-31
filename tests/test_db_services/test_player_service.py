@@ -1,7 +1,6 @@
 import pytest
 
 from src.core.models.base import Database
-from src.logging_config import setup_logging
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate
 from src.player.db_services import PlayerServiceDB
@@ -10,7 +9,6 @@ from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate
 from tests.factories import PersonFactory, PlayerFactory, SportFactorySample
 
-setup_logging()
 
 
 @pytest.fixture(scope="function")

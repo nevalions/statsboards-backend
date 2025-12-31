@@ -1,5 +1,5 @@
 from src.core import BaseRouter
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
 from src.matches.parser import match_parser
 from .db_services import MatchServiceDB
 from .schemas import (
@@ -7,8 +7,6 @@ from .schemas import (
     MatchSchemaCreate,
     MatchSchemaUpdate,
 )
-
-setup_logging()
 
 
 class MatchParserRouter(

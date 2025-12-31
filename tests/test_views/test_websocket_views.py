@@ -7,7 +7,6 @@ import pytest
 from starlette.websockets import WebSocket
 
 from src.utils.websocket.websocket_manager import connection_manager
-from src.logging_config import setup_logging
 from src.seasons.db_services import SeasonServiceDB
 from tests.factories import (
     SeasonFactorySample,
@@ -17,7 +16,6 @@ from tests.factories import (
 )
 
 # type: ignore
-setup_logging()
 
 
 @pytest.mark.asyncio

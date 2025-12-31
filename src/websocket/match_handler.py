@@ -5,9 +5,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 from websockets import ConnectionClosedError, ConnectionClosedOK
 
 from ..utils.websocket.websocket_manager import connection_manager, ws_manager
-from ..logging_config import get_logger, setup_logging
-
-setup_logging()
+from ..logging_config import get_logger
 websocket_logger = logging.getLogger("backend_logger_MatchDataWebSocketManager")
 connection_socket_logger = logging.getLogger("backend_logger_ConnectionManager")
 

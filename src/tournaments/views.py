@@ -14,7 +14,7 @@ from src.pars_eesl.pars_season import parse_season_and_create_jsons
 from src.seasons.db_services import SeasonServiceDB
 
 from ..helpers.file_service import file_service
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from ..sponsor_lines.schemas import SponsorLineSchema
 from ..sponsors.schemas import SponsorSchema
 from .db_services import TournamentServiceDB
@@ -25,8 +25,6 @@ from .schemas import (
     UploadResizeTournamentLogoResponse,
     UploadTournamentLogoResponse,
 )
-
-setup_logging()
 
 
 class TournamentAPIRouter(

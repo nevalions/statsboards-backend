@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from src.core import BaseRouter, db
 from src.helpers.photo_utils import photo_files_exist
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from ..matches.schemas import MatchSchemaBase
 from ..pars_eesl.pars_all_players_from_eesl import collect_player_full_data_eesl
 from ..pars_eesl.pars_match import ParsedMatch, logger, parse_match_and_create_jsons
@@ -18,8 +18,6 @@ from ..positions.schemas import PositionSchemaBase, PositionSchemaCreate
 from ..teams.schemas import TeamSchemaBase
 from .db_services import PlayerMatchServiceDB
 from .schemas import PlayerMatchSchema, PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
-
-setup_logging()
 
 
 class PlayerMatchAPIRouter(

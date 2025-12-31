@@ -18,14 +18,12 @@ from src.core.models import (
     handle_service_exceptions,
 )
 from src.core.models.base import Database
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 
 from .schemas import MatchSchemaCreate, MatchSchemaUpdate
-
-setup_logging()
 ITEM = "MATCH"
 
 

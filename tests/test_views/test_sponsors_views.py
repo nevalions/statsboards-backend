@@ -3,12 +3,10 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from src.logging_config import setup_logging
 from src.sponsors.db_services import SponsorServiceDB
 from src.sponsors.schemas import SponsorSchemaUpdate
 from tests.factories import SponsorFactory
 
-setup_logging()
 
 
 def create_test_image():

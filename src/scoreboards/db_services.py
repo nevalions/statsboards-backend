@@ -8,10 +8,8 @@ from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, MatchDataDB, ScoreboardDB
 from src.core.models.base import Database
 
-from ..logging_config import get_logger, setup_logging
+from ..logging_config import get_logger
 from .schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
-
-setup_logging()
 
 
 class ScoreboardUpdateManager:

@@ -23,9 +23,7 @@ from src.core.models.mixins import (
     RelationshipMixin,
     SerializationMixin,
 )
-from src.logging_config import get_logger, setup_logging
-
-setup_logging()
+from src.logging_config import get_logger
 db_logger_helper = logging.getLogger("backend_logger_base_db")
 
 
