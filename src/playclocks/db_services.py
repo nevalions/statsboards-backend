@@ -3,7 +3,9 @@ import time
 
 from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PlayClockDB
 from src.core.models.base import Database
 
@@ -69,16 +71,40 @@ class PlayClockServiceDB(BaseServiceDB):
 
                 self.logger.info(f"Playclock created: {playclock_result}")
                 return playclock_result
-            except Exception as ex:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error creating playclock with data: {item} {ex}",
+                    f"Database error creating playclock with data: {item} {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"While creating playclock "
-                    f"for match id({item.match_id})"
-                    f"returned some error",
+                    detail=f"Database error creating playclock for match id({item.match_id})",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error creating playclock with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided for playclock",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found creating playclock with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(status_code=404, detail=str(ex))
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error creating playclock with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error creating playclock",
                 )
 
     async def enable_match_data_clock_queues(
@@ -140,13 +166,34 @@ class PlayClockServiceDB(BaseServiceDB):
                 return updated_item
             except HTTPException:
                 raise
-            except Exception as ex:
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error updating playclock id:{item_id} {ex}", exc_info=True
+                    f"Database error updating playclock id:{item_id} {ex}", exc_info=True
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to update playclock with id {item_id}",
+                    detail=f"Database error updating playclock with id {item_id}",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided for playclock",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(status_code=404, detail=str(ex))
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error updating playclock with id {item_id}",
                 )
 
     async def update_with_none(
@@ -188,13 +235,34 @@ class PlayClockServiceDB(BaseServiceDB):
                 return updated_item
             except HTTPException:
                 raise
-            except Exception as ex:
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error updating playclock id:{item_id} {ex}", exc_info=True
+                    f"Database error updating playclock id:{item_id} {ex}", exc_info=True
                 )
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to update playclock with id {item_id}",
+                    detail=f"Database error updating playclock with id {item_id}",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided for playclock",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(status_code=404, detail=str(ex))
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error updating playclock id:{item_id} {ex}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Internal server error updating playclock with id {item_id}",
                 )
 
     async def get_playclock_status(

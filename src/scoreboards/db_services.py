@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, MatchDataDB, ScoreboardDB
 from src.core.models.base import Database
 
@@ -102,16 +103,40 @@ class ScoreboardServiceDB(BaseServiceDB):
 
                 self.logger.info(f"Scoreboard created: {scoreboard_result}")
                 return scoreboard_result
-            except Exception as ex:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error creating scoreboard with data: {item} {ex}",
+                    f"Database error creating scoreboard with data: {item} {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"While creating playclock "
-                    f"for match id({item.match_id})"
-                    f"returned some error",
+                    detail=f"Database error creating scoreboard for match id({item.match_id})",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error creating scoreboard with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided for scoreboard",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found creating scoreboard with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(status_code=404, detail=str(ex))
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error creating scoreboard with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error creating scoreboard",
                 )
 
             #     session.add(match_result)
@@ -229,9 +254,24 @@ class ScoreboardServiceDB(BaseServiceDB):
                     status_code=500,
                     detail=f"Database error fetching scoreboard for matchdata {matchdata_id}",
                 )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error getting scoreboard by matchdata id: {matchdata_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided for scoreboard",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found getting scoreboard by matchdata id: {matchdata_id} {ex}",
+                    exc_info=True,
+                )
+                return None
             except Exception as ex:
-                self.logger.error(
-                    f"Error getting scoreboard by matchdata id: {matchdata_id} {ex}",
+                self.logger.critical(
+                    f"Unexpected error getting scoreboard by matchdata id: {matchdata_id} {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(

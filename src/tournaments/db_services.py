@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import (
     BaseServiceDB,
     MatchDB,
@@ -49,12 +50,26 @@ class TournamentServiceDB(BaseServiceDB):
             )
             self.logger.debug(f"Create new {ITEM}:{tournament}")
             return await super().create(tournament)
-        except Exception as ex:
-            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Error creating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=409,
                 detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for {ITEM}",
+            )
+        except NotFoundError as ex:
+            self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(status_code=404, detail=str(ex))
+        except Exception as ex:
+            self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def create_or_update_tournament(
         self,
@@ -129,9 +144,22 @@ class TournamentServiceDB(BaseServiceDB):
                 status_code=500,
                 detail=f"Database error fetching players for tournament {tournament_id}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error on get_players_by_tournament: {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for tournament {tournament_id}",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found on get_players_by_tournament: {ex}", exc_info=True
+            )
+            return []
         except Exception as ex:
-            self.logger.error(
-                f"Error on get_players_by_tournament: {ex}", exc_info=True
+            self.logger.critical(
+                f"Unexpected error on get_players_by_tournament: {ex}", exc_info=True
             )
             raise HTTPException(
                 status_code=500,

@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
+from src.core.exceptions import NotFoundError
 from src.core.models import (
     BaseServiceDB,
     GameClockDB,
@@ -50,12 +51,26 @@ class MatchServiceDB(BaseServiceDB):
             )
             self.logger.debug(f"Starting to create MatchDB with data: {match.__dict__}")
             return await super().create(match)
-        except Exception as ex:
-            self.logger.error(f"Error creating {ITEM} {ex}", exc_info=True)
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(f"Error creating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=409,
                 detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for {ITEM}",
+            )
+        except NotFoundError as ex:
+            self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(status_code=404, detail=str(ex))
+        except Exception as ex:
+            self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def create_or_update_match(self, m: MatchSchemaCreate) -> MatchDB:
         return await super().create_or_update(m, eesl_field_name="match_eesl_id")
@@ -106,9 +121,25 @@ class MatchServiceDB(BaseServiceDB):
                 status_code=500,
                 detail=f"Database error fetching sport for match {match_id}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error fetching sport for match_id:{match_id} {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for match {match_id}",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found fetching sport for match_id:{match_id} {ex}",
+                exc_info=True,
+            )
+            return None
         except Exception as ex:
-            self.logger.error(
-                f"No Sport found for match_id:{match_id} {ex}", exc_info=True
+            self.logger.critical(
+                f"Unexpected error fetching sport for match_id:{match_id} {ex}",
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
@@ -143,9 +174,25 @@ class MatchServiceDB(BaseServiceDB):
                 status_code=500,
                 detail=f"Database error fetching teams for match {match_id}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error fetching teams for match_id:{match_id} {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for match {match_id}",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found fetching teams for match_id:{match_id} {ex}",
+                exc_info=True,
+            )
+            return None
         except Exception as ex:
-            self.logger.error(
-                f"Error not all teams found for match_id:{match_id} {ex}", exc_info=True
+            self.logger.critical(
+                f"Unexpected error fetching teams for match_id:{match_id} {ex}",
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
@@ -237,11 +284,32 @@ class MatchServiceDB(BaseServiceDB):
                     "team_a": team_a.__dict__,
                     "team_b": team_b.__dict__,
                 }
-            except Exception as ex:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error not all teams found for match_id:{match_id} {ex}",
+                    f"Database error getting teams for match_id:{match_id} {ex}",
                     exc_info=True,
                 )
+                return None
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error getting teams for match_id:{match_id} {ex}",
+                    exc_info=True,
+                )
+                return None
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found getting teams for match_id:{match_id} {ex}",
+                    exc_info=True,
+                )
+                return None
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error getting teams for match_id:{match_id} {ex}",
+                    exc_info=True,
+                )
+                return None
         return None
 
     async def get_players_by_match(
@@ -266,9 +334,22 @@ class MatchServiceDB(BaseServiceDB):
                 status_code=500,
                 detail=f"Database error fetching players for match {match_id}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error getting players for {ITEM} id:{match_id} {ex}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for match {match_id}",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found getting players for {ITEM} id:{match_id} {ex}", exc_info=True
+            )
+            return []
         except Exception as ex:
-            self.logger.error(
-                f"Error getting players for {ITEM} id:{match_id} {ex}", exc_info=True
+            self.logger.critical(
+                f"Unexpected error getting players for {ITEM} id:{match_id} {ex}", exc_info=True
             )
             raise HTTPException(
                 status_code=500,
@@ -325,9 +406,24 @@ class MatchServiceDB(BaseServiceDB):
                 status_code=500,
                 detail=f"Database error fetching players with full data for match {match_id}",
             )
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error getting players with full data for {ITEM} id:{match_id} {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for match {match_id}",
+            )
+        except NotFoundError as ex:
+            self.logger.info(
+                f"Not found getting players with full data for {ITEM} id:{match_id} {ex}",
+                exc_info=True,
+            )
+            return []
         except Exception as ex:
-            self.logger.error(
-                f"Error getting players with full data for {ITEM} id:{match_id} {ex}",
+            self.logger.critical(
+                f"Unexpected error getting players with full data for {ITEM} id:{match_id} {ex}",
                 exc_info=True,
             )
             raise HTTPException(
@@ -353,11 +449,37 @@ class MatchServiceDB(BaseServiceDB):
                     return None
                 return result  # type: ignore[return-value]
             return None
-        except Exception as e:
-            self.logger.error(
-                f"Error getting scoreboard for {ITEM} id:{match_id} {e}", exc_info=True
-            )
+        except HTTPException:
             raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            self.logger.error(
+                f"Database error getting scoreboard for {ITEM} id:{match_id} {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching scoreboard for match {match_id}",
+            )
+        except (ValueError, KeyError, TypeError) as e:
+            self.logger.warning(
+                f"Data error getting scoreboard for {ITEM} id:{match_id} {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid data provided for match {match_id}",
+            )
+        except NotFoundError as e:
+            self.logger.info(
+                f"Not found getting scoreboard for {ITEM} id:{match_id} {e}", exc_info=True
+            )
+            return None
+        except Exception as e:
+            self.logger.critical(
+                f"Unexpected error getting scoreboard for {ITEM} id:{match_id} {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Internal server error fetching scoreboard for match {match_id}",
+            )
 
     # async def get_scoreboard_by_match(
     #     self,

@@ -3,7 +3,9 @@ import time
 
 from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, GameClockDB
 from src.core.models.base import Database
 
@@ -71,14 +73,40 @@ class GameClockServiceDB(BaseServiceDB):
 
                 self.logger.info(f"gameclock created: {gameclock_result}")
                 return gameclock_result
-            except Exception as ex:
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
                 self.logger.error(
-                    f"Error creating gameclock with data: {item} {ex}",
+                    f"Database error creating gameclock with data: {item} {ex}",
                     exc_info=True,
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail="While creating gameclock for match)returned some error",
+                    detail="While creating gameclock for match returned database error",
+                )
+            except (ValueError, KeyError, TypeError) as ex:
+                self.logger.warning(
+                    f"Data error creating gameclock with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid data provided for gameclock",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found creating gameclock: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(status_code=404, detail=str(ex))
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error creating gameclock with data: {item} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error creating gameclock",
                 )
 
     async def enable_match_data_gameclock_queues(
