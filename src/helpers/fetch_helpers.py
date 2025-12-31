@@ -92,9 +92,11 @@ async def fetch_match_data(match_id: int):
         match_data_service_db = MatchDataServiceDB(db)
         match_service_db = MatchServiceDB(db)
 
-        match = await match_service_db.get_by_id(match_id)
-        match_teams_data = await match_service_db.get_teams_by_match(match_id)
-        match_data = await match_service_db.get_matchdata_by_match(match_id)
+        match, match_teams_data, match_data = await asyncio.gather(
+            match_service_db.get_by_id(match_id),
+            match_service_db.get_teams_by_match(match_id),
+            match_service_db.get_matchdata_by_match(match_id),
+        )
 
         if match:
             if match_data is None:
@@ -126,18 +128,14 @@ async def fetch_with_scoreboard_data(match_id: int):
     match_service_db = MatchServiceDB(db)
 
     try:
-        scoreboard_data = await match_service_db.get_scoreboard_by_match(match_id)
-        fetch_data_logger.debug(f"Scoreboard Data: {scoreboard_data}")
-
-        match = await match_service_db.get_by_id(match_id)
-        fetch_data_logger.debug(f"Match by match_id:{match_id} {match}")
-
-        match_teams_data = await match_service_db.get_teams_by_match(match_id)
-        fetch_data_logger.debug(
-            f"Match teams by match_id:{match_id} {match_teams_data}"
+        scoreboard_data, match, match_teams_data, match_data = await asyncio.gather(
+            match_service_db.get_scoreboard_by_match(match_id),
+            match_service_db.get_by_id(match_id),
+            match_service_db.get_teams_by_match(match_id),
+            match_service_db.get_matchdata_by_match(match_id),
         )
-
-        match_data = await match_service_db.get_matchdata_by_match(match_id)
+        fetch_data_logger.debug(f"Scoreboard Data: {scoreboard_data}")
+        fetch_data_logger.debug(f"Match by match_id:{match_id} {match}")
         fetch_data_logger.debug(f"Match Data by match_id:{match_id} {match_data}")
 
         if match:
@@ -195,8 +193,10 @@ async def fetch_gameclock(match_id: int):
     match_service_db = MatchServiceDB(db)
 
     try:
-        match = await match_service_db.get_by_id(match_id)
-        gameclock = await gameclock_service.get_gameclock_by_match_id(match_id)
+        match, gameclock = await asyncio.gather(
+            match_service_db.get_by_id(match_id),
+            gameclock_service.get_gameclock_by_match_id(match_id),
+        )
 
         if match:
             if gameclock is None:
@@ -223,8 +223,10 @@ async def fetch_playclock(match_id: int):
     playclock_service = PlayClockServiceDB(db)
     match_service_db = MatchServiceDB(db)
     try:
-        match = await match_service_db.get_by_id(match_id)
-        playclock = await playclock_service.get_playclock_by_match_id(match_id)
+        match, playclock = await asyncio.gather(
+            match_service_db.get_by_id(match_id),
+            playclock_service.get_playclock_by_match_id(match_id),
+        )
 
         if match:
             if playclock is None:
@@ -266,7 +268,6 @@ async def fetch_matches_with_data_by_tournament_paginated(
         match_ids = [match.id for match in paginated_matches]
         fetch_data_logger.debug(f"Fetched match_ids {match_ids}")
 
-        full_match_data_list = []
         fetch_data_logger.debug(f"Fetched {len(match_ids)} of matches")
 
         if len(match_ids) == 0:
@@ -275,10 +276,10 @@ async def fetch_matches_with_data_by_tournament_paginated(
             )
             return []
 
-        # Fetch full match details for each match
-        for match_id in match_ids:
-            match_data = await fetch_with_scoreboard_data(match_id)
-            full_match_data_list.append(match_data)
+        # Fetch full match details for all matches in parallel
+        full_match_data_list = await asyncio.gather(
+            *[fetch_with_scoreboard_data(match_id) for match_id in match_ids]
+        )
 
         fetch_data_logger.debug(
             f"Fetched matches with fulldata: {full_match_data_list}"
