@@ -265,10 +265,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 if player:
                     return player
                 else:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"{ITEM} does not exist",
-                    )
+                    return None
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
