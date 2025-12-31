@@ -1,3 +1,5 @@
+"""Application configuration management using Pydantic settings."""
+
 import logging
 import os
 from pathlib import Path
@@ -32,6 +34,19 @@ class DbSettings(BaseSettings):
     @field_validator("host", "user", "password", "name")
     @classmethod
     def validate_not_empty(cls, v: str, info) -> str:
+        """
+        Validate that database configuration fields are not empty.
+
+        Args:
+            v: Field value to validate.
+            info: Pydantic field info object.
+
+        Returns:
+            str: Stripped field value.
+
+        Raises:
+            ConfigurationError: If field is empty or whitespace only.
+        """
         if not v or not v.strip():
             raise ConfigurationError(
                 f"Database {info.field_name} cannot be empty",
@@ -42,6 +57,18 @@ class DbSettings(BaseSettings):
     @field_validator("port")
     @classmethod
     def validate_port(cls, v: int) -> int:
+        """
+        Validate that database port is within valid range.
+
+        Args:
+            v: Port number to validate.
+
+        Returns:
+            int: Validated port number.
+
+        Raises:
+            ConfigurationError: If port is not between 1 and 65535.
+        """
         if not 1 <= v <= 65535:
             raise ConfigurationError(
                 f"Database port must be between 1 and 65535, got {v}",
@@ -51,6 +78,12 @@ class DbSettings(BaseSettings):
 
     @property
     def db_url(self) -> str:
+        """
+        Build PostgreSQL database connection URL for async operations.
+
+        Returns:
+            str: Database connection URL with asyncpg driver.
+        """
         url = str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
@@ -64,6 +97,12 @@ class DbSettings(BaseSettings):
         return url
 
     def db_url_websocket(self) -> str:
+        """
+        Build PostgreSQL database connection URL for WebSocket operations.
+
+        Returns:
+            str: Database connection URL for WebSocket.
+        """
         url = str(
             PostgresDsn.build(
                 scheme="postgresql",
@@ -77,18 +116,24 @@ class DbSettings(BaseSettings):
         return url
 
     def validate_connection_string(self) -> None:
+        """
+        Validate that the database connection string can be built.
+
+        Raises:
+            ConfigurationError: If connection string is invalid.
+        """
         try:
             self.db_url
-        except Exception as e:
+        except Exception as ex:
             raise ConfigurationError(
-                f"Invalid database connection string: {e}",
+                f"Invalid database connection string: {ex}",
                 {
                     "host": self.host,
                     "port": self.port,
                     "database": self.name,
                     "user": self.user,
                 },
-            ) from e
+            ) from ex
 
 
 class TestDbSettings(BaseSettings):
@@ -104,6 +149,19 @@ class TestDbSettings(BaseSettings):
     @field_validator("host", "user", "password", "name")
     @classmethod
     def validate_not_empty(cls, v: str, info) -> str:
+        """
+        Validate that test database configuration fields are not empty.
+
+        Args:
+            v: Field value to validate.
+            info: Pydantic field info object.
+
+        Returns:
+            str: Stripped field value.
+
+        Raises:
+            ConfigurationError: If field is empty or whitespace only.
+        """
         if not v or not v.strip():
             raise ConfigurationError(
                 f"Test database {info.field_name} cannot be empty",
@@ -114,6 +172,18 @@ class TestDbSettings(BaseSettings):
     @field_validator("port")
     @classmethod
     def validate_port(cls, v: int) -> int:
+        """
+        Validate that test database port is within valid range.
+
+        Args:
+            v: Port number to validate.
+
+        Returns:
+            int: Validated port number.
+
+        Raises:
+            ConfigurationError: If port is not between 1 and 65535.
+        """
         if not 1 <= v <= 65535:
             raise ConfigurationError(
                 f"Test database port must be between 1 and 65535, got {v}",
@@ -123,6 +193,12 @@ class TestDbSettings(BaseSettings):
 
     @property
     def test_db_url(self) -> str:
+        """
+        Build test PostgreSQL database connection URL for async operations.
+
+        Returns:
+            str: Test database connection URL with asyncpg driver.
+        """
         url = str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
@@ -136,6 +212,12 @@ class TestDbSettings(BaseSettings):
         return url
 
     def test_db_url_websocket(self) -> str:
+        """
+        Build test PostgreSQL database connection URL for WebSocket operations.
+
+        Returns:
+            str: Test database connection URL for WebSocket.
+        """
         url = str(
             PostgresDsn.build(
                 scheme="postgresql",
@@ -149,23 +231,28 @@ class TestDbSettings(BaseSettings):
         return url
 
     def validate_connection_string(self) -> None:
+        """
+        Validate that the test database connection string can be built.
+
+        Raises:
+            ConfigurationError: If connection string is invalid.
+        """
         try:
             self.test_db_url
-        except Exception as e:
+        except Exception as ex:
             raise ConfigurationError(
-                f"Invalid test database connection string: {e}",
+                f"Invalid test database connection string: {ex}",
                 {
                     "host": self.host,
                     "port": self.port,
                     "database": self.name,
                     "user": self.user,
                 },
-            ) from e
+            ) from ex
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="allow")
-    # api_v1_prefix: str = "/api/v1"
     db: DbSettings = Field(default_factory=DbSettings)
     test_db: TestDbSettings = Field(default_factory=TestDbSettings)
     db_echo: bool = False
@@ -189,6 +276,18 @@ class Settings(BaseSettings):
     @field_validator("allowed_origins")
     @classmethod
     def validate_allowed_origins(cls, v: str) -> str:
+        """
+        Validate CORS allowed origins format.
+
+        Args:
+            v: Comma-separated list of origins or "*".
+
+        Returns:
+            str: Validated origins string.
+
+        Raises:
+            ConfigurationError: If origin format is invalid.
+        """
         if v == "*":
             return v
         origins = [origin.strip() for origin in v.split(",")]
@@ -207,6 +306,15 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_ssl_files(self) -> "Settings":
+        """
+        Validate that SSL files are both provided or both absent.
+
+        Returns:
+            Settings: Validated settings instance.
+
+        Raises:
+            ConfigurationError: If only one SSL file is provided.
+        """
         if bool(self.ssl_keyfile) != bool(self.ssl_certfile):
             raise ConfigurationError(
                 "Both SSL_KEYFILE and SSL_CERTFILE must be provided or neither",
@@ -271,16 +379,16 @@ class Settings(BaseSettings):
         try:
             self.validate_paths_exist()
             self.logger.info("Path validation successful")
-        except ConfigurationError as e:
-            self.logger.error(f"Path validation failed: {e.message}", exc_info=True)
+        except ConfigurationError as ex:
+            self.logger.error(f"Path validation failed: {ex.message}", exc_info=True)
             raise
 
         try:
             self.validate_database_settings()
             self.logger.info("Database settings validation successful")
-        except ConfigurationError as e:
+        except ConfigurationError as ex:
             self.logger.error(
-                f"Database settings validation failed: {e.message}", exc_info=True
+                f"Database settings validation failed: {ex.message}", exc_info=True
             )
             raise
 

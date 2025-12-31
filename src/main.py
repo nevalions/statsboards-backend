@@ -1,3 +1,5 @@
+"""Main FastAPI application entry point."""
+
 import logging.config
 import os
 from contextlib import asynccontextmanager
@@ -42,9 +44,9 @@ async def lifespan(_app: FastAPI):
         logger.info("Service registry initialized and all services registered")
         await db.validate_database_connection()
         yield
-    except Exception as e:
-        db_logger.critical(f"Critical error during startup: {e}", exc_info=True)
-        raise e
+    except Exception as ex:
+        db_logger.critical(f"Critical error during startup: {ex}", exc_info=True)
+        raise ex
     finally:
         db_logger.info("Shutting down application lifespan after test connection.")
         await db.close()
@@ -52,12 +54,16 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
-# app = FastAPI()
 
 
 @app.get("/health")
 async def health_check():
-    # Get the current time in ISO 8601 format with timezone awareness
+    """
+    Health check endpoint for monitoring and load balancers.
+
+    Returns:
+        dict: Status information including timestamp.
+    """
     current_time = datetime.now(timezone.utc).isoformat()
     return {
         "status": "ok",
