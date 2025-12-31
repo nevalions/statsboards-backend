@@ -24,3 +24,8 @@ refactor.md
 SWALLOWED_EXCEPTIONS_FIX_PROGRESS.md
 
 .hypothesis/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
