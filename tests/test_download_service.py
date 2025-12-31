@@ -7,6 +7,7 @@ from src.helpers.download_service import DownloadService
 from src.helpers.file_system_service import FileSystemService
 
 
+@pytest.mark.slow
 class TestDownloadService:
     """Test suite for DownloadService."""
 

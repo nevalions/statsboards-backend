@@ -162,9 +162,20 @@ def convert_cyrillic_filename(filename: str) -> str:
     try:
         logger.debug(f"Converting cyrillic filename {filename} to latin")
 
+        # Strip whitespace and check if empty
+        filename = filename.strip()
         if not filename:
             logger.warning("Empty filename provided")
-            return filename
+            return ""
+
+        # Ensure idempotency: if already converted, return as-is
+        if "_" not in filename and all(ord(c) < 127 for c in filename):
+            # Filename appears to be already normalized (no underscores, only ASCII)
+            # Check if it matches what would be converted
+            converted = filename.replace(" ", "_")
+            if converted == filename:
+                logger.info(f"Filename unchanged: {filename}")
+                return filename
 
         path = Path(filename)
         name = path.stem
@@ -174,13 +185,25 @@ def convert_cyrillic_filename(filename: str) -> str:
         for char in name:
             converted_name += cyrillic_to_latin_map.get(char, char)
 
-        converted_name = " ".join(converted_name.split())
+        # Normalize spaces and replace with underscores
+        converted_name_parts = [part for part in converted_name.split() if part]
+        converted_name = "_".join(converted_name_parts)
 
-        converted_name = converted_name.replace(" ", "_").strip("_")
+        # Normalize extension (handle spaces in extension like " .txt")
+        extension = extension.strip()
+        if extension:
+            extension = extension.replace(" ", "_").strip("_")
 
-        converted_extension = extension.replace(" ", "_").strip("_")
+        # Reconstruct filename
+        if extension:
+            result = converted_name + extension
+        else:
+            result = converted_name
 
-        result = converted_name + converted_extension if converted_extension else converted_name
+        # Final idempotency check
+        if result == filename:
+            logger.info(f"Filename unchanged: {filename}")
+            return filename
 
         logger.info(f"Converted filename from {filename} to {result}")
         return result

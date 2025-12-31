@@ -19,6 +19,7 @@ from tests.factories import (
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 class TestConnectionManager:
     async def test_connection_manager_connect(self):
         """Test ConnectionManager connect method."""
@@ -220,6 +221,7 @@ class TestConnectionManager:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.slow
 class TestWebSocketEndpointIntegration:
     async def test_websocket_endpoint_connection_and_initial_data(
         self, test_app, test_db
@@ -352,6 +354,7 @@ class TestWebSocketEndpointIntegration:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 class TestMessageProcessingQueue:
     async def test_message_queue_multiple_message_types(self, test_db):
         """Test that all message types are queued and processed correctly."""
@@ -428,6 +431,7 @@ class TestMessageProcessingQueue:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 class TestWebSocketDataHandling:
     async def test_websocket_queue_message_handling(self):
         """Test that messages are properly handled via queue."""
@@ -539,6 +543,7 @@ class TestWebSocketDataHandling:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 class TestWebSocketCleanup:
     async def test_connection_manager_cleanup_connection_resources(self):
         """Test cleanup of all connection resources."""
@@ -1134,6 +1139,7 @@ class TestWebSocketConnectionErrorHandling:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 class TestDatabaseNotificationFlow:
     async def test_matchdata_database_notification_flow(self, test_db):
         """Test full flow from database change to notification delivery."""
