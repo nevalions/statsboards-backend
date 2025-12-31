@@ -74,7 +74,7 @@ class FootballEventServiceDB(BaseServiceDB):
                 await session.commit()
                 await session.refresh(match_event)
                 if match_event:
-                    self.logger.debug(f"{ITEM} created")
+                    self.logger.info(f"{ITEM} created")
                     return match_event
                 raise HTTPException(
                     status_code=409,

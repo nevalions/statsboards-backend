@@ -196,17 +196,16 @@ class ScoreboardServiceDB(BaseServiceDB):
                 )
                 self.logger.debug("Updated scoreboard")
             else:
-                self.logger.error("Wrong Schema for updating scoreboard")
+                self.logger.warning("Wrong Schema for updating scoreboard")
                 raise ValueError("Must use ScoreboardSchemaUpdate for updating.")
             return updated_scoreboard
-
         else:
             self.logger.debug("Scoreboard does not exist")
             if isinstance(scoreboard, ScoreboardSchemaCreate):
                 new_scoreboard = await self.create(scoreboard)
                 self.logger.info("Scoreboard created")
             else:
-                self.logger.error("Wrong Schema for creating scoreboard")
+                self.logger.warning("Wrong Schema for creating scoreboard")
                 raise ValueError("Must use ScoreboardSchemaCreate for creating.")
             return new_scoreboard
 

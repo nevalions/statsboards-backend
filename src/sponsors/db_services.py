@@ -34,7 +34,7 @@ class SponsorServiceDB(BaseServiceDB):
 
             result = await super().create(sponsor)
             if result is None:
-                self.logger.error(f"Failed to create {ITEM}")
+                self.logger.warning(f"Failed to create {ITEM}")
                 raise HTTPException(
                     status_code=409,
                     detail=f"Failed to create {self.model.__name__}. Check input data.",
