@@ -96,6 +96,7 @@ pytest -k "e2e"
 ```
 
 **Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n auto`) for faster test execution:
+
 - `-x`: Stop on first failure
 - `--tb=short`: Shortened traceback format
 - `-n auto`: Run tests in parallel using pytest-xdist (uses all available CPU cores)
@@ -233,36 +234,37 @@ python validate_config.py
   - `ParsingError`: Data parsing failures (400)
 
 **PREFERRED**: Use `@handle_service_exceptions` decorator to eliminate boilerplate:
-  ```python
-  from src.core.models import handle_service_exceptions
 
-  # For create/update operations (raise NotFoundError)
-  @handle_service_exceptions(item_name=ITEM, operation="creating")
-  async def create(self, item: TeamSchemaCreate) -> TeamDB:
-      team = self.model(**item.model_dump())
-      return await super().create(team)
+```python
+from src.core.models import handle_service_exceptions
 
-  # For fetch operations that return None on NotFound
-  @handle_service_exceptions(
-      item_name=ITEM,
-      operation="fetching players",
-      return_value_on_not_found=[]
-  )
-  async def get_players_by_team_id(self, team_id: int) -> list[PlayerDB]:
-      async with self.db.async_session() as session:
-          stmt = select(PlayerDB).where(PlayerDB.team_id == team_id)
-          results = await session.execute(stmt)
-          return results.scalars().all()
+# For create/update operations (raise NotFoundError)
+@handle_service_exceptions(item_name=ITEM, operation="creating")
+async def create(self, item: TeamSchemaCreate) -> TeamDB:
+    team = self.model(**item.model_dump())
+    return await super().create(team)
 
-  # For fetch operations that raise NotFoundError
-  @handle_service_exceptions(
-      item_name=ITEM,
-      operation="fetching by ID",
-      reraise_not_found=True
-  )
-  async def get_by_id(self, item_id: int) -> TeamDB:
-      return await super().get_by_id(item_id)
-  ```
+# For fetch operations that return None on NotFound
+@handle_service_exceptions(
+    item_name=ITEM,
+    operation="fetching players",
+    return_value_on_not_found=[]
+)
+async def get_players_by_team_id(self, team_id: int) -> list[PlayerDB]:
+    async with self.db.async_session() as session:
+        stmt = select(PlayerDB).where(PlayerDB.team_id == team_id)
+        results = await session.execute(stmt)
+        return results.scalars().all()
+
+# For fetch operations that raise NotFoundError
+@handle_service_exceptions(
+    item_name=ITEM,
+    operation="fetching by ID",
+    reraise_not_found=True
+)
+async def get_by_id(self, item_id: int) -> TeamDB:
+    return await super().get_by_id(item_id)
+```
 
 - **MANUAL** try/except blocks should only be used for special cases:
   - Custom error handling that doesn't fit decorator pattern
@@ -270,6 +272,7 @@ python validate_config.py
   - When you need to perform cleanup before re-raising
 
 - For manual try/except, catch specific exceptions in this order:
+
   ```python
   try:
       # business logic
@@ -343,45 +346,52 @@ python validate_config.py
 The project includes several enhanced testing approaches:
 
 **1. Test Factories with SubFactory** (`tests/factories.py`):
-   - Basic factories: `SportFactoryAny`, `SeasonFactoryAny`, `TournamentFactory`, etc.
-   - Enhanced factories with relations: `TournamentFactoryWithRelations`, `TeamFactoryWithRelations`, etc.
-   - Use SubFactory for automatic creation of related entities
-   - Example: `TournamentFactoryWithRelations.build()` creates sport, season, and tournament
+
+- Basic factories: `SportFactoryAny`, `SeasonFactoryAny`, `TournamentFactory`, etc.
+- Enhanced factories with relations: `TournamentFactoryWithRelations`, `TeamFactoryWithRelations`, etc.
+- Use SubFactory for automatic creation of related entities
+- Example: `TournamentFactoryWithRelations.build()` creates sport, season, and tournament
 
 **2. Performance Benchmarks** (`tests/test_benchmarks.py`):
-   - Benchmarked operations: CRUD operations, bulk inserts, complex queries
-   - Run with: `pytest tests/test_benchmarks.py -m benchmark`
-   - Compare with baseline: `pytest tests/test_benchmarks.py -m benchmark --benchmark-compare`
-   - Focuses on critical service operations
+
+- Benchmarked operations: CRUD operations, bulk inserts, complex queries
+- Run with: `pytest tests/test_benchmarks.py -m benchmark`
+- Compare with baseline: `pytest tests/test_benchmarks.py -m benchmark --benchmark-compare`
+- Focuses on critical service operations
 
 **3. Property-Based Testing** (`tests/test_property_based.py`):
-   - Tests with Hypothesis for edge cases across wide input ranges
-   - Critical functions tested: `safe_int_conversion`, `hex_to_rgb`, `convert_cyrillic_filename`, etc.
-   - Run with: `pytest tests/test_property_based.py`
-   - Catches edge cases traditional tests might miss
+
+- Tests with Hypothesis for edge cases across wide input ranges
+- Critical functions tested: `safe_int_conversion`, `hex_to_rgb`, `convert_cyrillic_filename`, etc.
+- Run with: `pytest tests/test_property_based.py`
+- Catches edge cases traditional tests might miss
 
 **4. E2E Integration Tests** (`tests/test_e2e.py`):
-   - Complete workflows across multiple services and endpoints
-   - Scenarios: tournament management, player management, error handling
-   - Run with: `pytest tests/test_e2e.py -m e2e`
-   - Tests realistic user journeys
+
+- Complete workflows across multiple services and endpoints
+- Scenarios: tournament management, player management, error handling
+- Run with: `pytest tests/test_e2e.py -m e2e`
+- Tests realistic user journeys
 
 **5. Utils and Logging Tests** (`tests/test_utils.py`):
-   - Tests for `src.logging_config` module: ContextFilter, ClassNameAdapter
-   - Tests for `src.utils.websocket.websocket_manager`: MatchDataWebSocketManager
-   - Run with: `pytest tests/test_utils.py`
+
+- Tests for `src.logging_config` module: ContextFilter, ClassNameAdapter
+- Tests for `src.utils.websocket.websocket_manager`: MatchDataWebSocketManager
+- Run with: `pytest tests/test_utils.py`
 
 **Test Markers** (defined in pytest.ini):
-   - `@pytest.mark.integration`: Tests that hit real websites or write to production folders
-   - `@pytest.mark.benchmark`: Performance benchmark tests
-   - `@pytest.mark.e2e`: End-to-end integration tests
-   - `@pytest.mark.slow`: Tests that take longer to run
+
+- `@pytest.mark.integration`: Tests that hit real websites or write to production folders
+- `@pytest.mark.benchmark`: Performance benchmark tests
+- `@pytest.mark.e2e`: End-to-end integration tests
+- `@pytest.mark.slow`: Tests that take longer to run
 
 **Test Coverage**:
-   - Configuration: `.coveragerc` for coverage settings
-   - HTML report: `pytest --cov=src --cov-report=html` (view in `htmlcov/index.html`)
-   - Terminal report: `pytest --cov=src --cov-report=term-missing`
-   - XML report: `pytest --cov=src --cov-report=xml` (for CI/CD)
+
+- Configuration: `.coveragerc` for coverage settings
+- HTML report: `pytest --cov=src --cov-report=html` (view in `htmlcov/index.html`)
+- Terminal report: `pytest --cov=src --cov-report=term-missing`
+- XML report: `pytest --cov=src --cov-report=xml` (for CI/CD)
 
 **Important:** Do NOT use SQLite for tests. Tests must use PostgreSQL because:
 
@@ -452,7 +462,7 @@ The application includes comprehensive configuration validation that runs automa
   - Main database validation is skipped when `TESTING` environment variable is set
 
 - **Application Settings Validation**:
-  - Validates CORS origins format (must start with http://, https://, or *)
+  - Validates CORS origins format (must start with http://, https://, or \*)
   - Validates SSL files: both SSL_KEYFILE and SSL_CERTFILE must be provided together or neither
 
 - **Path Validation**:
@@ -475,12 +485,14 @@ See `CONFIGURATION_VALIDATION.md` for complete documentation.
 The project has been enhanced with comprehensive testing capabilities:
 
 ### 1. Coverage Reporting
+
 - **pytest-cov** added for code coverage tracking
 - **.coveragerc** configuration with proper exclusions
 - HTML, terminal, and XML report formats supported
 - Run with: `pytest --cov=src --cov-report=html`
 
 ### 2. Performance Benchmarking
+
 - **pytest-benchmark** for measuring critical operation performance
 - Benchmark tests in `tests/test_benchmarks.py`
 - Tests CRUD operations, bulk inserts, and complex queries
@@ -488,6 +500,7 @@ The project has been enhanced with comprehensive testing capabilities:
 - Run with: `pytest tests/test_benchmarks.py -m benchmark`
 
 ### 3. Property-Based Testing
+
 - **Hypothesis** for testing across wide input ranges
 - Property-based tests in `tests/test_property_based.py`
 - Tests critical utility functions for edge cases
@@ -495,12 +508,14 @@ The project has been enhanced with comprehensive testing capabilities:
 - Run with: `pytest tests/test_property_based.py`
 
 ### 4. Enhanced Test Factories
+
 - **SubFactory** support for automatic related entity creation
 - New factories: `TournamentFactoryWithRelations`, `TeamFactoryWithRelations`, etc.
 - Simplifies test setup for complex scenarios
 - Reduces test code duplication
 
 ### 5. E2E Integration Tests
+
 - End-to-end tests in `tests/test_e2e.py`
 - Tests complete workflows across multiple services and endpoints
 - Validates realistic user scenarios
@@ -508,12 +523,14 @@ The project has been enhanced with comprehensive testing capabilities:
 - Run with: `pytest tests/test_e2e.py -m e2e`
 
 ### 6. Utils and Logging Tests
+
 - Tests for `src.logging_config`: ContextFilter, ClassNameAdapter
 - Tests for `src.utils.websocket.websocket_manager`: MatchDataWebSocketManager
 - Ensures core utilities work correctly
 - Run with: `pytest tests/test_utils.py`
 
 ### Test Markers
+
 - `@pytest.mark.integration`: Integration tests (external dependencies)
 - `@pytest.mark.benchmark`: Performance benchmarks
 - `@pytest.mark.e2e`: End-to-end integration tests
@@ -521,6 +538,7 @@ The project has been enhanced with comprehensive testing capabilities:
 - `@pytest.mark.property`: Property-based tests
 
 ### Running Tests
+
 ```bash
 # Coverage reports
 pytest --cov=src --cov-report=html          # HTML report
@@ -551,23 +569,28 @@ All 500+ tests are passing as of latest fixes. Key fixes applied:
 ### Recent Test Fixes
 
 **test_player_match_views_helpers.py** (9 tests - all passing)
+
 - Fixed wrong patch path for `uploads_path` in test mocking
 - Updated `photo_files_exist` function signature to accept `str | None` for type safety
 
 **test_utils.py** (16 tests - all passing)
+
 - Fixed `test_setup_logging_creates_logs_dir` to properly mock module-level `logs_dir` variable
 - Added `AsyncMock` for async operations in WebSocket manager tests
 - Improved exception handling for connection failure tests
 
 **test_views/test_websocket_views.py** (47 tests passing)
+
 - Fixed import path for `MatchDataWebSocketManager` from incorrect `src.core.models.base` to correct `src.utils.websocket.websocket_manager`
 - Marked integration test requiring real database connections with `@pytest.mark.integration`
 
 **test_pars_integration.py** (5 tests - all passing with `-m integration`)
+
 - Integration tests run correctly when marked with `@pytest.mark.integration`
 - Tests hit real EESL website and write to production directories
 
 **test_views/test_health_views.py** (3 tests - all passing)
+
 - Tests were already working correctly
 
 ### Running All Tests
@@ -585,5 +608,16 @@ pytest tests/test_utils.py
 pytest tests/test_views/test_websocket_views.py
 ```
 
+## Linear defaults
+
+- Default Linear team is **StatsboardBack**.
+- When creating/updating Linear issues, always use this team unless the user explicitly says otherwise.
+- If a project is not specified, create the issue without assigning a project (do not guess).
+- When making a plan, create:
+  - 1 parent issue (epic)
+  - child issues grouped by theme
+- Always include: rule name(s), file paths, and a clear "Done when" checklist.
+
 **Note**: Do not add AGENTS.md to README.md - this file is for development reference only.
 **Note**: all commits must be by linroot with email nevalions@gmail.com
+**Note**: When you need to search docs, use `context7` tools.
