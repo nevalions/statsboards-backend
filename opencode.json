@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "plan-back-refactor": {
+      "description": "Create a Linear plan for backend refactoring/tech-debt (FastAPI + async SQLAlchemy + Postgres) without changing code",
+      "agent": "plan",
+      "template": "Scan the backend codebase (Python, FastAPI, async SQLAlchemy, Postgres) and produce a refactoring plan to improve correctness, maintainability, and performance.\n\nRequirements:\n- Create a Linear parent issue in team \"StatsboardBack\" titled \"Backend refactor + hardening plan\".\n- Create child issues (or a checklist) grouped by theme:\n  1) Type safety and linting (typing gaps, pyright/mypy findings, ruff issues)\n  2) FastAPI architecture (dependency injection, routing structure, response models, validation)\n  3) Async SQLAlchemy correctness (session lifecycle, transactions, N+1 prevention, await discipline)\n  4) Postgres and migrations (alembic hygiene, data-loss risks, indexes/query hotspots, EXPLAIN targets)\n  5) Testing and reliability (pytest coverage gaps, async tests, fixtures, flaky tests)\n  6) Security and error handling (authz boundaries, input validation, exception handlers, logging)\n- For each child issue include:\n  - Scope and goal\n  - Affected modules/files (top offenders first)\n  - Proposed approach + safety notes (incl. migration/data-risk if any)\n  - Suggested verification (tests, checks, queries)\n  - Estimated effort (S/M/L)\n- Do NOT change code yet; just produce the plan + tickets.\n\nThen, after tickets are created, propose an execution order that minimizes risk (quick wins first, migrations last unless urgent)."
+    },
+    "work": {
+      "description": "Work on a Linear issue (e.g. /work STAB-8)",
+      "template": "Start working on Linear issue $ARGUMENTS.\n\nRules:\n- Linear team: StatsboardBack\n- Only change files related to the issue\n- Follow FastAPI and async SQLAlchemy best practices\n- Prefer typed code (Pyright-friendly)\n- Run backend checks after changes (tests/lint/typecheck if available)\n- Update the Linear issue with progress\n- Move the issue to Done only when tests pass and checks are green for the scope"
+    },
+    "review": {
+      "description": "Review work for a Linear issue (e.g. /review STAB-8)",
+      "template": "Review work done for Linear issue $ARGUMENTS.\n\nCheck:\n- FastAPI correctness (dependencies, routing, response models, validation)\n- Async SQLAlchemy correctness (no blocking calls, proper session lifecycle, transactions)\n- Postgres safety (migration/data-loss risk, index/query considerations if relevant)\n- Error handling and status codes\n- Security basics (authz/authn boundaries, input validation)\n- Tests added/updated and passing\n- Scope discipline (no unrelated refactors)\n\nPost findings to Linear.",
+      "agent": "plan"
+    }
+  }
+}
