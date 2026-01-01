@@ -14,6 +14,11 @@
       "description": "Review work for a Linear issue (e.g. /review STAB-8)",
       "template": "Review work done for Linear issue $ARGUMENTS.\n\nCheck:\n- FastAPI correctness (dependencies, routing, response models, validation)\n- Async SQLAlchemy correctness (no blocking calls, proper session lifecycle, transactions)\n- Postgres safety (migration/data-loss risk, index/query considerations if relevant)\n- Error handling and status codes\n- Security basics (authz/authn boundaries, input validation)\n- Tests added/updated and passing\n- Scope discipline (no unrelated refactors)\n\nPost findings to Linear.",
       "agent": "plan"
+    },
+    "scan-security-back": {
+      "description": "Run Semgrep security mcp scan and file results to Linear (Backend team, plan only)",
+      "agent": "plan",
+      "template": "Run a security scan with semgrep mcp of this repository using Semgrep MCP.\n\nScope:\n- Backend code (Python, FastAPI, async SQLAlchemy, Postgres)\n\nRequirements:\n- Use high-signal Semgrep rules for backend security.\n- Focus on: auth/authz flaws, injection (SQL/command), secrets, SSRF, path traversal, insecure crypto, misconfigurations.\n\nAfter scanning:\n1) Summarize findings by severity and category.\n2) Create a Linear parent issue in team \"StatsboardBack\" titled \"Security scan findings (Semgrep)\".\n3) Create child issues (or a checklist) grouped by severity and category.\n4) For each finding include:\n   - Semgrep rule id and message\n   - File path and line numbers\n   - Why it matters (brief)\n   - Recommended remediation (minimal and safe)\n   - Verification steps (tests or repro steps)\n5) Do NOT change code. Do NOT auto-fix.\n\nFinally, propose an execution order that minimizes risk (secrets/exploitable issues first, migrations last)."
     }
   }
 }

@@ -608,6 +608,25 @@ pytest tests/test_utils.py
 pytest tests/test_views/test_websocket_views.py
 ```
 
+## GitHub workflow (this repo)
+
+- Default repo: <OWNER>/<REPO> (use this unless user specifies otherwise)
+- Branch naming:
+  - feature: feat/<linear-id>-<slug>
+  - bugfix: fix/<linear-id>-<slug>
+  - chore: chore/<linear-id>-<slug>
+- Pull requests:
+  - Always link the Linear issue (e.g. STAB-8)
+  - Include: summary, scope, testing, screenshots (frontend), migration notes (backend)
+  - Ensure CI is green before requesting review
+- Required checks (do not merge unless passing):
+  - backend: pytest + typecheck + migrations (if applicable)
+- Labels:
+  - security findings → label `security`
+  - refactor-only → label `refactor`
+- Reviewers:
+  - assign <TEAM/USERNAMES> if applicable
+
 ## Linear defaults
 
 - Default Linear team is **StatsboardBack**.
