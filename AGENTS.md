@@ -618,6 +618,15 @@ pytest tests/test_views/test_websocket_views.py
   - child issues grouped by theme
 - Always include: rule name(s), file paths, and a clear "Done when" checklist.
 
+## Perplexity usage rules
+
+- Use Perplexity MCP only for:
+  - Current best practices
+  - Standards, RFCs, security guidance
+  - Tooling or framework updates
+- Prefer local codebase and Context7 docs for implementation details.
+- Summarize sources clearly when using Perplexity.
+
 **Note**: Do not add AGENTS.md to README.md - this file is for development reference only.
 **Note**: all commits must be by linroot with email nevalions@gmail.com
 **Note**: When you need to search docs, use `context7` tools.
