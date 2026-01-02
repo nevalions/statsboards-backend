@@ -24,6 +24,7 @@ class PlayerTeamTournamentDB(Base):
     )
 
     player_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey(
             "player.id",
             ondelete="CASCADE",
@@ -31,12 +32,8 @@ class PlayerTeamTournamentDB(Base):
         nullable=True,
     )
 
-    player: Mapped["PlayerDB"] = relationship(
-        "PlayerDB",
-        back_populates="player_team_tournament",
-    )
-
     team_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey(
             "team.id",
             ondelete="SET NULL",
@@ -53,11 +50,6 @@ class PlayerTeamTournamentDB(Base):
         nullable=True,
     )
 
-    team: Mapped["TeamDB"] = relationship(
-        "TeamDB",
-        back_populates="players_team_tournament",
-    )
-
     tournament_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(
@@ -67,11 +59,6 @@ class PlayerTeamTournamentDB(Base):
         nullable=True,
     )
 
-    tournament: Mapped["TournamentDB"] = relationship(
-        "TournamentDB",
-        back_populates="players_team_tournament",
-    )
-
     player_number: Mapped[str] = mapped_column(
         String(10),
         nullable=True,
@@ -79,9 +66,25 @@ class PlayerTeamTournamentDB(Base):
         server_default="0",
     )
 
+    team: Mapped["TeamDB"] = relationship(
+        "TeamDB",
+        back_populates="players_team_tournament",
+    )
+
+    tournament: Mapped["TournamentDB"] = relationship(
+        "TournamentDB",
+        back_populates="players_team_tournament",
+    )
+
     position: Mapped["PositionDB"] = relationship(
         "PositionDB",
         back_populates="players",
+    )
+
+    player: Mapped["PlayerDB"] = relationship(
+        "PlayerDB",
+        back_populates="player_team_tournament",
+        lazy="joined",
     )
 
     player_match: Mapped["PlayerMatchDB"] = relationship(
@@ -90,10 +93,3 @@ class PlayerTeamTournamentDB(Base):
         back_populates="player_team_tournament",
         passive_deletes=True,
     )
-    #
-    # player_position: Mapped[str] = mapped_column(
-    #     String(20),
-    #     nullable=True,
-    #     default="",
-    #     server_default="",
-    # )
