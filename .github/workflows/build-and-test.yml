@@ -80,11 +80,11 @@ jobs:
         echo "DB_TEST_PORT=5432" >> .env.test
         cat .env.test  # Print the .env.test file to verify its contents
 
-    - name: Run tests
-      run: |
-        poetry run pytest
-
     - name: Lint with Ruff
       run: |
         poetry run ruff check src/ tests/ || echo "Ruff found issues (non-blocking)"
+
+    - name: Run tests
+      run: |
+        poetry run pytest
 # Test comment for workflow trigger
