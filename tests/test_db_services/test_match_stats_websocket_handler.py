@@ -1,7 +1,8 @@
 from datetime import datetime
+from unittest.mock import AsyncMock
 
 import pytest
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketState
 
 from src.matches.stats_websocket_handler import MatchStatsWebSocketHandler
 from tests.factories import (
@@ -44,12 +45,17 @@ class TestMatchStatsWebSocketHandler:
         stats_service = MatchStatsServiceDB(test_db)
         handler = MatchStatsWebSocketHandler(stats_service)
 
-        mock_websocket = WebSocket()
+        mock_websocket = AsyncMock(spec=WebSocket)
         client_id = "test_client_1"
 
         await handler.send_initial_stats(mock_websocket, client_id, match.id)
 
-        assert match.id in handler.last_write_timestamps
+        mock_websocket.send_json.assert_called_once()
+        call_args = mock_websocket.send_json.call_args
+        message = call_args[0][0]
+        assert message["type"] == "full_stats_update"
+        assert message["match_id"] == match.id
+        assert "stats" in message
 
     async def test_broadcast_stats(self, test_db, sport, season, teams_data):
         """Test broadcasting stats to all connected clients."""
@@ -81,8 +87,10 @@ class TestMatchStatsWebSocketHandler:
         stats_service = MatchStatsServiceDB(test_db)
         handler = MatchStatsWebSocketHandler(stats_service)
 
-        mock_websocket1 = WebSocket()
-        mock_websocket2 = WebSocket()
+        mock_websocket1 = AsyncMock(spec=WebSocket)
+        mock_websocket2 = AsyncMock(spec=WebSocket)
+        mock_websocket1.application_state = WebSocketState.CONNECTED
+        mock_websocket2.application_state = WebSocketState.CONNECTED
         client_id_1 = "test_client_1"
         client_id_2 = "test_client_2"
 
@@ -98,6 +106,9 @@ class TestMatchStatsWebSocketHandler:
         }
 
         await handler.broadcast_stats(match.id, test_stats)
+
+        mock_websocket1.send_json.assert_called_once()
+        mock_websocket2.send_json.assert_called_once()
 
     async def test_handle_stats_update_client_wins(self, test_db, sport, season, teams_data):
         """Test handling stats update where client wins conflict."""
@@ -129,7 +140,7 @@ class TestMatchStatsWebSocketHandler:
         stats_service = MatchStatsServiceDB(test_db)
         handler = MatchStatsWebSocketHandler(stats_service)
 
-        mock_websocket = WebSocket()
+        mock_websocket = AsyncMock(spec=WebSocket)
         client_id = "test_client_1"
 
         future_timestamp = datetime.now()
@@ -175,11 +186,12 @@ class TestMatchStatsWebSocketHandler:
         stats_service = MatchStatsServiceDB(test_db)
         handler = MatchStatsWebSocketHandler(stats_service)
 
-        mock_websocket = WebSocket()
+        mock_websocket = AsyncMock(spec=WebSocket)
         client_id = "test_client_1"
 
         old_timestamp = datetime(2020, 1, 1)
         handler.last_write_timestamps[match.id] = datetime.now()
+        original_timestamp = handler.last_write_timestamps[match.id]
 
         client_data = {
             "type": "stats_update",
@@ -189,7 +201,8 @@ class TestMatchStatsWebSocketHandler:
 
         await handler.handle_stats_update(mock_websocket, client_id, match.id, client_data)
 
-        assert handler.last_write_timestamps[match.id] == datetime.now()
+        assert handler.last_write_timestamps[match.id] == original_timestamp
+        mock_websocket.send_json.assert_called_once()
 
     async def test_cleanup_connection(self, test_db, sport, season, teams_data):
         """Test cleaning up disconnected client."""
@@ -221,8 +234,8 @@ class TestMatchStatsWebSocketHandler:
         stats_service = MatchStatsServiceDB(test_db)
         handler = MatchStatsWebSocketHandler(stats_service)
 
-        mock_websocket1 = WebSocket()
-        mock_websocket2 = WebSocket()
+        mock_websocket1 = AsyncMock(spec=WebSocket)
+        mock_websocket2 = AsyncMock(spec=WebSocket)
         client_id_1 = "test_client_1"
         client_id_2 = "test_client_2"
 

@@ -5,8 +5,6 @@ import pytest
 from src.matches.stats_service import MatchStatsServiceDB
 from tests.factories import (
     MatchFactory,
-    SportFactorySample,
-    TeamFactory,
     TournamentFactory,
 )
 
@@ -23,8 +21,8 @@ class TestMatchStatsServiceDB:
             sport_id=sport.id, season_id=season.id, tournament_eesl_id=900
         )
 
-        from src.tournaments.db_services import TournamentServiceDB
         from src.matches.db_services import MatchServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
 
         tournament_service = TournamentServiceDB(test_db)
         created_tournament = await tournament_service.create(tournament_factory)
@@ -62,10 +60,10 @@ class TestMatchStatsServiceDB:
             sport_id=sport.id, season_id=season.id, tournament_eesl_id=900
         )
 
-        from src.tournaments.db_services import TournamentServiceDB
-        from src.matches.db_services import MatchServiceDB
         from src.football_events.db_services import FootballEventServiceDB
         from src.football_events.schemas import FootballEventSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
 
         tournament_service = TournamentServiceDB(test_db)
         created_tournament = await tournament_service.create(tournament_factory)
@@ -113,10 +111,10 @@ class TestMatchStatsServiceDB:
             sport_id=sport.id, season_id=season.id, tournament_eesl_id=900
         )
 
-        from src.tournaments.db_services import TournamentServiceDB
-        from src.matches.db_services import MatchServiceDB
         from src.football_events.db_services import FootballEventServiceDB
         from src.football_events.schemas import FootballEventSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
 
         tournament_service = TournamentServiceDB(test_db)
         created_tournament = await tournament_service.create(tournament_factory)
@@ -164,8 +162,8 @@ class TestMatchStatsServiceDB:
             sport_id=sport.id, season_id=season.id, tournament_eesl_id=900
         )
 
-        from src.tournaments.db_services import TournamentServiceDB
         from src.matches.db_services import MatchServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
 
         tournament_service = TournamentServiceDB(test_db)
         created_tournament = await tournament_service.create(tournament_factory)
@@ -200,8 +198,8 @@ class TestMatchStatsServiceDB:
             sport_id=sport.id, season_id=season.id, tournament_eesl_id=900
         )
 
-        from src.tournaments.db_services import TournamentServiceDB
         from src.matches.db_services import MatchServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
 
         tournament_service = TournamentServiceDB(test_db)
         created_tournament = await tournament_service.create(tournament_factory)
@@ -219,7 +217,7 @@ class TestMatchStatsServiceDB:
 
         stats_service = MatchStatsServiceDB(test_db)
 
-        stats1 = await stats_service.get_match_with_cached_stats(match.id)
+        await stats_service.get_match_with_cached_stats(match.id)
         assert match.id in stats_service._cache
 
         stats_service.invalidate_cache(match.id)
