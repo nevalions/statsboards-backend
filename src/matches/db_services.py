@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.models import (
     BaseServiceDB,
@@ -336,53 +336,6 @@ class MatchServiceDB(BaseServiceDB):
                 if len(result) > 0:
                     return result[0]  # type: ignore[return-value]
                 return result  # type: ignore[return-value]
-            return result  # type: ignore[return-value]
-        return None
-
-    @handle_service_exceptions(
-        item_name=ITEM,
-        operation="getting players with full data optimized",
-        return_value_on_not_found=[],
-    )
-    async def get_players_with_full_data_optimized(
-        self,
-        match_id: int,
-    ) -> list[dict]:
-        self.logger.debug(f"Get players with full data optimized by {ITEM} id:{match_id}")
-        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
-
-        async with self.db.async_session() as session:
-            stmt = (
-                select(PlayerMatchDB)
-                .where(PlayerMatchDB.match_id == match_id)
-                .options(
-                    selectinload(PlayerMatchDB.player_team_tournament)
-                    .selectinload(PlayerTeamTournamentDB.player)
-                    .selectinload(PlayerTeamTournamentDB.position),
-                    selectinload(PlayerMatchDB.team),
-                )
-            )
-
-            results = await session.execute(stmt)
-            players = results.scalars().all()
-
-            players_with_data = []
-            for player in players:
-                players_with_data.append(
-                    {
-                        "match_player": player,
-                        "player_team_tournament": player.player_team_tournament,
-                        "person": (
-                            player.player_team_tournament.player
-                            if player.player_team_tournament
-                            and player.player_team_tournament.player
-                            else None
-                        ),
-                        "position": player.match_position,
-                    }
-                )
-
-            return players_with_data
             return result  # type: ignore[return-value]
         return None
 
