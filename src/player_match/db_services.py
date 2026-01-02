@@ -387,48 +387,6 @@ class PlayerMatchServiceDB(BaseServiceDB):
                 detail="Internal server error fetching player in sport",
             )
 
-    async def get_player_person_in_match(self, player_id: int) -> PlayerSchema | None:
-        player_service = PlayerServiceDB(self.db)
-        try:
-            self.logger.debug(
-                f"Get {ITEM} in sport with person by player_id:{player_id}"
-            )
-            p = await self.get_player_in_sport(player_id)
-            if p:
-                return await player_service.get_player_with_person(p.id)
-            return None
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Error getting {ITEM} in sport with person {ex}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Database error fetching player person in match",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(
-                f"Data error getting {ITEM} in sport with person {ex}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided for player person in match",
-            )
-        except NotFoundError as ex:
-            self.logger.info(
-                f"Not found {ITEM} in sport with person {ex}", exc_info=True
-            )
-            return None
-        except Exception as ex:
-            self.logger.critical(
-                f"Unexpected error getting {ITEM} in sport with person {ex}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error fetching player person in match",
-            )
-
     async def get_player_in_team_tournament(
         self,
         match_id: int,
