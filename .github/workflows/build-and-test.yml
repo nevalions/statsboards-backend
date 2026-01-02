@@ -82,3 +82,7 @@ jobs:
     - name: Run tests
       run: |
         poetry run pytest
+
+    - name: Lint with Ruff
+      run: |
+        poetry run ruff check src/ tests/ || echo "Ruff found issues (non-blocking)"
