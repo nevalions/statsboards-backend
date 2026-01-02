@@ -8,6 +8,7 @@ from src.seasons.db_services import SeasonServiceDB
 from src.sponsor_lines.db_services import SponsorLineServiceDB
 from src.sponsors.db_services import SponsorServiceDB
 from src.sports.db_services import SportServiceDB
+from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
     PositionFactory,
@@ -15,6 +16,7 @@ from tests.factories import (
     SponsorFactory,
     SponsorLineFactory,
     SportFactorySample,
+    TeamFactory,
     TournamentFactory,
 )
 
@@ -34,6 +36,11 @@ async def test_sport_service(test_db) -> SportServiceDB:
 @pytest_asyncio.fixture()
 async def test_tournament_service(test_db) -> TournamentServiceDB:
     return TournamentServiceDB(test_db)
+
+
+@pytest_asyncio.fixture()
+async def test_team_service(test_db) -> TeamServiceDB:
+    return TeamServiceDB(test_db)
 
 
 @pytest_asyncio.fixture
@@ -74,6 +81,20 @@ async def tournament(test_tournament_service, sport, season):
         test_logger.error(f"Error creating test tournament {e}", exc_info=True)
 
 
+@pytest_asyncio.fixture
+async def teams_data(test_team_service, sport):
+    """Create and return two test teams in the database."""
+    try:
+        test_logger.info(f"Creating test teams with sport_id: {sport.id}")
+        team1 = TeamFactory.build(sport_id=sport.id, team_eesl_id=801, title="Team A")
+        team2 = TeamFactory.build(sport_id=sport.id, team_eesl_id=802, title="Team B")
+        created_team1 = await test_team_service.create_or_update_team(team1)
+        created_team2 = await test_team_service.create_or_update_team(team2)
+        return created_team1, created_team2
+    except Exception as e:
+        test_logger.error(f"Error creating test teams {e}", exc_info=True)
+
+
 async def creat_tournaments(
     test_tournament_service,
     sport,
@@ -95,9 +116,7 @@ async def creat_tournaments(
             tournament = await test_tournament_service.create(data)
             tournaments_list.append(tournament)
         except Exception as e:
-            test_logger.error(
-                f"Error creating test tournament {i + 1}: {e}", exc_info=True
-            )
+            test_logger.error(f"Error creating test tournament {i + 1}: {e}", exc_info=True)
     return tournaments_list
 
 

@@ -42,3 +42,68 @@ class MatchDataScoreboardSchemaCreate(BaseModel):
     match: MatchSchemaCreate
     match_data: MatchDataSchemaCreate
     scoreboard: ScoreboardSchemaCreate
+
+
+class FootballOffenseStats(BaseModel):
+    id: int
+    pass_attempts: int = 0
+    pass_received: int = 0
+    pass_yards: int = 0
+    pass_td: int = 0
+    run_attempts: int = 0
+    run_yards: int = 0
+    run_avr: float = 0.0
+    run_td: int = 0
+    fumble: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FootballQBStats(BaseModel):
+    id: int
+    passes: int = 0
+    passes_completed: int = 0
+    pass_yards: int = 0
+    pass_td: int = 0
+    pass_avr: float = 0.0
+    run_attempts: int = 0
+    run_yards: int = 0
+    run_td: int = 0
+    run_avr: float = 0.0
+    fumble: int = 0
+    interception: int = 0
+    qb_rating: float = 0.0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FootballDefenseStats(BaseModel):
+    id: int
+    tackles: int = 0
+    assist_tackles: int = 0
+    sacks: int = 0
+    interceptions: int = 0
+    fumble_recoveries: int = 0
+    flags: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FootballTeamStats(BaseModel):
+    id: int
+    offence_yards: int = 0
+    pass_att: int = 0
+    run_att: int = 0
+    avg_yards_per_att: float = 0.0
+    pass_yards: int = 0
+    run_yards: int = 0
+    lost_yards: int = 0
+    flag_yards: int = 0
+    third_down_attempts: int = 0
+    third_down_conversions: int = 0
+    fourth_down_attempts: int = 0
+    fourth_down_conversions: int = 0
+    first_down_gained: int = 0
+    turnovers: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
