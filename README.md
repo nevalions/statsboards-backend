@@ -32,7 +32,7 @@ Currently implements:
 - **Real-time**: WebSockets, Redis pub/sub
 - **Testing**: pytest with pytest-asyncio
 - **Deployment**: Docker, Gunicorn, Nginx
-- **Code Quality**: Black, PyLint
+- **Code Quality**: Ruff
 - **Configuration**: Pydantic Settings with validation
 
 ## Quick Start
@@ -124,14 +124,14 @@ pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceD
 ### Code Quality
 
 ```bash
-# Format code with Black
-black src/ tests/
+# Lint with Ruff
+source venv/bin/activate && ruff check src/ tests/
 
-# Lint with PyLint
-pylint src/
+# Auto-fix Ruff issues where possible
+source venv/bin/activate && ruff check --fix src/ tests/
 ```
 
-**Note:** After making code changes, run both formatting and linting commands to ensure code quality standards are met.
+**Note:** After making code changes, run the linting command to ensure code quality standards are met. Ruff provides fast Python linting with automatic fixing capabilities.
 
 ### Database Migrations
 
@@ -379,10 +379,9 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 3. Make your changes following the guidelines in `AGENTS.md`
 4. Add tests for new functionality
 5. Run tests: `docker-compose -f docker-compose.test-db-only.yml up -d && pytest`
-6. Format code: `black src/ tests/`
-7. Lint code: `pylint src/`
-8. Ensure all tests pass
-9. Submit a pull request
+6. Lint code: `ruff check src/ tests/` (use `--fix` to auto-fix issues)
+7. Ensure all tests pass
+8. Submit a pull request
 
 **Important:**
 - All commits must be by linroot with email nevalions@gmail.com
