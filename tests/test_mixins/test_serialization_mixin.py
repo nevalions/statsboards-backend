@@ -3,7 +3,6 @@ from datetime import datetime
 from src.core.models.mixins import SerializationMixin
 
 
-
 class TestSerializationMixin:
     """Test suite for SerializationMixin methods."""
 

@@ -5,7 +5,6 @@ from src.core.models.season import SeasonDB
 from src.seasons.db_services import SeasonServiceDB
 
 
-
 class TestCRUDMixin:
     """Test suite for CRUDMixin methods."""
 

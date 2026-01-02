@@ -1,11 +1,10 @@
-import pytest
 
 from src.core.exceptions import (
     AuthenticationError,
     AuthorizationError,
     BusinessLogicError,
-    ConfigurationError,
     ConcurrencyError,
+    ConfigurationError,
     DatabaseError,
     ExternalServiceError,
     FileOperationError,

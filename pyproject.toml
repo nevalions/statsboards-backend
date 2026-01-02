@@ -41,7 +41,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
-ignore = []
+ignore = ["E501"]
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.4"

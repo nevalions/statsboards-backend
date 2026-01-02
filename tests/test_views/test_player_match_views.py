@@ -22,7 +22,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestPlayerMatchViews:
     async def test_create_player_match_endpoint(self, client, test_db):
@@ -60,9 +59,7 @@ class TestPlayerMatchViews:
 
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(
-            MatchFactory.build(
-                tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id
-            )
+            MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id)
         )
 
         player_match_data = PlayerMatchSchemaCreate(
@@ -73,9 +70,7 @@ class TestPlayerMatchViews:
             team_id=team.id,
         )
 
-        response = await client.post(
-            "/api/players_match/", json=player_match_data.model_dump()
-        )
+        response = await client.post("/api/players_match/", json=player_match_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -115,9 +110,7 @@ class TestPlayerMatchViews:
 
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(
-            MatchFactory.build(
-                tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id
-            )
+            MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id)
         )
 
         player_match_service = PlayerMatchServiceDB(test_db)
@@ -128,9 +121,7 @@ class TestPlayerMatchViews:
             match_id=match.id,
             team_id=team.id,
         )
-        created = await player_match_service.create_or_update_player_match(
-            player_match_data
-        )
+        created = await player_match_service.create_or_update_player_match(player_match_data)
 
         response = await client.get("/api/players_match/eesl_id/100")
 
@@ -177,9 +168,7 @@ class TestPlayerMatchViews:
 
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(
-            MatchFactory.build(
-                tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id
-            )
+            MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id)
         )
 
         player_match_service = PlayerMatchServiceDB(test_db)
@@ -190,9 +179,7 @@ class TestPlayerMatchViews:
             match_id=match.id,
             team_id=team.id,
         )
-        created = await player_match_service.create_or_update_player_match(
-            player_match_data
-        )
+        created = await player_match_service.create_or_update_player_match(player_match_data)
 
         update_data = PlayerMatchSchemaUpdate(match_number="99")
 
@@ -237,9 +224,7 @@ class TestPlayerMatchViews:
 
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(
-            MatchFactory.build(
-                tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id
-            )
+            MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id)
         )
 
         player_match_service = PlayerMatchServiceDB(test_db)
@@ -302,9 +287,7 @@ class TestPlayerMatchViews:
 
         match_service = MatchServiceDB(test_db)
         match = await match_service.create(
-            MatchFactory.build(
-                tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id
-            )
+            MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id)
         )
 
         player_match_service = PlayerMatchServiceDB(test_db)
@@ -315,9 +298,7 @@ class TestPlayerMatchViews:
             match_id=match.id,
             team_id=team.id,
         )
-        created = await player_match_service.create_or_update_player_match(
-            player_match_data
-        )
+        created = await player_match_service.create_or_update_player_match(player_match_data)
 
         response = await client.get(f"/api/players_match/id/{created.id}")
 
@@ -328,9 +309,7 @@ class TestPlayerMatchViews:
 
         assert response.status_code == 404
 
-    async def test_create_parsed_eesl_match_with_timeout_skip(
-        self, client, test_db, monkeypatch
-    ):
+    async def test_create_parsed_eesl_match_with_timeout_skip(self, client, test_db, monkeypatch):
         """Test that match parsing skips players when collect_player_full_data_eesl times out."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -344,12 +323,10 @@ class TestPlayerMatchViews:
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(
-            TeamFactory.build(sport_id=sport.id, team_eesl_id=100)
-        )
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id, team_eesl_id=100))
 
         match_service = MatchServiceDB(test_db)
-        match = await match_service.create(
+        await match_service.create(
             MatchFactory.build(
                 tournament_id=tournament.id,
                 team_a_id=team.id,
@@ -359,9 +336,7 @@ class TestPlayerMatchViews:
         )
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
-        )
+        await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
 
         async def mock_timeout_return_none(*args, **kwargs):
             return None

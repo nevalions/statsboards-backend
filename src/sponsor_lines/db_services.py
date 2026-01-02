@@ -1,12 +1,12 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, SponsorLineDB
 from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .schemas import SponsorLineSchemaCreate, SponsorLineSchemaUpdate
+
 ITEM = "SPONSOR_LINE"
 
 

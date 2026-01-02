@@ -17,6 +17,7 @@ from tests.factories import (
     SportFactorySample,
     TournamentFactory,
 )
+
 test_logger = logging.getLogger("backend_logger_tests")
 
 

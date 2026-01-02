@@ -1,5 +1,4 @@
-from typing import Any, Generic, TypeVar
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel

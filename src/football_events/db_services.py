@@ -8,6 +8,7 @@ from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
+
 ITEM = "FOOTBALL_EVENT"
 
 
@@ -84,9 +85,7 @@ class FootballEventServiceDB(BaseServiceDB):
                 await session.rollback()
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(
-                    f"Database error creating {ITEM}: {ex}", exc_info=True
-                )
+                self.logger.error(f"Database error creating {ITEM}: {ex}", exc_info=True)
                 await session.rollback()
                 raise HTTPException(
                     status_code=500,
@@ -132,7 +131,7 @@ class FootballEventServiceDB(BaseServiceDB):
             self.logger.error(f"Database error updating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error updating football event",
+                detail="Database error updating football event",
             )
         except (ValueError, KeyError, TypeError) as ex:
             self.logger.warning(f"Data error updating {ITEM}: {ex}", exc_info=True)
@@ -147,9 +146,7 @@ class FootballEventServiceDB(BaseServiceDB):
             self.logger.critical(f"Unexpected error updating {ITEM}: {ex}", exc_info=True)
             raise
 
-    async def get_match_football_events_by_match_id(
-        self, match_id: int
-    ) -> list[FootballEventDB]:
+    async def get_match_football_events_by_match_id(self, match_id: int) -> list[FootballEventDB]:
         async with self.db.async_session() as session:
             try:
                 self.logger.debug(f"Getting {ITEM}s by match id({match_id})")

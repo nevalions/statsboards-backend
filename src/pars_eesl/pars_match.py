@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 from src.helpers import get_url
 from src.pars_eesl.pars_settings import BASE_MATCH_URL
+
 logger = logging.getLogger("backend_logger_parse_match_eesl")
 
 

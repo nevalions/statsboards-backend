@@ -5,7 +5,6 @@ from src.core import BaseRouter, db
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
 from ..pars_eesl.pars_tournament import (
-    ParsedTeamData,
     parse_tournament_teams_index_page_eesl,
 )
 from ..team_tournament.db_services import TeamTournamentServiceDB

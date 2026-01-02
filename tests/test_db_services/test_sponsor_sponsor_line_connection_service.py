@@ -7,7 +7,6 @@ from src.sponsors.db_services import SponsorServiceDB
 from tests.factories import SponsorFactory, SponsorLineFactory
 
 
-
 @pytest.mark.asyncio
 class TestSponsorSponsorLineServiceDB:
     async def test_create_sponsor_sponsor_line(self, test_db):

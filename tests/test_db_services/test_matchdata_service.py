@@ -16,7 +16,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestMatchDataServiceDB:
     async def test_create_matchdata(self, test_db):

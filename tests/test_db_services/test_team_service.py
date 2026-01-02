@@ -9,7 +9,6 @@ from src.teams.schemas import TeamSchemaCreate, TeamSchemaUpdate
 from tests.factories import SportFactorySample, TeamFactory
 
 
-
 @pytest.fixture(scope="function")
 def sport(test_db: Database):
     return SportFactorySample.build()

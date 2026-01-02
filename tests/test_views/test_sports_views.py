@@ -5,7 +5,6 @@ from src.sports.schemas import SportSchemaUpdate
 from tests.factories import SportFactorySample
 
 
-
 @pytest.mark.asyncio
 class TestSportViews:
     async def test_create_sport_endpoint(self, client, test_db):

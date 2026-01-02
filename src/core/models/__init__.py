@@ -25,8 +25,9 @@ __all__ = (
     "FootballEventDB",
 )
 
-from .base import Base, BaseServiceDB, db
 from src.core.decorators import handle_service_exceptions
+
+from .base import Base, BaseServiceDB, db
 from .football_event import FootballEventDB
 from .gameclock import GameClockDB
 from .match import MatchDB

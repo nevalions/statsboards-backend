@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from src.helpers import get_url
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
+
 logger = logging.getLogger("backend_logger_parse_players_from_team_tournament_eesl")
 
 

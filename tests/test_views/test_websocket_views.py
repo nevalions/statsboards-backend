@@ -6,8 +6,8 @@ import asyncpg
 import pytest
 from starlette.websockets import WebSocket
 
-from src.utils.websocket.websocket_manager import connection_manager
 from src.seasons.db_services import SeasonServiceDB
+from src.utils.websocket.websocket_manager import connection_manager
 from tests.factories import (
     SeasonFactorySample,
     SportFactorySample,
@@ -302,8 +302,8 @@ class TestWebSocketEndpointIntegration:
         mock_websocket.send_json = AsyncMock()
 
         from src.matches.crud_router import MatchCRUDRouter
-        from src.matches.websocket_router import MatchWebSocketRouter
         from src.matches.parser_router import MatchParserRouter
+        from src.matches.websocket_router import MatchWebSocketRouter
 
         MatchCRUDRouter(MatchServiceDB(test_db))
         MatchWebSocketRouter(MatchServiceDB(test_db))
@@ -1143,7 +1143,6 @@ class TestWebSocketConnectionErrorHandling:
 class TestDatabaseNotificationFlow:
     async def test_matchdata_database_notification_flow(self, test_db):
         """Test full flow from database change to notification delivery."""
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matchdata.db_services import MatchDataServiceDB
         from src.matchdata.schemas import MatchDataSchemaCreate
         from src.matches.db_services import MatchServiceDB
@@ -1151,6 +1150,7 @@ class TestDatabaseNotificationFlow:
         from src.sports.db_services import SportServiceDB
         from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -1215,7 +1215,6 @@ class TestDatabaseNotificationFlow:
 
     async def test_playclock_database_notification_flow(self, test_db):
         """Test playclock database notification flow."""
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1223,6 +1222,7 @@ class TestDatabaseNotificationFlow:
         from src.sports.db_services import SportServiceDB
         from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -1286,7 +1286,6 @@ class TestDatabaseNotificationFlow:
 
     async def test_gameclock_database_notification_flow(self, test_db):
         """Test gameclock database notification flow."""
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.gameclocks.db_services import GameClockServiceDB
         from src.gameclocks.schemas import GameClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
@@ -1294,6 +1293,7 @@ class TestDatabaseNotificationFlow:
         from src.sports.db_services import SportServiceDB
         from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -1357,7 +1357,6 @@ class TestDatabaseNotificationFlow:
 
     async def test_multiple_clients_receive_same_notification(self, test_db):
         """Test that multiple clients subscribed to same match all receive notification."""
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1365,6 +1364,7 @@ class TestDatabaseNotificationFlow:
         from src.sports.db_services import SportServiceDB
         from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -1436,7 +1436,6 @@ class TestDatabaseNotificationFlow:
 
     async def test_client_only_receives_relevant_match_notifications(self, test_db):
         """Test that clients only receive notifications for matches they're subscribed to."""
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1444,6 +1443,7 @@ class TestDatabaseNotificationFlow:
         from src.sports.db_services import SportServiceDB
         from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -1526,7 +1526,6 @@ class TestDatabaseNotificationFlow:
 
     async def test_database_notification_with_update_operation(self, test_db):
         """Test database notification flow with UPDATE operation."""
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.matches.db_services import MatchServiceDB
         from src.matches.schemas import MatchSchemaCreate
         from src.playclocks.db_services import PlayClockServiceDB
@@ -1534,6 +1533,7 @@ class TestDatabaseNotificationFlow:
         from src.sports.db_services import SportServiceDB
         from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)
@@ -1610,7 +1610,6 @@ class TestDatabaseNotificationFlow:
 
     async def test_multiple_notification_types_single_match(self, test_db):
         """Test that different notification types work for the same match."""
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
         from src.gameclocks.db_services import GameClockServiceDB
         from src.gameclocks.schemas import GameClockSchemaCreate
         from src.matches.db_services import MatchServiceDB
@@ -1620,6 +1619,7 @@ class TestDatabaseNotificationFlow:
         from src.sports.db_services import SportServiceDB
         from src.teams.db_services import TeamServiceDB
         from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
         sport_service = SportServiceDB(test_db)
         season_service = SeasonServiceDB(test_db)

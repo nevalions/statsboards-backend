@@ -5,7 +5,6 @@ from src.seasons.schemas import SeasonSchemaUpdate
 from tests.factories import SeasonFactorySample
 
 
-
 @pytest.mark.asyncio
 class TestSeasonViews:
     async def test_create_season_endpoint(self, client, test_db):

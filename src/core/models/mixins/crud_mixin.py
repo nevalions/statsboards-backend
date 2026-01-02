@@ -1,11 +1,9 @@
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
-from src.core.exceptions import NotFoundError
 
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database

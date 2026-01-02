@@ -10,7 +10,6 @@ from src.tournaments.schemas import TournamentSchemaUpdate
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
 
-
 def create_test_image():
     img = Image.new("RGB", (100, 100), color="red")
     buf = BytesIO()

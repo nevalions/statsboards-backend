@@ -6,18 +6,18 @@ Run with:
 """
 
 import asyncio
+import logging
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-import logging
-from pathlib import Path
-import tempfile
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 from src.logging_config import (
+    ClassNameAdapter,
+    ContextFilter,
     get_logger,
     setup_logging,
-    ContextFilter,
-    ClassNameAdapter,
 )
 from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
@@ -146,6 +146,7 @@ class TestLoggingConfig:
             mock_open.return_value.__enter__.return_value = MagicMock()
 
             import src.logging_config
+
             original_logs_dir = src.logging_config.logs_dir
             src.logging_config.logs_dir = test_logs_dir
 
@@ -161,7 +162,6 @@ class TestLoggingConfig:
     def test_setup_logging_adds_context_filter(self, mock_open, mock_yaml, mock_dict_config):
         """Test that setup_logging adds context filter to configuration."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            logs_dir = Path(tmpdir) / "logs"
             config_path = Path(tmpdir) / "config.yaml"
 
             mock_yaml.return_value = {

@@ -8,7 +8,6 @@ from src.sponsors.schemas import SponsorSchemaUpdate
 from tests.factories import SponsorFactory
 
 
-
 def create_test_image():
     img = Image.new("RGB", (100, 100), color="red")
     buf = BytesIO()

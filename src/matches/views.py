@@ -1,18 +1,11 @@
-from fastapi import Request
 
-from src.core import MinimalBaseRouter, db
+from src.core import db
+
 # from src.core.config import templates
-from src.logging_config import get_logger
 from src.matches.crud_router import MatchCRUDRouter
 from src.matches.db_services import MatchServiceDB
 from src.matches.parser_router import MatchParserRouter
-from src.matches.schemas import (
-    MatchSchema,
-    MatchSchemaCreate,
-    MatchSchemaUpdate,
-)
 from src.matches.websocket_router import MatchWebSocketRouter
-
 
 # class MatchTemplateRouter(
 #     MinimalBaseRouter[

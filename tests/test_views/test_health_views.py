@@ -1,6 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock
-from httpx import AsyncClient
+
+import pytest
+
 from src.core.models import db
 
 

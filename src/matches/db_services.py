@@ -1,9 +1,6 @@
-from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
-from src.core.exceptions import NotFoundError
 from src.core.models import (
     BaseServiceDB,
     GameClockDB,
@@ -22,6 +19,7 @@ from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
 
 from .schemas import MatchSchemaCreate, MatchSchemaUpdate
+
 ITEM = "MATCH"
 
 

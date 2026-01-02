@@ -41,16 +41,17 @@ async def test_app(test_db):
     """Create FastAPI app with test database by creating new router instances."""
     app = FastAPI()
 
+    from src.core.health import router as health_router
     from src.football_events.db_services import FootballEventServiceDB
     from src.football_events.views import FootballEventAPIRouter
     from src.gameclocks.db_services import GameClockServiceDB
     from src.gameclocks.views import GameClockAPIRouter
     from src.matchdata.db_services import MatchDataServiceDB
     from src.matchdata.views import MatchDataAPIRouter
-    from src.matches.db_services import MatchServiceDB
     from src.matches.crud_router import MatchCRUDRouter
-    from src.matches.websocket_router import MatchWebSocketRouter
+    from src.matches.db_services import MatchServiceDB
     from src.matches.parser_router import MatchParserRouter
+    from src.matches.websocket_router import MatchWebSocketRouter
     from src.person.db_services import PersonServiceDB
     from src.person.views import PersonAPIRouter
     from src.playclocks.db_services import PlayClockServiceDB
@@ -83,8 +84,6 @@ async def test_app(test_db):
     from src.teams.views import TeamAPIRouter
     from src.tournaments.db_services import TournamentServiceDB
     from src.tournaments.views import TournamentAPIRouter
-
-    from src.core.health import router as health_router
 
     app.include_router(health_router)
     app.include_router(FootballEventAPIRouter(FootballEventServiceDB(test_db)).route())

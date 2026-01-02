@@ -24,7 +24,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestPlayerMatchServiceDB:
     async def test_create_player_match(self, test_db):

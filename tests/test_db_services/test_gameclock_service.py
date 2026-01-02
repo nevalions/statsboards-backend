@@ -16,7 +16,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestGameClockServiceDB:
     async def test_create_gameclock(self, test_db):

@@ -19,7 +19,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestFootballEventServiceDB:
     async def test_create_football_event(self, test_db):

@@ -1,13 +1,11 @@
-from fastapi import HTTPException
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PositionDB, handle_service_exceptions
 from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .schemas import PositionSchemaCreate, PositionSchemaUpdate
+
 ITEM = "POSITION"
 
 

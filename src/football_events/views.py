@@ -11,6 +11,7 @@ from .schemas import (
     FootballEventSchemaCreate,
     FootballEventSchemaUpdate,
 )
+
 ITEM = "FOOTBALL_EVENT"
 
 

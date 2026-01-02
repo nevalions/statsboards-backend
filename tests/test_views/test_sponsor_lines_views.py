@@ -5,7 +5,6 @@ from src.sponsor_lines.schemas import SponsorLineSchemaUpdate
 from tests.factories import SponsorLineFactory
 
 
-
 @pytest.mark.asyncio
 class TestSponsorLineViews:
     async def test_create_sponsor_line_endpoint(self, client, test_db):

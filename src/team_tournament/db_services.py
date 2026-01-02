@@ -7,6 +7,7 @@ from src.core.models import BaseServiceDB, TeamDB, TeamTournamentDB
 from src.core.models.base import Database
 from src.logging_config import get_logger
 from src.team_tournament.schemas import TeamTournamentSchemaCreate
+
 ITEM = "TEAM_TOURNAMENT"
 
 

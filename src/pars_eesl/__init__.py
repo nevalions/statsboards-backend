@@ -8,3 +8,14 @@ from .pars_settings import (
     BASE_TOURNAMENT_URL,
     BASE_URL,
 )
+
+__all__ = [
+    "BASE_ALL_PLAYERS_URL",
+    "BASE_MATCH_URL",
+    "BASE_PLAYER",
+    "BASE_SEASON_URL",
+    "BASE_TEAM_TOURNAMENT_URL",
+    "BASE_TEAM_URL",
+    "BASE_TOURNAMENT_URL",
+    "BASE_URL",
+]
