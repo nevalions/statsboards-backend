@@ -12,14 +12,14 @@ import pytest
 from httpx import AsyncClient
 
 from tests.factories import (
-    SeasonFactoryAny,
-    SportFactoryAny,
-    TournamentFactory,
-    TeamFactory,
+    MatchFactory,
     PersonFactory,
     PlayerFactory,
-    MatchFactory,
     PositionFactory,
+    SeasonFactoryAny,
+    SportFactoryAny,
+    TeamFactory,
+    TournamentFactory,
 )
 
 

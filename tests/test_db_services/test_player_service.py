@@ -10,7 +10,6 @@ from src.sports.schemas import SportSchemaCreate
 from tests.factories import PersonFactory, PlayerFactory, SportFactorySample
 
 
-
 @pytest.fixture(scope="function")
 def sport(test_db: Database):
     return SportFactorySample.build()

@@ -8,7 +8,6 @@ from src.person.schemas import PersonSchemaUpdate
 from tests.factories import PersonFactory
 
 
-
 def create_test_image():
     img = Image.new("RGB", (100, 100), color="red")
     buf = BytesIO()

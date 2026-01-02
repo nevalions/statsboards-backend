@@ -10,7 +10,6 @@ from src.tournaments.schemas import TournamentSchemaUpdate
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
 
-
 @pytest.fixture(scope="function")
 def sport(test_db: Database):
     return SportFactorySample.build()

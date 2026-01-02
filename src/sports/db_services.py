@@ -14,6 +14,7 @@ from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .schemas import SportSchemaCreate, SportSchemaUpdate
+
 ITEM = "SPORT"
 
 

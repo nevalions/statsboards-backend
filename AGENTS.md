@@ -111,11 +111,11 @@ pytest -k "e2e"
 ### Code Quality
 
 ```bash
-# Format code with Black
-black src/ tests/
+# Lint with Ruff
+source venv/bin/activate && ruff check src/ tests/
 
-# Lint with PyLint
-pylint src/
+# Auto-fix Ruff issues where possible
+source venv/bin/activate && ruff check --fix src/ tests/
 ```
 
 ### Database

@@ -6,7 +6,6 @@ from src.person.schemas import PersonSchemaUpdate
 from tests.factories import PersonFactory
 
 
-
 @pytest.mark.asyncio
 class TestPersonServiceDBCreateOrUpdate:
     """Test create_or_update_person functionality."""

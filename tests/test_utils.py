@@ -6,18 +6,18 @@ Run with:
 """
 
 import asyncio
+import logging
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-import logging
-from pathlib import Path
-import tempfile
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 from src.logging_config import (
+    ClassNameAdapter,
+    ContextFilter,
     get_logger,
     setup_logging,
-    ContextFilter,
-    ClassNameAdapter,
 )
 from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 

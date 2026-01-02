@@ -16,7 +16,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestScoreboardViews:
     async def test_create_scoreboard_endpoint(self, client, test_db):

@@ -8,6 +8,7 @@ from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .schemas import FootballEventSchemaCreate, FootballEventSchemaUpdate
+
 ITEM = "FOOTBALL_EVENT"
 
 
@@ -132,7 +133,7 @@ class FootballEventServiceDB(BaseServiceDB):
             self.logger.error(f"Database error updating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail=f"Database error updating football event",
+                detail="Database error updating football event",
             )
         except (ValueError, KeyError, TypeError) as ex:
             self.logger.warning(f"Data error updating {ITEM}: {ex}", exc_info=True)

@@ -85,4 +85,4 @@ jobs:
 
     - name: Lint with Ruff
       run: |
-        poetry run ruff check src/ tests/ || echo "Ruff found issues (non-blocking)"
+        poetry run ruff check src/ tests/

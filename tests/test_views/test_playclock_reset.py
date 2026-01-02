@@ -16,7 +16,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestPlayClockResetEndpoint:
     async def test_reset_playclock_to_none(self, client, test_db):

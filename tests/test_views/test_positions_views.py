@@ -6,7 +6,6 @@ from src.sports.db_services import SportServiceDB
 from tests.factories import SportFactorySample
 
 
-
 @pytest.mark.asyncio
 class TestPositionViews:
     async def test_create_position_endpoint(self, client, test_db):

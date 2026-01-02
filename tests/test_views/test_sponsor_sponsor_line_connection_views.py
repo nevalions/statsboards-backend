@@ -10,7 +10,6 @@ from src.sponsors.db_services import SponsorServiceDB
 from tests.factories import SponsorFactory, SponsorLineFactory
 
 
-
 @pytest.mark.asyncio
 class TestSponsorSponsorLineViews:
     async def test_create_sponsor_sponsor_line_relation_endpoint(self, client, test_db):

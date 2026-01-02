@@ -1,14 +1,13 @@
 import asyncio
 import json
 import logging
-from collections.abc import Callable, Coroutine
-from typing import Any
+from collections.abc import Callable
 
 import asyncpg
 from starlette.websockets import WebSocket
 
 from src.core.config import settings
-from src.logging_config import get_logger
+
 connection_socket_logger_helper = logging.getLogger("backend_logger_ConnectionManager")
 
 

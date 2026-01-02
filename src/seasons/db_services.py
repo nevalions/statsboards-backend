@@ -3,7 +3,6 @@ from sqlalchemy import and_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.exceptions import NotFoundError
-
 from src.core.models import (
     BaseServiceDB,
     MatchDB,
@@ -16,6 +15,7 @@ from src.core.models.base import Database
 from src.logging_config import get_logger
 
 from .schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+
 ITEM = "SEASON"
 
 

@@ -17,7 +17,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestTeamTournamentViews:
     async def test_create_team_tournament_relation_endpoint(self, client, test_db):

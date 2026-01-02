@@ -16,7 +16,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestScoreboardServiceDB:
     async def test_create_scoreboard(self, test_db):

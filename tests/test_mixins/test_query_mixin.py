@@ -6,7 +6,6 @@ from src.sports.db_services import SportServiceDB
 from tests.factories import SeasonFactorySample, SportFactorySample
 
 
-
 class TestQueryMixin:
     """Test suite for QueryMixin methods."""
 

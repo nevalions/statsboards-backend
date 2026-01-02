@@ -8,6 +8,7 @@ from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
+
 ITEM = "MATCHDATA"
 
 
@@ -62,7 +63,7 @@ class MatchDataServiceDB(BaseServiceDB):
                 )
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid data provided for matchdata",
+                    detail="Invalid data provided for matchdata",
                 )
             except NotFoundError as ex:
                 self.logger.info(f"Not found creating new match data: {ex}", exc_info=True)
@@ -113,7 +114,7 @@ class MatchDataServiceDB(BaseServiceDB):
             self.logger.warning(f"Data error updating match data: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid data provided for matchdata",
+                detail="Invalid data provided for matchdata",
             )
         except NotFoundError as ex:
             self.logger.info(f"Not found updating match data: {ex}", exc_info=True)

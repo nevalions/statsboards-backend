@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.pars_eesl.pars_settings import BASE_SEASON_URL, SEASON_ID
+
 logger = logging.getLogger("backend_logger_parser_eesl")
 ITEM_PARSED = "SEASON"
 ITEM_GOT = "TOURNAMENT"

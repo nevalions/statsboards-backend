@@ -15,6 +15,7 @@ from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import convert_cyrillic_filename, ru_to_eng_datetime_month
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
+
 logger = logging.getLogger("backend_logger_parse_players_from_eesl")
 ITEM_GOT = "PLAYER"
 

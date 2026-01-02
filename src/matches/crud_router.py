@@ -2,14 +2,15 @@ from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter
+from src.core.service_registry import get_service_registry
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.helpers.file_service import file_service
 from src.logging_config import get_logger
-from src.matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
+from src.matchdata.schemas import MatchDataSchemaCreate
 from src.playclocks.schemas import PlayClockSchemaCreate
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from src.teams.schemas import UploadResizeTeamLogoResponse, UploadTeamLogoResponse
-from src.core.service_registry import get_service_registry
+
 from .db_services import MatchServiceDB
 from .schemas import (
     MatchSchema,

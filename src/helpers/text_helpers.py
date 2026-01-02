@@ -1,7 +1,6 @@
 import logging
 from pathlib import Path
 
-
 logger = logging.getLogger("backend_logger_text_helpers")
 
 

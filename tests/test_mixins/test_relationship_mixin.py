@@ -6,7 +6,6 @@ from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
 
-
 class TestRelationshipMixin:
     """Test suite for RelationshipMixin methods."""
 

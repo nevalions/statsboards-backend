@@ -13,6 +13,7 @@ from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .schemas import SponsorSponsorLineSchemaCreate
+
 ITEM = "SPONSOR_SPONSOR_LINE"
 
 
@@ -140,7 +141,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                 )
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid data provided for sponsor sponsors",
+                    detail="Invalid data provided for sponsor sponsors",
                 )
             except NotFoundError as e:
                 self.logger.info(

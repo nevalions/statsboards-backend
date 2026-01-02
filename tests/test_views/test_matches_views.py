@@ -14,7 +14,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestMatchViews:
     async def test_create_match_endpoint(self, client, test_db):

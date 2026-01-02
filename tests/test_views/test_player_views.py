@@ -7,7 +7,6 @@ from src.sports.db_services import SportServiceDB
 from tests.factories import PersonFactory, SportFactorySample
 
 
-
 @pytest.mark.asyncio
 class TestPlayerViews:
     async def test_create_player_endpoint(self, client, test_db):

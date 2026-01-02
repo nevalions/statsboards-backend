@@ -22,7 +22,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.mark.asyncio
 class TestPlayerMatchViews:
     async def test_create_player_match_endpoint(self, client, test_db):

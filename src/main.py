@@ -12,11 +12,11 @@ from fastapi.staticfiles import StaticFiles
 from src.core.config import settings, uploads_path
 from src.core.exception_handler import register_exception_handlers
 from src.core.models.base import db
-from src.core.service_registry import init_service_registry
-from src.core.service_initialization import register_all_services
-from src.utils.websocket.websocket_manager import ws_manager
 from src.core.router_registry import RouterRegistry, configure_routers
+from src.core.service_initialization import register_all_services
+from src.core.service_registry import init_service_registry
 from src.logging_config import logs_dir, setup_logging
+from src.utils.websocket.websocket_manager import ws_manager
 
 logger = logging.getLogger("backend_logger_fastapi")
 db_logger = logging.getLogger("backend_logger_base_db")

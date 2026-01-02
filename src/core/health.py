@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+
 from src.core.models import db
 
 router = APIRouter(prefix="/health", tags=["health"])

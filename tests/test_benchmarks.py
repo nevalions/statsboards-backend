@@ -12,6 +12,7 @@ Compare benchmarks with baseline:
 """
 
 import pytest
+
 from tests.factories import SeasonFactoryAny, TournamentFactory
 
 

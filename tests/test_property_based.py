@@ -9,13 +9,13 @@ Run with:
     pytest tests/test_property_based.py
 """
 
-import pytest
-from datetime import datetime
-from hypothesis import given, strategies as st, assume, settings, HealthCheck
 
-from src.helpers.text_helpers import safe_int_conversion, convert_cyrillic_filename
-from src.helpers.fetch_helpers import instance_to_dict, deep_dict_convert
+import pytest
+from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import strategies as st
+
 from src.helpers.image_processing_service import ImageProcessingService
+from src.helpers.text_helpers import convert_cyrillic_filename, safe_int_conversion
 
 
 @pytest.mark.property

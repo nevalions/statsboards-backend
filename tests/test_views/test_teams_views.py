@@ -8,7 +8,6 @@ from src.teams.db_services import TeamServiceDB
 from tests.factories import SportFactorySample, TeamFactory
 
 
-
 def create_test_image():
     img = Image.new("RGB", (100, 100), color="red")
     buf = BytesIO()

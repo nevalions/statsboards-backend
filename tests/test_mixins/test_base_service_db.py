@@ -6,7 +6,6 @@ from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
 
 
-
 class TestBaseServiceDBIntegration:
     """Integration tests for BaseServiceDB combining all mixins."""
 

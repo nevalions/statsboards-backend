@@ -22,7 +22,6 @@ from tests.factories import (
 )
 
 
-
 @pytest.fixture(scope="function")
 def sport(test_db: Database):
     return SportFactorySample.build()

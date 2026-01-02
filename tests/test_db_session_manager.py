@@ -1,6 +1,6 @@
 import pytest
 from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.core.db_session_manager import db_session_context, with_db_session
 from src.core.models import SportDB

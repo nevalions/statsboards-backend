@@ -1,8 +1,5 @@
-from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exceptions import NotFoundError
 from src.core.models import (
     BaseServiceDB,
     MatchDB,
@@ -15,6 +12,7 @@ from src.positions.db_services import PositionServiceDB
 
 from ..logging_config import get_logger
 from .schemas import TeamSchemaCreate, TeamSchemaUpdate
+
 ITEM = "TEAM"
 
 

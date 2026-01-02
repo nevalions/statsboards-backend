@@ -1,17 +1,16 @@
-import json
 from typing import Optional
 
-from fastapi import Depends, File, HTTPException, Path, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Depends, File, HTTPException, Path, UploadFile
+from fastapi.responses import JSONResponse
 
-from src.core import BaseRouter, MinimalBaseRouter, db
+from src.core import BaseRouter, db
+
 # from src.core.config import templates
 from src.helpers.fetch_helpers import (
     fetch_list_of_matches_data,
     fetch_matches_with_data_by_tournament_paginated,
 )
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
-from src.seasons.db_services import SeasonServiceDB
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
