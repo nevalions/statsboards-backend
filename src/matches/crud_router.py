@@ -80,9 +80,7 @@ class MatchCRUDRouter(
         async def create_match_with_full_data_endpoint(
             data: MatchSchemaCreate,
         ):
-            self.logger.debug(
-                f"Create or update match with full data endpoint got data: {data}"
-            )
+            self.logger.debug(f"Create or update match with full data endpoint got data: {data}")
             teams_service = self.service_registry.get("team")
             tournament_service = self.service_registry.get("tournament")
             sponsor_service = self.service_registry.get("sponsor")
@@ -98,14 +96,12 @@ class MatchCRUDRouter(
             GameClockSchemaCreate(match_id=new_match.id)
 
             tournament = await tournament_service.get_by_id(new_match.tournament_id)
-            tournament_main_sponsor = await sponsor_service.get_by_id(
-                tournament.main_sponsor_id
-            )
+            tournament_main_sponsor = await sponsor_service.get_by_id(tournament.main_sponsor_id)
             team_a = await teams_service.get_by_id(new_match.team_a_id)
             team_b = await teams_service.get_by_id(new_match.team_b_id)
 
-            existing_scoreboard = (
-                await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
+            existing_scoreboard = await scoreboard_db_service.get_scoreboard_by_match_id(
+                new_match.id
             )
 
             scoreboard_schema: ScoreboardSchemaCreate | ScoreboardSchemaUpdate  # type: ignore[assignment]
@@ -195,9 +191,7 @@ class MatchCRUDRouter(
             "/id/{match_id}/home_away_teams/",
         )
         async def get_match_home_away_teams_by_match_id_endpoint(match_id: int):
-            self.logger.debug(
-                f"Get match home and away teams by match id:{match_id} endpoint"
-            )
+            self.logger.debug(f"Get match home and away teams by match id:{match_id} endpoint")
             return await self.service.get_teams_by_match_id(match_id)
 
         @router.get("/id/{match_id}/players/")
@@ -207,9 +201,7 @@ class MatchCRUDRouter(
 
         @router.get("/id/{match_id}/players_fulldata/")
         async def get_players_with_full_data_by_match_id_endpoint(match_id: int):
-            self.logger.debug(
-                f"Get players with full data by match id:{match_id} endpoint"
-            )
+            self.logger.debug(f"Get players with full data by match id:{match_id} endpoint")
             return await self.service.get_player_by_match_full_data(match_id)
 
         @router.get("/id/{match_id}/sponsor_line")
@@ -218,7 +210,9 @@ class MatchCRUDRouter(
             sponsor_line = await self.service.get_match_sponsor_line(match_id)
             if sponsor_line:
                 sponsor_sponsor_line_service = self.service_registry.get("sponsor_sponsor_line")
-                full_sponsor_line = await sponsor_sponsor_line_service.get_related_sponsors(sponsor_line.id)
+                full_sponsor_line = await sponsor_sponsor_line_service.get_related_sponsors(
+                    sponsor_line.id
+                )
                 return full_sponsor_line
 
         @router.get(
@@ -295,16 +289,12 @@ class MatchCRUDRouter(
 
             return await fetch_with_scoreboard_data(match_id)
 
-        @router.post(
-            "/id/{match_id}/upload_team_logo", response_model=UploadTeamLogoResponse
-        )
+        @router.post("/id/{match_id}/upload_team_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo(match_id: int, file: UploadFile = File(...)):
             file_location = await file_service.save_upload_image(
                 file, sub_folder=f"match/{match_id}/teams_logos"
             )
-            self.logger.debug(
-                f"Upload team in match logo endpoint file location: {file_location}"
-            )
+            self.logger.debug(f"Upload team in match logo endpoint file location: {file_location}")
             return {"logoUrl": file_location}
 
         @router.post(
@@ -327,9 +317,7 @@ class MatchCRUDRouter(
         async def create_match_with_full_data_and_scoreboard_endpoint(
             data: MatchSchemaCreate,
         ):
-            self.logger.debug(
-                f"Creat match with full data and scoreboard endpoint {data}"
-            )
+            self.logger.debug(f"Creat match with full data and scoreboard endpoint {data}")
             teams_service = self.service_registry.get("team")
             tournament_service = self.service_registry.get("tournament")
             sponsor_service = self.service_registry.get("sponsor")
@@ -357,13 +345,11 @@ class MatchCRUDRouter(
                 team_b = await teams_service.get_by_id(new_match.team_b_id)
 
                 scale_main_sponsor = (
-                    tournament_main_sponsor.scale_logo
-                    if tournament_main_sponsor
-                    else 2.0
+                    tournament_main_sponsor.scale_logo if tournament_main_sponsor else 2.0
                 )
                 self.logger.debug("If scoreboard exist")
-                existing_scoreboard = (
-                    await scoreboard_db_service.get_scoreboard_by_match_id(new_match.id)
+                existing_scoreboard = await scoreboard_db_service.get_scoreboard_by_match_id(
+                    new_match.id
                 )
 
                 scoreboard_schema: ScoreboardSchemaCreate | ScoreboardSchemaUpdate  # type: ignore[assignment]
@@ -391,14 +377,10 @@ class MatchCRUDRouter(
                         team_a_game_title=team_a.title.title(),
                         team_b_game_title=team_b.title.title(),
                     )
-                new_scoreboard = (
-                    await scoreboard_db_service.create_or_update_scoreboard(
-                        scoreboard_schema
-                    )
+                new_scoreboard = await scoreboard_db_service.create_or_update_scoreboard(
+                    scoreboard_schema
                 )
-                self.logger.debug(
-                    f"Scoreboard created or updated: {new_scoreboard.__dict__}"
-                )
+                self.logger.debug(f"Scoreboard created or updated: {new_scoreboard.__dict__}")
 
                 new_match_data = await match_db_service.create(default_match_data)
                 await self.service.get_teams_by_match(new_match_data.match_id)
@@ -413,5 +395,33 @@ class MatchCRUDRouter(
                     f"Error creating match with full data and scoreboard: {str(e)}",
                     exc_info=True,
                 )
+
+        @router.get(
+            "/id/{match_id}/stats/",
+            summary="Get match statistics",
+            description="Get complete match statistics for both teams including team, offense, QB, and defense stats",
+            responses={
+                200: {"description": "Stats retrieved successfully"},
+                404: {"description": "Match not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def get_match_stats_endpoint(match_id: int):
+            self.logger.debug(f"Get match stats endpoint for match_id:{match_id}")
+            stats_service = self.service_registry.get("match_stats")
+
+            try:
+                stats = await stats_service.get_match_with_cached_stats(match_id)
+                if not stats:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Match {match_id} not found or no stats available",
+                    )
+                return stats
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(f"Error fetching stats for match {match_id}: {ex}", exc_info=True)
+                raise HTTPException(status_code=500, detail="Internal server error")
 
         return router

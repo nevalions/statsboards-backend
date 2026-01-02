@@ -317,7 +317,105 @@ Client                              Server
   |                                   |
   |----- DISCONNECT ------------------->|
   |                                   |
+  ```
+
+### HTTP Endpoint: Match Statistics
+
+#### GET /api/matches/id/{match_id}/stats/
+
+Get complete match statistics for both teams without requiring a WebSocket connection.
+
+**Endpoint:**
 ```
+GET /api/matches/id/{match_id}/stats/
+```
+
+**Path Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `match_id` | integer | Yes | Match ID |
+
+**Response (200 OK):**
+
+```json
+{
+  "match_id": 123,
+  "team_a": {
+    "id": 1,
+    "team_stats": {
+      "id": 1,
+      "offence_yards": 250,
+      "pass_att": 20,
+      "run_att": 30,
+      "avg_yards_per_att": 5.0,
+      "pass_yards": 150,
+      "run_yards": 100,
+      "lost_yards": 10,
+      "flag_yards": -15,
+      "third_down_attempts": 8,
+      "third_down_conversions": 3,
+      "fourth_down_attempts": 2,
+      "fourth_down_conversions": 1,
+      "first_down_gained": 15,
+      "turnovers": 2
+    },
+    "offense_stats": {
+      "456": {
+        "id": 456,
+        "pass_attempts": 10,
+        "pass_received": 8,
+        "pass_yards": 120,
+        "pass_td": 1,
+        "run_attempts": 5,
+        "run_yards": 40,
+        "run_avr": 8.0,
+        "run_td": 0,
+        "fumble": 0
+      }
+    },
+    "qb_stats": {
+      "789": {
+        "id": 789,
+        "passes": 15,
+        "passes_completed": 10,
+        "pass_yards": 150,
+        "pass_td": 2,
+        "pass_avr": 66.67,
+        "run_attempts": 2,
+        "run_yards": 10,
+        "run_td": 0,
+        "run_avr": 5.0,
+        "fumble": 0,
+        "interception": 1,
+        "qb_rating": 85.5
+      }
+    },
+    "defense_stats": {
+      "101": {
+        "id": 101,
+        "tackles": 5,
+        "assist_tackles": 3,
+        "sacks": 1,
+        "interceptions": 1,
+        "fumble_recoveries": 1,
+        "flags": 0
+      }
+    }
+  },
+  "team_b": {
+    "id": 2,
+    "team_stats": { /* same structure as team_a */ },
+    "offense_stats": { /* same structure as team_a */ },
+    "qb_stats": { /* same structure as team_a */ },
+    "defense_stats": { /* same structure as team_a */ }
+  }
+}
+```
+
+**Error Responses:**
+
+- **404 Not Found** - Match doesn't exist
+- **500 Internal Server Error** - Server error
 
 ---
 
@@ -834,7 +932,6 @@ function MatchStatsComponent({ matchId }: { matchId: number }) {
 
 ### Future Enhancements
 
-- **HTTP Stats Endpoint**: REST endpoint for match statistics (planned)
 - **Authentication**: WebSocket authentication support (planned)
 - **Historical Stats**: Historical match statistics (planned)
 
