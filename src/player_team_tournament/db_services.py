@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, PlayerDB, PlayerTeamTournamentDB
@@ -326,3 +327,256 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
+
+    async def get_team_rosters_for_match(
+        self,
+        match_id: int,
+        include_available: bool = True,
+        include_match_players: bool = True,
+    ) -> dict | None:
+        """Get all rosters for a match: home, away, available."""
+        from src.core.models.match import MatchDB
+        from src.core.models.player import PlayerDB
+        from src.core.models.player_match import PlayerMatchDB
+
+        self.logger.debug(
+            f"Get team rosters for match_id:{match_id} include_available:{include_available} include_match_players:{include_match_players}"
+        )
+
+        try:
+            async with self.db.async_session() as session:
+                stmt_match = (
+                    select(MatchDB)
+                    .where(MatchDB.id == match_id)
+                    .options(
+                        selectinload(MatchDB.tournaments),
+                    )
+                )
+                result_match = await session.execute(stmt_match)
+                match = result_match.scalar_one_or_none()
+
+                if not match:
+                    return None
+
+                result = {
+                    "match_id": match_id,
+                    "home_roster": [],
+                    "away_roster": [],
+                    "available_home": [],
+                    "available_away": [],
+                }
+
+                if include_match_players:
+                    home_roster_stmt = (
+                        select(PlayerMatchDB)
+                        .where(PlayerMatchDB.match_id == match_id)
+                        .where(PlayerMatchDB.team_id == match.team_a_id)
+                        .options(
+                            selectinload(PlayerMatchDB.player_team_tournament)
+                            .selectinload(PlayerTeamTournamentDB.player)
+                            .selectinload(PlayerDB.person),
+                            selectinload(PlayerMatchDB.team),
+                            selectinload(PlayerMatchDB.match_position),
+                        )
+                    )
+                    home_roster_result = await session.execute(home_roster_stmt)
+                    home_roster_players = home_roster_result.scalars().all()
+
+                    for pm in home_roster_players:
+                        result["home_roster"].append(
+                            {
+                                "id": pm.id,
+                                "player_id": (
+                                    pm.player_team_tournament.player_id
+                                    if pm.player_team_tournament
+                                    else None
+                                ),
+                                "player": (
+                                    pm.player_team_tournament.player.__dict__
+                                    if pm.player_team_tournament
+                                    and pm.player_team_tournament.player
+                                    else None
+                                ),
+                                "team": (
+                                    {
+                                        **pm.team.__dict__,
+                                        "logo_url": pm.team.logo_url
+                                        if hasattr(pm.team, "logo_url")
+                                        else None,
+                                    }
+                                    if pm.team
+                                    else None
+                                ),
+                                "tournament": (
+                                    match.tournaments.__dict__ if match.tournaments else None
+                                ),
+                                "player_number": (
+                                    pm.player_team_tournament.player_number
+                                    if pm.player_team_tournament
+                                    else None
+                                ),
+                                "is_home_team": True,
+                                "is_starting": pm.is_starting,
+                                "starting_type": pm.starting_type,
+                            }
+                        )
+
+                    away_roster_stmt = (
+                        select(PlayerMatchDB)
+                        .where(PlayerMatchDB.match_id == match_id)
+                        .where(PlayerMatchDB.team_id == match.team_b_id)
+                        .options(
+                            selectinload(PlayerMatchDB.player_team_tournament)
+                            .selectinload(PlayerTeamTournamentDB.player)
+                            .selectinload(PlayerDB.person),
+                            selectinload(PlayerMatchDB.team),
+                            selectinload(PlayerMatchDB.match_position),
+                        )
+                    )
+                    away_roster_result = await session.execute(away_roster_stmt)
+                    away_roster_players = away_roster_result.scalars().all()
+
+                    for pm in away_roster_players:
+                        result["away_roster"].append(
+                            {
+                                "id": pm.id,
+                                "player_id": (
+                                    pm.player_team_tournament.player_id
+                                    if pm.player_team_tournament
+                                    else None
+                                ),
+                                "player": (
+                                    pm.player_team_tournament.player.__dict__
+                                    if pm.player_team_tournament
+                                    and pm.player_team_tournament.player
+                                    else None
+                                ),
+                                "team": (
+                                    {
+                                        **pm.team.__dict__,
+                                        "logo_url": pm.team.logo_url
+                                        if hasattr(pm.team, "logo_url")
+                                        else None,
+                                    }
+                                    if pm.team
+                                    else None
+                                ),
+                                "tournament": (
+                                    match.tournaments.__dict__ if match.tournaments else None
+                                ),
+                                "player_number": (
+                                    pm.player_team_tournament.player_number
+                                    if pm.player_team_tournament
+                                    else None
+                                ),
+                                "is_home_team": False,
+                                "is_starting": pm.is_starting,
+                                "starting_type": pm.starting_type,
+                            }
+                        )
+
+                if include_available:
+                    subquery_home = (
+                        select(PlayerMatchDB.player_team_tournament_id)
+                        .where(PlayerMatchDB.match_id == match_id)
+                        .where(PlayerMatchDB.team_id == match.team_a_id)
+                    )
+
+                    home_available_stmt = (
+                        select(PlayerTeamTournamentDB)
+                        .where(PlayerTeamTournamentDB.team_id == match.team_a_id)
+                        .where(PlayerTeamTournamentDB.tournament_id == match.tournament_id)
+                        .where(~PlayerTeamTournamentDB.id.in_(subquery_home))
+                        .options(
+                            selectinload(PlayerTeamTournamentDB.player).selectinload(
+                                PlayerDB.person
+                            ),
+                            selectinload(PlayerTeamTournamentDB.team),
+                            selectinload(PlayerTeamTournamentDB.tournament),
+                        )
+                    )
+                    home_available_result = await session.execute(home_available_stmt)
+                    home_available_players = home_available_result.scalars().all()
+
+                    for pt in home_available_players:
+                        result["available_home"].append(
+                            {
+                                "id": pt.id,
+                                "player_id": pt.player_id,
+                                "player": (pt.player.__dict__ if pt.player else None),
+                                "team": (
+                                    {
+                                        **pt.team.__dict__,
+                                        "logo_url": pt.team.logo_url
+                                        if hasattr(pt.team, "logo_url")
+                                        else None,
+                                    }
+                                    if pt.team
+                                    else None
+                                ),
+                                "tournament": (pt.tournament.__dict__ if pt.tournament else None),
+                                "player_number": pt.player_number,
+                            }
+                        )
+
+                    subquery_away = (
+                        select(PlayerMatchDB.player_team_tournament_id)
+                        .where(PlayerMatchDB.match_id == match_id)
+                        .where(PlayerMatchDB.team_id == match.team_b_id)
+                    )
+
+                    away_available_stmt = (
+                        select(PlayerTeamTournamentDB)
+                        .where(PlayerTeamTournamentDB.team_id == match.team_b_id)
+                        .where(PlayerTeamTournamentDB.tournament_id == match.tournament_id)
+                        .where(~PlayerTeamTournamentDB.id.in_(subquery_away))
+                        .options(
+                            selectinload(PlayerTeamTournamentDB.player).selectinload(
+                                PlayerDB.person
+                            ),
+                            selectinload(PlayerTeamTournamentDB.team),
+                            selectinload(PlayerTeamTournamentDB.tournament),
+                        )
+                    )
+                    away_available_result = await session.execute(away_available_stmt)
+                    away_available_players = away_available_result.scalars().all()
+
+                    for pt in away_available_players:
+                        result["available_away"].append(
+                            {
+                                "id": pt.id,
+                                "player_id": pt.player_id,
+                                "player": (pt.player.__dict__ if pt.player else None),
+                                "team": (
+                                    {
+                                        **pt.team.__dict__,
+                                        "logo_url": pt.team.logo_url
+                                        if hasattr(pt.team, "logo_url")
+                                        else None,
+                                    }
+                                    if pt.team
+                                    else None
+                                ),
+                                "tournament": (pt.tournament.__dict__ if pt.tournament else None),
+                                "player_number": pt.player_number,
+                            }
+                        )
+
+                return result
+        except HTTPException:
+            raise
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Database error fetching team rosters for match {match_id}: {ex}", exc_info=True
+            )
+            raise HTTPException(status_code=500, detail="Database error fetching team rosters")
+        except (ValueError, KeyError, TypeError) as ex:
+            self.logger.warning(
+                f"Data error fetching team rosters for match {match_id}: {ex}", exc_info=True
+            )
+            raise HTTPException(status_code=400, detail="Invalid data")
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error fetching team rosters for match {match_id}: {ex}", exc_info=True
+            )
+            raise HTTPException(status_code=500, detail="Internal server error")
