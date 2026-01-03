@@ -72,6 +72,17 @@ class PlayerMatchDB(Base):
         default=False,
     )
 
+    is_starting: Mapped[bool | None] = mapped_column(
+        Boolean,
+        nullable=True,
+        server_default="false",
+    )
+
+    starting_type: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
     match_position: Mapped["PositionDB"] = relationship(
         "PositionDB",
         back_populates="match_players",
@@ -103,12 +114,10 @@ class PlayerMatchDB(Base):
         back_populates="match_player_match_lower_rel",
     )
 
-    football_qb_full_stats_match_player_lower: Mapped[list["ScoreboardDB"]] = (
-        relationship(
-            "ScoreboardDB",
-            foreign_keys="ScoreboardDB.football_qb_full_stats_match_lower_id",
-            back_populates="match_football_qb_full_stats_match_lower_rel",
-        )
+    football_qb_full_stats_match_player_lower: Mapped[list["ScoreboardDB"]] = relationship(
+        "ScoreboardDB",
+        foreign_keys="ScoreboardDB.football_qb_full_stats_match_lower_id",
+        back_populates="match_football_qb_full_stats_match_lower_rel",
     )
 
     event_qb_events: Mapped[list["FootballEventDB"]] = relationship(

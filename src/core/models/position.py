@@ -20,6 +20,11 @@ class PositionDB(Base):
         nullable=False,
     )
 
+    category: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
     sport_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(

@@ -256,7 +256,26 @@ class MatchServiceDB(BaseServiceDB):
             for player in players:
                 players_with_data.append(
                     {
-                        "match_player": player,
+                        "id": player.id,
+                        "player_id": (
+                            player.player_team_tournament.player_id
+                            if player.player_team_tournament
+                            else None
+                        ),
+                        "player": (
+                            player.player_team_tournament.player
+                            if player.player_team_tournament
+                            else None
+                        ),
+                        "team": player.team,
+                        "position": (
+                            {
+                                **player.match_position.__dict__,
+                                "category": player.match_position.category,
+                            }
+                            if player.match_position
+                            else None
+                        ),
                         "player_team_tournament": player.player_team_tournament,
                         "person": (
                             player.player_team_tournament.player.person
@@ -264,7 +283,8 @@ class MatchServiceDB(BaseServiceDB):
                             and player.player_team_tournament.player
                             else None
                         ),
-                        "position": player.match_position,
+                        "is_starting": player.is_starting,
+                        "starting_type": player.starting_type,
                     }
                 )
 
@@ -303,7 +323,26 @@ class MatchServiceDB(BaseServiceDB):
             for player in players:
                 players_with_data.append(
                     {
-                        "match_player": player,
+                        "id": player.id,
+                        "player_id": (
+                            player.player_team_tournament.player_id
+                            if player.player_team_tournament
+                            else None
+                        ),
+                        "player": (
+                            player.player_team_tournament.player
+                            if player.player_team_tournament
+                            else None
+                        ),
+                        "team": player.team,
+                        "position": (
+                            {
+                                **player.match_position.__dict__,
+                                "category": player.match_position.category,
+                            }
+                            if player.match_position
+                            else None
+                        ),
                         "player_team_tournament": player.player_team_tournament,
                         "person": (
                             player.player_team_tournament.player.person
@@ -311,7 +350,8 @@ class MatchServiceDB(BaseServiceDB):
                             and player.player_team_tournament.player
                             else None
                         ),
-                        "position": player.match_position,
+                        "is_starting": player.is_starting,
+                        "starting_type": player.starting_type,
                     }
                 )
 
@@ -457,8 +497,17 @@ class MatchServiceDB(BaseServiceDB):
                         if pm.player_team_tournament and pm.player_team_tournament.player
                         else None
                     ),
-                    "position": pm.match_position,
+                    "position": (
+                        {
+                            **pm.match_position.__dict__,
+                            "category": pm.match_position.category,
+                        }
+                        if pm.match_position
+                        else None
+                    ),
                     "team": pm.team,
+                    "is_starting": pm.is_starting,
+                    "starting_type": pm.starting_type,
                 }
                 for pm in player_matches
                 if pm.team_id == match.team_a_id
@@ -480,8 +529,17 @@ class MatchServiceDB(BaseServiceDB):
                         if pm.player_team_tournament and pm.player_team_tournament.player
                         else None
                     ),
-                    "position": pm.match_position,
+                    "position": (
+                        {
+                            **pm.match_position.__dict__,
+                            "category": pm.match_position.category,
+                        }
+                        if pm.match_position
+                        else None
+                    ),
                     "team": pm.team,
+                    "is_starting": pm.is_starting,
+                    "starting_type": pm.starting_type,
                 }
                 for pm in player_matches
                 if pm.team_id == match.team_b_id
