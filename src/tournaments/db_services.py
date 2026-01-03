@@ -1,8 +1,6 @@
-from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exceptions import NotFoundError
+from src.core.decorators import handle_service_exceptions
 from src.core.models import (
     BaseServiceDB,
     MatchDB,
@@ -30,45 +28,25 @@ class TournamentServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_TournamentServiceDB", self)
         self.logger.debug("Initialized TournamentServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(
         self,
         item: TournamentSchemaCreate | TournamentSchemaUpdate,
     ) -> TournamentDB:
-        try:
-            tournament = self.model(
-                title=getattr(item, "title", None),
-                description=getattr(item, "description", None),
-                tournament_logo_url=getattr(item, "tournament_logo_url", None),
-                tournament_logo_icon_url=getattr(item, "tournament_logo_icon_url", None),
-                tournament_logo_web_url=getattr(item, "tournament_logo_web_url", None),
-                season_id=getattr(item, "season_id", None),
-                sport_id=getattr(item, "sport_id", None),
-                main_sponsor_id=getattr(item, "main_sponsor_id", None),
-                sponsor_line_id=getattr(item, "sponsor_line_id", None),
-                tournament_eesl_id=getattr(item, "tournament_eesl_id", None),
-            )
-            self.logger.debug(f"Create new {ITEM}:{tournament}")
-            return await super().create(tournament)
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(f"Error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid data provided for {ITEM}",
-            )
-        except NotFoundError as ex:
-            self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=404, detail="Resource not found")
-        except Exception as ex:
-            self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Internal server error")
+        tournament = self.model(
+            title=getattr(item, "title", None),
+            description=getattr(item, "description", None),
+            tournament_logo_url=getattr(item, "tournament_logo_url", None),
+            tournament_logo_icon_url=getattr(item, "tournament_logo_icon_url", None),
+            tournament_logo_web_url=getattr(item, "tournament_logo_web_url", None),
+            season_id=getattr(item, "season_id", None),
+            sport_id=getattr(item, "sport_id", None),
+            main_sponsor_id=getattr(item, "main_sponsor_id", None),
+            sponsor_line_id=getattr(item, "sponsor_line_id", None),
+            tournament_eesl_id=getattr(item, "tournament_eesl_id", None),
+        )
+        self.logger.debug(f"Create new {ITEM}:{tournament}")
+        return await super().create(tournament)
 
     async def create_or_update_tournament(
         self,
@@ -119,45 +97,22 @@ class TournamentServiceDB(BaseServiceDB):
     #         "players_team_tournament",
     #     )
 
+    @handle_service_exceptions(
+        item_name=ITEM, operation="fetching players", return_value_on_not_found=[]
+    )
     async def get_players_by_tournament(
         self,
         tournament_id: int,
     ) -> list[PlayerTeamTournamentDB]:
         self.logger.debug(f"Get players by {ITEM} id:{tournament_id}")
-        try:
-            async with self.db.async_session() as session:
-                stmt = select(PlayerTeamTournamentDB).where(
-                    PlayerTeamTournamentDB.tournament_id == tournament_id
-                )
+        async with self.db.async_session() as session:
+            stmt = select(PlayerTeamTournamentDB).where(
+                PlayerTeamTournamentDB.tournament_id == tournament_id
+            )
 
-                results = await session.execute(stmt)
-                players = results.scalars().all()
-                return players
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(f"Error on get_players_by_tournament: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error fetching players for tournament {tournament_id}",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(f"Data error on get_players_by_tournament: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid data provided for tournament {tournament_id}",
-            )
-        except NotFoundError as ex:
-            self.logger.info(f"Not found on get_players_by_tournament: {ex}", exc_info=True)
-            return []
-        except Exception as ex:
-            self.logger.critical(
-                f"Unexpected error on get_players_by_tournament: {ex}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail=f"Internal server error fetching players for tournament {tournament_id}",
-            )
+            results = await session.execute(stmt)
+            players = results.scalars().all()
+            return players
 
     async def get_count_of_matches_by_tournament(
         self,

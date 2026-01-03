@@ -11,16 +11,14 @@ def assert_http_exception_on_create(exc_info: ExceptionInfo):
     assert exc_info is not None
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 409
-    assert "Error creating" in exc_info.value.detail
-    assert "Check input data" in exc_info.value.detail
+    assert "Conflict" in exc_info.value.detail or "Error creating" in exc_info.value.detail
 
 
 def assert_http_exception_on_update(exc_info: ExceptionInfo):
     assert exc_info is not None
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 409
-    assert "Error updating" in exc_info.value.detail
-    assert "Check input data" in exc_info.value.detail
+    assert "Conflict" in exc_info.value.detail or "Error updating" in exc_info.value.detail
 
 
 def assert_http_exception_on_delete(exc_info: ExceptionInfo):
@@ -44,8 +42,7 @@ def assert_http_exception_on_conflict(exc_info: ExceptionInfo):
     assert isinstance(exc_info.value, HTTPException)
     assert exc_info.value.status_code == 409
     assert (
-        "conflict" in exc_info.value.detail.lower()
-        or "constraint" in exc_info.value.detail.lower()
+        "conflict" in exc_info.value.detail.lower() or "constraint" in exc_info.value.detail.lower()
     )
 
 
@@ -118,8 +115,7 @@ def assert_tournaments_equal(
     for i, fetched_tournament in enumerate(actual):
         expected_title = f"Tournament {i + 1}"
         assert fetched_tournament.title == expected_title, (
-            f"Title mismatch: expected '{expected_title}', "
-            f"got '{fetched_tournament.title}'"
+            f"Title mismatch: expected '{expected_title}', got '{fetched_tournament.title}'"
         )
 
 

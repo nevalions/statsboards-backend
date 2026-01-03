@@ -1,7 +1,4 @@
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
-from src.core.exceptions import NotFoundError
+from src.core.decorators import handle_service_exceptions
 from src.core.models import (
     BaseServiceDB,
     PlayerDB,
@@ -27,37 +24,16 @@ class SportServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_SportServiceDB", self)
         self.logger.debug("Initialized SportServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: SportSchemaCreate) -> SportDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
-        try:
-            season = self.model(
-                title=item.title,
-                description=item.description,
-            )
-            return await super().create(season)
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            self.logger.error(f"Database error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error creating {self.model.__name__}",
-            )
-        except (ValueError, KeyError, TypeError) as e:
-            self.logger.warning(f"Data error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided",
-            )
-        except Exception as e:
-            self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.create: {e}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
-            )
+        season = self.model(
+            title=item.title,
+            description=item.description,
+        )
+        return await super().create(season)
 
+    @handle_service_exceptions(item_name=ITEM, operation="updating", reraise_not_found=True)
     async def update(
         self,
         item_id: int,
@@ -65,41 +41,11 @@ class SportServiceDB(BaseServiceDB):
         **kwargs,
     ) -> SportDB:
         self.logger.debug(f"Update {ITEM} with id:{item_id}")
-        try:
-            return await super().update(
-                item_id,
-                item,
-                **kwargs,
-            )
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            self.logger.error(f"Database error updating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error updating {self.model.__name__}",
-            )
-        except (ValueError, KeyError, TypeError) as e:
-            self.logger.warning(f"Data error updating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided",
-            )
-        except NotFoundError as e:
-            self.logger.info(f"Not found: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=404,
-                detail="Resource not found",
-            )
-        except Exception as e:
-            self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.update({item_id}): {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
-            )
+        return await super().update(
+            item_id,
+            item,
+            **kwargs,
+        )
 
     async def get_tournaments_by_sport(
         self,

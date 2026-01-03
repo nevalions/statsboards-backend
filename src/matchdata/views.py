@@ -59,14 +59,14 @@ class MatchDataAPIRouter(
             item_id: int,
             match_data: MatchDataSchemaUpdate,
         ):
-            self.logger.debug(
-                f"Update matchdata endpoint id:{item_id} data: {match_data}"
-            )
+            self.logger.debug(f"Update matchdata endpoint id:{item_id} data: {match_data}")
             try:
                 match_data_update = await self.service.update(
                     item_id,
                     match_data,
                 )
+                if match_data_update is None:
+                    raise HTTPException(status_code=404, detail=f"MatchData {item_id} not found")
                 return match_data_update
             except HTTPException:
                 raise
@@ -154,9 +154,7 @@ class MatchDataAPIRouter(
                 self.logger.debug(f"Start gameclock with matchdata id: {match_data_id}")
                 match_data = await self.service.get_by_id(match_data_id)
                 present_gameclock_status = match_data.gameclock_status
-                self.logger.debug(
-                    f"Present gameclock status: {present_gameclock_status}"
-                )
+                self.logger.debug(f"Present gameclock status: {present_gameclock_status}")
 
                 if present_gameclock_status != "running":
                     self.logger.debug("Gameclock not running")
@@ -211,9 +209,7 @@ class MatchDataAPIRouter(
                         f"Game clock ID:{item_id} {item_status}",
                     )
             except Exception as ex:
-                self.logger.error(
-                    f"Error pausing gameclock id: {item_id} {ex}", exc_info=True
-                )
+                self.logger.error(f"Error pausing gameclock id: {item_id} {ex}", exc_info=True)
 
         @router.put(
             "/id/{item_id}/gameclock/{item_status}/{sec}/",
@@ -242,9 +238,7 @@ class MatchDataAPIRouter(
                     ),
                 )
             except Exception as ex:
-                self.logger.error(
-                    f"Error updating gameclock id: {item_id} {ex}", exc_info=True
-                )
+                self.logger.error(f"Error updating gameclock id: {item_id} {ex}", exc_info=True)
 
             # await self.service.trigger_update_match_clock(item_id, "game")
 
@@ -265,9 +259,7 @@ class MatchDataAPIRouter(
                     f"Game clock {item_status}",
                 )
             except Exception as ex:
-                self.logger.error(
-                    f"Error while reset gameclock id: {item_id} {ex}", exc_info=True
-                )
+                self.logger.error(f"Error while reset gameclock id: {item_id} {ex}", exc_info=True)
 
         @router.put(
             "/id/{item_id}/playclock/running/{sec}/",

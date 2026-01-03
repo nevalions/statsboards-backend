@@ -14,9 +14,7 @@ from .db_services import GameClockServiceDB
 from .schemas import GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate
 
 
-class GameClockAPIRouter(
-    BaseRouter[GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate]
-):
+class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate]):
     def __init__(self, service: GameClockServiceDB):
         super().__init__(
             "/api/gameclock",
@@ -59,6 +57,8 @@ class GameClockAPIRouter(
                     item_id,
                     item,
                 )
+                if gameclock_update is None:
+                    raise HTTPException(status_code=404, detail=f"Gameclock {item_id} not found")
                 return gameclock_update
             except HTTPException:
                 raise
@@ -94,9 +94,7 @@ class GameClockAPIRouter(
             )
 
         @router.put("/id/{gameclock_id}/running/", response_class=JSONResponse)
-        async def start_gameclock_endpoint(
-            background_tasks: BackgroundTasks, gameclock_id: int
-        ):
+        async def start_gameclock_endpoint(background_tasks: BackgroundTasks, gameclock_id: int):
             self.logger.debug(f"Start gameclock endpoint with id: {gameclock_id}")
             try:
                 gameclock = await self.service.get_by_id(gameclock_id)
@@ -115,9 +113,7 @@ class GameClockAPIRouter(
 
                     # Start background task for decrementing the game clock
                     if not self.service.disable_background_tasks:
-                        self.logger.debug(
-                            "Start gameclock background task, loop decrement"
-                        )
+                        self.logger.debug("Start gameclock background task, loop decrement")
                         background_tasks.add_task(
                             self.service.loop_decrement_gameclock, gameclock_id
                         )

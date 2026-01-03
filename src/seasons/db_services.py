@@ -1,8 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import and_, select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exceptions import NotFoundError
+from src.core.decorators import handle_service_exceptions
 from src.core.models import (
     BaseServiceDB,
     MatchDB,
@@ -28,35 +27,16 @@ class SeasonServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_SeasonServiceDB", self)
         self.logger.debug("Initialized SeasonServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: SeasonSchemaCreate) -> SeasonDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
-        try:
-            season = self.model(
-                year=item.year,
-                description=item.description,
-            )
-            return await super().create(season)
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(f"Error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"Error creating {self.model.__name__}. Check input data. {ITEM}",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid data provided for {ITEM}",
-            )
-        except NotFoundError as ex:
-            self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=404, detail="Resource not found")
-        except Exception as ex:
-            self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Internal server error")
+        season = self.model(
+            year=item.year,
+            description=item.description,
+        )
+        return await super().create(season)
 
+    @handle_service_exceptions(item_name=ITEM, operation="updating", return_value_on_not_found=None)
     async def update(
         self,
         item_id: int,
@@ -69,34 +49,11 @@ class SeasonServiceDB(BaseServiceDB):
                 status_code=409,
                 detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
             )
-        try:
-            return await super().update(
-                item_id,
-                item,
-                **kwargs,
-            )
-        except HTTPException as e:
-            if e.status_code == 404:
-                return None
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(f"Error updating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(f"Data error updating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid data provided for {ITEM}",
-            )
-        except NotFoundError as ex:
-            self.logger.info(f"Not found updating {ITEM}: {ex}", exc_info=True)
-            return None
-        except Exception as ex:
-            self.logger.critical(f"Unexpected error updating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Internal server error")
+        return await super().update(
+            item_id,
+            item,
+            **kwargs,
+        )
 
     async def get_season_by_year(self, season_year: int) -> SeasonDB | None:
         async with self.db.async_session() as session:
@@ -104,36 +61,27 @@ class SeasonServiceDB(BaseServiceDB):
             season = await session.execute(select(SeasonDB).filter_by(year=season_year))
             return season.scalars().one_or_none()
 
+    @handle_service_exceptions(
+        item_name=ITEM, operation="fetching tournaments", return_value_on_not_found=[]
+    )
     async def get_tournaments_by_year(
         self,
         year: int,
         key: str = "year",
     ) -> list[TournamentDB]:
         self.logger.debug(f"Get tournaments by {ITEM} year:{year}")
-        try:
-            tournaments = await self.get_related_item_level_one_by_key_and_value(
-                key,
-                year,
-                "tournaments",
-            )
-            if not tournaments:
-                return []
-            return tournaments
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(f"Error getting tournaments: {ex}", exc_info=True)
+        tournaments = await self.get_related_item_level_one_by_key_and_value(
+            key,
+            year,
+            "tournaments",
+        )
+        if not tournaments:
             return []
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(f"Data error getting tournaments: {ex}", exc_info=True)
-            return []
-        except NotFoundError as ex:
-            self.logger.info(f"Not found getting tournaments: {ex}", exc_info=True)
-            return []
-        except Exception as ex:
-            self.logger.critical(f"Unexpected error getting tournaments: {ex}", exc_info=True)
-            return []
+        return tournaments
 
+    @handle_service_exceptions(
+        item_name=ITEM, operation="fetching tournaments", return_value_on_not_found=[]
+    )
     async def get_tournaments_by_year_and_sport(
         self,
         year: int,
@@ -147,32 +95,14 @@ class SeasonServiceDB(BaseServiceDB):
                 .join(SportDB, TournamentDB.sport_id == SportDB.id)
                 .where(and_(SeasonDB.year == year, SportDB.id == sport_id))
             )
-            try:
-                results = await session.execute(stmt)
-                tournaments = results.scalars().all()
-                self.logger.info(f"Got tournaments: {tournaments}")
-                return tournaments
-            except HTTPException:
-                raise
-            except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(f"Error getting tournaments: {ex}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Database error getting tournaments",
-                )
-            except (ValueError, KeyError, TypeError) as ex:
-                self.logger.warning(f"Data error getting tournaments: {ex}", exc_info=True)
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid data provided for tournaments",
-                )
-            except NotFoundError as ex:
-                self.logger.info(f"Not found getting tournaments: {ex}", exc_info=True)
-                return []
-            except Exception as ex:
-                self.logger.critical(f"Unexpected error getting tournaments: {ex}", exc_info=True)
-                raise HTTPException(status_code=500, detail="Internal server error")
+            results = await session.execute(stmt)
+            tournaments = results.scalars().all()
+            self.logger.info(f"Got tournaments: {tournaments}")
+            return tournaments
 
+    @handle_service_exceptions(
+        item_name=ITEM, operation="fetching tournaments", return_value_on_not_found=[]
+    )
     async def get_tournaments_by_season_and_sport_ids(
         self,
         season_id: int,
@@ -186,31 +116,10 @@ class SeasonServiceDB(BaseServiceDB):
                 .join(SportDB, TournamentDB.sport_id == SportDB.id)
                 .where(and_(SeasonDB.id == season_id, SportDB.id == sport_id))
             )
-            try:
-                results = await session.execute(stmt)
-                tournaments = results.scalars().all()
-                self.logger.debug(f"Got number of tournaments: {len(tournaments)}")
-                return tournaments
-            except HTTPException:
-                raise
-            except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(f"Error getting tournaments: {ex}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Database error getting tournaments",
-                )
-            except (ValueError, KeyError, TypeError) as ex:
-                self.logger.warning(f"Data error getting tournaments: {ex}", exc_info=True)
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid data provided for tournaments",
-                )
-            except NotFoundError as ex:
-                self.logger.info(f"Not found getting tournaments: {ex}", exc_info=True)
-                return []
-            except Exception as ex:
-                self.logger.critical(f"Unexpected error getting tournaments: {ex}", exc_info=True)
-                raise HTTPException(status_code=500, detail="Internal server error")
+            results = await session.execute(stmt)
+            tournaments = results.scalars().all()
+            self.logger.debug(f"Got number of tournaments: {len(tournaments)}")
+            return tournaments
 
     async def get_teams_by_year(
         self,

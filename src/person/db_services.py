@@ -1,6 +1,4 @@
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
+from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, PersonDB
 from src.core.models.base import Database
 
@@ -19,47 +17,22 @@ class PersonServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_PersonServiceDB", self)
         self.logger.debug("Initialized PersonServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(
         self,
         item: PersonSchemaCreate | PersonSchemaUpdate,
     ) -> PersonDB:
-        try:
-            person = self.model(
-                person_eesl_id=item.person_eesl_id,
-                first_name=item.first_name,
-                second_name=item.second_name,
-                person_photo_url=item.person_photo_url,
-                person_photo_icon_url=item.person_photo_icon_url,
-                person_photo_web_url=item.person_photo_web_url,
-                person_dob=item.person_dob,
-            )
-            self.logger.debug(
-                f"Starting to create PersonDB with data: {person.__dict__}"
-            )
-            return await super().create(person)
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(f"Database error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error creating {self.model.__name__}",
-            )
-        except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(f"Data error creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided",
-            )
-        except Exception as ex:
-            self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.create: {ex}",
-                exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
-            )
+        person = self.model(
+            person_eesl_id=item.person_eesl_id,
+            first_name=item.first_name,
+            second_name=item.second_name,
+            person_photo_url=item.person_photo_url,
+            person_photo_icon_url=item.person_photo_icon_url,
+            person_photo_web_url=item.person_photo_web_url,
+            person_dob=item.person_dob,
+        )
+        self.logger.debug(f"Starting to create PersonDB with data: {person.__dict__}")
+        return await super().create(person)
 
     async def create_or_update_person(
         self,

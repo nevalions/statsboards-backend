@@ -60,6 +60,8 @@ class FootballEventAPIRouter(
                     item_id,
                     football_event,
                 )
+                if football_event_update is None:
+                    raise HTTPException(status_code=404, detail=f"{ITEM} {item_id} not found")
                 return football_event_update
             except HTTPException:
                 raise

@@ -49,6 +49,8 @@ class SportAPIRouter(
                 item_id,
                 item,
             )
+            if update_ is None:
+                raise HTTPException(status_code=404, detail=f"Sport {item_id} not found")
             return SportSchema.model_validate(update_)
 
         @router.get(

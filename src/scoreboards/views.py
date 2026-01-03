@@ -52,6 +52,8 @@ class ScoreboardAPIRouter(
                     item_id,
                     item,
                 )
+                if scoreboard_update is None:
+                    raise HTTPException(status_code=404, detail=f"Scoreboard {item_id} not found")
                 return scoreboard_update
             except HTTPException:
                 raise
@@ -121,14 +123,10 @@ class ScoreboardAPIRouter(
             response_model=ScoreboardSchema,
         )
         async def get_scoreboard_by_matchdata_id_endpoint(matchdata_id: int):
-            self.logger.debug(
-                f"Get scoreboard by matchdata id: {matchdata_id} endpoint"
-            )
+            self.logger.debug(f"Get scoreboard by matchdata id: {matchdata_id} endpoint")
             scoreboard = await self.service.get_scoreboard_by_matchdata_id(matchdata_id)
             if scoreboard is None:
-                self.logger.warning(
-                    f"No scoreboard found for matchdata id: {matchdata_id}"
-                )
+                self.logger.warning(f"No scoreboard found for matchdata id: {matchdata_id}")
                 raise HTTPException(
                     status_code=404,
                     detail=f"Scoreboard match id({matchdata_id}) not found",

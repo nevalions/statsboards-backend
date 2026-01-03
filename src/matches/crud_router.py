@@ -161,6 +161,8 @@ class MatchCRUDRouter(
             self.logger.debug(f"Update match endpoint id:{item_id} data: {item}")
             try:
                 match_update = await self.service.update(item_id, item)
+                if match_update is None:
+                    raise HTTPException(status_code=404, detail=f"Match {item_id} not found")
                 return MatchSchema.model_validate(match_update)
             except HTTPException:
                 raise

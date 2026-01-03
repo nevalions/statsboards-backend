@@ -43,24 +43,18 @@ class MatchDataServiceDB(BaseServiceDB):
                 await session.commit()
                 await session.refresh(match_data)
 
-                self.logger.info(
-                    f"Matchdata created successfully. Result: {match_data}"
-                )
+                self.logger.info(f"Matchdata created successfully. Result: {match_data}")
                 return match_data
             except HTTPException:
                 raise
             except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(
-                    f"Database error creating new match data: {ex}", exc_info=True
-                )
+                self.logger.error(f"Database error creating new match data: {ex}", exc_info=True)
                 raise HTTPException(
                     status_code=409,
                     detail=f"Database error creating matchdata data({item})",
                 )
             except (ValueError, KeyError, TypeError) as ex:
-                self.logger.warning(
-                    f"Data error creating new match data: {ex}", exc_info=True
-                )
+                self.logger.warning(f"Data error creating new match data: {ex}", exc_info=True)
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided for matchdata",
@@ -74,9 +68,7 @@ class MatchDataServiceDB(BaseServiceDB):
                 )
                 raise HTTPException(
                     status_code=409,
-                    detail=f"While creating result "
-                    f"for matchdata data({item})"
-                    f"returned some error",
+                    detail=f"While creating result for matchdata data({item})returned some error",
                 )
 
     async def update(
@@ -84,10 +76,8 @@ class MatchDataServiceDB(BaseServiceDB):
         item_id: int,
         item: MatchDataSchemaUpdate,
         **kwargs,
-    ) -> MatchDataDB:
-        self.logger.debug(
-            f"Update matchdata with item_id: {item_id}, new matchdata: {item}"
-        )
+    ) -> MatchDataDB | None:
+        self.logger.debug(f"Update matchdata with item_id: {item_id}, new matchdata: {item}")
 
         try:
             updated_ = await super().update(
@@ -95,12 +85,12 @@ class MatchDataServiceDB(BaseServiceDB):
                 item,
                 **kwargs,
             )
+            if updated_ is None:
+                return None
             """triggers for sse process, now we use websocket
             await self.trigger_update_match_data(item_id)"""
             # await self.trigger_update_match_data(item_id)
-            self.logger.info(
-                f"Matchdata updated  successfully. Updated: {updated_.__dict__}"
-            )
+            self.logger.info(f"Matchdata updated  successfully. Updated: {updated_.__dict__}")
             return updated_
         except HTTPException:
             raise
@@ -135,14 +125,10 @@ class MatchDataServiceDB(BaseServiceDB):
                     select(MatchDataDB).where(MatchDataDB.match_id == match_id)
                 )
                 if result:
-                    self.logger.debug(
-                        "get_match_data_by_match_id completed successfully."
-                    )
+                    self.logger.debug("get_match_data_by_match_id completed successfully.")
                     return result.one_or_none()
                 else:
-                    self.logger.debug(
-                        f"No matchdata in match with match_id: {match_id}"
-                    )
+                    self.logger.debug(f"No matchdata in match with match_id: {match_id}")
                     return None
             except HTTPException:
                 raise
@@ -157,9 +143,7 @@ class MatchDataServiceDB(BaseServiceDB):
                 )
                 return None
             except NotFoundError as ex:
-                self.logger.info(
-                    f"Not found {ITEM} with match id:{match_id} {ex}", exc_info=True
-                )
+                self.logger.info(f"Not found {ITEM} with match id:{match_id} {ex}", exc_info=True)
                 return None
             except Exception as ex:
                 self.logger.critical(
@@ -167,9 +151,7 @@ class MatchDataServiceDB(BaseServiceDB):
                 )
                 return None
 
-    async def enable_match_data_clock_queues(
-        self, match_data_id: int, clock_type: str
-    ) -> None:
+    async def enable_match_data_clock_queues(self, match_data_id: int, clock_type: str) -> None:
         self.logger.debug(
             f"Enable matchdata clock queues for id: {match_data_id}, type: {clock_type}"
         )

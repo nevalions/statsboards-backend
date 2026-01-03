@@ -1,11 +1,10 @@
 import asyncio
 import time
 
-from fastapi import BackgroundTasks, HTTPException
+from fastapi import BackgroundTasks
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exceptions import NotFoundError
+from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, GameClockDB
 from src.core.models.base import Database
 
@@ -37,75 +36,38 @@ class ClockManager:
 
 
 class GameClockServiceDB(BaseServiceDB):
-    def __init__(
-        self, database: Database, disable_background_tasks: bool = False
-    ) -> None:
+    def __init__(self, database: Database, disable_background_tasks: bool = False) -> None:
         super().__init__(database, GameClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
         self.logger = get_logger("backend_logger_GameClockServiceDB", self)
         self.logger.debug("Initialized GameClockServiceDB")
 
+    @handle_service_exceptions(item_name="GAMECLOCK", operation="creating")
     async def create(self, item: GameClockSchemaCreate) -> GameClockDB:
         self.logger.debug(f"Create gameclock: {item}")
         async with self.db.async_session() as session:
-            try:
-                gameclock_result = GameClockDB(
-                    gameclock=item.gameclock,
-                    gameclock_max=item.gameclock_max,
-                    gameclock_status=item.gameclock_status,
-                    match_id=item.match_id,
-                )
+            gameclock_result = GameClockDB(
+                gameclock=item.gameclock,
+                gameclock_max=item.gameclock_max,
+                gameclock_status=item.gameclock_status,
+                match_id=item.match_id,
+            )
 
-                self.logger.debug("Is gameclock exist")
-                is_exist = None
-                if item.match_id is not None:
-                    is_exist = await self.get_gameclock_by_match_id(item.match_id)
-                if is_exist:
-                    self.logger.info(f"gameclock already exists: {gameclock_result}")
-                    return gameclock_result
-
-                session.add(gameclock_result)
-                await session.commit()
-                await session.refresh(gameclock_result)
-
-                self.logger.info(f"gameclock created: {gameclock_result}")
+            self.logger.debug("Is gameclock exist")
+            is_exist = None
+            if item.match_id is not None:
+                is_exist = await self.get_gameclock_by_match_id(item.match_id)
+            if is_exist:
+                self.logger.info(f"gameclock already exists: {gameclock_result}")
                 return gameclock_result
-            except HTTPException:
-                raise
-            except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(
-                    f"Database error creating gameclock with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=409,
-                    detail="While creating gameclock for match returned database error",
-                )
-            except (ValueError, KeyError, TypeError) as ex:
-                self.logger.warning(
-                    f"Data error creating gameclock with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid data provided for gameclock",
-                )
-            except NotFoundError as ex:
-                self.logger.info(
-                    f"Not found creating gameclock: {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(status_code=404, detail="Resource not found")
-            except Exception as ex:
-                self.logger.critical(
-                    f"Unexpected error creating gameclock with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Internal server error creating gameclock",
-                )
+
+            session.add(gameclock_result)
+            await session.commit()
+            await session.refresh(gameclock_result)
+
+            self.logger.info(f"gameclock created: {gameclock_result}")
+            return gameclock_result
 
     async def enable_match_data_gameclock_queues(
         self,
@@ -203,14 +165,10 @@ class GameClockServiceDB(BaseServiceDB):
             gameclock_status = await self.get_gameclock_status(gameclock_id)
             self.logger.debug(f"Gameclock status: {gameclock_status}")
 
-            if (
-                gameclock_status != "running"
-            ):
+            if gameclock_status != "running":
                 break
 
-            gameclock_obj: GameClockSchemaBase = await self.get_by_id(
-                gameclock_id
-            )
+            gameclock_obj: GameClockSchemaBase = await self.get_by_id(gameclock_id)
             updated_gameclock = max(0, gameclock_obj.gameclock - 1)
             self.logger.debug(f"Updated gameclock: {updated_gameclock}")
 

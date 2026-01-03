@@ -31,7 +31,17 @@ def handle_service_exceptions(
                 return await method(self, *args, **kwargs)
             except HTTPException:
                 raise
-            except (IntegrityError, SQLAlchemyError) as ex:
+            except IntegrityError as ex:
+                if logger:
+                    logger.error(
+                        f"Integrity error {operation} {actual_item_name}: {ex}",
+                        exc_info=True,
+                    )
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Conflict {operation} {model.__name__ if model else actual_item_name}",
+                )
+            except SQLAlchemyError as ex:
                 if logger:
                     logger.error(
                         f"Database error {operation} {actual_item_name}: {ex}",
@@ -85,7 +95,17 @@ def handle_service_exceptions(
                 return method(self, *args, **kwargs)
             except HTTPException:
                 raise
-            except (IntegrityError, SQLAlchemyError) as ex:
+            except IntegrityError as ex:
+                if logger:
+                    logger.error(
+                        f"Integrity error {operation} {actual_item_name}: {ex}",
+                        exc_info=True,
+                    )
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Conflict {operation} {model.__name__ if model else actual_item_name}",
+                )
+            except SQLAlchemyError as ex:
                 if logger:
                     logger.error(
                         f"Database error {operation} {actual_item_name}: {ex}",
