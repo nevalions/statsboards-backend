@@ -36,13 +36,9 @@ class ServiceRegistry:
             singleton: If True, the service instance will be cached
         """
         if service_name in self._services:
-            self._logger.warning(
-                f"Service '{service_name}' already registered, overwriting"
-            )
+            self._logger.warning(f"Service '{service_name}' already registered, overwriting")
         self._services[service_name] = factory
-        self._logger.debug(
-            f"Registered service '{service_name}' (singleton={singleton})"
-        )
+        self._logger.debug(f"Registered service '{service_name}' (singleton={singleton})")
 
     def get(self, service_name: str) -> T:
         """Get a service instance by name.
@@ -97,6 +93,16 @@ class ServiceRegistry:
         self._singletons.clear()
         self._logger.debug("Cleared all singleton instances")
 
+    def update_database(self, database: Database) -> None:
+        """Update the database instance used by the registry.
+
+        Args:
+            database: New Database instance to use
+        """
+        self.database = database
+        self._logger.debug("Updated registry database instance")
+        self.clear_singletons()
+
 
 _global_registry: ServiceRegistry | None = None
 
@@ -112,9 +118,7 @@ def get_service_registry() -> ServiceRegistry:
     """
     global _global_registry
     if _global_registry is None:
-        raise RuntimeError(
-            "ServiceRegistry not initialized. Call init_service_registry() first."
-        )
+        raise RuntimeError("ServiceRegistry not initialized. Call init_service_registry() first.")
     return _global_registry
 
 
@@ -131,6 +135,9 @@ def init_service_registry(database: Database) -> ServiceRegistry:
     if _global_registry is None:
         _global_registry = ServiceRegistry(database)
         logger.info("Global ServiceRegistry initialized")
+    else:
+        _global_registry.update_database(database)
+        logger.info("Updated ServiceRegistry database")
     return _global_registry
 
 

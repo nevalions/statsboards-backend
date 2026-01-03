@@ -42,6 +42,12 @@ class MatchCRUDRouter(
             self._service_registry = get_service_registry()
         return self._service_registry
 
+    def get_match_stats_service(self):
+        """Get match stats service using this router's database."""
+        from src.matches.stats_service import MatchStatsServiceDB
+
+        return MatchStatsServiceDB(self.service.db)
+
     def route(self):
         router = super().route()
 
@@ -408,7 +414,7 @@ class MatchCRUDRouter(
         )
         async def get_match_stats_endpoint(match_id: int):
             self.logger.debug(f"Get match stats endpoint for match_id:{match_id}")
-            stats_service = self.service_registry.get("match_stats")
+            stats_service = self.get_match_stats_service()
 
             try:
                 stats = await stats_service.get_match_with_cached_stats(match_id)
