@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.core.config import settings, uploads_path
+from src.core.config import settings
 from src.core.exception_handler import register_exception_handlers
 from src.core.models.base import db
 from src.core.router_registry import RouterRegistry, configure_routers
@@ -94,6 +94,6 @@ app.add_middleware(
 
 app.mount(
     "/static/uploads",
-    StaticFiles(directory=uploads_path),
+    StaticFiles(directory=str(settings.uploads_path)),
     name="uploads",
 )

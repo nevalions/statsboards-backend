@@ -14,14 +14,6 @@ from src.logging_config import get_logger
 load_dotenv()
 logger = logging.getLogger("backend_logger_config")
 
-SSL_KEY = os.getenv("SSL_KEYFILE")
-SSL_CER = os.getenv("SSL_CERTFILE")
-# Set the static folders
-parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-more_parent_path = os.path.dirname(parent_path)
-static_main_path = os.path.join(more_parent_path, "static")
-uploads_path = os.path.join(static_main_path, "uploads")
-
 
 class DbSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="DB_", extra="allow")
@@ -259,12 +251,8 @@ class Settings(BaseSettings):
     allowed_origins: str = Field(
         default="*", description="Comma-separated list of allowed CORS origins"
     )
-    ssl_keyfile: str | None = Field(
-        default=None, description="Path to SSL private key file"
-    )
-    ssl_certfile: str | None = Field(
-        default=None, description="Path to SSL certificate file"
-    )
+    ssl_keyfile: str | None = Field(default=None, description="Path to SSL private key file")
+    ssl_certfile: str | None = Field(default=None, description="Path to SSL certificate file")
     current_season_id: str | None = Field(
         default=None, description="Current season ID for EESL parsing"
     )
@@ -272,6 +260,17 @@ class Settings(BaseSettings):
         default="logging-config_info.yaml",
         description="Logging configuration file name",
     )
+    static_main_path_str: str = Field(default="static", description="Static files path")
+
+    @property
+    def static_main_path(self) -> Path:
+        """Get the static main path as a Path object."""
+        return Path(self.static_main_path_str)
+
+    @property
+    def uploads_path(self) -> Path:
+        """Get the uploads path as a Path object."""
+        return self.static_main_path / "uploads"
 
     @field_validator("allowed_origins")
     @classmethod
@@ -330,14 +329,14 @@ class Settings(BaseSettings):
         validation_errors = []
 
         paths_to_validate = [
-            ("static_main_path", static_main_path, "required"),
-            ("uploads_path", uploads_path, "required"),
+            ("static_main_path", str(self.static_main_path), "required"),
+            ("uploads_path", str(self.uploads_path), "required"),
         ]
 
-        if self.ssl_keyfile and SSL_KEY:
-            paths_to_validate.append(("ssl_keyfile", SSL_KEY, "required"))
-        if self.ssl_certfile and SSL_CER:
-            paths_to_validate.append(("ssl_certfile", SSL_CER, "required"))
+        if self.ssl_keyfile:
+            paths_to_validate.append(("ssl_keyfile", self.ssl_keyfile, "required"))
+        if self.ssl_certfile:
+            paths_to_validate.append(("ssl_certfile", self.ssl_certfile, "required"))
 
         for path_name, path_value, requirement in paths_to_validate:
             if path_value and not Path(path_value).exists():
@@ -346,13 +345,9 @@ class Settings(BaseSettings):
                         f"Required path '{path_name}' does not exist: {path_value}"
                     )
                 else:
-                    logger.warning(
-                        f"Optional path '{path_name}' does not exist: {path_value}"
-                    )
+                    logger.warning(f"Optional path '{path_name}' does not exist: {path_value}")
             elif path_value and not os.access(path_value, os.R_OK):
-                validation_errors.append(
-                    f"Path '{path_name}' is not readable: {path_value}"
-                )
+                validation_errors.append(f"Path '{path_name}' is not readable: {path_value}")
 
         if validation_errors:
             raise ConfigurationError(
@@ -387,9 +382,7 @@ class Settings(BaseSettings):
             self.validate_database_settings()
             self.logger.info("Database settings validation successful")
         except ConfigurationError as ex:
-            self.logger.error(
-                f"Database settings validation failed: {ex.message}", exc_info=True
-            )
+            self.logger.error(f"Database settings validation failed: {ex.message}", exc_info=True)
             raise
 
         self.logger.info("Configuration validation complete")

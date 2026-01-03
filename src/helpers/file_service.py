@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from fastapi import UploadFile
 from PIL import Image
 
-from src.core.config import uploads_path
+from src.core.config import settings
 from src.helpers.download_service import DownloadService
 from src.helpers.file_system_service import FileSystemService
 from src.helpers.image_processing_service import ImageProcessingService
@@ -198,9 +198,9 @@ class FileService:
         webview_filename = f"{image_filename}_{web_view_height}px{ext}"
 
         main_path = f"{image_type_prefix}"
-        image_path = os.path.join(uploads_path, f"{main_path}{image_filename}{ext}")
-        icon_path = os.path.join(uploads_path, f"{main_path}{icon_filename}")
-        webview_path = os.path.join(uploads_path, f"{main_path}{webview_filename}")
+        image_path = os.path.join(str(settings.uploads_path), f"{main_path}{image_filename}{ext}")
+        icon_path = os.path.join(str(settings.uploads_path), f"{main_path}{icon_filename}")
+        webview_path = os.path.join(str(settings.uploads_path), f"{main_path}{webview_filename}")
 
         static_uploads_path = "/static/uploads/"
         relative_image_url = os.path.join(static_uploads_path, main_path, f"{image_filename}{ext}")

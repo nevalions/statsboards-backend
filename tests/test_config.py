@@ -70,24 +70,18 @@ class TestDbSettingsValidation:
     def test_validate_port_too_low(self):
         """Test that port below 1 raises ConfigurationError."""
         with pytest.raises(ConfigurationError) as exc_info:
-            DbSettings(
-                host="localhost", user="user", password="pass", name="db", port=0
-            )
+            DbSettings(host="localhost", user="user", password="pass", name="db", port=0)
         assert "port" in str(exc_info.value).lower()
 
     def test_validate_port_too_high(self):
         """Test that port above 65535 raises ConfigurationError."""
         with pytest.raises(ConfigurationError) as exc_info:
-            DbSettings(
-                host="localhost", user="user", password="pass", name="db", port=70000
-            )
+            DbSettings(host="localhost", user="user", password="pass", name="db", port=70000)
         assert "port" in str(exc_info.value).lower()
 
     def test_whitespace_trimming(self):
         """Test that whitespace is trimmed from field values."""
-        db_settings = DbSettings(
-            host=" localhost ", user=" user ", password=" pass ", name=" db "
-        )
+        db_settings = DbSettings(host=" localhost ", user=" user ", password=" pass ", name=" db ")
         assert db_settings.host == "localhost"
         assert db_settings.user == "user"
         assert db_settings.password == "pass"
@@ -154,9 +148,7 @@ class TestSettingsValidation:
 
     def test_validate_ssl_files_both_provided(self):
         """Test that both SSL files can be provided."""
-        settings = Settings(
-            ssl_keyfile="/path/to/key.pem", ssl_certfile="/path/to/cert.pem"
-        )
+        settings = Settings(ssl_keyfile="/path/to/key.pem", ssl_certfile="/path/to/cert.pem")
         assert settings.ssl_keyfile == "/path/to/key.pem"
         assert settings.ssl_certfile == "/path/to/cert.pem"
 
@@ -187,18 +179,15 @@ class TestSettingsValidation:
 
     def test_validate_paths_exist_missing_required(self):
         """Test that missing required path raises ConfigurationError."""
-        settings = Settings()
-        with patch("src.core.config.static_main_path", "/nonexistent/path"):
-            with pytest.raises(ConfigurationError) as exc_info:
-                settings.validate_paths_exist()
-            assert "path validation failed" in str(exc_info.value).lower()
+        settings = Settings(static_main_path_str="/nonexistent/path")
+        with pytest.raises(ConfigurationError) as exc_info:
+            settings.validate_paths_exist()
+        assert "path validation failed" in str(exc_info.value).lower()
 
     def test_validate_database_settings(self):
         """Test that database settings validation works."""
         settings = Settings(
-            db=DbSettings(
-                host="localhost", user="user", password="pass", name="db", port=5432
-            ),
+            db=DbSettings(host="localhost", user="user", password="pass", name="db", port=5432),
             test_db=ConfigTestDbSettings(
                 host="localhost", user="user", password="pass", name="testdb", port=5432
             ),

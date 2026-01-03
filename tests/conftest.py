@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -79,10 +80,12 @@ def test_downloads_dir():
 @pytest.fixture
 def test_uploads_path(test_downloads_dir, monkeypatch):
     """Fixture to patch uploads_path for integration tests."""
-    # Patch config module's uploads_path directly
-    import src.core.config as config_module
+    # Patch settings.uploads_path property
+    from src.core.config import settings
 
-    monkeypatch.setattr(config_module, "uploads_path", test_downloads_dir)
+    monkeypatch.setattr(
+        type(settings), "uploads_path", property(lambda self: Path(test_downloads_dir))
+    )
     return test_downloads_dir
 
 

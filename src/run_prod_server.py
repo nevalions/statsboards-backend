@@ -2,7 +2,7 @@ import logging
 
 from gunicorn.app.base import BaseApplication
 
-from src.core.config import SSL_CER, SSL_KEY
+from src.core.config import settings
 from src.logging_config import setup_logging
 
 
@@ -42,8 +42,8 @@ if __name__ == "__main__":
         "errorlog": "-",
         "accesslog": "-",
         # Add SSL configuration
-        "keyfile": f"{SSL_KEY}",
-        "certfile": f"{SSL_CER}",
+        "keyfile": settings.ssl_keyfile,
+        "certfile": settings.ssl_certfile,
         "ssl": True,
     }
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.core.config import uploads_path
+from src.core.config import settings
 
 
 def photo_files_exist(person_photo_url: str | None) -> bool:
@@ -11,7 +11,7 @@ def photo_files_exist(person_photo_url: str | None) -> bool:
     try:
         photo_filename = Path(person_photo_url).name
         if photo_filename:
-            original_path = Path(uploads_path) / "persons" / "photos" / photo_filename
+            original_path = settings.uploads_path / "persons" / "photos" / photo_filename
             icon_path = (
                 original_path.parent
                 / f"{Path(photo_filename).stem}_100px{Path(photo_filename).suffix}"

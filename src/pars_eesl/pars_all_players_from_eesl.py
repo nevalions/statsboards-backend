@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
-from src.core.config import uploads_path
+from src.core.config import settings
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import convert_cyrillic_filename, ru_to_eng_datetime_month
@@ -40,9 +40,7 @@ class ParsePlayerWithPersonData(TypedDict):
     player: ParsedPlayerData
 
 
-async def collect_players_dob_from_all_eesl(
-    player_eesl_id: int, base_url: str = BASE_PLAYER
-):
+async def collect_players_dob_from_all_eesl(player_eesl_id: int, base_url: str = BASE_PLAYER):
     logger.debug("Collect players date of birthday from eesl")
     url = base_url + str(player_eesl_id)
     logger.debug(f"URL: {url}")
@@ -56,18 +54,14 @@ async def collect_players_dob_from_all_eesl(
         logger.error("Timeout occur while parsing date of birthday form eesl")
         return None
     except Exception as ex:
-        logger.error(
-            f"Error while parsing date of birthday from eesl: {ex}", exc_info=True
-        )
+        logger.error(f"Error while parsing date of birthday from eesl: {ex}", exc_info=True)
         return None
 
 
 async def collect_player_full_data_eesl(
     player_eesl_id: int, base_url: str = BASE_PLAYER, force_redownload: bool = False
 ) -> ParsePlayerWithPersonData | None:
-    logger.debug(
-        f"Collect players full data from eesl (force_redownload={force_redownload})"
-    )
+    logger.debug(f"Collect players full data from eesl (force_redownload={force_redownload})")
     url = base_url + str(player_eesl_id)
     logger.debug(f"URL: {url}")
     try:
@@ -79,16 +73,12 @@ async def collect_player_full_data_eesl(
         dob = datetime.strptime(dob_text_eng, "%d %B %Y")
         logger.debug(f"Parsing DoB {dob}")
 
-        player_full_name = (
-            soup.find("p", class_="player-promo__name").text.strip().lower()
-        )
+        player_full_name = soup.find("p", class_="player-promo__name").text.strip().lower()
         logger.debug(f"Parsing full name {player_full_name}")
 
         player_first_name = player_full_name.split(" ")[1]
         player_second_name = player_full_name.split(" ")[0]
-        logger.debug(
-            f"Getting first and second name {player_first_name} {player_second_name}"
-        )
+        logger.debug(f"Getting first and second name {player_first_name} {player_second_name}")
 
         img_url, extension = (
             soup.find("img", class_="player-promo__img").get("src").strip().split("_")
@@ -102,11 +92,11 @@ async def collect_player_full_data_eesl(
         logger.debug("Getting image data for persons")
         path = urlparse(player_img_url).path
         ext = Path(path).suffix
-        person_image_filename = (
-            f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
-        )
+        person_image_filename = f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
         person_image_filename = convert_cyrillic_filename(person_image_filename)
-        person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+        person_image_filename_resized_icon = (
+            f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+        )
         person_image_filename_resized_icon = convert_cyrillic_filename(
             person_image_filename_resized_icon
         )
@@ -115,17 +105,17 @@ async def collect_player_full_data_eesl(
             person_image_filename_resized_web_view
         )
 
-        image_path = os.path.join(uploads_path, "persons/photos/")
+        image_path = os.path.join(str(settings.uploads_path), "persons/photos/")
         image_path_with_filename = os.path.join(
-            uploads_path, f"persons/photos/{person_image_filename}"
+            str(settings.uploads_path), f"persons/photos/{person_image_filename}"
         )
 
         resized_icon_image_path = os.path.join(
-            uploads_path,
+            str(settings.uploads_path),
             f"persons/photos/{person_image_filename_resized_icon}",
         )
         resized_web_image_path = os.path.join(
-            uploads_path,
+            str(settings.uploads_path),
             f"persons/photos/{person_image_filename_resized_web_view}",
         )
 
@@ -184,9 +174,7 @@ async def collect_player_full_data_eesl(
     except asyncio.TimeoutError:
         logger.error("Timeout occur while parsing player with person from eesl")
     except Exception as ex:
-        logger.error(
-            f"Error while parsing player with person from eesl: {ex}", exc_info=True
-        )
+        logger.error(f"Error while parsing player with person from eesl: {ex}", exc_info=True)
 
 
 async def parse_all_players_from_eesl_and_create_jsons():
@@ -208,9 +196,7 @@ async def parse_all_players_from_eesl_index_page_eesl(
     limit: int | None = None,
     season_id: int | None = None,
 ):
-    logger.debug(
-        f"Parsing all players from eesl start page {start_page} and limit players {limit}"
-    )
+    logger.debug(f"Parsing all players from eesl start page {start_page} and limit players {limit}")
     players_in_eesl = []
     num = 0
 
@@ -256,9 +242,7 @@ async def parse_all_players_from_eesl_index_page_eesl(
         if pagination:
             logger.debug("Pagination logic")
             # Find the 'next' button. It's typically the last 'li' in the pagination 'ul'.
-            next_button = pagination.find_all(
-                "li", class_="pagination-section__item--arrow"
-            )[-1]
+            next_button = pagination.find_all("li", class_="pagination-section__item--arrow")[-1]
             # Check if the 'next' button is disabled
             is_disabled = "pagination-section__item--disabled" in next_button["class"]
             if is_disabled:
@@ -274,14 +258,10 @@ async def parse_all_players_from_eesl_index_page_eesl(
 
 
 def _parse_player_basic_info(ppp):
-    player_eesl_id = int(
-        re.findall(r"\d+", ppp.find("a", class_="table__player").get("href"))[0]
-    )
+    player_eesl_id = int(re.findall(r"\d+", ppp.find("a", class_="table__player").get("href"))[0])
     logger.debug(f"Parsing player eesl_id: {player_eesl_id}")
 
-    player_full_name = (
-        ppp.find("span", class_="table__player-name").text.strip().lower()
-    )
+    player_full_name = ppp.find("span", class_="table__player-name").text.strip().lower()
     logger.debug(f"Parsing player full name: {player_full_name}")
 
     player_first_name = player_full_name.split(" ")[1]
@@ -290,9 +270,7 @@ def _parse_player_basic_info(ppp):
         f"Parsing player first name and second name: {player_first_name} {player_second_name}"
     )
 
-    img_url, extension = (
-        ppp.find("img", class_="table__player-img").get("src").strip().split("_")
-    )
+    img_url, extension = ppp.find("img", class_="table__player-img").get("src").strip().split("_")
     logger.debug(f"Parsing player image url: {img_url} and extension: {extension}")
     player_img_url = f"{img_url}.{extension.split('.')[1]}"
 
@@ -314,31 +292,33 @@ def _generate_player_image_paths(
     path = urlparse(player_img_url).path
     ext = Path(path).suffix
 
-    person_image_filename = (
-        f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
-    )
+    person_image_filename = f"{player_eesl_id}_{player_second_name}_{player_first_name}{ext}"
     person_image_filename = convert_cyrillic_filename(person_image_filename)
 
-    person_image_filename_resized_icon = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+    person_image_filename_resized_icon = (
+        f"{player_eesl_id}_{player_second_name}_{player_first_name}_{icon_image_height}px{ext}"
+    )
     person_image_filename_resized_icon = convert_cyrillic_filename(
         person_image_filename_resized_icon
     )
 
-    person_image_filename_resized_web_view = f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
+    person_image_filename_resized_web_view = (
+        f"{player_eesl_id}_{player_second_name}_{player_first_name}_{web_view_image_height}px{ext}"
+    )
     person_image_filename_resized_web_view = convert_cyrillic_filename(
         person_image_filename_resized_web_view
     )
 
-    image_path = os.path.join(uploads_path, "persons/photos/")
+    image_path = os.path.join(str(settings.uploads_path), "persons/photos/")
     image_path_with_filename = os.path.join(
-        uploads_path, f"persons/photos/{person_image_filename}"
+        str(settings.uploads_path), f"persons/photos/{person_image_filename}"
     )
 
     resized_icon_image_path = os.path.join(
-        uploads_path, f"persons/photos/{person_image_filename_resized_icon}"
+        str(settings.uploads_path), f"persons/photos/{person_image_filename_resized_icon}"
     )
     resized_web_image_path = os.path.join(
-        uploads_path, f"persons/photos/{person_image_filename_resized_web_view}"
+        str(settings.uploads_path), f"persons/photos/{person_image_filename_resized_web_view}"
     )
 
     relative_image_icon_path = os.path.join(
@@ -347,9 +327,7 @@ def _generate_player_image_paths(
     relative_image_web_path = os.path.join(
         "/static/uploads/persons/photos", person_image_filename_resized_web_view
     )
-    relative_image_path = os.path.join(
-        "/static/uploads/persons/photos", person_image_filename
-    )
+    relative_image_path = os.path.join("/static/uploads/persons/photos", person_image_filename)
 
     return {
         "image_path": image_path,
@@ -437,13 +415,9 @@ async def get_player_from_eesl_participants(
                 has_error = True
                 continue
 
-            player_dob = await collect_players_dob_from_all_eesl(
-                basic_info["player_eesl_id"]
-            )
+            player_dob = await collect_players_dob_from_all_eesl(basic_info["player_eesl_id"])
             if player_dob is None:
-                logger.warning(
-                    f"Skipping player {basic_info['player_eesl_id']} due to missing DOB"
-                )
+                logger.warning(f"Skipping player {basic_info['player_eesl_id']} due to missing DOB")
                 continue
 
             player_with_person = _create_player_with_person_data(

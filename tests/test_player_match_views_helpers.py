@@ -32,7 +32,9 @@ class TestPhotoFilesExist:
         image_file = persons_dir / "test_photo.jpg"
         image_file.write_bytes(b"x" * 2000)
 
-        with patch("src.helpers.photo_utils.uploads_path", temp_uploads_dir):
+        from src.core.config import settings
+
+        with patch.object(type(settings), "uploads_path", property(lambda self: temp_uploads_dir)):
             result = photo_files_exist("/persons/photos/test_photo.jpg")
             assert result is True
 
@@ -43,7 +45,9 @@ class TestPhotoFilesExist:
         icon_file = persons_dir / "test_photo_100px.jpg"
         icon_file.write_bytes(b"x" * 1500)
 
-        with patch("src.helpers.photo_utils.uploads_path", temp_uploads_dir):
+        from src.core.config import settings
+
+        with patch.object(type(settings), "uploads_path", property(lambda self: temp_uploads_dir)):
             result = photo_files_exist("/persons/photos/test_photo.jpg")
             assert result is True
 
@@ -54,7 +58,9 @@ class TestPhotoFilesExist:
         web_file = persons_dir / "test_photo_400px.jpg"
         web_file.write_bytes(b"x" * 3000)
 
-        with patch("src.helpers.photo_utils.uploads_path", temp_uploads_dir):
+        from src.core.config import settings
+
+        with patch.object(type(settings), "uploads_path", property(lambda self: temp_uploads_dir)):
             result = photo_files_exist("/persons/photos/test_photo.jpg")
             assert result is True
 
@@ -65,7 +71,9 @@ class TestPhotoFilesExist:
         image_file = persons_dir / "test_photo.jpg"
         image_file.write_bytes(b"x" * 500)
 
-        with patch("src.helpers.photo_utils.uploads_path", temp_uploads_dir):
+        from src.core.config import settings
+
+        with patch.object(type(settings), "uploads_path", property(lambda self: temp_uploads_dir)):
             result = photo_files_exist("/persons/photos/test_photo.jpg")
             assert result is False
 
@@ -73,7 +81,9 @@ class TestPhotoFilesExist:
         """Test photo_files_exist returns False when no files exist."""
         temp_uploads_dir / "persons" / "photos"
 
-        with patch("src.helpers.photo_utils.uploads_path", temp_uploads_dir):
+        from src.core.config import settings
+
+        with patch.object(type(settings), "uploads_path", property(lambda self: temp_uploads_dir)):
             result = photo_files_exist("/persons/photos/test_photo.jpg")
             assert result is False
 
@@ -92,6 +102,8 @@ class TestPhotoFilesExist:
         large_file = persons_dir / "test_photo_100px.jpg"
         large_file.write_bytes(b"x" * 2000)
 
-        with patch("src.helpers.photo_utils.uploads_path", temp_uploads_dir):
+        from src.core.config import settings
+
+        with patch.object(type(settings), "uploads_path", property(lambda self: temp_uploads_dir)):
             result = photo_files_exist("/persons/photos/test_photo.jpg")
             assert result is True
