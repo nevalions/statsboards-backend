@@ -444,7 +444,7 @@ class RelationshipMixin:
                 )
                 raise HTTPException(
                     status_code=404,
-                    detail=str(e),
+                    detail="Database error",
                 )
             except Exception as e:
                 self.logger.critical(

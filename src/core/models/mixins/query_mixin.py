@@ -17,6 +17,7 @@ class QueryMixin:
         model: type["Base"]
         db: "Database"
         get_by_id: Any
+
     async def get_item_by_field_value(self, value, field_name: str):
         self.logger.debug(
             f"Starting to fetch item by field {field_name} with value: {value} for model {self.model.__name__}"
@@ -24,9 +25,7 @@ class QueryMixin:
         async with self.db.async_session() as session:
             try:
                 column: Column = getattr(self.model, field_name)
-                self.logger.debug(
-                    f"Accessed column: {column} for model {self.model.__name__}"
-                )
+                self.logger.debug(f"Accessed column: {column} for model {self.model.__name__}")
 
                 stmt: Any = select(self.model).where(column == value)
                 self.logger.debug(
@@ -34,9 +33,7 @@ class QueryMixin:
                 )
 
                 result: Result = await session.execute(stmt)
-                self.logger.debug(
-                    f"Query result: {result} for model {self.model.__name__}"
-                )
+                self.logger.debug(f"Query result: {result} for model {self.model.__name__}")
 
                 return result.scalars().one_or_none()
             except HTTPException:
@@ -66,7 +63,7 @@ class QueryMixin:
                 )
                 raise HTTPException(
                     status_code=404,
-                    detail=str(ex),
+                    detail="Resource not found",
                 )
             except Exception as ex:
                 self.logger.critical(
@@ -140,9 +137,7 @@ class QueryMixin:
                 )
 
                 if not hasattr(self.model, related_property):
-                    self.logger.error(
-                        f"Invalid relationship: {related_property} does not exist"
-                    )
+                    self.logger.error(f"Invalid relationship: {related_property} does not exist")
                     return 0
 
                 relationship = getattr(self.model, related_property)

@@ -101,7 +101,7 @@ class FootballEventServiceDB(BaseServiceDB):
             except NotFoundError as ex:
                 self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
                 await session.rollback()
-                raise HTTPException(status_code=404, detail=str(ex))
+                raise HTTPException(status_code=404, detail="Resource not found")
             except Exception as ex:
                 self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
                 await session.rollback()
@@ -141,7 +141,7 @@ class FootballEventServiceDB(BaseServiceDB):
             )
         except NotFoundError as ex:
             self.logger.info(f"Not found updating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=404, detail=str(ex))
+            raise HTTPException(status_code=404, detail="Resource not found")
         except Exception as ex:
             self.logger.critical(f"Unexpected error updating {ITEM}: {ex}", exc_info=True)
             raise

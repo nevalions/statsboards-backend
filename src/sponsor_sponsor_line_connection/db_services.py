@@ -108,9 +108,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
     async def get_related_sponsors(self, sponsor_line_id: int) -> dict:
         async with self.db.async_session() as session:
             try:
-                self.logger.debug(
-                    f"Getting sponsors by sponsor line id: {sponsor_line_id}"
-                )
+                self.logger.debug(f"Getting sponsors by sponsor line id: {sponsor_line_id}")
                 sponsor_line = await session.get(SponsorLineDB, sponsor_line_id)
                 result = await session.execute(
                     select(SponsorDB, SponsorSponsorLineDB.position)
@@ -202,7 +200,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                 )
             except NotFoundError as e:
                 self.logger.info(f"Not found deleting {ITEM}: {e}", exc_info=True)
-                raise HTTPException(status_code=404, detail=str(e))
+                raise HTTPException(status_code=404, detail="Resource not found")
             except Exception as e:
                 self.logger.critical(f"Unexpected error deleting {ITEM}: {e}", exc_info=True)
                 raise HTTPException(

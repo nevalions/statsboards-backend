@@ -54,25 +54,19 @@ class TeamTournamentServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Database error on get_team_tournament_relation {ex}", exc_info=True
-            )
+            self.logger.error(f"Database error on get_team_tournament_relation {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail="Database error fetching team tournament relation",
             )
         except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(
-                f"Data error on get_team_tournament_relation: {ex}", exc_info=True
-            )
+            self.logger.warning(f"Data error on get_team_tournament_relation: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=400,
                 detail="Invalid data for team tournament relation",
             )
         except NotFoundError as ex:
-            self.logger.info(
-                f"Not found on get_team_tournament_relation: {ex}", exc_info=True
-            )
+            self.logger.info(f"Not found on get_team_tournament_relation: {ex}", exc_info=True)
             return None
         except Exception as ex:
             self.logger.critical(
@@ -85,9 +79,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
 
     async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:
         try:
-            self.logger.debug(
-                f"Get {ITEM} related teams for tournament_id:{tournament_id}"
-            )
+            self.logger.debug(f"Get {ITEM} related teams for tournament_id:{tournament_id}")
             async with self.db.async_session() as session:
                 result = await session.execute(
                     select(TeamDB)
@@ -137,9 +129,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
         self, team_id: int, tournament_id: int
     ) -> TeamTournamentDB:
         try:
-            self.logger.debug(
-                f"Delete {ITEM} team_id:{team_id} tournament_id:{tournament_id}"
-            )
+            self.logger.debug(f"Delete {ITEM} team_id:{team_id} tournament_id:{tournament_id}")
             async with self.db.async_session() as session:
                 result = await session.execute(
                     select(TeamTournamentDB).where(
@@ -184,7 +174,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=404,
-                detail=str(ex),
+                detail="Resource not found",
             )
         except Exception as ex:
             self.logger.critical(

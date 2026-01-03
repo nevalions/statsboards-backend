@@ -96,7 +96,7 @@ class GameClockServiceDB(BaseServiceDB):
                     f"Not found creating gameclock: {ex}",
                     exc_info=True,
                 )
-                raise HTTPException(status_code=404, detail=str(ex))
+                raise HTTPException(status_code=404, detail="Resource not found")
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error creating gameclock with data: {item} {ex}",

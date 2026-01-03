@@ -58,7 +58,7 @@ def handle_service_exceptions(
                         exc_info=True,
                     )
                 if reraise_not_found:
-                    raise HTTPException(status_code=404, detail=str(ex))
+                    raise HTTPException(status_code=404, detail="Resource not found")
                 return return_value_on_not_found
             except BusinessLogicError as ex:
                 if logger:
@@ -66,7 +66,7 @@ def handle_service_exceptions(
                         f"Business logic error {operation} {actual_item_name}: {ex}",
                         exc_info=True,
                     )
-                raise HTTPException(status_code=422, detail=str(ex))
+                raise HTTPException(status_code=422, detail="Business logic error")
             except Exception as ex:
                 if logger:
                     logger.critical(
@@ -112,7 +112,7 @@ def handle_service_exceptions(
                         exc_info=True,
                     )
                 if reraise_not_found:
-                    raise HTTPException(status_code=404, detail=str(ex))
+                    raise HTTPException(status_code=404, detail="Resource not found")
                 return return_value_on_not_found
             except BusinessLogicError as ex:
                 if logger:
@@ -120,7 +120,7 @@ def handle_service_exceptions(
                         f"Business logic error {operation} {actual_item_name}: {ex}",
                         exc_info=True,
                     )
-                raise HTTPException(status_code=422, detail=str(ex))
+                raise HTTPException(status_code=422, detail="Business logic error")
             except Exception as ex:
                 if logger:
                     logger.critical(

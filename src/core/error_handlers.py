@@ -1,5 +1,24 @@
+import os
+
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+
+
+def sanitize_error_message(error: Exception, generic_message: str = "Internal server error") -> str:
+    """Return safe error message - full details only in DEBUG mode.
+
+    Args:
+        error: The exception that occurred
+        generic_message: Generic message for production
+
+    Returns:
+        Safe error message string
+    """
+    if DEBUG:
+        return str(error)
+    return generic_message
 
 
 class DatabaseErrorHandler:
@@ -17,7 +36,7 @@ class DatabaseErrorHandler:
         """Raise 404 if item not found"""
         raise HTTPException(
             status_code=404,
-            detail=f"{self.model_name} with {field_name} {item_id} not found",
+            detail="Resource not found",
         )
 
     def handle_conflict(self, detail: str | None = None) -> None:
@@ -34,9 +53,14 @@ class DatabaseErrorHandler:
         if isinstance(error, IntegrityError):
             raise HTTPException(
                 status_code=409,
-                detail=f"Database constraint violation: {str(error)}",
+                detail=sanitize_error_message(
+                    error, "Resource already exists or violates constraints"
+                ),
             )
         elif isinstance(error, SQLAlchemyError):
-            raise HTTPException(status_code=500, detail=f"Database error: {str(error)}")
+            raise HTTPException(
+                status_code=500,
+                detail=sanitize_error_message(error, "Database operation failed"),
+            )
         else:
             raise HTTPException(status_code=500, detail="Internal server error")

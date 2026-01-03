@@ -39,7 +39,9 @@ EXCEPTION_MAPPING: dict[type[Exception], tuple[int, str]] = {
 }
 
 
-def create_error_response(status_code: int, detail: str, exc_type: str | None = None) -> JSONResponse:
+def create_error_response(
+    status_code: int, detail: str, exc_type: str | None = None
+) -> JSONResponse:
     """Create standardized error response"""
     content: dict[str, Any] = {"detail": detail, "success": False}
     if exc_type:
@@ -74,7 +76,9 @@ async def database_exception_handler(request: Request, exc: DatabaseError) -> JS
     )
 
 
-async def business_logic_exception_handler(request: Request, exc: BusinessLogicError) -> JSONResponse:
+async def business_logic_exception_handler(
+    request: Request, exc: BusinessLogicError
+) -> JSONResponse:
     """Handle business logic errors"""
     return create_error_response(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -85,7 +89,9 @@ async def business_logic_exception_handler(request: Request, exc: BusinessLogicE
 
 async def statsboard_exception_handler(request: Request, exc: StatsBoardException) -> JSONResponse:
     """Handle all custom StatsBoard exceptions"""
-    status_code, error_type = EXCEPTION_MAPPING.get(type(exc), (status.HTTP_500_INTERNAL_SERVER_ERROR, "Internal Server Error"))
+    status_code, error_type = EXCEPTION_MAPPING.get(
+        type(exc), (status.HTTP_500_INTERNAL_SERVER_ERROR, "Internal Server Error")
+    )
     return create_error_response(
         status_code=status_code,
         detail=exc.message,
@@ -115,7 +121,7 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
     """Handle value errors"""
     return create_error_response(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail=str(exc),
+        detail="Invalid data provided",
         exc_type="ValueError",
     )
 
@@ -124,7 +130,7 @@ async def key_error_handler(request: Request, exc: KeyError) -> JSONResponse:
     """Handle key errors"""
     return create_error_response(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail=f"Missing required field: {str(exc)}",
+        detail="Missing required field",
         exc_type="KeyError",
     )
 
@@ -133,7 +139,7 @@ async def type_error_handler(request: Request, exc: TypeError) -> JSONResponse:
     """Handle type errors"""
     return create_error_response(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail=f"Type error: {str(exc)}",
+        detail="Invalid data type",
         exc_type="TypeError",
     )
 

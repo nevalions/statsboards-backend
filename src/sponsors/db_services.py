@@ -55,12 +55,10 @@ class SponsorServiceDB(BaseServiceDB):
             )
         except NotFoundError as e:
             self.logger.info(f"Not found creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(status_code=404, detail=str(e))
+            raise HTTPException(status_code=404, detail="Resource not found")
         except Exception as e:
             self.logger.critical(f"Unexpected error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=500, detail=f"Internal server error creating {ITEM}"
-            )
+            raise HTTPException(status_code=500, detail=f"Internal server error creating {ITEM}")
 
     async def update(
         self,

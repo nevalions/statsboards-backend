@@ -34,9 +34,7 @@ class PlayerServiceDB(BaseServiceDB):
                 sport_id=item.sport_id,
                 person_id=item.person_id,
             )
-            self.logger.debug(
-                f"Starting to create PlayerDB with data: {player.__dict__}"
-            )
+            self.logger.debug(f"Starting to create PlayerDB with data: {player.__dict__}")
             return await super().create(player)
         except HTTPException:
             raise
@@ -54,8 +52,7 @@ class PlayerServiceDB(BaseServiceDB):
             )
         except Exception as ex:
             self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.create: {ex}",
-                exc_info=True
+                f"Unexpected error in {self.__class__.__name__}.create: {ex}", exc_info=True
             )
             raise HTTPException(
                 status_code=500,
@@ -86,9 +83,7 @@ class PlayerServiceDB(BaseServiceDB):
                 player_id, "person"
             )
             if player_with_person_data:
-                self.logger.debug(
-                    f"Got {ITEM} with person data {player_with_person_data}"
-                )
+                self.logger.debug(f"Got {ITEM} with person data {player_with_person_data}")
                 return player_with_person_data
             else:
                 raise HTTPException(
@@ -122,7 +117,7 @@ class PlayerServiceDB(BaseServiceDB):
             )
             raise HTTPException(
                 status_code=404,
-                detail=str(ex),
+                detail="Resource not found",
             )
         except Exception as ex:
             self.logger.critical(

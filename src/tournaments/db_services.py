@@ -65,7 +65,7 @@ class TournamentServiceDB(BaseServiceDB):
             )
         except NotFoundError as ex:
             self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=404, detail=str(ex))
+            raise HTTPException(status_code=404, detail="Resource not found")
         except Exception as ex:
             self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(status_code=500, detail="Internal server error")
@@ -136,25 +136,19 @@ class TournamentServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Error on get_players_by_tournament: {ex}", exc_info=True
-            )
+            self.logger.error(f"Error on get_players_by_tournament: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail=f"Database error fetching players for tournament {tournament_id}",
             )
         except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(
-                f"Data error on get_players_by_tournament: {ex}", exc_info=True
-            )
+            self.logger.warning(f"Data error on get_players_by_tournament: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid data provided for tournament {tournament_id}",
             )
         except NotFoundError as ex:
-            self.logger.info(
-                f"Not found on get_players_by_tournament: {ex}", exc_info=True
-            )
+            self.logger.info(f"Not found on get_players_by_tournament: {ex}", exc_info=True)
             return []
         except Exception as ex:
             self.logger.critical(
@@ -207,25 +201,15 @@ class TournamentServiceDB(BaseServiceDB):
 
     async def get_main_tournament_sponsor(self, tournament_id: int) -> SponsorDB | None:
         self.logger.debug(f"Get main tournament's sponsor by {ITEM} id:{tournament_id}")
-        return await self.get_related_item_level_one_by_id(
-            tournament_id, "main_sponsor"
-        )
+        return await self.get_related_item_level_one_by_id(tournament_id, "main_sponsor")
 
-    async def get_tournament_sponsor_line(
-        self, tournament_id: int
-    ) -> SponsorLineDB | None:
+    async def get_tournament_sponsor_line(self, tournament_id: int) -> SponsorLineDB | None:
         self.logger.debug(f"Get tournament's sponsor line by {ITEM} id:{tournament_id}")
-        return await self.get_related_item_level_one_by_id(
-            tournament_id, "sponsor_line"
-        )
+        return await self.get_related_item_level_one_by_id(tournament_id, "sponsor_line")
 
-    async def get_sponsors_of_tournament_sponsor_line(
-        self, tournament_id: int
-    ) -> list[SponsorDB]:
+    async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int) -> list[SponsorDB]:
         sponsor_service = SponsorLineServiceDB(self.db)
-        self.logger.debug(
-            f"Get sponsors of tournament sponsor line {ITEM} id:{tournament_id}"
-        )
+        self.logger.debug(f"Get sponsors of tournament sponsor line {ITEM} id:{tournament_id}")
         return await self.get_nested_related_item_by_id(
             tournament_id,
             sponsor_service,

@@ -58,7 +58,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
         except NotFoundError as ex:
             self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=404, detail=str(ex))
+            raise HTTPException(status_code=404, detail="Resource not found")
         except Exception as ex:
             self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(status_code=500, detail="Internal server error")
@@ -71,10 +71,8 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             self.logger.debug(f"Creat or update {ITEM}:{p}")
             if p.player_team_tournament_eesl_id:
                 self.logger.debug(f"Get {ITEM} by eesl id")
-                player_team_tournament_from_db = (
-                    await self.get_player_team_tournament_by_eesl_id(
-                        p.player_team_tournament_eesl_id
-                    )
+                player_team_tournament_from_db = await self.get_player_team_tournament_by_eesl_id(
+                    p.player_team_tournament_eesl_id
                 )
                 if player_team_tournament_from_db:
                     self.logger.debug(f"{ITEM} exist, updating...")
@@ -97,7 +95,10 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     )
                     if player_team_tournament_from_db:
                         self.logger.debug(f"{ITEM} exist, updating...")
-                        return await self.update(player_team_tournament_from_db.id, PlayerTeamTournamentSchemaUpdate(**p.model_dump()))
+                        return await self.update(
+                            player_team_tournament_from_db.id,
+                            PlayerTeamTournamentSchemaUpdate(**p.model_dump()),
+                        )
                 self.logger.debug(f"{ITEM} does not exist, creating...")
                 return await self.create_new_player_team_tournament(
                     PlayerTeamTournamentSchemaCreate(**p.model_dump()),
@@ -105,25 +106,19 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Error creating or updating {ITEM}:{p} {ex}", exc_info=True
-            )
+            self.logger.error(f"Error creating or updating {ITEM}:{p} {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail="Database error creating or updating player team tournament",
             )
         except (ValueError, KeyError, TypeError) as ex:
-            self.logger.warning(
-                f"Data error creating or updating {ITEM}:{p} {ex}", exc_info=True
-            )
+            self.logger.warning(f"Data error creating or updating {ITEM}:{p} {ex}", exc_info=True)
             raise HTTPException(
                 status_code=400,
                 detail="Invalid data provided for player team tournament",
             )
         except NotFoundError as ex:
-            self.logger.info(
-                f"Not found creating or updating {ITEM}:{p} {ex}", exc_info=True
-            )
+            self.logger.info(f"Not found creating or updating {ITEM}:{p} {ex}", exc_info=True)
             return None
         except Exception as ex:
             self.logger.critical(
@@ -156,9 +151,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Error updating {ITEM} by {eesl_field_name} {ex}", exc_info=True
-            )
+            self.logger.error(f"Error updating {ITEM} by {eesl_field_name} {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail="Database error updating player team tournament",
@@ -172,9 +165,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 detail="Invalid data provided for player team tournament",
             )
         except NotFoundError as ex:
-            self.logger.info(
-                f"Not found updating {ITEM} by {eesl_field_name} {ex}", exc_info=True
-            )
+            self.logger.info(f"Not found updating {ITEM} by {eesl_field_name} {ex}", exc_info=True)
             return None
         except Exception as ex:
             self.logger.critical(
@@ -217,7 +208,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
         except NotFoundError as ex:
             self.logger.info(f"Not found creating {ITEM}: {ex}", exc_info=True)
-            raise HTTPException(status_code=404, detail=str(ex))
+            raise HTTPException(status_code=404, detail="Resource not found")
         except Exception as ex:
             self.logger.critical(f"Unexpected error creating {ITEM}: {ex}", exc_info=True)
             raise HTTPException(
@@ -237,9 +228,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 field_name=field_name,
             )
         except (IntegrityError, SQLAlchemyError) as ex:
-            self.logger.error(
-                f"Error getting {ITEM} by {field_name}:{value} {ex}", exc_info=True
-            )
+            self.logger.error(f"Error getting {ITEM} by {field_name}:{value} {ex}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail="Database error fetching player team tournament",
@@ -292,9 +281,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
             return None
 
-    async def get_player_team_tournament_with_person(
-        self, player_id: int
-    ) -> PlayerDB | None:
+    async def get_player_team_tournament_with_person(self, player_id: int) -> PlayerDB | None:
         player_service = PlayerServiceDB(self.db)
         try:
             return await self.get_nested_related_item_by_id(

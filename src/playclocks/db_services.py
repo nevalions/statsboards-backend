@@ -72,7 +72,7 @@ class PlayClockServiceDB(BaseServiceDB):
                     f"Not found creating playclock with data: {item} {ex}",
                     exc_info=True,
                 )
-                raise HTTPException(status_code=404, detail=str(ex))
+                raise HTTPException(status_code=404, detail="Resource not found")
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error creating playclock with data: {item} {ex}",
@@ -162,7 +162,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 self.logger.info(
                     f"Not found updating playclock id:{item_id} {ex}", exc_info=True
                 )
-                raise HTTPException(status_code=404, detail=str(ex))
+                raise HTTPException(status_code=404, detail="Resource not found")
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error updating playclock id:{item_id} {ex}", exc_info=True
@@ -231,7 +231,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 self.logger.info(
                     f"Not found updating playclock id:{item_id} {ex}", exc_info=True
                 )
-                raise HTTPException(status_code=404, detail=str(ex))
+                raise HTTPException(status_code=404, detail="Resource not found")
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error updating playclock id:{item_id} {ex}", exc_info=True

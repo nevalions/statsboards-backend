@@ -51,8 +51,7 @@ class SportServiceDB(BaseServiceDB):
             )
         except Exception as e:
             self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.create: {e}",
-                exc_info=True
+                f"Unexpected error in {self.__class__.__name__}.create: {e}", exc_info=True
             )
             raise HTTPException(
                 status_code=500,
@@ -90,12 +89,12 @@ class SportServiceDB(BaseServiceDB):
             self.logger.info(f"Not found: {e}", exc_info=True)
             raise HTTPException(
                 status_code=404,
-                detail=str(e),
+                detail="Resource not found",
             )
         except Exception as e:
             self.logger.critical(
                 f"Unexpected error in {self.__class__.__name__}.update({item_id}): {e}",
-                exc_info=True
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
