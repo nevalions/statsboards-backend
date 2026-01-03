@@ -89,6 +89,11 @@ def test_uploads_path(test_downloads_dir, monkeypatch):
 @pytest_asyncio.fixture(scope="function")
 async def test_app(test_db):
     """Create FastAPI test app with all routers."""
+    from src.core.service_registry import init_service_registry
+
+    # Re-initialize service registry for test environment
+    init_service_registry(test_db)
+
     from src.football_events.db_services import FootballEventServiceDB
     from src.football_events.views import FootballEventAPIRouter
     from src.gameclocks.db_services import GameClockServiceDB
@@ -150,11 +155,10 @@ async def test_app(test_db):
     app.include_router(TeamAPIRouter(TeamServiceDB(test_db)).route())
     app.include_router(TournamentAPIRouter(TournamentServiceDB(test_db)).route())
 
-    # Import routers that are already instantiated at module level
-    from tests.fixtures import api_player_match_router, api_sponsor_sponsor_line_router
-
-    app.include_router(api_player_match_router)
-    app.include_router(api_sponsor_sponsor_line_router)
+    # Import routers that are already instantiated at module level - not included in test app
+    # from tests.fixtures import api_player_match_router, api_sponsor_sponsor_line_router
+    # app.include_router(api_player_match_router)
+    # app.include_router(api_sponsor_sponsor_line_router)
 
     yield app
 

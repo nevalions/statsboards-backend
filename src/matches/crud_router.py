@@ -459,40 +459,33 @@ class MatchCRUDRouter(
                 raise HTTPException(status_code=500, detail="Internal server error")
 
         @router.get(
-            "/id/{match_id}/team-rosters/",
-            summary="Get team rosters for match",
-            description="Get all team rosters (home, away, available) for a match in single optimized response",
+            "/id/{match_id}/full-context/",
+            summary="Get match initialization context",
+            description="Get all data needed for match initialization: match, teams, sport, positions, players",
             responses={
-                200: {"description": "Rosters retrieved successfully"},
+                200: {"description": "Full context retrieved successfully"},
                 404: {"description": "Match not found"},
                 500: {"description": "Internal server error"},
             },
         )
-        async def get_team_rosters_endpoint(
-            match_id: int,
-            include_available: bool = True,
-            include_match_players: bool = True,
-        ):
-            self.logger.debug(
-                f"Get team rosters endpoint for match_id:{match_id} include_available:{include_available} include_match_players:{include_match_players}"
-            )
+        async def get_match_full_context_endpoint(match_id: int):
+            self.logger.debug(f"Get match full context endpoint for match_id:{match_id}")
             try:
-                player_team_tournament_service = self.service_registry.get("player_team_tournament")
-                rosters = await player_team_tournament_service.get_team_rosters_for_match(
-                    match_id, include_available, include_match_players
-                )
-                if not rosters:
+                context = await self.service.get_match_full_context(match_id)
+                if not context:
                     raise HTTPException(
                         status_code=404,
                         detail=f"Match {match_id} not found",
                     )
-                return rosters
+                return context
             except HTTPException:
                 raise
             except Exception as ex:
                 self.logger.error(
-                    f"Error fetching rosters for match {match_id}: {ex}", exc_info=True
+                    f"Error fetching full context for match {match_id}: {ex}", exc_info=True
                 )
                 raise HTTPException(status_code=500, detail="Internal server error")
+
+        return router
 
         return router
