@@ -22,17 +22,8 @@ class PersonServiceDB(BaseServiceDB):
         self,
         item: PersonSchemaCreate | PersonSchemaUpdate,
     ) -> PersonDB:
-        person = self.model(
-            person_eesl_id=item.person_eesl_id,
-            first_name=item.first_name,
-            second_name=item.second_name,
-            person_photo_url=item.person_photo_url,
-            person_photo_icon_url=item.person_photo_icon_url,
-            person_photo_web_url=item.person_photo_web_url,
-            person_dob=item.person_dob,
-        )
-        self.logger.debug(f"Starting to create PersonDB with data: {person.__dict__}")
-        return await super().create(person)
+        self.logger.debug(f"Starting to create PersonDB with data: {item.__dict__}")
+        return await super().create(item)
 
     async def create_or_update_person(
         self,

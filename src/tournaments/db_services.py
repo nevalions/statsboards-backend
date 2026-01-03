@@ -33,20 +33,8 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         item: TournamentSchemaCreate | TournamentSchemaUpdate,
     ) -> TournamentDB:
-        tournament = self.model(
-            title=getattr(item, "title", None),
-            description=getattr(item, "description", None),
-            tournament_logo_url=getattr(item, "tournament_logo_url", None),
-            tournament_logo_icon_url=getattr(item, "tournament_logo_icon_url", None),
-            tournament_logo_web_url=getattr(item, "tournament_logo_web_url", None),
-            season_id=getattr(item, "season_id", None),
-            sport_id=getattr(item, "sport_id", None),
-            main_sponsor_id=getattr(item, "main_sponsor_id", None),
-            sponsor_line_id=getattr(item, "sponsor_line_id", None),
-            tournament_eesl_id=getattr(item, "tournament_eesl_id", None),
-        )
-        self.logger.debug(f"Create new {ITEM}:{tournament}")
-        return await super().create(tournament)
+        self.logger.debug(f"Create new {ITEM}:{item}")
+        return await super().create(item)
 
     async def create_or_update_tournament(
         self,

@@ -98,16 +98,7 @@ class PlayerMatchServiceDB(BaseServiceDB):
     ) -> PlayerMatchDB:
         try:
             self.logger.debug(f"Create {ITEM} wit data {p}")
-            player_match = self.model(
-                player_match_eesl_id=p.player_match_eesl_id,
-                player_team_tournament_id=p.player_team_tournament_id,
-                match_position_id=p.match_position_id,
-                match_id=p.match_id,
-                match_number=p.match_number,
-                team_id=p.team_id,
-                is_start=p.is_start,
-            )
-            return await super().create(player_match)
+            return await super().create(p)
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:

@@ -36,12 +36,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
             if is_relation_exist:
                 self.logger.debug(f"Relation {ITEM} already exists")
                 return None
-            new_sponsor_sponsor_line = self.model(
-                sponsor_line_id=item.sponsor_line_id,
-                sponsor_id=item.sponsor_id,
-                position=item.position,
-            )
-            return await super().create(new_sponsor_sponsor_line)
+            return await super().create(item)
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:

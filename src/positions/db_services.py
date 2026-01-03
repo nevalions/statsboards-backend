@@ -24,11 +24,9 @@ class PositionServiceDB(BaseServiceDB):
         item: PositionSchemaCreate,
     ) -> PositionDB:
         self.logger.debug(f"Creating new {ITEM} {item}")
-        position = self.model(
-            sport_id=item.sport_id,
-            title=item.title.upper(),
-        )
-        return await super().create(position)
+        item_dict = item.model_dump()
+        item_dict["title"] = item.title.upper()
+        return await super().create(self.model(**item_dict))
 
     async def update(
         self,

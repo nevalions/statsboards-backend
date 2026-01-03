@@ -28,11 +28,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
         )
         if is_relation_exist:
             return is_relation_exist
-        new_team_tournament = self.model(
-            team_id=item.team_id,
-            tournament_id=item.tournament_id,
-        )
-        return await super().create(new_team_tournament)
+        return await super().create(item)
 
     async def get_team_tournament_relation(
         self, team_id: int, tournament_id: int

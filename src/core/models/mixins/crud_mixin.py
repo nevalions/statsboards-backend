@@ -2,6 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -21,6 +22,8 @@ class CRUDMixin:
                 f"Starting to create {self.model.__name__} with data: {item.__dict__}"
             )
             try:
+                if isinstance(item, BaseModel):
+                    item = self.model(**item.model_dump())
                 session.add(item)
                 await session.commit()
                 await session.refresh(item)

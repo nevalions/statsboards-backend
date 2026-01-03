@@ -31,18 +31,10 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         item: PlayerTeamTournamentSchemaCreate | PlayerTeamTournamentSchemaUpdate,
     ) -> PlayerTeamTournamentDB:
         try:
-            player_team_tournament = self.model(
-                player_team_tournament_eesl_id=item.player_team_tournament_eesl_id,
-                player_id=item.player_id,
-                position_id=item.position_id,
-                team_id=item.team_id,
-                tournament_id=item.tournament_id,
-                player_number=item.player_number,
-            )
             self.logger.debug(
-                f"Starting to create PlayerTeamTournamentDB with data: {player_team_tournament.__dict__}"
+                f"Starting to create PlayerTeamTournamentDB with data: {item.__dict__}"
             )
-            return await super().create(player_team_tournament)
+            return await super().create(item)
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:
@@ -183,16 +175,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
     ) -> PlayerTeamTournamentDB:
         try:
             self.logger.debug(f"Create {ITEM} wit data {p}")
-            player_team_tournament = self.model(
-                player_team_tournament_eesl_id=p.player_team_tournament_eesl_id,
-                player_id=p.player_id,
-                position_id=p.position_id,
-                team_id=p.team_id,
-                tournament_id=p.tournament_id,
-                player_number=p.player_number,
-            )
-
-            return await super().create(player_team_tournament)
+            return await super().create(p)
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as ex:

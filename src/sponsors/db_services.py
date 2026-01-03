@@ -25,13 +25,7 @@ class SponsorServiceDB(BaseServiceDB):
     ) -> SponsorDB:
         try:
             self.logger.debug(f"Creating {ITEM} {item}")
-            sponsor = self.model(
-                title=item.title,
-                logo_url=item.logo_url,
-                scale_logo=item.scale_logo,
-            )
-
-            result = await super().create(sponsor)
+            result = await super().create(item)
             if result is None:
                 self.logger.warning(f"Failed to create {ITEM}")
                 raise HTTPException(

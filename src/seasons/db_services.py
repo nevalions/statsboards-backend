@@ -30,11 +30,7 @@ class SeasonServiceDB(BaseServiceDB):
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: SeasonSchemaCreate) -> SeasonDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
-        season = self.model(
-            year=item.year,
-            description=item.description,
-        )
-        return await super().create(season)
+        return await super().create(item)
 
     @handle_service_exceptions(item_name=ITEM, operation="updating", return_value_on_not_found=None)
     async def update(

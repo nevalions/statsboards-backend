@@ -30,21 +30,7 @@ class TeamServiceDB(BaseServiceDB):
         self,
         item: TeamSchemaCreate | TeamSchemaUpdate,
     ) -> TeamDB:
-        team = self.model(
-            team_eesl_id=item.team_eesl_id,
-            title=item.title,
-            city=item.city,
-            description=item.description,
-            team_logo_url=item.team_logo_url,
-            team_logo_icon_url=item.team_logo_icon_url,
-            team_logo_web_url=item.team_logo_web_url,
-            team_color=item.team_color,
-            sponsor_line_id=item.sponsor_line_id,
-            main_sponsor_id=item.main_sponsor_id,
-            sport_id=item.sport_id,
-        )
-        self.logger.debug(f"Starting to create TeamDB with data: {team.__dict__}")
-        return await super().create(team)
+        return await super().create(item)
 
     async def create_or_update_team(
         self,
@@ -83,9 +69,7 @@ class TeamServiceDB(BaseServiceDB):
         team_id: int,
         tournament_id: int,
     ) -> list[PlayerTeamTournamentDB]:
-        self.logger.debug(
-            f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}"
-        )
+        self.logger.debug(f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}")
         async with self.db.async_session() as session:
             stmt = (
                 select(PlayerTeamTournamentDB)
@@ -116,16 +100,12 @@ class TeamServiceDB(BaseServiceDB):
 
         player_service = PlayerTeamTournamentServiceDB(self.db)
         position_service = PositionServiceDB(self.db)
-        players = await self.get_players_by_team_id_tournament_id(
-            team_id, tournament_id
-        )
+        players = await self.get_players_by_team_id_tournament_id(team_id, tournament_id)
 
         players_full_data = []
         if players:
             for p in players:
-                person = await player_service.get_player_team_tournament_with_person(
-                    p.id
-                )
+                person = await player_service.get_player_team_tournament_with_person(p.id)
                 position = await position_service.get_by_id(p.position_id)
                 # players_full_data.append(person)
                 # players_full_data.append(p)

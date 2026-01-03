@@ -26,13 +26,8 @@ class PlayerServiceDB(BaseServiceDB):
         self,
         item: PlayerSchemaCreate | PlayerSchemaUpdate,
     ) -> PlayerDB:
-        player = self.model(
-            player_eesl_id=item.player_eesl_id,
-            sport_id=item.sport_id,
-            person_id=item.person_id,
-        )
-        self.logger.debug(f"Starting to create PlayerDB with data: {player.__dict__}")
-        return await super().create(player)
+        self.logger.debug(f"Starting to create PlayerDB with data: {item.__dict__}")
+        return await super().create(item)
 
     async def create_or_update_player(
         self,

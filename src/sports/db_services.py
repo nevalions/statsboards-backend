@@ -27,11 +27,7 @@ class SportServiceDB(BaseServiceDB):
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: SportSchemaCreate) -> SportDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
-        season = self.model(
-            title=item.title,
-            description=item.description,
-        )
-        return await super().create(season)
+        return await super().create(item)
 
     @handle_service_exceptions(item_name=ITEM, operation="updating", reraise_not_found=True)
     async def update(

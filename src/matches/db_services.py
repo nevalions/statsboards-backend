@@ -42,18 +42,8 @@ class MatchServiceDB(BaseServiceDB):
         self,
         item: MatchSchemaCreate | MatchSchemaUpdate,
     ) -> MatchDB:
-        match = self.model(
-            match_date=item.match_date,
-            week=item.week,
-            match_eesl_id=item.match_eesl_id,
-            team_a_id=item.team_a_id,
-            team_b_id=item.team_b_id,
-            tournament_id=item.tournament_id,
-            sponsor_line_id=item.sponsor_line_id,
-            main_sponsor_id=item.main_sponsor_id,
-        )
-        self.logger.debug(f"Starting to create MatchDB with data: {match.__dict__}")
-        return await super().create(match)
+        self.logger.debug(f"Starting to create MatchDB with data: {item.__dict__}")
+        return await super().create(item)
 
     async def create_or_update_match(self, m: MatchSchemaCreate) -> MatchDB:
         return await super().create_or_update(m, eesl_field_name="match_eesl_id")

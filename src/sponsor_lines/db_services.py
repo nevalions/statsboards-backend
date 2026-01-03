@@ -25,10 +25,7 @@ class SponsorLineServiceDB(BaseServiceDB):
     ) -> SponsorLineDB:
         try:
             self.logger.debug(f"Creating {ITEM}")
-            result = self.model(
-                title=item.title,
-            )
-            return await super().create(result)
+            return await super().create(item)
         except HTTPException:
             raise
         except (IntegrityError, SQLAlchemyError) as e:
@@ -45,8 +42,7 @@ class SponsorLineServiceDB(BaseServiceDB):
             )
         except Exception as e:
             self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.create: {e}",
-                exc_info=True
+                f"Unexpected error in {self.__class__.__name__}.create: {e}", exc_info=True
             )
             raise HTTPException(
                 status_code=500,
