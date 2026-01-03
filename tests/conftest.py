@@ -23,15 +23,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: marks test as integration test (hits real website)"
     )
-    config.addinivalue_line(
-        "markers", "benchmark: marks test as performance benchmark"
-    )
-    config.addinivalue_line(
-        "markers", "e2e: marks test as end-to-end integration test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: marks test as slow-running"
-    )
+    config.addinivalue_line("markers", "benchmark: marks test as performance benchmark")
+    config.addinivalue_line("markers", "e2e: marks test as end-to-end integration test")
+    config.addinivalue_line("markers", "slow: marks test as slow-running")
 
 
 # Database fixture that ensures a clean state using transactions, function-scoped
@@ -43,7 +37,7 @@ async def test_db():
 
     database = Database(db_url_str, echo=False)
 
-    # Initialize service registry for each test
+    # Initialize service registry for each test with fresh database
     init_service_registry(database)
     register_all_services(database)
 
@@ -85,7 +79,7 @@ def test_downloads_dir():
 @pytest.fixture
 def test_uploads_path(test_downloads_dir, monkeypatch):
     """Fixture to patch uploads_path for integration tests."""
-    # Patch the config module's uploads_path directly
+    # Patch config module's uploads_path directly
     import src.core.config as config_module
 
     monkeypatch.setattr(config_module, "uploads_path", test_downloads_dir)
@@ -101,18 +95,16 @@ async def test_app(test_db):
     from src.gameclocks.views import GameClockAPIRouter
     from src.matchdata.db_services import MatchDataServiceDB
     from src.matchdata.views import MatchDataAPIRouter
-    from src.matches.views import (
-        api_match_crud_router,
-        api_match_parser_router,
-        api_match_websocket_router,
-    )
+    from src.matches.crud_router import MatchCRUDRouter
+    from src.matches.db_services import MatchServiceDB
+    from src.matches.parser_router import MatchParserRouter
+    from src.matches.websocket_router import MatchWebSocketRouter
     from src.person.db_services import PersonServiceDB
     from src.person.views import PersonAPIRouter
     from src.playclocks.db_services import PlayClockServiceDB
     from src.playclocks.views import PlayClockAPIRouter
     from src.player.db_services import PlayerServiceDB
     from src.player.views import PlayerAPIRouter
-    from src.player_match import api_player_match_router
     from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
     from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
     from src.positions.db_services import PositionServiceDB
@@ -123,7 +115,6 @@ async def test_app(test_db):
     from src.seasons.views import SeasonAPIRouter
     from src.sponsor_lines.db_services import SponsorLineServiceDB
     from src.sponsor_lines.views import SponsorLineAPIRouter
-    from src.sponsor_sponsor_line_connection import api_sponsor_sponsor_line_router
     from src.sponsors.db_services import SponsorServiceDB
     from src.sponsors.views import SponsorAPIRouter
     from src.sports.db_services import SportServiceDB
@@ -136,27 +127,34 @@ async def test_app(test_db):
     from src.tournaments.views import TournamentAPIRouter
 
     app = FastAPI()
-    app.include_router(api_match_crud_router)
-    app.include_router(api_match_websocket_router)
-    app.include_router(api_match_parser_router)
+    match_service = MatchServiceDB(test_db)
+    app.include_router(MatchCRUDRouter(match_service).route())
+    app.include_router(MatchWebSocketRouter(match_service).route())
+    app.include_router(MatchParserRouter(match_service).route())
     app.include_router(FootballEventAPIRouter(FootballEventServiceDB(test_db)).route())
     app.include_router(GameClockAPIRouter(GameClockServiceDB(test_db)).route())
     app.include_router(MatchDataAPIRouter(MatchDataServiceDB(test_db)).route())
     app.include_router(PersonAPIRouter(PersonServiceDB(test_db)).route())
     app.include_router(PlayClockAPIRouter(PlayClockServiceDB(test_db)).route())
     app.include_router(PlayerAPIRouter(PlayerServiceDB(test_db)).route())
-    app.include_router(api_player_match_router)
-    app.include_router(PlayerTeamTournamentAPIRouter(PlayerTeamTournamentServiceDB(test_db)).route())
+    app.include_router(
+        PlayerTeamTournamentAPIRouter(PlayerTeamTournamentServiceDB(test_db)).route()
+    )
     app.include_router(PositionAPIRouter(PositionServiceDB(test_db)).route())
     app.include_router(ScoreboardAPIRouter(ScoreboardServiceDB(test_db)).route())
     app.include_router(SeasonAPIRouter(SeasonServiceDB(test_db)).route())
     app.include_router(SponsorLineAPIRouter(SponsorLineServiceDB(test_db)).route())
-    app.include_router(api_sponsor_sponsor_line_router)
     app.include_router(SponsorAPIRouter(SponsorServiceDB(test_db)).route())
     app.include_router(SportAPIRouter(SportServiceDB(test_db)).route())
     app.include_router(TeamTournamentRouter(TeamTournamentServiceDB(test_db)).route())
     app.include_router(TeamAPIRouter(TeamServiceDB(test_db)).route())
     app.include_router(TournamentAPIRouter(TournamentServiceDB(test_db)).route())
+
+    # Import routers that are already instantiated at module level
+    from tests.fixtures import api_player_match_router, api_sponsor_sponsor_line_router
+
+    app.include_router(api_player_match_router)
+    app.include_router(api_sponsor_sponsor_line_router)
 
     yield app
 
