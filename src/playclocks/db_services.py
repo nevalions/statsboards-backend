@@ -25,26 +25,13 @@ class PlayClockServiceDB(BaseServiceDB):
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: PlayClockSchemaCreate) -> PlayClockDB:
         self.logger.debug(f"Create playclock: {item}")
-        async with self.db.async_session() as session:
-            playclock_result = PlayClockDB(
-                playclock=item.playclock,
-                playclock_status=item.playclock_status,
-                match_id=item.match_id,
-            )
-            self.logger.debug("Is playclock exist")
-            is_exist = None
-            if item.match_id is not None:
-                is_exist = await self.get_playclock_by_match_id(item.match_id)
-            if is_exist:
-                self.logger.info(f"Playclock already exists: {playclock_result}")
-                return playclock_result
-
-            session.add(playclock_result)
-            await session.commit()
-            await session.refresh(playclock_result)
-
-            self.logger.info(f"Playclock created: {playclock_result}")
-            return playclock_result
+        if item.match_id is not None:
+            is_exist = await self.get_playclock_by_match_id(item.match_id)
+            if is_exist is not None:
+                self.logger.info(f"Playclock already exists: {is_exist}")
+                return is_exist
+        result = await super().create(item)
+        return result  # type: ignore
 
     async def enable_match_data_clock_queues(
         self,

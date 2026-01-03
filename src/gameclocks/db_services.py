@@ -46,28 +46,12 @@ class GameClockServiceDB(BaseServiceDB):
     @handle_service_exceptions(item_name="GAMECLOCK", operation="creating")
     async def create(self, item: GameClockSchemaCreate) -> GameClockDB:
         self.logger.debug(f"Create gameclock: {item}")
-        async with self.db.async_session() as session:
-            gameclock_result = GameClockDB(
-                gameclock=item.gameclock,
-                gameclock_max=item.gameclock_max,
-                gameclock_status=item.gameclock_status,
-                match_id=item.match_id,
-            )
-
-            self.logger.debug("Is gameclock exist")
-            is_exist = None
-            if item.match_id is not None:
-                is_exist = await self.get_gameclock_by_match_id(item.match_id)
+        if item.match_id is not None:
+            is_exist = await self.get_gameclock_by_match_id(item.match_id)
             if is_exist:
-                self.logger.info(f"gameclock already exists: {gameclock_result}")
-                return gameclock_result
-
-            session.add(gameclock_result)
-            await session.commit()
-            await session.refresh(gameclock_result)
-
-            self.logger.info(f"gameclock created: {gameclock_result}")
-            return gameclock_result
+                self.logger.info(f"gameclock already exists: {is_exist}")
+                return is_exist
+        return await super().create(item)
 
     async def enable_match_data_gameclock_queues(
         self,
