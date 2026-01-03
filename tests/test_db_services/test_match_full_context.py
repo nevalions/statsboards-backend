@@ -5,28 +5,17 @@ import pytest_asyncio
 
 from src.core.models.base import Database
 from src.matches.db_services import MatchServiceDB
-from src.player_match.db_services import PlayerMatchServiceDB
-from src.player_match.schemas import PlayerMatchSchemaCreate
-from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
-from src.player_team_tournament.schemas import PlayerTeamTournamentSchemaCreate
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate
 from src.teams.db_services import TeamServiceDB
-from src.teams.schemas import TeamSchemaCreate
 from src.tournaments.db_services import TournamentServiceDB
-from src.tournaments.schemas import TournamentSchemaCreate
 from tests.factories import (
     MatchFactory,
-    PersonFactory,
-    PlayerFactory,
-    PlayerFactoryWithRelations,
-    PositionFactory,
     SportFactorySample,
     TeamFactory,
     TournamentFactory,
-    TournamentFactoryWithRelations,
 )
 
 

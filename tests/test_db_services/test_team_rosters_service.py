@@ -83,7 +83,7 @@ class TestTeamRostersService:
         player2 = await player_service.create(
             PlayerSchemaCreate(person_id=person2.id, eesl_id=2, height="188", weight="104")
         )
-        ptt2 = await ptt_service.create(
+        _ = await ptt_service.create(
             PlayerTeamTournamentSchemaCreate(
                 player_id=player2.id,
                 team_id=team_b.id,
@@ -94,7 +94,7 @@ class TestTeamRostersService:
         )
 
         player_match_service = PlayerMatchServiceDB(test_db)
-        pm1 = await player_match_service.create_new_player_match(
+        _ = await player_match_service.create_new_player_match(
             PlayerMatchSchemaCreate(
                 match_id=match.id,
                 player_team_tournament_id=ptt1.id,
