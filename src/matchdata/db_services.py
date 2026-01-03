@@ -22,28 +22,8 @@ class MatchDataServiceDB(BaseServiceDB):
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: MatchDataSchemaCreate) -> MatchDataDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
-
-        async with self.db.async_session() as session:
-            match_data = MatchDataDB(
-                field_length=item.field_length,
-                game_status=item.game_status,
-                score_team_a=item.score_team_a,
-                score_team_b=item.score_team_b,
-                timeout_team_a=item.timeout_team_a,
-                timeout_team_b=item.timeout_team_b,
-                qtr=item.qtr,
-                ball_on=item.ball_on,
-                down=item.down,
-                distance=item.distance,
-                match_id=item.match_id,
-            )
-
-            session.add(match_data)
-            await session.commit()
-            await session.refresh(match_data)
-
-            self.logger.info(f"Matchdata created successfully. Result: {match_data}")
-            return match_data
+        result = await super().create(item)
+        return result  # type: ignore
 
     @handle_service_exceptions(item_name=ITEM, operation="updating", return_value_on_not_found=None)
     async def update(

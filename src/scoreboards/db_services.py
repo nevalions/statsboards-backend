@@ -43,77 +43,26 @@ class ScoreboardServiceDB(BaseServiceDB):
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: ScoreboardSchemaCreate) -> ScoreboardDB:
         self.logger.debug(f"Create scoreboard: {item}")
-        async with self.db.async_session() as session:
-            scoreboard_result = ScoreboardDB(
-                is_qtr=item.is_qtr,
-                is_time=item.is_time,
-                is_playclock=item.is_playclock,
-                is_downdistance=item.is_downdistance,
-                is_tournament_logo=item.is_tournament_logo,
-                is_main_sponsor=item.is_main_sponsor,
-                is_sponsor_line=item.is_sponsor_line,
-                is_match_sponsor_line=item.is_match_sponsor_line,
-                is_team_a_start_offense=item.is_team_a_start_offense,
-                is_team_b_start_offense=item.is_team_b_start_offense,
-                is_team_a_start_defense=item.is_team_a_start_defense,
-                is_team_b_start_defense=item.is_team_b_start_defense,
-                is_home_match_team_lower=item.is_home_match_team_lower,
-                is_away_match_team_lower=item.is_away_match_team_lower,
-                is_football_qb_full_stats_lower=item.is_football_qb_full_stats_lower,
-                football_qb_full_stats_match_lower_id=item.football_qb_full_stats_match_lower_id,
-                is_match_player_lower=item.is_match_player_lower,
-                player_match_lower_id=item.player_match_lower_id,
-                team_a_game_color=item.team_a_game_color,
-                team_b_game_color=item.team_b_game_color,
-                team_a_game_title=item.team_a_game_title,
-                team_b_game_title=item.team_b_game_title,
-                team_a_game_logo=item.team_a_game_logo,
-                team_b_game_logo=item.team_b_game_logo,
-                use_team_a_game_color=item.use_team_a_game_color,
-                use_team_b_game_color=item.use_team_b_game_color,
-                use_team_a_game_title=item.use_team_a_game_title,
-                use_team_b_game_title=item.use_team_b_game_title,
-                use_team_a_game_logo=item.use_team_a_game_logo,
-                use_team_b_game_logo=item.use_team_b_game_logo,
-                scale_tournament_logo=item.scale_tournament_logo,
-                scale_main_sponsor=item.scale_main_sponsor,
-                scale_logo_a=item.scale_logo_a,
-                scale_logo_b=item.scale_logo_b,
-                is_flag=item.is_flag,
-                is_goal_team_a=item.is_goal_team_a,
-                is_goal_team_b=item.is_goal_team_b,
-                is_timeout_team_a=item.is_timeout_team_a,
-                is_timeout_team_b=item.is_timeout_team_b,
-                match_id=item.match_id,
-            )
-
-            self.logger.debug("Is scoreboard exist")
-            is_exist = None
-            if item.match_id is not None:
-                is_exist = await self.get_scoreboard_by_match_id(item.match_id)
+        if item.match_id is not None:
+            is_exist = await self.get_scoreboard_by_match_id(item.match_id)
             if is_exist:
-                self.logger.info(f"Scoreboard already exists: {scoreboard_result}")
-                return scoreboard_result
+                self.logger.info(f"Scoreboard already exists: {is_exist}")
+                return is_exist
+        result = await super().create(item)
+        return result  # type: ignore
 
-            session.add(scoreboard_result)
-            await session.commit()
-            await session.refresh(scoreboard_result)
-
-            self.logger.info(f"Scoreboard created: {scoreboard_result}")
-            return scoreboard_result
-
-            #     session.add(match_result)
-            #     await session.commit()
-            #     await session.refresh(match_result)
-            #     return match_result
-            # except Exception as ex:
-            #     print(ex)
-            #     raise HTTPException(
-            #         status_code=409,
-            #         detail=f"While creating result "
-            #         f"for match id({scoreboard})"
-            #         f"returned some error",
-            #     )
+        #     session.add(match_result)
+        #     await session.commit()
+        #     await session.refresh(match_result)
+        #     return match_result
+        # except Exception as ex:
+        #     print(ex)
+        #     raise HTTPException(
+        #         status_code=409,
+        #         detail=f"While creating result "
+        #         f"for match id({scoreboard})"
+        #         f"returned some error",
+        #     )
 
     async def update(
         self,
@@ -129,7 +78,7 @@ class ScoreboardServiceDB(BaseServiceDB):
         )
         self.logger.debug(f"Updated scoreboard: {updated_}")
         # await self.trigger_update_scoreboard(item_id)
-        return updated_
+        return updated_  # type: ignore
 
     async def get_scoreboard_by_match_id(
         self,
