@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class SponsorSponsorLineSchemaBase(BaseModel):
     sponsor_line_id: int
@@ -7,17 +9,14 @@ class SponsorSponsorLineSchemaBase(BaseModel):
     position: int | None = 1
 
 
-class SponsorSponsorLineSchemaUpdate(BaseModel):
-    sponsor_line_id: int | None = None
-    sponsor_id: int | None = None
-    position: int | None = None
+SponsorSponsorLineSchemaUpdate = make_fields_optional(SponsorSponsorLineSchemaBase)
 
 
 class SponsorSponsorLineSchemaCreate(SponsorSponsorLineSchemaBase):
     pass
 
 
-class SponsorSponsorLineSchema(SponsorSponsorLineSchemaBase):
+class SponsorSponsorLineSchema(SponsorSponsorLineSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int

@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class PlayClockSchemaBase(BaseModel):
     playclock: Annotated[int, Path(max=10000)] | None = None
@@ -10,11 +12,7 @@ class PlayClockSchemaBase(BaseModel):
     match_id: int | None = None
 
 
-class PlayClockSchemaUpdate(BaseModel):
-    playclock: int | None = None
-    playclock_status: str | None = None
-
-    match_id: int | None = None
+PlayClockSchemaUpdate = make_fields_optional(PlayClockSchemaBase)
 
 
 class PlayClockSchemaCreate(PlayClockSchemaBase):

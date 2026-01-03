@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class PlayerMatchSchemaBase(BaseModel):
     player_match_eesl_id: int | None = None
@@ -16,16 +18,7 @@ class PlayerMatchSchemaBase(BaseModel):
     starting_type: str | None = None
 
 
-class PlayerMatchSchemaUpdate(BaseModel):
-    player_match_eesl_id: int | None = None
-    player_team_tournament_id: int | None = None
-    match_position_id: int | None = None
-    match_id: int | None = None
-    match_number: str | None = None
-    team_id: int | None = None
-    is_start: bool | None = None
-    is_starting: bool | None = None
-    starting_type: str | None = None
+PlayerMatchSchemaUpdate = make_fields_optional(PlayerMatchSchemaBase)
 
 
 class PlayerMatchSchemaCreate(PlayerMatchSchemaBase):

@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class SponsorSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=50)]
@@ -10,10 +12,7 @@ class SponsorSchemaBase(BaseModel):
     scale_logo: float | None = 1.0
 
 
-class SponsorSchemaUpdate(BaseModel):
-    title: str | None = None
-    logo_url: str | None = None
-    scale_logo: float | None = None
+SponsorSchemaUpdate = make_fields_optional(SponsorSchemaBase)
 
 
 class SponsorSchemaCreate(SponsorSchemaBase):

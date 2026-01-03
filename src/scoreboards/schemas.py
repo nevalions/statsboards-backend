@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class ScoreboardSchemaBase(BaseModel):
     is_qtr: bool = True
@@ -56,56 +58,7 @@ class ScoreboardSchemaBase(BaseModel):
     match_id: int | None = None
 
 
-class ScoreboardSchemaUpdate(BaseModel):
-    is_qtr: bool | None = None
-    is_time: bool | None = None
-    is_playclock: bool | None = None
-    is_downdistance: bool | None = None
-    is_tournament_logo: bool | None = None
-    is_main_sponsor: bool | None = None
-    is_sponsor_line: bool | None = None
-    is_match_sponsor_line: bool | None = None
-
-    is_team_a_start_offense: bool | None = None
-    is_team_b_start_offense: bool | None = None
-    is_team_a_start_defense: bool | None = None
-    is_team_b_start_defense: bool | None = None
-
-    is_home_match_team_lower: bool | None = None
-    is_away_match_team_lower: bool | None = None
-
-    is_football_qb_full_stats_lower: bool | None = None
-    football_qb_full_stats_match_lower_id: int | None = None
-    is_match_player_lower: bool | None = None
-    player_match_lower_id: int | None = None
-
-    team_a_game_color: str | None = None
-    team_b_game_color: str | None = None
-    use_team_a_game_color: bool | None = None
-    use_team_b_game_color: bool | None = None
-
-    team_a_game_logo: str | None = None
-    team_b_game_logo: str | None = None
-    use_team_a_game_logo: bool | None = None
-    use_team_b_game_logo: bool | None = None
-
-    scale_tournament_logo: float | None = None
-    scale_main_sponsor: float | None = None
-    scale_logo_a: float | None = None
-    scale_logo_b: float | None = None
-
-    team_a_game_title: str | None = None
-    team_b_game_title: str | None = None
-    use_team_a_game_title: bool | None = None
-    use_team_b_game_title: bool | None = None
-
-    is_flag: bool | None = None
-    is_goal_team_a: bool | None = None
-    is_goal_team_b: bool | None = None
-    is_timeout_team_a: bool | None = False
-    is_timeout_team_b: bool | None = False
-
-    match_id: int | None = None
+ScoreboardSchemaUpdate = make_fields_optional(ScoreboardSchemaBase)
 
 
 class ScoreboardSchemaCreate(ScoreboardSchemaBase):

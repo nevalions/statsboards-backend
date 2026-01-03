@@ -3,15 +3,15 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class SponsorLineSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=50)] = "Sponsor Line"
     is_visible: bool | None = False
 
 
-class SponsorLineSchemaUpdate(BaseModel):
-    title: str | None = None
-    is_visible: bool | None = False
+SponsorLineSchemaUpdate = make_fields_optional(SponsorLineSchemaBase)
 
 
 class SponsorLineSchemaCreate(SponsorLineSchemaBase):

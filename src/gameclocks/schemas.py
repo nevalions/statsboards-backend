@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class GameClockSchemaBase(BaseModel):
     gameclock: Annotated[int, Path(max=10000)] = 720
@@ -12,12 +14,7 @@ class GameClockSchemaBase(BaseModel):
     match_id: int | None = None
 
 
-class GameClockSchemaUpdate(BaseModel):
-    gameclock: int | None = None
-    gameclock_max: int | None = None
-    gameclock_status: str | None = None
-    gameclock_time_remaining: int | None = None
-    match_id: int | None = None
+GameClockSchemaUpdate = make_fields_optional(GameClockSchemaBase)
 
 
 class GameClockSchemaCreate(GameClockSchemaBase):

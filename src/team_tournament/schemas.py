@@ -1,14 +1,14 @@
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class TeamTournamentSchemaBase(BaseModel):
     tournament_id: int
     team_id: int
 
 
-class TeamTournamentSchemaUpdate(BaseModel):
-    tournament_id: int | None = None
-    team_id: int | None = None
+TeamTournamentSchemaUpdate = make_fields_optional(TeamTournamentSchemaBase)
 
 
 class TeamTournamentSchemaCreate(TeamTournamentSchemaBase):

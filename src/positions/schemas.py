@@ -3,15 +3,15 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.schema_helpers import make_fields_optional
+
 
 class PositionSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=30)] = "Position"
     sport_id: int
 
 
-class PositionSchemaUpdate(BaseModel):
-    title: str | None = None
-    sport_id: int | None = None
+PositionSchemaUpdate = make_fields_optional(PositionSchemaBase)
 
 
 class PositionSchemaCreate(PositionSchemaBase):
