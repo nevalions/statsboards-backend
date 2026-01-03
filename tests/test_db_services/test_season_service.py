@@ -35,9 +35,7 @@ class TestSeasonServiceDB:
         season_sample,
     ):
         """Test successful season creation."""
-        created_season: SeasonSchemaCreate = await test_season_service.create(
-            season_sample
-        )
+        created_season: SeasonSchemaCreate = await test_season_service.create(season_sample)
         assert_season_equal(season_sample, created_season)
 
     async def test_delete_season_success(
@@ -123,9 +121,7 @@ class TestSeasonServiceDB:
         assert updated_season.year == TestData.get_season_data_for_update().year
 
         # Reset season back to its original state
-        reset_season_data = SeasonSchemaUpdate(
-            year=season.year, description=season.description
-        )
+        reset_season_data = SeasonSchemaUpdate(year=season.year, description=season.description)
         await test_season_service.update(item_id=season.id, item=reset_season_data)
         reset_season = await test_season_service.get_season_by_year(season.year)
         assert_season_equal(season, reset_season)
@@ -152,8 +148,9 @@ class TestSeasonServiceDB:
         season,
     ):
         """Test attempting to create a duplicate season."""
+        duplicate_season = SeasonSchemaCreate(year=season.year, description="Duplicate")
         with pytest.raises(HTTPException) as exc_info:
-            await test_season_service.create(season)
+            await test_season_service.create(duplicate_season)
 
         assert_http_exception_on_create(exc_info)
 
@@ -167,9 +164,7 @@ class TestSeasonServiceDB:
         """Test tournaments for the year."""
         season_id = tournament.season_id
         got_season = await test_season_service.get_by_id(season_id)
-        got_tournaments = await test_season_service.get_tournaments_by_year(
-            got_season.year
-        )
+        got_tournaments = await test_season_service.get_tournaments_by_year(got_season.year)
 
         assert len(got_tournaments) == 1
         assert_tournament_equal(tournament, got_tournaments[0], season, sport)
@@ -183,9 +178,7 @@ class TestSeasonServiceDB:
         season_id = tournaments[0].season_id
         got_season = await test_season_service.get_by_id(season_id)
 
-        fetched_tournaments = await test_season_service.get_tournaments_by_year(
-            got_season.year
-        )
+        fetched_tournaments = await test_season_service.get_tournaments_by_year(got_season.year)
 
         assert_tournaments_equal(tournaments, fetched_tournaments)
 
@@ -199,11 +192,9 @@ class TestSeasonServiceDB:
         sport_id = tournaments[0].sport_id
         got_season = await test_season_service.get_by_id(season_id)
 
-        fetched_tournaments = (
-            await test_season_service.get_tournaments_by_year_and_sport(
-                year=got_season.year,
-                sport_id=sport_id,
-            )
+        fetched_tournaments = await test_season_service.get_tournaments_by_year_and_sport(
+            year=got_season.year,
+            sport_id=sport_id,
         )
         assert_tournaments_equal(tournaments, fetched_tournaments)
 
@@ -216,10 +207,8 @@ class TestSeasonServiceDB:
         season_id = tournaments[0].season_id
         sport_id = tournaments[0].sport_id
 
-        fetched_tournaments = (
-            await test_season_service.get_tournaments_by_season_and_sport_ids(
-                season_id=season_id,
-                sport_id=sport_id,
-            )
+        fetched_tournaments = await test_season_service.get_tournaments_by_season_and_sport_ids(
+            season_id=season_id,
+            sport_id=sport_id,
         )
         assert_tournaments_equal(tournaments, fetched_tournaments)
