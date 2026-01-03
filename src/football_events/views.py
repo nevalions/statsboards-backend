@@ -74,13 +74,36 @@ class FootballEventAPIRouter(
         async def get_football_events_by_match_id(match_id: int):
             try:
                 self.logger.debug(f"Getting {ITEM} endpoint by match id:{match_id}")
-                return await self.service.get_match_football_events_by_match_id(
-                    match_id
-                )
+                return await self.service.get_match_football_events_by_match_id(match_id)
+            except Exception as e:
+                self.logger.error(f"Error getting football_events_by_match_id: {e}", exc_info=e)
+
+        @router.get(
+            "/matches/{match_id}/events-with-players/",
+            summary="Get football events with embedded players",
+            description="Get all football events for a match with all 17 player references pre-populated",
+            responses={
+                200: {"description": "Events retrieved successfully"},
+                404: {"description": "Match not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def get_events_with_players(match_id: int):
+            try:
+                self.logger.debug(f"Getting {ITEM} with players endpoint for match_id:{match_id}")
+                events = await self.service.get_events_with_players(match_id)
+                if not events:
+                    return {"match_id": match_id, "events": []}
+
+                return {"match_id": match_id, "events": events}
+            except HTTPException:
+                raise
             except Exception as e:
                 self.logger.error(
-                    f"Error getting football_events_by_match_id: {e}", exc_info=e
+                    f"Error getting events_with_players for match {match_id}: {e}",
+                    exc_info=e,
                 )
+                raise
 
         return router
 

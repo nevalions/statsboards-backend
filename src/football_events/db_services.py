@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from src.core.exceptions import NotFoundError
 from src.core.models import BaseServiceDB, FootballEventDB
@@ -191,3 +192,184 @@ class FootballEventServiceDB(BaseServiceDB):
                 )
                 await session.rollback()
                 return []
+
+    async def get_events_with_players(
+        self,
+        match_id: int,
+    ) -> list[dict]:
+        """
+        Get all football events for a match with embedded player data.
+        Single query with optimized joins using selectinload.
+        """
+        async with self.db.async_session() as session:
+            try:
+                self.logger.debug(f"Getting {ITEM}s with players for match id({match_id})")
+
+                stmt = (
+                    select(FootballEventDB)
+                    .where(FootballEventDB.match_id == match_id)
+                    .order_by(FootballEventDB.event_number)
+                    .options(
+                        selectinload(FootballEventDB.event_qb_rel),
+                        selectinload(FootballEventDB.run_player_rel),
+                        selectinload(FootballEventDB.pass_received_player_rel),
+                        selectinload(FootballEventDB.pass_dropped_player_rel),
+                        selectinload(FootballEventDB.pass_deflected_player_rel),
+                        selectinload(FootballEventDB.pass_intercepted_player_rel),
+                        selectinload(FootballEventDB.fumble_player_rel),
+                        selectinload(FootballEventDB.fumble_recovered_player_rel),
+                        selectinload(FootballEventDB.tackle_player_rel),
+                        selectinload(FootballEventDB.assist_tackle_player_rel),
+                        selectinload(FootballEventDB.sack_player_rel),
+                        selectinload(FootballEventDB.score_player_rel),
+                        selectinload(FootballEventDB.defence_score_player_rel),
+                        selectinload(FootballEventDB.kick_player_rel),
+                        selectinload(FootballEventDB.kickoff_player_rel),
+                        selectinload(FootballEventDB.return_player_rel),
+                        selectinload(FootballEventDB.pat_one_player_rel),
+                        selectinload(FootballEventDB.flagged_player_rel),
+                        selectinload(FootballEventDB.punt_player_rel),
+                    )
+                )
+
+                result = await session.execute(stmt)
+                events = result.scalars().all()
+
+                events_dict = []
+                for event in events:
+                    event_data = {
+                        "id": event.id,
+                        "match_id": event.match_id,
+                        "event_number": event.event_number,
+                        "event_qtr": event.event_qtr,
+                        "ball_on": event.ball_on,
+                        "ball_moved_to": event.ball_moved_to,
+                        "ball_picked_on": event.ball_picked_on,
+                        "ball_kicked_to": event.ball_kicked_to,
+                        "ball_returned_to": event.ball_returned_to,
+                        "ball_picked_on_fumble": event.ball_picked_on_fumble,
+                        "ball_returned_to_on_fumble": event.ball_returned_to_on_fumble,
+                        "distance_on_offence": event.distance_on_offence,
+                        "offense_team": event.offense_team,
+                        "event_qb": event.event_qb,
+                        "event_down": event.event_down,
+                        "event_distance": event.event_distance,
+                        "event_hash": event.event_hash,
+                        "play_direction": event.play_direction,
+                        "event_strong_side": event.event_strong_side,
+                        "play_type": event.play_type,
+                        "play_result": event.play_result,
+                        "score_result": event.score_result,
+                        "is_fumble": event.is_fumble,
+                        "is_fumble_recovered": event.is_fumble_recovered,
+                        "qb": self._player_match_to_dict(event.event_qb_rel),
+                        "run_player": self._player_match_to_dict(event.run_player_rel),
+                        "pass_received_player": self._player_match_to_dict(
+                            event.pass_received_player_rel
+                        ),
+                        "pass_dropped_player": self._player_match_to_dict(
+                            event.pass_dropped_player_rel
+                        ),
+                        "pass_deflected_player": self._player_match_to_dict(
+                            event.pass_deflected_player_rel
+                        ),
+                        "pass_intercepted_player": self._player_match_to_dict(
+                            event.pass_intercepted_player_rel
+                        ),
+                        "fumble_player": self._player_match_to_dict(event.fumble_player_rel),
+                        "fumble_recovered_player": self._player_match_to_dict(
+                            event.fumble_recovered_player_rel
+                        ),
+                        "tackle_player": self._player_match_to_dict(event.tackle_player_rel),
+                        "assist_tackle_player": self._player_match_to_dict(
+                            event.assist_tackle_player_rel
+                        ),
+                        "sack_player": self._player_match_to_dict(event.sack_player_rel),
+                        "score_player": self._player_match_to_dict(event.score_player_rel),
+                        "defence_score_player": self._player_match_to_dict(
+                            event.defence_score_player_rel
+                        ),
+                        "kick_player": self._player_match_to_dict(event.kick_player_rel),
+                        "kickoff_player": self._player_match_to_dict(event.kickoff_player_rel),
+                        "return_player": self._player_match_to_dict(event.return_player_rel),
+                        "pat_one_player": self._player_match_to_dict(event.pat_one_player_rel),
+                        "flagged_player": self._player_match_to_dict(event.flagged_player_rel),
+                        "punt_player": self._player_match_to_dict(event.punt_player_rel),
+                    }
+                    events_dict.append(event_data)
+
+                self.logger.info(
+                    f"Retrieved {len(events_dict)} {ITEM}s with players for match {match_id}"
+                )
+                return events_dict
+
+            except HTTPException:
+                raise
+            except (IntegrityError, SQLAlchemyError) as ex:
+                self.logger.error(
+                    f"Database error getting {ITEM}s with players for match {match_id}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Database error fetching events for match {match_id}",
+                )
+            except NotFoundError as ex:
+                self.logger.info(
+                    f"Not found {ITEM}s with players for match {match_id}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(status_code=404, detail=str(ex))
+            except Exception as ex:
+                self.logger.critical(
+                    f"Unexpected error getting {ITEM}s with players for match {match_id}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error",
+                )
+
+    def _player_match_to_dict(self, player_match) -> dict | None:
+        """Helper to convert PlayerMatchDB to nested dict with full data."""
+        if not player_match:
+            return None
+
+        player_data = None
+        if (
+            player_match.player_team_tournament
+            and player_match.player_team_tournament.player
+            and player_match.player_team_tournament.player.person
+        ):
+            player = player_match.player_team_tournament.player
+            person = player.person
+            player_data = {
+                "id": player.id,
+                "first_name": person.first_name,
+                "second_name": person.second_name,
+                "person_photo_url": person.person_photo_url,
+            }
+
+        position_data = None
+        if player_match.match_position:
+            position_data = {
+                "id": player_match.match_position.id,
+                "name": player_match.match_position.title,
+            }
+
+        team_data = None
+        if player_match.team:
+            team_data = {
+                "id": player_match.team.id,
+                "name": player_match.team.title,
+                "logo_url": player_match.team.team_logo_url,
+            }
+
+        return {
+            "id": player_match.id,
+            "player_id": player_match.player_team_tournament_id,
+            "player": player_data,
+            "position": position_data,
+            "team": team_data,
+            "match_number": player_match.match_number,
+        }
