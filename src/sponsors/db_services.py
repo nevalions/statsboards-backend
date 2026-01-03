@@ -1,11 +1,9 @@
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
-from src.core.exceptions import NotFoundError
+from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, SponsorDB
 from src.core.models.base import Database
-from src.logging_config import get_logger
-from src.sponsors.schemas import SponsorSchemaCreate, SponsorSchemaUpdate
+
+from ..logging_config import get_logger
+from .schemas import SponsorSchemaCreate, SponsorSchemaUpdate
 
 ITEM = "SPONSOR"
 
@@ -16,43 +14,16 @@ class SponsorServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, SponsorDB)
-        self.logger = get_logger("backend_logger_SponsorServiceDB")
+        self.logger = get_logger("backend_logger_SponsorServiceDB", self)
         self.logger.debug("Initialized SponsorServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(
         self,
         item: SponsorSchemaCreate,
     ) -> SponsorDB:
-        try:
-            self.logger.debug(f"Creating {ITEM} {item}")
-            result = await super().create(item)
-            if result is None:
-                self.logger.warning(f"Failed to create {ITEM}")
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"Failed to create {self.model.__name__}. Check input data.",
-                )
-            return result
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            self.logger.error(f"Database error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"Database error creating {ITEM}",
-            )
-        except (ValueError, KeyError, TypeError) as e:
-            self.logger.warning(f"Data error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided for sponsor",
-            )
-        except NotFoundError as e:
-            self.logger.info(f"Not found creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(status_code=404, detail="Resource not found")
-        except Exception as e:
-            self.logger.critical(f"Unexpected error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Internal server error creating {ITEM}")
+        self.logger.debug(f"Creating {ITEM} {item}")
+        return await super().create(item)
 
     async def update(
         self,

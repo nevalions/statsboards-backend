@@ -1,6 +1,4 @@
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
+from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, SponsorLineDB
 from src.core.models.base import Database
 
@@ -19,35 +17,13 @@ class SponsorLineServiceDB(BaseServiceDB):
         self.logger = get_logger("backend_logger_SponsorLineServiceDB", self)
         self.logger.debug("Initialized SponsorLineServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(
         self,
         item: SponsorLineSchemaCreate,
     ) -> SponsorLineDB:
-        try:
-            self.logger.debug(f"Creating {ITEM}")
-            return await super().create(item)
-        except HTTPException:
-            raise
-        except (IntegrityError, SQLAlchemyError) as e:
-            self.logger.error(f"Database error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error creating {self.model.__name__}",
-            )
-        except (ValueError, KeyError, TypeError) as e:
-            self.logger.warning(f"Data error creating {ITEM}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid data provided",
-            )
-        except Exception as e:
-            self.logger.critical(
-                f"Unexpected error in {self.__class__.__name__}.create: {e}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
-            )
+        self.logger.debug(f"Creating {ITEM}")
+        return await super().create(item)
 
     async def update(
         self,
