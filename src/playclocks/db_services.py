@@ -3,85 +3,48 @@ import time
 
 from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exceptions import NotFoundError
-from src.core.models import BaseServiceDB, PlayClockDB
+from src.core.models import BaseServiceDB, PlayClockDB, handle_service_exceptions
 from src.core.models.base import Database
 
 from ..logging_config import get_logger
 from .clock_manager import ClockManager
 from .schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
 
+ITEM = "PLAYCLOCK"
+
 
 class PlayClockServiceDB(BaseServiceDB):
-    def __init__(
-        self, database: Database, disable_background_tasks: bool = False
-    ) -> None:
+    def __init__(self, database: Database, disable_background_tasks: bool = False) -> None:
         super().__init__(database, PlayClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
         self.logger = get_logger("backend_logger_PlayClockServiceDB", self)
         self.logger.debug("Initialized PlayClockServiceDB")
 
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: PlayClockSchemaCreate) -> PlayClockDB:
         self.logger.debug(f"Create playclock: {item}")
         async with self.db.async_session() as session:
-            try:
-                playclock_result = PlayClockDB(
-                    playclock=item.playclock,
-                    playclock_status=item.playclock_status,
-                    match_id=item.match_id,
-                )
-                self.logger.debug("Is playclock exist")
-                is_exist = None
-                if item.match_id is not None:
-                    is_exist = await self.get_playclock_by_match_id(item.match_id)
-                if is_exist:
-                    self.logger.info(f"Playclock already exists: {playclock_result}")
-                    return playclock_result
-
-                session.add(playclock_result)
-                await session.commit()
-                await session.refresh(playclock_result)
-
-                self.logger.info(f"Playclock created: {playclock_result}")
+            playclock_result = PlayClockDB(
+                playclock=item.playclock,
+                playclock_status=item.playclock_status,
+                match_id=item.match_id,
+            )
+            self.logger.debug("Is playclock exist")
+            is_exist = None
+            if item.match_id is not None:
+                is_exist = await self.get_playclock_by_match_id(item.match_id)
+            if is_exist:
+                self.logger.info(f"Playclock already exists: {playclock_result}")
                 return playclock_result
-            except HTTPException:
-                raise
-            except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(
-                    f"Database error creating playclock with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"Database error creating playclock for match id({item.match_id})",
-                )
-            except (ValueError, KeyError, TypeError) as ex:
-                self.logger.warning(
-                    f"Data error creating playclock with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid data provided for playclock",
-                )
-            except NotFoundError as ex:
-                self.logger.info(
-                    f"Not found creating playclock with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(status_code=404, detail="Resource not found")
-            except Exception as ex:
-                self.logger.critical(
-                    f"Unexpected error creating playclock with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Internal server error creating playclock",
-                )
+
+            session.add(playclock_result)
+            await session.commit()
+            await session.refresh(playclock_result)
+
+            self.logger.info(f"Playclock created: {playclock_result}")
+            return playclock_result
 
     async def enable_match_data_clock_queues(
         self,
@@ -105,6 +68,7 @@ class PlayClockServiceDB(BaseServiceDB):
         self.logger.info(f"Playclock enabled successfully {playclock}")
         return match_queue
 
+    @handle_service_exceptions(item_name=ITEM, operation="updating")
     async def update(
         self,
         item_id: int,
@@ -113,133 +77,64 @@ class PlayClockServiceDB(BaseServiceDB):
     ) -> PlayClockDB:
         self.logger.debug(f"Update playclock id:{item_id} data: {item}")
         async with self.db.async_session() as session:
-            try:
-                result = await session.execute(
-                    select(PlayClockDB).where(PlayClockDB.id == item_id)
-                )
-                updated_item = result.scalars().one_or_none()
+            result = await session.execute(select(PlayClockDB).where(PlayClockDB.id == item_id))
+            updated_item = result.scalars().one_or_none()
 
-                if not updated_item:
-                    self.logger.warning(f"PlayClock not found: {item_id}")
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"PlayClock with id {item_id} not found",
-                    )
-
-                update_data = item.model_dump(exclude_unset=True)
-
-                for key, value in update_data.items():
-                    if value is not None:
-                        setattr(updated_item, key, value)
-
-                await session.flush()
-                await session.commit()
-                await session.refresh(updated_item)
-
-                self.logger.debug(f"Updated playclock: {updated_item}")
-                await self.trigger_update_playclock(item_id)
-
-                return updated_item
-            except HTTPException:
-                raise
-            except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(
-                    f"Database error updating playclock id:{item_id} {ex}", exc_info=True
-                )
+            if not updated_item:
+                self.logger.warning(f"PlayClock not found: {item_id}")
                 raise HTTPException(
-                    status_code=500,
-                    detail=f"Database error updating playclock with id {item_id}",
-                )
-            except (ValueError, KeyError, TypeError) as ex:
-                self.logger.warning(
-                    f"Data error updating playclock id:{item_id} {ex}", exc_info=True
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid data provided for playclock",
-                )
-            except NotFoundError as ex:
-                self.logger.info(
-                    f"Not found updating playclock id:{item_id} {ex}", exc_info=True
-                )
-                raise HTTPException(status_code=404, detail="Resource not found")
-            except Exception as ex:
-                self.logger.critical(
-                    f"Unexpected error updating playclock id:{item_id} {ex}", exc_info=True
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Internal server error updating playclock with id {item_id}",
+                    status_code=404,
+                    detail=f"PlayClock with id {item_id} not found",
                 )
 
+            update_data = item.model_dump(exclude_unset=True)
+
+            for key, value in update_data.items():
+                if value is not None:
+                    setattr(updated_item, key, value)
+
+            await session.flush()
+            await session.commit()
+            await session.refresh(updated_item)
+
+            self.logger.debug(f"Updated playclock: {updated_item}")
+            await self.trigger_update_playclock(item_id)
+
+            return updated_item
+
+    @handle_service_exceptions(item_name=ITEM, operation="updating")
     async def update_with_none(
         self,
         item_id: int,
         item: PlayClockSchemaUpdate,
         **kwargs,
     ) -> PlayClockDB:
-        self.logger.debug(
-            f"Update playclock with None allowed id:{item_id} data: {item}"
-        )
+        self.logger.debug(f"Update playclock with None allowed id:{item_id} data: {item}")
         async with self.db.async_session() as session:
-            try:
-                result = await session.execute(
-                    select(PlayClockDB).where(PlayClockDB.id == item_id)
-                )
-                updated_item = result.scalars().one_or_none()
+            result = await session.execute(select(PlayClockDB).where(PlayClockDB.id == item_id))
+            updated_item = result.scalars().one_or_none()
 
-                if not updated_item:
-                    self.logger.warning(f"PlayClock not found: {item_id}")
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"PlayClock with id {item_id} not found",
-                    )
-
-                update_data = item.model_dump(exclude_unset=True)
-
-                for key, value in update_data.items():
-                    if key != "match_id" or value is not None:
-                        setattr(updated_item, key, value)
-
-                await session.flush()
-                await session.commit()
-                await session.refresh(updated_item)
-
-                self.logger.debug(f"Updated playclock: {updated_item}")
-                await self.trigger_update_playclock(item_id)
-
-                return updated_item
-            except HTTPException:
-                raise
-            except (IntegrityError, SQLAlchemyError) as ex:
-                self.logger.error(
-                    f"Database error updating playclock id:{item_id} {ex}", exc_info=True
-                )
+            if not updated_item:
+                self.logger.warning(f"PlayClock not found: {item_id}")
                 raise HTTPException(
-                    status_code=500,
-                    detail=f"Database error updating playclock with id {item_id}",
+                    status_code=404,
+                    detail=f"PlayClock with id {item_id} not found",
                 )
-            except (ValueError, KeyError, TypeError) as ex:
-                self.logger.warning(
-                    f"Data error updating playclock id:{item_id} {ex}", exc_info=True
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid data provided for playclock",
-                )
-            except NotFoundError as ex:
-                self.logger.info(
-                    f"Not found updating playclock id:{item_id} {ex}", exc_info=True
-                )
-                raise HTTPException(status_code=404, detail="Resource not found")
-            except Exception as ex:
-                self.logger.critical(
-                    f"Unexpected error updating playclock id:{item_id} {ex}", exc_info=True
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Internal server error updating playclock with id {item_id}",
-                )
+
+            update_data = item.model_dump(exclude_unset=True)
+
+            for key, value in update_data.items():
+                if key != "match_id" or value is not None:
+                    setattr(updated_item, key, value)
+
+            await session.flush()
+            await session.commit()
+            await session.refresh(updated_item)
+
+            self.logger.debug(f"Updated playclock: {updated_item}")
+            await self.trigger_update_playclock(item_id)
+
+            return updated_item
 
     async def get_playclock_status(
         self,
@@ -345,9 +240,7 @@ class PlayClockServiceDB(BaseServiceDB):
         self,
         item_id: int,
     ) -> int:
-        self.logger.debug(
-            f"Decrementing playclock on one second for playclock id: {item_id}"
-        )
+        self.logger.debug(f"Decrementing playclock on one second for playclock id: {item_id}")
         result = await self.get_by_id(item_id)
         if result:
             updated_playclock = result.playclock
