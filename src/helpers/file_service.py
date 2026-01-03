@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from typing import TypedDict
 from urllib.parse import urlparse
@@ -32,8 +33,7 @@ class DownloadedAndResizedImagesPaths(TypedDict):
 class FileService:
     def __init__(
         self,
-        upload_dir: Path = Path(__file__).resolve().parent.parent.parent
-        / "static/uploads",
+        upload_dir: Path = Path(__file__).resolve().parent.parent.parent / "static/uploads",
     ):
         self.fs_service = FileSystemService(upload_dir)
         self.upload_service = UploadService(self.fs_service)
@@ -60,9 +60,7 @@ class FileService:
             f"and resize it for icon:{icon_height} and webview:{web_view_height}"
         )
 
-        data = await self.upload_service.upload_image_and_return_data(
-            sub_folder, upload_file
-        )
+        data = await self.upload_service.upload_image_and_return_data(sub_folder, upload_file)
 
         original_dest = data["dest"]
         original_filename = data["filename"]
@@ -100,9 +98,7 @@ class FileService:
                 "webview": str(rel_webview_dest),
             }
 
-            self.logger.info(
-                f"URLs for uploaded and resized images generated: {final_urls}"
-            )
+            self.logger.info(f"URLs for uploaded and resized images generated: {final_urls}")
             return final_urls
         except Exception as e:
             self.logger.error(
@@ -138,9 +134,7 @@ class FileService:
         force_redownload: bool = False,
     ) -> None:
         self.logger.debug(f"Initialize download and resize image from {img_url}")
-        self.logger.debug(
-            f"to full path with image filename {original_image_path_with_filename}"
-        )
+        self.logger.debug(f"to full path with image filename {original_image_path_with_filename}")
 
         image_path = await self.download_service.download_image(
             img_url,
@@ -178,6 +172,17 @@ class FileService:
         )
 
     @staticmethod
+    def _sanitize_image_title(image_title: str) -> str:
+        sanitized = convert_cyrillic_filename(image_title)
+        sanitized = sanitized.strip().replace(" ", "_")
+        sanitized = sanitized.replace("\\", "/")
+        sanitized = os.path.basename(sanitized)
+        sanitized = re.sub(r'[<>:"|?*]', "_", sanitized)
+        sanitized = re.sub(r"\.\.+", "_", sanitized)
+        sanitized = sanitized.lstrip("._")
+        return sanitized
+
+    @staticmethod
     def _generate_image_paths(
         image_url: str,
         image_type_prefix: str,
@@ -188,8 +193,7 @@ class FileService:
         path = urlparse(image_url).path
         ext = Path(path).suffix
 
-        converted_title = convert_cyrillic_filename(image_title)
-        image_filename = converted_title.strip().replace(" ", "_")
+        image_filename = FileService._sanitize_image_title(image_title)
         icon_filename = f"{image_filename}_{icon_height}px{ext}"
         webview_filename = f"{image_filename}_{web_view_height}px{ext}"
 
@@ -199,13 +203,9 @@ class FileService:
         webview_path = os.path.join(uploads_path, f"{main_path}{webview_filename}")
 
         static_uploads_path = "/static/uploads/"
-        relative_image_url = os.path.join(
-            static_uploads_path, main_path, f"{image_filename}{ext}"
-        )
+        relative_image_url = os.path.join(static_uploads_path, main_path, f"{image_filename}{ext}")
         relative_icon_url = os.path.join(static_uploads_path, main_path, icon_filename)
-        relative_webview_url = os.path.join(
-            static_uploads_path, main_path, webview_filename
-        )
+        relative_webview_url = os.path.join(static_uploads_path, main_path, webview_filename)
 
         return {
             "main_path": main_path,

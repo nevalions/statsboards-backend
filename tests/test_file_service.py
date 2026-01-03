@@ -97,9 +97,7 @@ class TestFileService:
 
     @pytest.mark.asyncio
     @patch.object(DownloadService, "fetch_image_data_from_url", new_callable=AsyncMock)
-    async def test_download_image(
-        self, mock_fetch, file_service, tmp_path, sample_image
-    ):
+    async def test_download_image(self, mock_fetch, file_service, tmp_path, sample_image):
         """Test downloading image from URL."""
         large_image_data = sample_image.getvalue() * 20
         mock_fetch.return_value = large_image_data
@@ -142,9 +140,7 @@ class TestFileService:
         assert image.size == (100, 100)
 
     @pytest.mark.asyncio
-    async def test_download_and_resize_image(
-        self, file_service, tmp_path, sample_image
-    ):
+    async def test_download_and_resize_image(self, file_service, tmp_path, sample_image):
         """Test downloading and resizing image."""
         img_url = "http://example.com/image.jpg"
         original_file_path = str(tmp_path / "images")
@@ -160,9 +156,7 @@ class TestFileService:
             "download_image",
             return_value=original_image_path,
         ):
-            with patch.object(
-                file_service.fs_service, "create_path", side_effect=lambda x: x
-            ):
+            with patch.object(file_service.fs_service, "create_path", side_effect=lambda x: x):
                 with patch.object(
                     file_service.image_service,
                     "resize_and_save_image",
@@ -220,9 +214,7 @@ class TestFileService:
 
     @pytest.mark.asyncio
     @patch.object(DownloadService, "fetch_image_data_from_url", new_callable=AsyncMock)
-    async def test_download_and_process_image(
-        self, mock_fetch, file_service, sample_image
-    ):
+    async def test_download_and_process_image(self, mock_fetch, file_service, sample_image):
         """Test downloading and processing image."""
         mock_fetch.return_value = sample_image.getvalue()
 
@@ -232,9 +224,7 @@ class TestFileService:
         icon_height = 100
         web_view_height = 400
 
-        with patch.object(
-            file_service, "download_and_resize_image", new_callable=AsyncMock
-        ):
+        with patch.object(file_service, "download_and_resize_image", new_callable=AsyncMock):
             result = await file_service.download_and_process_image(
                 img_url, image_type_prefix, image_title, icon_height, web_view_height
             )
@@ -262,9 +252,7 @@ class TestFileService:
 
         mock_download.return_value = original_image_path
 
-        with patch.object(
-            file_service.fs_service, "create_path", side_effect=lambda x: x
-        ):
+        with patch.object(file_service.fs_service, "create_path", side_effect=lambda x: x):
             with patch.object(
                 file_service.image_service,
                 "resize_and_save_image",
@@ -333,6 +321,54 @@ class TestFileService:
         assert "Komanda_100px.jpg" in result["icon_path"]
         assert "Komanda_400px.jpg" in result["webview_path"]
         assert "Komanda.jpg" in result["image_path"]
+
+    @staticmethod
+    def test_sanitize_image_title_removes_path_traversal():
+        """Test that path traversal sequences are sanitized from image titles."""
+        assert FileService._sanitize_image_title("../../etc/passwd") == "passwd"
+        assert FileService._sanitize_image_title("..\\..\\windows\\system32") == "system32"
+        assert FileService._sanitize_image_title("../../test.png") == "test.png"
+        assert FileService._sanitize_image_title("./test") == "test"
+        assert FileService._sanitize_image_title("../../../tmp/malicious") == "malicious"
+
+    @staticmethod
+    def test_sanitize_image_title_special_chars():
+        """Test that special characters are sanitized from image titles."""
+        assert FileService._sanitize_image_title("test/file") == "file"
+        assert FileService._sanitize_image_title("test\\file") == "file"
+        assert FileService._sanitize_image_title("test:file") == "test_file"
+        assert FileService._sanitize_image_title("test*file") == "test_file"
+        assert FileService._sanitize_image_title('test"file') == "test_file"
+        assert FileService._sanitize_image_title("test?file") == "test_file"
+        assert FileService._sanitize_image_title("test<file>") == "test_file_"
+        assert FileService._sanitize_image_title("test|file") == "test_file"
+
+    @staticmethod
+    def test_sanitize_image_title_consecutive_dots():
+        """Test that consecutive dots are sanitized from image titles."""
+        assert FileService._sanitize_image_title("test...file") == "test_file"
+        assert FileService._sanitize_image_title("test..file") == "test_file"
+        assert FileService._sanitize_image_title("...test") == "test"
+
+    @staticmethod
+    def test_sanitize_image_title_leading_dots():
+        """Test that leading dots and underscores are sanitized from image titles."""
+        assert FileService._sanitize_image_title(".hidden") == "hidden"
+        assert FileService._sanitize_image_title("..hidden") == "hidden"
+        assert FileService._sanitize_image_title("...hidden") == "hidden"
+
+    @staticmethod
+    def test_sanitize_image_title_cyrillic():
+        """Test that Cyrillic characters are converted correctly."""
+        assert FileService._sanitize_image_title("Команда") == "Komanda"
+        assert FileService._sanitize_image_title("Турнир 2023") == "Turnir_2023"
+
+    @staticmethod
+    def test_sanitize_image_title_normal_filenames():
+        """Test that normal filenames pass through sanitization."""
+        assert FileService._sanitize_image_title("normal_image.jpg") == "normal_image.jpg"
+        assert FileService._sanitize_image_title("team-logo") == "team-logo"
+        assert FileService._sanitize_image_title("Team Logo 2024") == "Team_Logo_2024"
 
 
 class TestUploadService:
