@@ -430,4 +430,32 @@ class MatchCRUDRouter(
                 self.logger.error(f"Error fetching stats for match {match_id}: {ex}", exc_info=True)
                 raise HTTPException(status_code=500, detail="Internal server error")
 
+        @router.get(
+            "/id/{match_id}/full-context/",
+            summary="Get match initialization context",
+            description="Get all data needed for match initialization: match, teams, sport, positions, players",
+            responses={
+                200: {"description": "Full context retrieved successfully"},
+                404: {"description": "Match not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def get_match_full_context_endpoint(match_id: int):
+            self.logger.debug(f"Get match full context endpoint for match_id:{match_id}")
+            try:
+                context = await self.service.get_match_full_context(match_id)
+                if not context:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Match {match_id} not found",
+                    )
+                return context
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error fetching full context for match {match_id}: {ex}", exc_info=True
+                )
+                raise HTTPException(status_code=500, detail="Internal server error")
+
         return router

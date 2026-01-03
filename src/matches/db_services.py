@@ -8,6 +8,7 @@ from src.core.models import (
     MatchDB,
     PlayClockDB,
     PlayerMatchDB,
+    PlayerTeamTournamentDB,
     ScoreboardDB,
     SponsorLineDB,
     SportDB,
@@ -335,9 +336,175 @@ class MatchServiceDB(BaseServiceDB):
             if hasattr(result, "__len__"):
                 if len(result) > 0:
                     return result[0]  # type: ignore[return-value]
-                return result  # type: ignore[return-value]
+                return None
             return result  # type: ignore[return-value]
         return None
+
+    async def _get_available_players(
+        self, session, team_id: int, tournament_id: int, match_id: int
+    ) -> list[dict]:
+        """Get players available for match (not already in match)."""
+        from src.core.models.player import PlayerDB
+
+        subquery = (
+            select(PlayerMatchDB.player_team_tournament_id)
+            .where(PlayerMatchDB.match_id == match_id)
+            .where(PlayerMatchDB.team_id == team_id)
+        )
+
+        stmt = (
+            select(PlayerTeamTournamentDB)
+            .where(PlayerTeamTournamentDB.team_id == team_id)
+            .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+            .where(~PlayerTeamTournamentDB.id.in_(subquery))
+            .options(
+                selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                selectinload(PlayerTeamTournamentDB.position),
+                selectinload(PlayerTeamTournamentDB.team),
+            )
+        )
+
+        results = await session.execute(stmt)
+        available_players = results.scalars().all()
+
+        return [
+            {
+                "id": pt.id,
+                "player_id": pt.player_id,
+                "player_team_tournament": pt,
+                "person": pt.player.person if pt.player else None,
+                "position": pt.position,
+                "team": pt.team,
+            }
+            for pt in available_players
+        ]
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="getting match full context",
+        return_value_on_not_found=None,
+    )
+    async def get_match_full_context(self, match_id: int) -> dict | None:
+        """Get match with all initialization data: teams, sport, positions, players."""
+        self.logger.debug(f"Get match full context for {ITEM} id:{match_id}")
+
+        from src.core.models.player import PlayerDB
+
+        async with self.db.async_session() as session:
+            stmt = (
+                select(MatchDB)
+                .where(MatchDB.id == match_id)
+                .options(
+                    selectinload(MatchDB.team_a),
+                    selectinload(MatchDB.team_b),
+                    selectinload(MatchDB.tournaments),
+                )
+            )
+
+            result = await session.execute(stmt)
+            match = result.scalar_one_or_none()
+
+            if not match:
+                return None
+
+            tournament = match.tournaments if match.tournaments else None
+
+            if tournament:
+                stmt_sport = (
+                    select(SportDB)
+                    .where(SportDB.id == tournament.sport_id)
+                    .options(selectinload(SportDB.positions))
+                )
+                result_sport = await session.execute(stmt_sport)
+                sport = result_sport.scalar_one_or_none()
+            else:
+                sport = None
+
+            stmt_players = (
+                select(PlayerMatchDB)
+                .where(PlayerMatchDB.match_id == match_id)
+                .options(
+                    selectinload(PlayerMatchDB.player_team_tournament)
+                    .selectinload(PlayerTeamTournamentDB.player)
+                    .selectinload(PlayerDB.person),
+                    selectinload(PlayerMatchDB.match_position),
+                    selectinload(PlayerMatchDB.team),
+                )
+            )
+            result_players = await session.execute(stmt_players)
+            player_matches = result_players.scalars().all()
+
+            home_available = await self._get_available_players(
+                session, match.team_a_id, match.tournament_id, match_id
+            )
+            away_available = await self._get_available_players(
+                session, match.team_b_id, match.tournament_id, match_id
+            )
+
+            home_roster = [
+                {
+                    "id": pm.id,
+                    "player_id": pm.player_team_tournament.player_id
+                    if pm.player_team_tournament
+                    else None,
+                    "match_player": pm,
+                    "player_team_tournament": pm.player_team_tournament,
+                    "player": pm.player_team_tournament.player
+                    if pm.player_team_tournament
+                    else None,
+                    "person": (
+                        pm.player_team_tournament.player.person
+                        if pm.player_team_tournament and pm.player_team_tournament.player
+                        else None
+                    ),
+                    "position": pm.match_position,
+                    "team": pm.team,
+                }
+                for pm in player_matches
+                if pm.team_id == match.team_a_id
+            ]
+
+            away_roster = [
+                {
+                    "id": pm.id,
+                    "player_id": pm.player_team_tournament.player_id
+                    if pm.player_team_tournament
+                    else None,
+                    "match_player": pm,
+                    "player_team_tournament": pm.player_team_tournament,
+                    "player": pm.player_team_tournament.player
+                    if pm.player_team_tournament
+                    else None,
+                    "person": (
+                        pm.player_team_tournament.player.person
+                        if pm.player_team_tournament and pm.player_team_tournament.player
+                        else None
+                    ),
+                    "position": pm.match_position,
+                    "team": pm.team,
+                }
+                for pm in player_matches
+                if pm.team_id == match.team_b_id
+            ]
+
+            return {
+                "match": match.__dict__,
+                "teams": {
+                    "home": match.team_a.__dict__ if match.team_a else None,
+                    "away": match.team_b.__dict__ if match.team_b else None,
+                },
+                "sport": {
+                    **(sport.__dict__ if sport else {}),
+                    "positions": [pos.__dict__ for pos in sport.positions] if sport else [],
+                },
+                "tournament": tournament.__dict__ if tournament else None,
+                "players": {
+                    "home_roster": home_roster,
+                    "away_roster": away_roster,
+                    "available_home": home_available,
+                    "available_away": away_available,
+                },
+            }
 
     # async def get_scoreboard_by_match(
     #     self,

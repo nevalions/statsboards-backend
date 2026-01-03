@@ -355,3 +355,52 @@ class TestMatchViews:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
+
+    async def test_get_match_full_context_endpoint(self, client, test_db):
+        """Test getting match full context endpoint."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchSchemaCreate(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date="2025-01-01",
+                week=1,
+            )
+        )
+
+        response = await client.get(f"/api/matches/id/{match.id}/full-context/")
+
+        assert response.status_code == 200
+        context = response.json()
+        assert "match" in context
+        assert "teams" in context
+        assert "sport" in context
+        assert "tournament" in context
+        assert "players" in context
+        assert context["match"]["id"] == match.id
+        assert context["teams"]["home"]["id"] == team_a.id
+        assert context["teams"]["away"]["id"] == team_b.id
+        assert context["tournament"]["id"] == tournament.id
+
+    async def test_get_match_full_context_not_found(self, client):
+        """Test getting match full context for non-existent match."""
+        response = await client.get("/api/matches/id/99999/full-context/")
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()

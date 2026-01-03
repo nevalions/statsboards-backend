@@ -579,7 +579,153 @@ interface ErrorResponse {
 {
   "detail": "Conflict - player match creation failed"
 }
+ ```
+
+### GET /api/matches/id/{match_id}/full-context/
+
+Get all data needed for match initialization: match, teams, sport with positions, tournament, players (home roster, away roster, available home, available away).
+
+**Endpoint:**
 ```
+GET /api/matches/id/{match_id}/full-context/
+```
+
+**Path Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `match_id` | integer | Yes | Match ID |
+
+**Response (200 OK):**
+
+```json
+{
+  "match": {
+    "id": 123,
+    "match_eesl_id": 100,
+    "team_a_id": 1,
+    "team_b_id": 2,
+    "tournament_id": 5,
+    "sport_id": 1,
+    "match_date": "2025-01-03T10:00:00",
+    "week": 1
+  },
+  "teams": {
+    "home": {
+      "id": 1,
+      "title": "Team A",
+      "team_logo_url": "https://...",
+      "team_color": "#ff0000"
+    },
+    "away": {
+      "id": 2,
+      "title": "Team B",
+      "team_logo_url": "https://...",
+      "team_color": "#0000ff"
+    }
+  },
+  "sport": {
+    "id": 1,
+    "title": "American Football",
+    "description": "Football rules...",
+    "positions": [
+      {
+        "id": 1,
+        "title": "Quarterback",
+        "sport_id": 1
+      },
+      {
+        "id": 2,
+        "title": "Linebacker",
+        "sport_id": 1
+      }
+    ]
+  },
+  "tournament": {
+    "id": 5,
+    "title": "Tournament 2026",
+    "sport_id": 1,
+    "season_id": 1
+  },
+  "players": {
+    "home_roster": [
+      {
+        "id": 456,
+        "player_id": 789,
+        "match_player": {
+          "id": 456,
+          "match_number": "10",
+          "team_id": 1,
+          "match_position_id": 1
+        },
+        "player_team_tournament": {
+          "id": 789,
+          "player_id": 789,
+          "team_id": 1,
+          "tournament_id": 5,
+          "position_id": 1
+        },
+        "player": {
+          "id": 789,
+          "person_id": 456,
+          "sport_id": 1
+        },
+        "person": {
+          "id": 456,
+          "first_name": "John",
+          "second_name": "Doe",
+          "person_photo_url": "https://..."
+        },
+        "position": {
+          "id": 1,
+          "title": "Quarterback",
+          "sport_id": 1
+        },
+        "team": {
+          "id": 1,
+          "title": "Team A"
+        }
+      }
+    ],
+    "away_roster": [],
+    "available_home": [],
+    "available_away": [
+      {
+        "id": 790,
+        "player_id": 790,
+        "player_team_tournament": {
+          "id": 790,
+          "player_id": 790,
+          "team_id": 2,
+          "tournament_id": 5,
+          "position_id": 2
+        },
+        "person": {
+          "id": 457,
+          "first_name": "Jane",
+          "second_name": "Smith",
+          "person_photo_url": "https://..."
+        },
+        "position": {
+          "id": 2,
+          "title": "Linebacker",
+          "sport_id": 1
+        },
+        "team": {
+          "id": 2,
+          "title": "Team B"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Match not found |
+| 500 | Internal server error |
 
 ---
 

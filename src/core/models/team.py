@@ -92,6 +92,35 @@ class TeamDB(Base):
         back_populates="teams",
     )
 
+    matches_as_team_a: Mapped[list["MatchDB"]] = relationship(
+        "MatchDB",
+        foreign_keys="MatchDB.team_a_id",
+        back_populates="team_a",
+    )
+
+    matches_as_team_b: Mapped[list["MatchDB"]] = relationship(
+        "MatchDB",
+        foreign_keys="MatchDB.team_b_id",
+        back_populates="team_b",
+    )
+
+    sponsor_line_id: Mapped[int] = mapped_column(
+        ForeignKey("sponsor_line.id"),
+        nullable=True,
+    )
+
+    matches_as_team_a: Mapped[list["MatchDB"]] = relationship(
+        "MatchDB",
+        foreign_keys="MatchDB.team_a_id",
+        back_populates="team_a",
+    )
+
+    matches_as_team_b: Mapped[list["MatchDB"]] = relationship(
+        "MatchDB",
+        foreign_keys="MatchDB.team_b_id",
+        back_populates="team_b",
+    )
+
     sponsor_line_id: Mapped[int] = mapped_column(
         ForeignKey("sponsor_line.id"),
         nullable=True,
