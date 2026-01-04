@@ -23,6 +23,9 @@ __all__ = (
     "PositionDB",
     "PlayerMatchDB",
     "FootballEventDB",
+    "UserDB",
+    "RoleDB",
+    "UserRoleDB",
 )
 
 from src.core.decorators import handle_service_exceptions
@@ -39,6 +42,7 @@ from .player import PlayerDB
 from .player_match import PlayerMatchDB
 from .player_team_tournament import PlayerTeamTournamentDB
 from .position import PositionDB
+from .role import RoleDB
 from .scoreboard import ScoreboardDB
 from .season import SeasonDB
 from .sponsor import SponsorDB
@@ -48,3 +52,5 @@ from .sport import SportDB
 from .team import TeamDB
 from .team_tournament import TeamTournamentDB
 from .tournament import TournamentDB
+from .user import UserDB
+from .user_role import UserRoleDB

@@ -133,6 +133,47 @@ async def test_app(test_db):
     from src.teams.views import TeamAPIRouter
     from src.tournaments.db_services import TournamentServiceDB
     from src.tournaments.views import TournamentAPIRouter
+    from src.users.db_services import UserServiceDB
+    from src.users.views import UserAPIRouter, get_user_router
+    from src.auth.views import api_auth_router
+
+    __all__ = [
+        "FootballEventServiceDB",
+        "GameClockServiceDB",
+        "PlayerServiceDB",
+        "PlayerTeamTournamentServiceDB",
+        "PositionServiceDB",
+        "ScoreboardServiceDB",
+        "Seasons.db_services import Season_views",
+        "Seasons.views import Season_views_router",
+        "seasons.db_services import SeasonServiceDB",
+        "SponsorLineServiceDB",
+        "sponsor_lines.views import SponsorLineAPIRouter",
+        "sponsors.db_services import SponsorServiceDB",
+        "sponsors.views import SponsorAPIRouter",
+        "sports.db_services import SportServiceDB",
+        "sports.views import SportAPIRouter",
+        "team_tournament.db_services import TeamTournamentServiceDB",
+        "team_tournament.views import TeamTournamentAPIRouter",
+        "UserServiceDB",
+        "users.views import UserAPIRouter",
+        "users.views import get_user_router",
+    ]
+
+    from src.seasons.db_services import SeasonServiceDB
+    from src.seasons.views import SeasonAPIRouter
+    from src.sponsor_lines.db_services import SponsorLineServiceDB
+    from src.sponsor_lines.views import SponsorLineAPIRouter
+    from src.sponsors.db_services import SponsorServiceDB
+    from src.sponsors.views import SponsorAPIRouter
+    from src.sports.db_services import SportServiceDB
+    from src.sports.views import SportAPIRouter
+    from src.team_tournament.db_services import TeamTournamentServiceDB
+    from src.team_tournament.views import TeamTournamentRouter
+    from src.teams.db_services import TeamServiceDB
+    from src.teams.views import TeamAPIRouter
+    from src.tournaments.db_services import TournamentServiceDB
+    from src.tournaments.views import TournamentAPIRouter
 
     app = FastAPI()
     match_service = MatchServiceDB(test_db)
@@ -157,6 +198,9 @@ async def test_app(test_db):
     app.include_router(TeamTournamentRouter(TeamTournamentServiceDB(test_db)).route())
     app.include_router(TeamAPIRouter(TeamServiceDB(test_db)).route())
     app.include_router(TournamentAPIRouter(TournamentServiceDB(test_db)).route())
+    app.include_router(api_auth_router)
+    app.include_router(UserAPIRouter(UserServiceDB(test_db)).route())
+    app.include_router(get_user_router())
 
     # Import routers that are already instantiated at module level - not included in test app
     # from tests.fixtures import api_player_match_router, api_sponsor_sponsor_line_router

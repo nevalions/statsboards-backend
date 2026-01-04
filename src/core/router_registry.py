@@ -79,9 +79,7 @@ class RouterRegistry:
                                 enabled=True,
                                 priority=100,
                             )
-                            logger.info(
-                                f"Auto-discovered router: {module_dir.name}.{attr_name}"
-                            )
+                            logger.info(f"Auto-discovered router: {module_dir.name}.{attr_name}")
             except Exception as e:
                 logger.error(
                     f"Failed to discover routers in {module_dir.name}: {e}",
@@ -96,9 +94,7 @@ class RouterRegistry:
             module = importlib.import_module(config.module_path)
             router = getattr(module, config.router_name)
             if not isinstance(router, APIRouter):
-                raise TypeError(
-                    f"Expected APIRouter, got {type(router)} for {config.router_name}"
-                )
+                raise TypeError(f"Expected APIRouter, got {type(router)} for {config.router_name}")
             self._loaded_routers[config.router_name] = router
             logger.debug(f"Loaded router: {config.module_path}.{config.router_name}")
             return router
@@ -142,9 +138,7 @@ def configure_routers(registry: RouterRegistry) -> RouterRegistry:
     #     "src.tournaments", "template_tournament_router", priority=31
     # )
     registry.register_router("src.teams", "api_team_router", priority=40)
-    registry.register_router(
-        "src.team_tournament", "api_team_tournament_router", priority=50
-    )
+    registry.register_router("src.team_tournament", "api_team_tournament_router", priority=50)
     registry.register_router("src.matches", "api_match_crud_router", priority=60)
     registry.register_router("src.matches", "api_match_websocket_router", priority=61)
     registry.register_router("src.matches", "api_match_parser_router", priority=62)
@@ -154,9 +148,7 @@ def configure_routers(registry: RouterRegistry) -> RouterRegistry:
     registry.register_router("src.gameclocks", "api_gameclock_router", priority=81)
     registry.register_router("src.scoreboards", "api_scoreboards_router", priority=90)
     registry.register_router("src.sponsors", "api_sponsor_router", priority=100)
-    registry.register_router(
-        "src.sponsor_lines", "api_sponsor_line_router", priority=101
-    )
+    registry.register_router("src.sponsor_lines", "api_sponsor_line_router", priority=101)
     registry.register_router(
         "src.sponsor_sponsor_line_connection",
         "api_sponsor_sponsor_line_router",
@@ -170,12 +162,9 @@ def configure_routers(registry: RouterRegistry) -> RouterRegistry:
         priority=130,
     )
     registry.register_router("src.positions", "api_position_router", priority=140)
-    registry.register_router(
-        "src.player_match", "api_player_match_router", priority=150
-    )
-    registry.register_router(
-        "src.football_events", "api_football_event_router", priority=160
-    )
-    registry.register_router("src.seasons", "api_pars_season_router", priority=200)
+    registry.register_router("src.player_match", "api_player_match_router", priority=150)
+    registry.register_router("src.football_events", "api_football_event_router", priority=160)
+    registry.register_router("src.auth", "api_auth_router", priority=190)
+    registry.register_router("src.users", "api_user_router", priority=200)
 
     return registry

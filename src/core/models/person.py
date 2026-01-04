@@ -8,6 +8,7 @@ from src.core.models import Base
 
 if TYPE_CHECKING:
     from .player import PlayerDB
+    from .user import UserDB
 
 
 class PersonDB(Base):
@@ -64,5 +65,12 @@ class PersonDB(Base):
         "PlayerDB",
         cascade="all, delete-orphan",
         back_populates="person",
+        passive_deletes=True,
+    )
+
+    user: Mapped["UserDB"] = relationship(
+        "UserDB",
+        back_populates="person",
+        cascade="all, delete-orphan",
         passive_deletes=True,
     )

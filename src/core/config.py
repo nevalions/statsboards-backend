@@ -261,6 +261,18 @@ class Settings(BaseSettings):
         description="Logging configuration file name",
     )
     static_main_path_str: str = Field(default="static", description="Static files path")
+    secret_key: str = Field(
+        default="your-secret-key-here-change-in-production",
+        description="Secret key for JWT token generation",
+    )
+    algorithm: str = Field(
+        default="HS256",
+        description="JWT algorithm",
+    )
+    access_token_expire_minutes: int = Field(
+        default=60 * 24,
+        description="Access token expiration time in minutes (default 1 day)",
+    )
 
     @property
     def static_main_path(self) -> Path:

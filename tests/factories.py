@@ -1,4 +1,5 @@
 import factory
+from typing import TYPE_CHECKING
 
 from src.matches.schemas import MatchSchemaCreate
 from src.person.schemas import PersonSchemaCreate
@@ -11,6 +12,10 @@ from src.sports.schemas import SportSchemaCreate
 from src.teams.schemas import TeamSchemaCreate
 from src.tournaments.schemas import TournamentSchemaCreate
 from tests.test_data import TestData
+
+if TYPE_CHECKING:
+    from src.auth.schemas import RoleSchemaCreate
+    from src.users.schemas import UserSchemaCreate
 
 
 class SportFactorySample(factory.Factory):
@@ -26,9 +31,7 @@ class SportFactoryAny(factory.Factory):
         model = SportSchemaCreate
 
     title = factory.Sequence(lambda n: f"{TestData.get_sport_data().title} + {n}")
-    description = factory.Sequence(
-        lambda n: f"{TestData.get_sport_data().description} + {n}"
-    )
+    description = factory.Sequence(lambda n: f"{TestData.get_sport_data().description} + {n}")
 
 
 class SeasonFactorySample(factory.Factory):
@@ -36,9 +39,7 @@ class SeasonFactorySample(factory.Factory):
         model = SeasonSchemaCreate
 
     year = factory.Sequence(lambda n: TestData.get_season_data().year)
-    description = factory.Sequence(
-        lambda n: f"{TestData.get_season_data().description}"
-    )
+    description = factory.Sequence(lambda n: f"{TestData.get_season_data().description}")
 
 
 class SeasonFactoryAny(factory.Factory):
@@ -46,9 +47,7 @@ class SeasonFactoryAny(factory.Factory):
         model = SeasonSchemaCreate
 
     year = factory.Sequence(lambda n: TestData.get_season_data().year + 10)
-    description = factory.Sequence(
-        lambda n: f"{TestData.get_season_data().description} + {n}"
-    )
+    description = factory.Sequence(lambda n: f"{TestData.get_season_data().description} + {n}")
 
 
 class TournamentFactory(factory.Factory):
@@ -207,3 +206,22 @@ class SponsorLineFactory(factory.Factory):
 
     title = factory.Sequence(lambda n: f"Sponsor Line {n}")
     is_visible = False
+
+
+class UserFactory(factory.Factory):
+    class Meta:
+        model = "UserSchemaCreate"
+
+    username = factory.Sequence(lambda n: f"user{n}")
+    email = factory.Sequence(lambda n: f"user{n}@example.com")
+    password = "SecurePass123!"
+    person_id = None
+    is_active = True
+
+
+class RoleFactory(factory.Factory):
+    class Meta:
+        model = "RoleSchemaCreate"
+
+    name = "user"
+    description = "Basic viewer role"
