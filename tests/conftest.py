@@ -44,8 +44,32 @@ async def test_db():
 
     # Create tables at start of each test (faster than migrations)
     async with database.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+
+    # Seed default roles
+    from src.core.models.role import RoleDB
+    from sqlalchemy import select
+
+    async with database.async_session() as session:
+        # Check if roles already exist (for parallel test execution)
+        existing_roles = await session.execute(select(RoleDB.name))
+        existing_names = {r[0] for r in existing_roles.fetchall()}
+
+        if not existing_names:
+            default_roles_data = [
+                ("user", "Basic viewer role"),
+                ("admin", "Administrator with full access"),
+                ("editor", "Can edit content"),
+                ("player", "Player account"),
+                ("coach", "Coach account"),
+                ("streamer", "Streamer account"),
+            ]
+
+            for name, description in default_roles_data:
+                role = RoleDB(name=name, description=description)
+                session.add(role)
+
+            await session.commit()
 
     # Use a transactional connection for tests
     async with database.engine.connect() as connection:

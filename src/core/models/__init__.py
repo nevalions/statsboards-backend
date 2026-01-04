@@ -25,7 +25,6 @@ __all__ = (
     "FootballEventDB",
     "UserDB",
     "RoleDB",
-    "UserRoleDB",
 )
 
 from src.core.decorators import handle_service_exceptions

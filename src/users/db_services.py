@@ -1,6 +1,5 @@
 """User domain database service."""
 
-
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -10,7 +9,6 @@ from src.core.models import (
     BaseServiceDB,
     RoleDB,
     UserDB,
-    UserRoleDB,
     handle_service_exceptions,
 )
 from src.core.models.base import Database
@@ -29,7 +27,7 @@ class UserServiceDB(BaseServiceDB):
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: UserSchemaCreate) -> UserDB:
-        """Create a new user with hashed password.
+        """Create a new user with hashed password and assign default 'user' role.
 
         Args:
             item: User creation schema.
@@ -42,6 +40,13 @@ class UserServiceDB(BaseServiceDB):
 
         user = UserDB(**item_dict)
         async with self.db.async_session() as session:
+            stmt = select(RoleDB).where(RoleDB.name == "user")
+            results = await session.execute(stmt)
+            role = results.scalar_one_or_none()
+
+            if role:
+                user.roles = [role]
+
             session.add(user)
             await session.commit()
             await session.refresh(user)
@@ -88,11 +93,7 @@ class UserServiceDB(BaseServiceDB):
         """
         self.logger.debug(f"Get {ITEM} by id:{user_id} with roles")
         async with self.db.async_session() as session:
-            stmt = (
-                select(UserDB)
-                .where(UserDB.id == user_id)
-                .options(selectinload(UserDB.roles).joinedload(UserRoleDB.role))
-            )
+            stmt = select(UserDB).where(UserDB.id == user_id).options(selectinload(UserDB.roles))
             results = await session.execute(stmt)
             return results.scalar_one_or_none()
 
@@ -185,7 +186,7 @@ class UserServiceDB(BaseServiceDB):
         self,
         user_id: int,
         role_id: int,
-    ) -> UserRoleDB:
+    ) -> UserDB:
         """Assign a role to a user.
 
         Args:
@@ -193,14 +194,14 @@ class UserServiceDB(BaseServiceDB):
             role_id: Role ID.
 
         Returns:
-            UserRoleDB: Created user-role relationship.
+            UserDB: Updated user.
 
         Raises:
             HTTPException: If user or role not found, or relationship already exists.
         """
         self.logger.debug(f"Assign role {role_id} to {ITEM} id:{user_id}")
         async with self.db.async_session() as session:
-            stmt = select(UserDB).where(UserDB.id == user_id)
+            stmt = select(UserDB).where(UserDB.id == user_id).options(selectinload(UserDB.roles))
             results = await session.execute(stmt)
             user = results.scalar_one_or_none()
 
@@ -220,24 +221,16 @@ class UserServiceDB(BaseServiceDB):
                     detail=f"Role with id {role_id} not found",
                 )
 
-            stmt = select(UserRoleDB).where(
-                UserRoleDB.user_id == user_id,
-                UserRoleDB.role_id == role_id,
-            )
-            results = await session.execute(stmt)
-            existing = results.scalar_one_or_none()
-
-            if existing:
+            if role in user.roles:
                 raise HTTPException(
                     status_code=400,
                     detail=f"User already has role {role.name}",
                 )
 
-            user_role = UserRoleDB(user_id=user_id, role_id=role_id)
-            session.add(user_role)
+            user.roles.append(role)
             await session.commit()
-            await session.refresh(user_role)
-            return user_role
+            await session.refresh(user)
+            return user
 
     async def remove_role(
         self,
@@ -255,20 +248,33 @@ class UserServiceDB(BaseServiceDB):
         """
         self.logger.debug(f"Remove role {role_id} from {ITEM} id:{user_id}")
         async with self.db.async_session() as session:
-            stmt = select(UserRoleDB).where(
-                UserRoleDB.user_id == user_id,
-                UserRoleDB.role_id == role_id,
-            )
+            stmt = select(UserDB).where(UserDB.id == user_id).options(selectinload(UserDB.roles))
             results = await session.execute(stmt)
-            user_role = results.scalar_one_or_none()
+            user = results.scalar_one_or_none()
 
-            if user_role is None:
+            if user is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"{ITEM} with id {user_id} not found",
+                )
+
+            stmt = select(RoleDB).where(RoleDB.id == role_id)
+            results = await session.execute(stmt)
+            role = results.scalar_one_or_none()
+
+            if role is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Role with id {role_id} not found",
+                )
+
+            if role not in user.roles:
                 raise HTTPException(
                     status_code=404,
                     detail="User does not have this role",
                 )
 
-            await session.delete(user_role)
+            user.roles.remove(role)
             await session.commit()
 
     async def authenticate(

@@ -49,9 +49,7 @@ class Database:
         except SQLAlchemyError as e:
             self.logger.error(f"Error initializing Database engine: {e}", exc_info=True)
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error initializing Database: {e}", exc_info=True
-            )
+            self.logger.error(f"Unexpected error initializing Database: {e}", exc_info=True)
 
     async def test_connection(self, test_query: str = "SELECT 1"):
         try:
@@ -59,9 +57,7 @@ class Database:
                 await connection.execute(text(test_query))
                 self.logger.info("Database connection successful.")
         except SQLAlchemyError as e:
-            self.logger.error(
-                f"SQLAlchemy error during connection test: {e}", exc_info=True
-            )
+            self.logger.error(f"SQLAlchemy error during connection test: {e}", exc_info=True)
             raise
         except OSError as e:
             self.logger.critical(f"OS error during connection test: {e}", exc_info=True)
@@ -97,9 +93,7 @@ class Database:
 
             self.logger.info("Database connection validation complete")
         except Exception as e:
-            self.logger.critical(
-                f"Database connection validation failed: {e}", exc_info=True
-            )
+            self.logger.critical(f"Database connection validation failed: {e}", exc_info=True)
             raise
 
     def get_pool_status(self) -> dict[str, Any]:
@@ -162,19 +156,13 @@ class BaseServiceDB(
 
             field_name = eesl_field_name or unique_field_name
             if not field_name:
-                raise ValueError(
-                    "Either eesl_field_name or unique_field_name must be provided"
-                )
+                raise ValueError("Either eesl_field_name or unique_field_name must be provided")
 
             field_value = unique_field_value or getattr(item_schema, field_name, None)
 
             if field_value:
-                self.logger.debug(
-                    f"Get {self.model.__name__} {field_name}:{field_value}"
-                )
-                existing_item = await self.get_item_by_field_value(
-                    field_value, field_name
-                )
+                self.logger.debug(f"Get {self.model.__name__} {field_name}:{field_value}")
+                existing_item = await self.get_item_by_field_value(field_value, field_name)
 
                 if existing_item:
                     self.logger.debug(
@@ -185,30 +173,20 @@ class BaseServiceDB(
                     )
                 else:
                     self.logger.debug(f"No {self.model.__name__} in DB, create new")
-                    return await self._create_item(
-                        item_schema, model_factory, **create_kwargs
-                    )
+                    return await self._create_item(item_schema, model_factory, **create_kwargs)
             else:
                 self.logger.debug(f"No {field_name} in schema, create new")
-                return await self._create_item(
-                    item_schema, model_factory, **create_kwargs
-                )
+                return await self._create_item(item_schema, model_factory, **create_kwargs)
         except Exception as ex:
-            self.logger.error(
-                f"{self.model.__name__} returned an error: {ex}", exc_info=True
-            )
+            self.logger.error(f"{self.model.__name__} returned an error: {ex}", exc_info=True)
             raise HTTPException(
                 status_code=409,
                 detail=f"{self.model.__name__} ({item_schema}) returned some error",
             )
 
-    async def _update_item(
-        self, existing_item, item_schema, field_name: str, field_value: Any
-    ):
+    async def _update_item(self, existing_item, item_schema, field_name: str, field_value: Any):
         if field_name.endswith("_eesl_id"):
-            return await self.update_item_by_eesl_id(
-                field_name, field_value, item_schema
-            )
+            return await self.update_item_by_eesl_id(field_name, field_value, item_schema)
         else:
             return await self.update(existing_item.id, item_schema)
 

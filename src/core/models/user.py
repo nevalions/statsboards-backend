@@ -7,7 +7,7 @@ from src.core.models import Base
 
 if TYPE_CHECKING:
     from .person import PersonDB
-    from .user_role import UserRoleDB
+    from .role import RoleDB
 
 
 class UserDB(Base):
@@ -49,8 +49,8 @@ class UserDB(Base):
         back_populates="user",
     )
 
-    roles: Mapped[list["UserRoleDB"]] = relationship(
-        "UserRoleDB",
-        back_populates="user",
-        cascade="all, delete-orphan",
+    roles: Mapped[list["RoleDB"]] = relationship(
+        "RoleDB",
+        secondary="user_role",
+        back_populates="users",
     )
