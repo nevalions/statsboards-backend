@@ -213,8 +213,405 @@ python validate_config.py
 - Always set `nullable=True` for optional fields
 - Use `default` and `server_default` for default values
 - Define relationships with proper `back_populates`
-- Use `TYPE_CHECKING` block for forward references
+- Use `TYPE_CHECKING` block for forward references (see "Forward References with TYPE_CHECKING" below)
 - Include `__table_args__ = {"extend_existing": True}` in all models
+
+### Creating New Models with Alembic
+
+**Migration Naming Convention**: `YYYY_MM_DD_HHMM-{hash}_{snake_case_description}.py`
+
+#### One-to-One Relationships
+
+**Pattern**: Foreign key column + `unique=True` constraint
+
+```python
+# src/core/models/scoreboard.py
+from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.models import Base
+
+if TYPE_CHECKING:
+    from .match import MatchDB
+
+
+class ScoreboardDB(Base):
+    __tablename__ = "scoreboard"
+    __table_args__ = {"extend_existing": True}
+
+    match_id: Mapped[int] = mapped_column(
+        ForeignKey("match.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True,  # Makes this one-to-one
+    )
+
+    matches: Mapped["MatchDB"] = relationship(
+        "MatchDB",
+        back_populates="match_scoreboard",
+    )
+```
+
+**Alembic Migration**:
+```python
+def upgrade() -> None:
+    op.add_column("scoreboard", sa.Column("match_id", sa.Integer(), nullable=True))
+    op.create_foreign_key(
+        None, "scoreboard", "match", ["match_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_unique_constraint(None, "scoreboard", ["match_id"])
+
+def downgrade() -> None:
+    op.drop_constraint(None, "scoreboard", type_="foreignkey")
+    op.drop_constraint(None, "scoreboard", type_="unique")
+    op.drop_column("scoreboard", "match_id")
+```
+
+#### One-to-Many Relationships
+
+**Pattern**: Parent-child with `cascade="all, delete-orphan"` and `passive_deletes=True`
+
+```python
+# src/core/models/match.py
+class MatchDB(Base):
+    __tablename__ = "match"
+    __table_args__ = {"extend_existing": True}
+
+    tournament_id: Mapped[int] = mapped_column(
+        ForeignKey("tournament.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    match_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        cascade="all, delete-orphan",
+        back_populates="matches",
+        passive_deletes=True,
+    )
+```
+
+**Alembic Migration**:
+```python
+def upgrade() -> None:
+    op.create_table(
+        "match",
+        sa.Column("tournament_id", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["tournament_id"],
+            ["tournament.id"],
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+
+def downgrade() -> None:
+    op.drop_table("match")
+```
+
+#### Many-to-Many Relationships
+
+**Pattern**: Association table with composite primary key
+
+```python
+# src/core/models/user.py
+if TYPE_CHECKING:
+    from .role import RoleDB
+
+
+class UserDB(Base):
+    __tablename__ = "user"
+    __table_args__ = {"extend_existing": True}
+
+    roles: Mapped[list["RoleDB"]] = relationship(
+        "RoleDB",
+        secondary="user_role",
+        back_populates="users",
+    )
+```
+
+**Association Table**:
+```python
+# src/core/models/user_role.py
+from sqlalchemy import Column, ForeignKey, Integer, Table
+
+user_role = Table(
+    "user_role",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("user.id", ondelete="CASCADE"), primary_key=True),
+    Column("role_id", Integer, ForeignKey("role.id", ondelete="CASCADE"), primary_key=True),
+)
+```
+
+**Alembic Migration**:
+```python
+def upgrade() -> None:
+    op.create_table(
+        "user_role",
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("role_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(["role_id"], ["role.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("user_id", "role_id"),
+    )
+
+def downgrade() -> None:
+    op.drop_table("user_role")
+```
+
+**Many-to-Many with Extra Columns** (e.g., player_team_tournament):
+```python
+# Association table with extra data
+op.create_table(
+    "player_team_tournament",
+    sa.Column("player_id", sa.Integer(), nullable=True),
+    sa.Column("team_id", sa.Integer(), nullable=True),
+    sa.Column("tournament_id", sa.Integer(), nullable=True),
+    sa.Column("player_number", sa.String(length=10), server_default="0", nullable=True),
+    sa.Column("player_position", sa.String(length=20), server_default="", nullable=True),
+    sa.Column("id", sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(["player_id"], ["player.id"], ondelete="CASCADE"),
+    sa.ForeignKeyConstraint(["team_id"], ["team.id"], ondelete="SET NULL"),
+    sa.ForeignKeyConstraint(["tournament_id"], ["tournament.id"], ondelete="SET NULL"),
+    sa.PrimaryKeyConstraint("id"),
+)
+```
+
+#### Self-Referencing Relationships
+
+**Pattern**: Multiple foreign keys to same table with explicit `foreign_keys` parameter
+
+```python
+# src/core/models/match.py
+class MatchDB(Base):
+    __tablename__ = "match"
+
+    team_a_id: Mapped[int] = mapped_column(
+        ForeignKey("team.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    team_b_id: Mapped[int] = mapped_column(
+        ForeignKey("team.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    team_a: Mapped["TeamDB"] = relationship(
+        "TeamDB",
+        foreign_keys=[team_a_id],
+        back_populates="matches_as_team_a",
+        viewonly=True,
+    )
+
+    team_b: Mapped["TeamDB"] = relationship(
+        "TeamDB",
+        foreign_keys=[team_b_id],
+        back_populates="matches_as_team_b",
+        viewonly=True,
+    )
+```
+
+**Custom Join Condition** (OR condition):
+```python
+# src/core/models/team.py
+matches: Mapped["MatchDB"] = relationship(
+    "MatchDB",
+    primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+    back_populates="teams",
+)
+```
+
+#### Relationship Naming Conventions
+
+| Relationship Type | Child Side (FK) | Parent Side (Collection) |
+|-----------------|----------------|-------------------------|
+| One-to-many | `sport_id: Mapped[int]` | `tournaments: Mapped[list["TournamentDB"]]` |
+| Many-to-one | `sport: Mapped["SportDB"]` | - |
+| One-to-one | `match_id: Mapped[int]` with `unique=True` | `match_scoreboard: Mapped["ScoreboardDB"]` |
+| Many-to-many | Uses `secondary="association_table"` | Uses `secondary="association_table"` |
+
+#### Cascade Options
+
+- **`cascade="all, delete-orphan"`**: Delete children when parent is deleted (standard parent-child)
+- **`cascade="save-update, merge"`**: Only save/update/merge, don't delete children (many-to-many)
+- **`passive_deletes=True`**: Use database-level CASCADE (requires FK `ondelete="CASCADE"`)
+
+#### Foreign Key ON DELETE Options
+
+- **`ondelete="CASCADE"`**: Delete dependent records (most common)
+- **`ondelete="SET NULL"`**: Set FK to NULL when parent deleted (optional relationships)
+- **No `ondelete`**: Restrict deletion if dependent records exist
+
+#### Index Creation on Relationship Columns
+
+```python
+# Composite index on foreign keys
+op.create_index(
+    "ix_match_tournament_id_team_a_id_team_b_id",
+    "match",
+    ["tournament_id", "team_a_id", "team_b_id"]
+)
+
+# Single column index
+op.create_index(
+    "ix_football_event_match_id",
+    "football_event",
+    ["match_id"]
+)
+```
+
+**Naming convention**: `ix_{table_name}_{column_names_underscored}`
+
+### Forward References with TYPE_CHECKING
+
+**Purpose**: Break circular import dependencies while maintaining type safety for static analysis
+
+```python
+# src/core/models/user.py
+from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.models import Base
+
+# TYPE_CHECKING block: imports only execute during type checking, not runtime
+if TYPE_CHECKING:
+    from .person import PersonDB
+    from .role import RoleDB
+
+
+class UserDB(Base):
+    __tablename__ = "user"
+    __table_args__ = {"extend_existing": True}
+
+    person_id: Mapped[int] = mapped_column(
+        ForeignKey("person.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    # String annotations allow SQLAlchemy to defer resolution
+    person: Mapped["PersonDB"] = relationship(
+        "PersonDB",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    roles: Mapped[list["RoleDB"]] = relationship(
+        "RoleDB",
+        secondary="user_role",
+        back_populates="users",
+    )
+```
+
+#### Import Structure
+
+```python
+# 1. Standard library imports
+from typing import TYPE_CHECKING
+
+# 2. Third-party imports
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+# 3. Local imports
+from src.core.models import Base
+
+# 4. TYPE_CHECKING block (after imports, before class)
+if TYPE_CHECKING:
+    from .person import PersonDB
+    from .role import RoleDB
+
+# 5. Class definition
+class UserDB(Base):
+    ...
+```
+
+#### Import Format Rules
+
+- **Models in same directory**: Use relative imports with single dot (`from .person import PersonDB`)
+- **Models from mixins directory**: Use double dots (`..`) to go up one level (`from ..season import SeasonDB`)
+- **Never use absolute imports** in TYPE_CHECKING block for models in same package
+- **No aliases**: Import full model name (not `from .person import PersonDB as Person`)
+
+#### Empty TYPE_CHECKING Blocks
+
+If no relationships are defined (e.g., join tables with only FKs):
+
+```python
+# src/core/models/team_tournament.py
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass  # No relationships, so no imports needed
+
+
+class TeamTournamentDB(Base):
+    # ... only foreign keys, no relationship() definitions
+```
+
+#### Relationship Type Hints
+
+```python
+# Single relationship (many-to-one or one-to-one)
+person: Mapped["PersonDB"] = relationship("PersonDB", ...)
+
+# List relationship (one-to-many)
+tournaments: Mapped[list["TournamentDB"]] = relationship("TournamentDB", ...)
+```
+
+#### TYPE_CHECKING in Mixins
+
+```python
+# src/core/models/mixins/season_sport_mixin.py
+from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from ..season import SeasonDB  # Double dots to go up from mixins/
+    from ..sport import SportDB
+
+
+class SeasonSportRelationMixin:
+    @declared_attr
+    def season_id(cls) -> Mapped[int]:
+        return mapped_column(ForeignKey("season.id", ondelete=cls._ondelete))
+
+    @declared_attr
+    def season(cls) -> Mapped["SeasonDB"]:
+        return relationship("SeasonDB", back_populates=cls._season_back_populates)
+```
+
+#### Why This Works
+
+1. **Runtime (TYPE_CHECKING=False)**: Imports inside block are skipped, no circular dependencies
+2. **Type Checking (TYPE_CHECKING=True)**: Imports execute, type checkers see actual classes
+3. **SQLAlchemy**: String annotations (`"PersonDB"`) work with `relationship()` regardless of actual class
+
+#### Common Pitfalls to Avoid
+
+- **Mistake 1**: Direct imports outside TYPE_CHECKING block
+  ```python
+  # BAD - causes circular import
+  from .person import PersonDB
+  person: Mapped[PersonDB] = relationship(PersonDB, ...)
+  ```
+
+- **Mistake 2**: Using TYPE_CHECKING but not using string annotations
+  ```python
+  # BAD - defeats purpose
+  if TYPE_CHECKING:
+      from .person import PersonDB
+  person: Mapped[PersonDB] = relationship(PersonDB, ...)  # Fails at runtime
+  ```
+
+- **Mistake 3**: Not importing types in TYPE_CHECKING block
+  ```python
+  # BAD - no type safety, no autocomplete
+  if TYPE_CHECKING:
+      pass
+  person: Mapped["PersonDB"] = relationship("PersonDB", ...)  # Type checker can't verify
+  ```
 
 ### Error Handling
 
@@ -431,6 +828,357 @@ Each domain module must contain:
 - Use `session.execute(stmt)` and `results.scalars().all()` for queries
 - Never commit manually in service methods - let BaseServiceDB handle it
 - Use relationships defined in models rather than manual joins
+- **Use eager loading** (`selectinload()`) to prevent N+1 query problems (see "Fetching Complex Relationships in Services" below)
+
+### Fetching Complex Relationships in Services
+
+#### Loading Strategy Recommendations
+
+- **Prefer `selectinload()`** over `joinedload()` for most relationship loading (better for many-to-many)
+- **Chain `selectinload()`** for 2+ level deep nested relationships
+- **Use base mixin methods** (`get_related_item_level_one_by_id()`, `get_nested_related_item_by_id()`) when possible for consistency
+- **Add indexes** on frequently queried foreign key combinations for performance
+
+#### Level 1 Relationship Loading
+
+Use base utility methods from `RelationshipMixin` with `selectinload()` for eager loading.
+
+**Pattern**: `get_related_item_level_one_by_id(item_id, relationship_name)`
+
+```python
+# src/tournaments/db_services.py
+async def get_teams_by_tournament(
+    self,
+    tournament_id: int,
+) -> list[TeamDB]:
+    self.logger.debug(f"Get teams by {ITEM} id:{tournament_id}")
+    return await self.get_related_item_level_one_by_id(
+        tournament_id,
+        "teams",
+    )
+```
+
+#### Nested Relationship Loading (2+ Levels Deep)
+
+Use chained `selectinload()` for eager loading multiple relationship levels in a single query.
+
+```python
+# src/matches/db_services.py
+async def get_player_by_match_full_data(self, match_id: int) -> list[dict]:
+    from src.core.models.player import PlayerDB
+    from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+    async with self.db.async_session() as session:
+        stmt = (
+            select(PlayerMatchDB)
+            .where(PlayerMatchDB.match_id == match_id)
+            .options(
+                # 3-level deep loading: PlayerMatch -> PlayerTeamTournament -> Player -> Person
+                selectinload(PlayerMatchDB.player_team_tournament)
+                .selectinload(PlayerTeamTournamentDB.player)
+                .selectinload(PlayerDB.person),
+                # Parallel level 2 relationships
+                selectinload(PlayerMatchDB.match_position),
+                selectinload(PlayerMatchDB.team),
+            )
+        )
+
+        results = await session.execute(stmt)
+        players = results.scalars().all()
+
+        # Build complex data structure
+        players_with_data = []
+        for player in players:
+            players_with_data.append(
+                {
+                    "id": player.id,
+                    "player_id": (
+                        player.player_team_tournament.player_id
+                        if player.player_team_tournament
+                        else None
+                    ),
+                    "player": (
+                        player.player_team_tournament.player
+                        if player.player_team_tournament
+                        else None
+                    ),
+                    "team": player.team,
+                    "position": (
+                        {
+                            **player.match_position.__dict__,
+                            "category": player.match_position.category,
+                        }
+                        if player.match_position
+                        else None
+                    ),
+                    "player_team_tournament": player.player_team_tournament,
+                    "person": (
+                        player.player_team_tournament.player.person
+                        if player.player_team_tournament
+                        and player.player_team_tournament.player
+                        else None
+                    ),
+                    "is_starting": player.is_starting,
+                    "starting_type": player.starting_type,
+                }
+            )
+
+        return players_with_data
+```
+
+#### Many-to-Many Relationship Loading
+
+Use direct `select()` queries with where clauses for filtering junction tables.
+
+```python
+# src/teams/db_services.py
+async def get_players_by_team_id_tournament_id(
+    self,
+    team_id: int,
+    tournament_id: int,
+) -> list[PlayerTeamTournamentDB]:
+    self.logger.debug(f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}")
+    async with self.db.async_session() as session:
+        stmt = (
+            select(PlayerTeamTournamentDB)
+            .where(PlayerTeamTournamentDB.team_id == team_id)
+            .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+        )
+
+        results = await session.execute(stmt)
+        players = results.scalars().all()
+        return players
+```
+
+**Join for many-to-many**:
+```python
+async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:
+    self.logger.debug(f"Get {ITEM} related teams for tournament_id:{tournament_id}")
+    async with self.db.async_session() as session:
+        result = await session.execute(
+            select(TeamDB)
+            .join(TeamTournamentDB)
+            .where(TeamTournamentDB.tournament_id == tournament_id)
+        )
+        teams = result.scalars().all()
+        return teams
+```
+
+#### Custom Relationship Queries with Subqueries
+
+Use subqueries to exclude certain records.
+
+```python
+# src/matches/db_services.py
+async def _get_available_players(
+    self, session, team_id: int, tournament_id: int, match_id: int
+) -> list[dict]:
+    """Get players available for match (not already in match)."""
+    from src.core.models.player import PlayerDB
+
+    # Subquery to find players already in match
+    subquery = (
+        select(PlayerMatchDB.player_team_tournament_id)
+        .where(PlayerMatchDB.match_id == match_id)
+        .where(PlayerMatchDB.team_id == team_id)
+    )
+
+    # Get players NOT in the subquery (available players)
+    stmt = (
+        select(PlayerTeamTournamentDB)
+        .where(PlayerTeamTournamentDB.team_id == team_id)
+        .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+        .where(~PlayerTeamTournamentDB.id.in_(subquery))  # NOT IN subquery
+        .options(
+            selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+            selectinload(PlayerTeamTournamentDB.position),
+            selectinload(PlayerTeamTournamentDB.team),
+        )
+    )
+
+    results = await session.execute(stmt)
+    available_players = results.scalars().all()
+
+    return [
+        {
+            "id": pt.id,
+            "player_id": pt.player_id,
+            "player_team_tournament": pt,
+            "person": pt.player.person if pt.player else None,
+            "position": pt.position,
+            "team": pt.team,
+        }
+        for pt in available_players
+    ]
+```
+
+#### Nested Related Items Using Service Registry
+
+Use `get_nested_related_item_by_id()` to traverse 2-level relationships using a different service.
+
+```python
+# src/tournaments/db_services.py
+async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int) -> list[SponsorDB]:
+    sponsor_line_service = self.service_registry.get("sponsor_line")
+    self.logger.debug(f"Get sponsors of tournament sponsor line {ITEM} id:{tournament_id}")
+    # Tournament -> SponsorLine -> Sponsors
+    return await self.get_nested_related_item_by_id(
+        tournament_id,
+        sponsor_line_service,
+        "sponsor_line",
+        "sponsors",
+    )
+```
+
+```python
+# src/player_match/db_services.py
+async def get_player_in_sport(self, player_id: int) -> PlayerDB | None:
+    player_team_tournament_service = self.service_registry.get("player_team_tournament")
+    self.logger.debug(f"Get player in sport by player_id:{player_id}")
+    # PlayerMatch -> PlayerTeamTournament -> Player
+    return await self.get_nested_related_item_by_id(
+        player_id,
+        player_team_tournament_service,
+        "player_team_tournament",
+        "player",
+    )
+```
+
+#### Complex Multi-Query Assembly
+
+Combine multiple queries to build a complete context.
+
+```python
+# src/matches/db_services.py
+async def get_match_full_context(self, match_id: int) -> dict | None:
+    """Get match with all initialization data: teams, sport, positions, players."""
+    from src.core.models.player import PlayerDB
+
+    async with self.db.async_session() as session:
+        # Query 1: Match with teams and tournament
+        stmt = (
+            select(MatchDB)
+            .where(MatchDB.id == match_id)
+            .options(
+                selectinload(MatchDB.team_a),
+                selectinload(MatchDB.team_b),
+                selectinload(MatchDB.tournaments),
+            )
+        )
+
+        result = await session.execute(stmt)
+        match = result.scalar_one_or_none()
+
+        if not match:
+            return None
+
+        tournament = match.tournaments if match.tournaments else None
+
+        # Query 2: Sport with positions
+        if tournament:
+            stmt_sport = (
+                select(SportDB)
+                .where(SportDB.id == tournament.sport_id)
+                .options(selectinload(SportDB.positions))
+            )
+            result_sport = await session.execute(stmt_sport)
+            sport = result_sport.scalar_one_or_none()
+        else:
+            sport = None
+
+        # Query 3: Players with nested relationships
+        stmt_players = (
+            select(PlayerMatchDB)
+            .where(PlayerMatchDB.match_id == match_id)
+            .options(
+                selectinload(PlayerMatchDB.player_team_tournament)
+                .selectinload(PlayerTeamTournamentDB.player)
+                .selectinload(PlayerDB.person),
+                selectinload(PlayerMatchDB.match_position),
+                selectinload(PlayerMatchDB.team),
+            )
+        )
+        result_players = await session.execute(stmt_players)
+        player_matches = result_players.scalars().all()
+
+        # Query 4 & 5: Available players for home/away teams
+        home_available = await self._get_available_players(
+            session, match.team_a_id, match.tournament_id, match_id
+        )
+        away_available = await self._get_available_players(
+            session, match.team_b_id, match.tournament_id, match_id
+        )
+
+        # Build final composite structure
+        return {
+            "match": match.__dict__,
+            "teams": {
+                "home": match.team_a.__dict__ if match.team_a else None,
+                "away": match.team_b.__dict__ if match.team_b else None,
+            },
+            "sport": {
+                **(sport.__dict__ if sport else {}),
+                "positions": [pos.__dict__ for pos in sport.positions] if sport else [],
+            },
+            "tournament": tournament.__dict__ if tournament else None,
+            "players": {
+                "home_roster": home_roster,
+                "away_roster": away_roster,
+                "available_home": home_available,
+                "available_away": away_available,
+            },
+        }
+```
+
+#### Pagination with Relationship Loading
+
+Use `get_related_item_level_one_by_id()` with pagination parameters.
+
+```python
+# src/tournaments/db_services.py
+async def get_matches_by_tournament_with_pagination(
+    self,
+    tournament_id: int,
+    skip: int = 0,
+    limit: int = 20,
+    order_exp: str = "id",
+    order_exp_two: str = "id",
+) -> list[MatchDB]:
+    self.logger.debug(
+        f"Get matches by {ITEM} id:{tournament_id} with pagination: skip={skip}, limit={limit}"
+    )
+    return await self.get_related_item_level_one_by_id(
+        tournament_id,
+        "matches",
+        skip=skip,
+        limit=limit,
+        order_by=order_exp,
+        order_by_two=order_exp_two,
+    )
+```
+
+#### Base Utility Methods from RelationshipMixin
+
+Key utility methods provided by base class:
+
+| Method | Purpose |
+|--------|---------|
+| `get_related_item_level_one_by_id(id, relation)` | Fetch level 1 relationships with `selectinload()` |
+| `get_nested_related_item_by_id(id, service, rel1, rel2)` | Fetch 2-level nested relationships |
+| `create_m2m_relation(...)` | Create many-to-many relationships |
+| `find_relation(...)` | Check if relation exists in junction table |
+| `get_related_items(...)` | Fetch related items with optional property loading |
+| `get_related_items_by_two(...)` | Fetch 2-level relationships using `joinedload()` |
+
+#### Key Patterns Summary
+
+1. **`selectinload()`** - Primary loading strategy for eager loading relationships
+2. **Chained `selectinload()`** - For 2+ level deep relationships (e.g., `.selectinload(A).selectinload(B)`)
+3. **Base mixin methods** - Reusable patterns for common relationship queries
+4. **Direct `select()` with `where()`** - For many-to-many junction table queries
+5. **Subqueries with `NOT IN`** - For exclusion queries (e.g., "available players")
+6. **Service registry** - For cross-service nested relationships
+7. **Multi-query assembly** - Building complex composite data structures
 
 ### WebSocket and Real-time
 
