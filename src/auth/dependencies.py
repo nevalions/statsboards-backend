@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from src.auth.security import decode_access_token
-from src.core.models import UserDB, UserRoleDB, db
+from src.core.models import UserDB, db
 from src.core.service_registry import get_service_registry
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -36,8 +36,13 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     if payload is None:
         raise credentials_exception
 
-    user_id: int | None = payload.get("sub")
-    if user_id is None:
+    user_id_str: str | None = payload.get("sub")
+    if user_id_str is None:
+        raise credentials_exception
+
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
         raise credentials_exception
 
     service_registry = get_service_registry()
@@ -83,7 +88,7 @@ async def get_current_active_user(
     return current_user
 
 
-async def require_roles(*required_roles: str):
+def require_roles(*required_roles: str):
     """Dependency factory to require specific user roles.
 
     Args:
@@ -116,7 +121,7 @@ async def require_roles(*required_roles: str):
             stmt = (
                 select(UserDB)
                 .where(UserDB.id == current_user.id)
-                .options(selectinload(UserDB.roles).joinedload(UserRoleDB.role))
+                .options(selectinload(UserDB.roles))
             )
             result = await session.execute(stmt)
             user = result.scalar_one_or_none()
@@ -127,7 +132,7 @@ async def require_roles(*required_roles: str):
                     detail="User not found",
                 )
 
-            user_roles = {role.role.name for role in user.roles}
+            user_roles = {role.name for role in user.roles}
 
             if not any(role in user_roles for role in required_roles):
                 raise HTTPException(

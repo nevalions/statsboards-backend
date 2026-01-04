@@ -1,9 +1,13 @@
 """User domain views/router."""
 
-from fastapi import HTTPException
+from typing import Annotated
 
-from src.auth.dependencies import CurrentUser
+from fastapi import Depends, HTTPException
+
+from src.auth.dependencies import CurrentUser, require_roles
+from src.auth.schemas import UserRoleAssign
 from src.core import BaseRouter
+from src.core.models import UserDB
 from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
 
@@ -52,7 +56,16 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 )
 
             new_user = await self.service.create(user_data)
-            return UserSchema.model_validate(new_user)
+            user = await self.service.get_by_id_with_roles(new_user.id)
+            roles = [role.name for role in user.roles] if user.roles else []
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+            )
 
         @router.get(
             "/me",
@@ -71,7 +84,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                     detail="User not found",
                 )
 
-            roles = [role.role.name for role in user.roles]
+            roles = [role.name for role in user.roles]
 
             return UserSchema(
                 id=user.id,
@@ -98,8 +111,88 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             updated_user = await self.service.update(current_user.id, user_data)
             user = await self.service.get_by_id_with_roles(updated_user.id)
 
-            roles = [role.role.name for role in user.roles]
+            roles = [role.name for role in user.roles]
 
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+            )
+
+        @router.post(
+            "/{user_id}/roles",
+            response_model=UserSchema,
+            summary="Assign role to user",
+            description="Assign a role to a user. Requires admin role.",
+            responses={
+                200: {"description": "Role assigned successfully"},
+                400: {"description": "Bad request - user already has this role"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "User or role not found"},
+            },
+        )
+        async def assign_role_to_user(
+            user_id: int,
+            role_assign: UserRoleAssign,
+            _: Annotated[UserDB, Depends(require_roles("admin"))],
+        ) -> UserSchema:
+            """Assign a role to a user."""
+            self.logger.debug(f"Assign role {role_assign.role_id} to user {user_id}")
+
+            await self.service.assign_role(user_id, role_assign.role_id)
+            user = await self.service.get_by_id_with_roles(user_id)
+
+            if user is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found",
+                )
+
+            roles = [role.name for role in user.roles] if user.roles else []
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+            )
+
+        @router.delete(
+            "/{user_id}/roles/{role_id}",
+            response_model=UserSchema,
+            summary="Remove role from user",
+            description="Remove a role from a user. Requires admin role.",
+            responses={
+                200: {"description": "Role removed successfully"},
+                400: {"description": "Bad request - user does not have this role"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "User or role not found"},
+            },
+        )
+        async def remove_role_from_user(
+            user_id: int,
+            role_id: int,
+            _: Annotated[UserDB, Depends(require_roles("admin"))],
+        ) -> UserSchema:
+            """Remove a role from a user."""
+            self.logger.debug(f"Remove role {role_id} from user {user_id}")
+
+            await self.service.remove_role(user_id, role_id)
+            user = await self.service.get_by_id_with_roles(user_id)
+
+            if user is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found",
+                )
+
+            roles = [role.name for role in user.roles] if user.roles else []
             return UserSchema(
                 id=user.id,
                 username=user.username,
