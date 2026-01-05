@@ -84,7 +84,7 @@ class AuthRouter:
                     detail="User not found",
                 )
 
-            roles = [role.role.name for role in user.roles]
+            roles = [role.name for role in user.roles]
 
             return UserSchema(
                 id=user.id,
