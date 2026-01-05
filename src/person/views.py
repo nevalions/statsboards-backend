@@ -1,4 +1,4 @@
-from fastapi import File, HTTPException, UploadFile
+from fastapi import File, HTTPException, Query, UploadFile
 
 from src.core import BaseRouter, db
 
@@ -35,9 +35,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             if new_person:
                 return PersonSchema.model_validate(new_person)
             else:
-                self.logger.error(
-                    f"Error on create or update person got data: {person}"
-                )
+                self.logger.error(f"Error on create or update person got data: {person}")
                 raise HTTPException(status_code=409, detail="Person creation fail")
 
         @router.get(
@@ -68,9 +66,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             try:
                 update_ = await self.service.update(item_id, item)
                 if update_ is None:
-                    raise HTTPException(
-                        status_code=404, detail=f"Person id {item_id} not found"
-                    )
+                    raise HTTPException(status_code=404, detail=f"Person id {item_id} not found")
                 return PersonSchema.model_validate(update_)
             except HTTPException:
                 raise
@@ -95,17 +91,13 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             except HTTPException:
                 raise
             except Exception as ex:
-                self.logger.error(
-                    f"Error on upload person photo got data: {ex}", exc_info=ex
-                )
+                self.logger.error(f"Error on upload person photo got data: {ex}", exc_info=ex)
                 raise HTTPException(
                     status_code=500,
                     detail="Error uploading person photo",
                 )
 
-        @router.post(
-            "/upload_resize_photo", response_model=UploadResizePersonPhotoResponse
-        )
+        @router.post("/upload_resize_photo", response_model=UploadResizePersonPhotoResponse)
         async def upload_and_resize_person_photo_endpoint(file: UploadFile = File(...)):
             try:
                 self.logger.debug("Upload and resize person photo")
@@ -119,13 +111,45 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             except HTTPException:
                 raise
             except Exception as ex:
-                self.logger.error(
-                    f"Error on upload and resize photo: {ex}", exc_info=ex
-                )
+                self.logger.error(f"Error on upload and resize photo: {ex}", exc_info=ex)
                 raise HTTPException(
                     status_code=500,
                     detail="Error uploading and resizing person photo",
                 )
+
+        @router.get(
+            "/paginated",
+            response_model=list[PersonSchema],
+        )
+        async def get_all_persons_paginated_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("second_name", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+        ):
+            self.logger.debug(
+                f"Get all persons paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}"
+            )
+            skip = (page - 1) * items_per_page
+            persons = await self.service.get_all_persons_with_pagination(
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return [PersonSchema.model_validate(p) for p in persons]
+
+        @router.get(
+            "/count",
+            response_model=dict[str, int],
+        )
+        async def get_persons_count_endpoint():
+            self.logger.debug("Get persons count endpoint")
+            count = await self.service.get_persons_count()
+            return {"total": count}
 
         return router
 

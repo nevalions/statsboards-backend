@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.sql import func
 
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database
@@ -253,3 +254,96 @@ class CRUDMixin:
                     status_code=500,
                     detail="Internal server error",
                 )
+
+    async def get_count(self) -> int:
+        self.logger.debug(f"Getting count of {self.model.__name__} elements")
+        try:
+            async with self.db.async_session() as session:
+                stmt = select(func.count()).select_from(self.model)
+                result = await session.execute(stmt)
+                count = result.scalar()
+                self.logger.debug(f"Count of {self.model.__name__}: {count}")
+                return count or 0
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Database error getting count of {self.model.__name__}: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error counting {self.model.__name__}",
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.get_count(): {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
+            )
+
+    async def get_all_with_pagination(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "id",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ):
+        self.logger.debug(
+            f"Getting paginated {self.model.__name__} elements: skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}"
+        )
+        try:
+            async with self.db.async_session() as session:
+                try:
+                    order_column = getattr(self.model, order_by, self.model.id)
+                except AttributeError:
+                    self.logger.warning(
+                        f"Order column {order_by} not found for {self.model.__name__}, defaulting to id"
+                    )
+                    order_column = self.model.id
+
+                try:
+                    order_column_two = getattr(self.model, order_by_two, self.model.id)
+                except AttributeError:
+                    self.logger.warning(
+                        f"Order column {order_by_two} not found for {self.model.__name__}, defaulting to id"
+                    )
+                    order_column_two = self.model.id
+
+                order_expr = order_column.asc() if ascending else order_column.desc()
+                order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+                stmt = (
+                    select(self.model)
+                    .order_by(order_expr, order_expr_two)
+                    .offset(skip)
+                    .limit(limit)
+                )
+
+                result = await session.execute(stmt)
+                items = result.scalars().all()
+                self.logger.debug(
+                    f"Fetched {len(items)} paginated elements for {self.model.__name__}"
+                )
+                return list(items)
+        except (IntegrityError, SQLAlchemyError) as ex:
+            self.logger.error(
+                f"Database error getting paginated {self.model.__name__}: {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error fetching {self.model.__name__}",
+            )
+        except Exception as ex:
+            self.logger.critical(
+                f"Unexpected error in {self.__class__.__name__}.get_all_with_pagination(): {ex}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
+            )

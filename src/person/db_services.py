@@ -54,3 +54,33 @@ class PersonServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
+
+    @handle_service_exceptions(
+        item_name=ITEM, operation="fetching persons with pagination", return_value_on_not_found=[]
+    )
+    async def get_all_persons_with_pagination(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "second_name",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> list[PersonDB]:
+        self.logger.debug(
+            f"Get {ITEM} with pagination: skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}"
+        )
+        return await self.get_all_with_pagination(
+            skip=skip,
+            limit=limit,
+            order_by=order_by,
+            order_by_two=order_by_two,
+            ascending=ascending,
+        )
+
+    @handle_service_exceptions(
+        item_name=ITEM, operation="fetching persons count", return_value_on_not_found=0
+    )
+    async def get_persons_count(self) -> int:
+        self.logger.debug(f"Get {ITEM} count")
+        return await self.get_count()

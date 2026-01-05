@@ -22,9 +22,7 @@ class TestPersonViews:
         PersonServiceDB(test_db)
         person_data = PersonFactory.build(person_eesl_id=100)
 
-        response = await client.post(
-            "/api/persons/", json=person_data.model_dump(mode="json")
-        )
+        response = await client.post("/api/persons/", json=person_data.model_dump(mode="json"))
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -51,9 +49,7 @@ class TestPersonViews:
 
         update_data = PersonSchemaUpdate(first_name="Updated Name")
 
-        response = await client.put(
-            f"/api/persons/{created.id}/", json=update_data.model_dump()
-        )
+        response = await client.put(f"/api/persons/{created.id}/", json=update_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["first_name"] == "Updated Name"
@@ -119,3 +115,127 @@ class TestPersonViews:
         response = await client.post("/api/persons/upload_resize_photo", files=files)
 
         assert response.status_code == 400
+
+    async def test_get_all_persons_paginated_endpoint_success(self, client, test_db):
+        """Test paginated endpoint returns correct data."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1001, second_name="Zoe")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1002, second_name="Smith")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1003, second_name="Brown")
+        )
+
+        response = await client.get(
+            "/api/persons/paginated?page=1&items_per_page=2&order_by=second_name"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+        second_names = [p["second_name"] for p in data]
+        assert second_names == ["Brown", "Smith"]
+
+    async def test_get_all_persons_paginated_endpoint_invalid_page(self, client):
+        """Test paginated endpoint rejects invalid page number."""
+        response = await client.get("/api/persons/paginated?page=0")
+
+        assert response.status_code == 422
+
+    async def test_get_all_persons_paginated_endpoint_invalid_items_per_page(self, client):
+        """Test paginated endpoint rejects invalid items_per_page."""
+        response = await client.get("/api/persons/paginated?items_per_page=101")
+
+        assert response.status_code == 422
+
+    async def test_get_all_persons_paginated_endpoint_default_sorting(self, client, test_db):
+        """Test paginated endpoint uses default sort by second_name."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2001, second_name="Zebra")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2002, second_name="Apple")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2003, second_name="Mango")
+        )
+
+        response = await client.get("/api/persons/paginated")
+
+        assert response.status_code == 200
+        data = response.json()
+        second_names = [p["second_name"] for p in data]
+        assert second_names == ["Apple", "Mango", "Zebra"]
+
+    async def test_get_all_persons_paginated_endpoint_descending_order(self, client, test_db):
+        """Test paginated endpoint with descending order."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3001, second_name="Alpha")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3002, second_name="Beta")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3003, second_name="Gamma")
+        )
+
+        response = await client.get("/api/persons/paginated?order_by=second_name&ascending=false")
+
+        assert response.status_code == 200
+        data = response.json()
+        second_names = [p["second_name"] for p in data]
+        assert second_names == sorted(second_names, reverse=True)
+
+    async def test_get_all_persons_paginated_endpoint_multiple_pages(self, client, test_db):
+        """Test paginated endpoint across multiple pages."""
+        person_service = PersonServiceDB(test_db)
+        for i in range(5):
+            await person_service.create_or_update_person(
+                PersonFactory.build(person_eesl_id=4000 + i, second_name=f"Name{i}")
+            )
+
+        page1 = await client.get("/api/persons/paginated?page=1&items_per_page=2")
+        page2 = await client.get("/api/persons/paginated?page=2&items_per_page=2")
+        page3 = await client.get("/api/persons/paginated?page=3&items_per_page=2")
+
+        assert page1.status_code == 200
+        assert len(page1.json()) == 2
+        assert page2.status_code == 200
+        assert len(page2.json()) == 2
+        assert page3.status_code == 200
+        assert len(page3.json()) == 1
+
+    async def test_get_persons_count_endpoint(self, client, test_db):
+        """Test count endpoint returns correct total."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=5001))
+        await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=5002))
+        await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=5003))
+
+        response = await client.get("/api/persons/count")
+
+        assert response.status_code == 200
+        assert response.json() == {"total": 3}
+
+    async def test_get_persons_count_endpoint_empty(self, client, test_db):
+        """Test count endpoint returns zero when no records."""
+        response = await client.get("/api/persons/count")
+
+        assert response.status_code == 200
+        assert response.json() == {"total": 0}
+
+    async def test_existing_get_all_persons_endpoint_still_works(self, client, test_db):
+        """Test that the non-paginated endpoint still works (backward compatibility)."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=6001))
+        await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=6002))
+
+        response = await client.get("/api/persons/")
+
+        assert response.status_code == 200
+        assert len(response.json()) >= 2

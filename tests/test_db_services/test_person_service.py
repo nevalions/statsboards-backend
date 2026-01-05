@@ -1,5 +1,6 @@
 import pytest
 
+from src.core.models import PersonDB
 from src.core.models.base import Database
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaUpdate
@@ -13,9 +14,7 @@ class TestPersonServiceDBCreateOrUpdate:
     async def test_create_person_with_eesl_id(self, test_db: Database):
         """Test creating a person with eesl_id."""
         person_service = PersonServiceDB(test_db)
-        person_data = PersonFactory.build(
-            person_eesl_id=100, first_name="John", second_name="Doe"
-        )
+        person_data = PersonFactory.build(person_eesl_id=100, first_name="John", second_name="Doe")
 
         result = await person_service.create_or_update_person(person_data)
 
@@ -86,9 +85,7 @@ class TestPersonServiceDBCreateOrUpdate:
         )
         created = await person_service.create_or_update_person(person_data)
 
-        update_data = PersonSchemaUpdate(
-            person_eesl_id=400, person_photo_url="http://new.url"
-        )
+        update_data = PersonSchemaUpdate(person_eesl_id=400, person_photo_url="http://new.url")
 
         updated = await person_service.create_or_update_person(update_data)
 
@@ -124,3 +121,110 @@ class TestPersonServiceDBCreateOrUpdate:
         assert retrieved is not None
         assert retrieved.id == created.id
         assert retrieved.first_name == "Get"
+
+
+@pytest.mark.asyncio
+class TestPersonServiceDBPagination:
+    """Test pagination functionality."""
+
+    async def test_get_all_persons_with_pagination_success(self, test_db: Database):
+        """Test paginated retrieval returns correct number of items."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1001, first_name="Alice", second_name="Zoe")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1002, first_name="Bob", second_name="Smith")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1003, first_name="Charlie", second_name="Brown")
+        )
+
+        persons = await person_service.get_all_persons_with_pagination(
+            skip=0, limit=2, order_by="second_name"
+        )
+
+        assert len(persons) == 2
+        assert all(isinstance(p, PersonDB) for p in persons)
+        second_names = [p.second_name for p in persons]
+        assert second_names == ["Brown", "Smith"]
+
+    async def test_get_all_persons_with_pagination_ordering(self, test_db: Database):
+        """Test pagination ordering by second_name."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2001, first_name="Alice", second_name="Zoe")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2002, first_name="Bob", second_name="Alpha")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2003, first_name="Charlie", second_name="Middle")
+        )
+
+        persons = await person_service.get_all_persons_with_pagination(
+            skip=0, limit=10, order_by="second_name", ascending=True
+        )
+        second_names = [p.second_name for p in persons]
+        assert second_names == sorted(second_names)
+
+        persons_desc = await person_service.get_all_persons_with_pagination(
+            skip=0, limit=10, order_by="second_name", ascending=False
+        )
+        second_names_desc = [p.second_name for p in persons_desc]
+        assert second_names_desc == sorted(second_names_desc, reverse=True)
+
+    async def test_get_all_persons_with_pagination_empty_result(self, test_db: Database):
+        """Test pagination with skip beyond available records."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3001, first_name="Test")
+        )
+
+        persons = await person_service.get_all_persons_with_pagination(skip=1000, limit=10)
+        assert persons == []
+
+    async def test_get_all_persons_with_pagination_default_sort(self, test_db: Database):
+        """Test pagination uses default sort by second_name."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=4001, first_name="A", second_name="Zebra")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=4002, first_name="B", second_name="Apple")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=4003, first_name="C", second_name="Mango")
+        )
+
+        persons = await person_service.get_all_persons_with_pagination(skip=0, limit=10)
+        second_names = [p.second_name for p in persons]
+        assert second_names == ["Apple", "Mango", "Zebra"]
+
+    async def test_get_persons_count(self, test_db: Database):
+        """Test count returns correct number of records."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=5001, first_name="One")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=5002, first_name="Two")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=5003, first_name="Three")
+        )
+
+        count = await person_service.get_persons_count()
+        assert count == 3
+
+    async def test_get_persons_count_empty(self, test_db: Database):
+        """Test count returns zero when no records."""
+        person_service = PersonServiceDB(test_db)
+
+        count = await person_service.get_persons_count()
+        assert count == 0
