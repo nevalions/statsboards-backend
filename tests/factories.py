@@ -1,5 +1,6 @@
-import factory
 from typing import TYPE_CHECKING
+
+import factory
 
 from src.matches.schemas import MatchSchemaCreate
 from src.person.schemas import PersonSchemaCreate
@@ -14,8 +15,7 @@ from src.tournaments.schemas import TournamentSchemaCreate
 from tests.test_data import TestData
 
 if TYPE_CHECKING:
-    from src.auth.schemas import RoleSchemaCreate
-    from src.users.schemas import UserSchemaCreate
+    pass
 
 
 class SportFactorySample(factory.Factory):

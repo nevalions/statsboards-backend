@@ -47,8 +47,9 @@ async def test_db():
         await conn.run_sync(Base.metadata.create_all)
 
     # Seed default roles
-    from src.core.models.role import RoleDB
     from sqlalchemy import select
+
+    from src.core.models.role import RoleDB
 
     async with database.async_session() as session:
         # Check if roles already exist (for parallel test execution)
@@ -121,6 +122,7 @@ async def test_app(test_db):
     # Re-initialize service registry for test environment
     init_service_registry(test_db)
 
+    from src.auth.views import api_auth_router
     from src.football_events.db_services import FootballEventServiceDB
     from src.football_events.views import FootballEventAPIRouter
     from src.gameclocks.db_services import GameClockServiceDB
@@ -159,7 +161,6 @@ async def test_app(test_db):
     from src.tournaments.views import TournamentAPIRouter
     from src.users.db_services import UserServiceDB
     from src.users.views import UserAPIRouter, get_user_router
-    from src.auth.views import api_auth_router
 
     __all__ = [
         "FootballEventServiceDB",
@@ -184,20 +185,6 @@ async def test_app(test_db):
         "users.views import get_user_router",
     ]
 
-    from src.seasons.db_services import SeasonServiceDB
-    from src.seasons.views import SeasonAPIRouter
-    from src.sponsor_lines.db_services import SponsorLineServiceDB
-    from src.sponsor_lines.views import SponsorLineAPIRouter
-    from src.sponsors.db_services import SponsorServiceDB
-    from src.sponsors.views import SponsorAPIRouter
-    from src.sports.db_services import SportServiceDB
-    from src.sports.views import SportAPIRouter
-    from src.team_tournament.db_services import TeamTournamentServiceDB
-    from src.team_tournament.views import TeamTournamentRouter
-    from src.teams.db_services import TeamServiceDB
-    from src.teams.views import TeamAPIRouter
-    from src.tournaments.db_services import TournamentServiceDB
-    from src.tournaments.views import TournamentAPIRouter
 
     app = FastAPI()
     match_service = MatchServiceDB(test_db)

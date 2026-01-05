@@ -2,10 +2,8 @@
 
 import pytest
 
-from sqlalchemy.orm import selectinload
-
-from src.auth.security import get_password_hash
-from src.core.models import db
+from src.auth.security import get_password_hash, verify_password
+from src.core.models import UserDB, db
 from src.users.db_services import UserServiceDB
 from src.users.schemas import UserSchemaCreate, UserSchemaUpdate
 

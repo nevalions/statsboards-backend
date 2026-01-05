@@ -1,13 +1,12 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
 from src.core.models import Base
 
 if TYPE_CHECKING:
-    from .role import RoleDB
-    from .user import UserDB
+    pass
 
 
 class UserRoleDB(Base):

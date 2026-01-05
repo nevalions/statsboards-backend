@@ -32,20 +32,29 @@ class TestUserServiceDB:
     @pytest.mark.asyncio
     async def test_create_user_with_person(self, test_db: Database):
         """Test creating a user linked to PersonDB."""
-        from tests.factories import PersonFactory
+        from src.core.models import PersonDB
 
-        person_data = PersonFactory.build()
+        async with test_db.async_session() as session:
+            person = PersonDB(
+                person_eesl_id=2000,
+                first_name="Test",
+                second_name="Person",
+            )
+            session.add(person)
+            await session.commit()
+            await session.refresh(person)
+
         user_data = UserSchemaCreate(
             username="testuser2",
             email="test2@example.com",
             password="SecurePass123!",
-            person_id=person_data.person_eesl_id,
+            person_id=person.id,
         )
 
         service = UserServiceDB(test_db)
         user = await service.create(user_data)
 
-        assert user.person_id is not None
+        assert user.person_id == person.id
         assert user.username == "testuser2"
 
     @pytest.mark.asyncio
