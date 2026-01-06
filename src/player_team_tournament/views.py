@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 
 from src.core import BaseRouter, db
 
@@ -17,6 +17,7 @@ from ..teams.db_services import TeamServiceDB
 from ..tournaments.db_services import TournamentServiceDB
 from .db_services import PlayerTeamTournamentServiceDB
 from .schemas import (
+    PaginatedPlayerTeamTournamentResponse,
     PlayerTeamTournamentSchema,
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
@@ -31,9 +32,7 @@ class PlayerTeamTournamentAPIRouter(
     ]
 ):
     def __init__(self, service: PlayerTeamTournamentServiceDB):
-        super().__init__(
-            "/api/players_team_tournament", ["players_team_tournament"], service
-        )
+        super().__init__("/api/players_team_tournament", ["players_team_tournament"], service)
         self.logger = get_logger("backend_logger_PlayerTeamTournamentAPIRouter", self)
         self.logger.debug("Initialized PlayerTeamTournamentAPIRouter")
 
@@ -57,9 +56,7 @@ class PlayerTeamTournamentAPIRouter(
                     )
                 )
                 if new_player_team_tournament:
-                    return PlayerTeamTournamentSchema.model_validate(
-                        new_player_team_tournament
-                    )
+                    return PlayerTeamTournamentSchema.model_validate(new_player_team_tournament)
                 else:
                     raise HTTPException(
                         status_code=409, detail="Player_team_tournament creation fail"
@@ -84,12 +81,8 @@ class PlayerTeamTournamentAPIRouter(
             eesl_id: int,
         ):
             try:
-                self.logger.debug(
-                    f"Getting player_team_tournament endpoint by eesl_id {eesl_id}"
-                )
-                tournament = await self.service.get_player_team_tournament_by_eesl_id(
-                    value=eesl_id
-                )
+                self.logger.debug(f"Getting player_team_tournament endpoint by eesl_id {eesl_id}")
+                tournament = await self.service.get_player_team_tournament_by_eesl_id(value=eesl_id)
                 if tournament is None:
                     raise HTTPException(
                         status_code=404,
@@ -117,9 +110,7 @@ class PlayerTeamTournamentAPIRouter(
             item: PlayerTeamTournamentSchemaUpdate,
         ):
             try:
-                self.logger.debug(
-                    f"Update player_team_tournament endpoint got data {item}"
-                )
+                self.logger.debug(f"Update player_team_tournament endpoint got data {item}")
                 update_ = await self.service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
@@ -139,6 +130,38 @@ class PlayerTeamTournamentAPIRouter(
                     detail="Internal server error updating player team tournament",
                 )
 
+        @router.get(
+            "/tournament/{tournament_id}/players/paginated",
+            response_model=PaginatedPlayerTeamTournamentResponse,
+        )
+        async def get_tournament_players_paginated_endpoint(
+            tournament_id: int,
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("player_number", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(
+                None, description="Search query for player name, team name, or player number"
+            ),
+        ):
+            self.logger.debug(
+                f"Get tournament players paginated: tournament_id={tournament_id}, page={page}, "
+                f"items_per_page={items_per_page}, order_by={order_by}, order_by_two={order_by_two}, "
+                f"ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_tournament_players_with_pagination(
+                tournament_id=tournament_id,
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
+
         # @router.get(
         #     "/tournament/{tournament_id}/players",
         #     # response_model=List[PlayerTeamTournamentSchema],
@@ -152,9 +175,7 @@ class PlayerTeamTournamentAPIRouter(
         )
         async def get_player_team_tournament_with_person_endpoint(player_id: int):
             try:
-                person = await self.service.get_player_team_tournament_with_person(
-                    player_id
-                )
+                person = await self.service.get_player_team_tournament_with_person(player_id)
                 if person is None:
                     raise HTTPException(
                         status_code=404,
@@ -173,9 +194,7 @@ class PlayerTeamTournamentAPIRouter(
         @router.get(
             "/pars/tournament/{tournament_id}/team/{team_id}",
         )
-        async def get_parse_player_to_team_tournament_endpoint(
-            tournament_id: int, team_id: int
-        ):
+        async def get_parse_player_to_team_tournament_endpoint(tournament_id: int, team_id: int):
             self.logger.debug("Get parse_player_to_team_tournament endpoint")
             return await parse_players_from_team_tournament_eesl_and_create_jsons(
                 tournament_id, team_id
@@ -204,14 +223,10 @@ class PlayerTeamTournamentAPIRouter(
                 created_players_in_team_tournament = []
                 if players_from_team_tournament:
                     for ptt in players_from_team_tournament:
-                        player_in_team = await collect_player_full_data_eesl(
-                            ptt["player_eesl_id"]
-                        )
+                        player_in_team = await collect_player_full_data_eesl(ptt["player_eesl_id"])
 
                         person = PersonSchemaCreate(**player_in_team["person"])
-                        created_person = await PersonServiceDB(
-                            db
-                        ).create_or_update_person(person)
+                        created_person = await PersonServiceDB(db).create_or_update_person(person)
                         # pprint(created_person.__dict__)
                         created_persons.append(created_person)
                         if created_person:
@@ -219,44 +234,42 @@ class PlayerTeamTournamentAPIRouter(
                             player_data_dict["person_id"] = created_person.id
                             # pprint(player_data_dict)
                             player = PlayerSchemaCreate(**player_data_dict)
-                            created_player = await PlayerServiceDB(
-                                db
-                            ).create_or_update_player(player)
+                            created_player = await PlayerServiceDB(db).create_or_update_player(
+                                player
+                            )
                             # pprint(created_player.__dict__)
                             created_players.append(created_player)
 
-                            tournament = await TournamentServiceDB(
-                                db
-                            ).get_tournament_by_eesl_id(ptt["eesl_tournament_id"])
-                            team = await TeamServiceDB(db).get_team_by_eesl_id(
-                                ptt["eesl_team_id"]
+                            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(
+                                ptt["eesl_tournament_id"]
                             )
-                            position = await PositionServiceDB(
-                                db
-                            ).get_position_by_title(ptt["player_position"])
+                            team = await TeamServiceDB(db).get_team_by_eesl_id(ptt["eesl_team_id"])
+                            position = await PositionServiceDB(db).get_position_by_title(
+                                ptt["player_position"]
+                            )
                             if not position:
                                 new_position = PositionSchemaCreate(
                                     **{"title": ptt["player_position"], "sport_id": 1}
                                 )
-                                new_position_created = await PositionServiceDB(
-                                    db
-                                ).create(new_position)
+                                new_position_created = await PositionServiceDB(db).create(
+                                    new_position
+                                )
                                 if ptt and team and tournament:
                                     p = {
-                                        "player_team_tournament_eesl_id": ptt[
-                                            "player_eesl_id"
-                                        ],
+                                        "player_team_tournament_eesl_id": ptt["player_eesl_id"],
                                         "player_id": created_player.id,
                                         "position_id": new_position_created.id,
                                         "team_id": team.id,
                                         "tournament_id": tournament.id,
                                         "player_number": ptt["player_number"],
                                     }
-                                    created_player_in_team_dict = (
-                                        PlayerTeamTournamentSchemaCreate(**p)
+                                    created_player_in_team_dict = PlayerTeamTournamentSchemaCreate(
+                                        **p
                                     )
-                                    created_player_in_team = await self.service.create_or_update_player_team_tournament(
-                                        created_player_in_team_dict
+                                    created_player_in_team = (
+                                        await self.service.create_or_update_player_team_tournament(
+                                            created_player_in_team_dict
+                                        )
                                     )
                                     created_players_in_team_tournament.append(
                                         created_player_in_team
@@ -268,20 +281,20 @@ class PlayerTeamTournamentAPIRouter(
                                 if ptt and team and tournament:
                                     # print('with position')
                                     p = {
-                                        "player_team_tournament_eesl_id": ptt[
-                                            "player_eesl_id"
-                                        ],
+                                        "player_team_tournament_eesl_id": ptt["player_eesl_id"],
                                         "player_id": created_player.id,
                                         "position_id": position.id,
                                         "team_id": team.id,
                                         "tournament_id": tournament.id,
                                         "player_number": ptt["player_number"],
                                     }
-                                    created_player_in_team_dict = (
-                                        PlayerTeamTournamentSchemaCreate(**p)
+                                    created_player_in_team_dict = PlayerTeamTournamentSchemaCreate(
+                                        **p
                                     )
-                                    created_player_in_team = await self.service.create_or_update_player_team_tournament(
-                                        created_player_in_team_dict
+                                    created_player_in_team = (
+                                        await self.service.create_or_update_player_team_tournament(
+                                            created_player_in_team_dict
+                                        )
                                     )
                                     created_players_in_team_tournament.append(
                                         created_player_in_team

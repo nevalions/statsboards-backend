@@ -26,3 +26,17 @@ class PlayerTeamTournamentSchema(PlayerTeamTournamentSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class PaginationMetadata(BaseModel):
+    page: int
+    items_per_page: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+
+
+class PaginatedPlayerTeamTournamentResponse(BaseModel):
+    data: list[PlayerTeamTournamentSchema]
+    metadata: PaginationMetadata

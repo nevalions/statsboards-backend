@@ -5,6 +5,7 @@ import factory
 from src.matches.schemas import MatchSchemaCreate
 from src.person.schemas import PersonSchemaCreate
 from src.player.schemas import PlayerSchemaCreate
+from src.player_team_tournament.schemas import PlayerTeamTournamentSchemaCreate
 from src.positions.schemas import PositionSchemaCreate
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sponsor_lines.schemas import SponsorLineSchemaCreate
@@ -225,3 +226,15 @@ class RoleFactory(factory.Factory):
 
     name = "user"
     description = "Basic viewer role"
+
+
+class PlayerTeamTournamentFactory(factory.Factory):
+    class Meta:
+        model = PlayerTeamTournamentSchemaCreate
+
+    player_team_tournament_eesl_id = factory.Sequence(lambda n: n + 5000)
+    player_id = None
+    position_id = None
+    team_id = None
+    tournament_id = None
+    player_number = "0"
