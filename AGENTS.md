@@ -1180,6 +1180,42 @@ Key utility methods provided by base class:
 6. **Service registry** - For cross-service nested relationships
 7. **Multi-query assembly** - Building complex composite data structures
 
+### Full-Text Search Implementation
+
+When adding full-text search to a domain:
+
+1. **Database Schema** (Alembic migration):
+   - Add `search_vector` column of type `tsvector`
+   - Create trigger function to update search_vector on INSERT/UPDATE
+   - Create GIN index on search_vector for performance
+   - Update existing records
+
+2. **Service Layer**:
+   - Add `search_<entity>s_with_pagination()` method
+   - Use `@@` operator with `to_tsquery()` for matching
+   - Return tuple: (list[Model], total_count)
+   - Order by `ts_rank().desc()` for relevance
+
+3. **Router Layer**:
+   - Add `search` query parameter to existing paginated endpoint
+   - Return new `Paginated<Entity>Response` schema
+   - Calculate metadata: total_count, total_pages, has_more
+   - Empty search query returns empty list
+
+4. **Schema**:
+   - Create `Paginated<Entity>Response` with metadata fields
+
+Example (Person domain):
+```python
+class PaginatedPersonResponse(BaseModel):
+    data: list[PersonSchema]
+    total_count: int
+    total_pages: int
+    current_page: int
+    has_more: bool
+    items_per_page: int
+```
+
 ### WebSocket and Real-time
 
 - Use existing `ws_manager` for connection management
