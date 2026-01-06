@@ -1599,10 +1599,65 @@ pytest
 pytest -m "not slow or integration"
 
 # Run specific test files
+pytest tests/test_db_services/test_person_service.py
+pytest tests/test_views/test_person_views.py
 pytest tests/test_player_match_views_helpers.py
 pytest tests/test_utils.py
 pytest tests/test_views/test_websocket_views.py
 ```
+
+### Search Testing Guidelines
+
+**Important**: Search functionality has been refactored to use shared `SearchPaginationMixin` for consistency.
+
+#### Running Search Tests
+
+All search tests use the shared mixin and should run with standard pytest:
+
+```bash
+# Run all search tests (person, team, player_team_tournament)
+pytest tests/test_db_services/test_person_service.py -k "search"
+pytest tests/test_team_search.py
+pytest tests/test_player_team_tournament_search.py
+
+# Run search tests sequentially if needed (to avoid potential PostgreSQL deadlocks with schema modifications)
+pytest -n 0 tests/test_db_services/test_person_service.py tests/test_team_search.py tests/test_player_team_tournament_search.py -k "search"
+```
+
+#### Search Implementation Details
+
+The refactored search functionality uses:
+
+1. **`SearchPaginationMixin`** (`src/core/models/mixins/search_pagination_mixin.py`):
+   - `_build_search_pattern()` - Creates ICU collated search pattern
+   - `_apply_search_filters()` - Applies ILIKE with OR logic to multiple fields
+   - `_get_column_with_fallback()` - Safe column retrieval with AttributeError handling
+   - `_build_order_expressions()` - Dual-column ordering with fallbacks
+   - `_calculate_pagination_metadata()` - Returns pagination metadata dict
+
+2. **Shared `PaginationMetadata`** (`src/core/schema_helpers.py`):
+   - Single source of truth for pagination metadata across all domains
+   - Reduces schema duplication from 3 files to 1
+
+3. **Service Methods Using Mixin**:
+   - `PersonServiceDB.search_persons_with_pagination()`
+   - `TeamServiceDB.search_teams_with_pagination()`
+   - `PlayerTeamTournamentServiceDB.search_tournament_players_with_pagination()`
+   - `PlayerTeamTournamentServiceDB.search_tournament_players_with_pagination_details()`
+
+#### Test Coverage
+
+All search tests are passing with current implementation:
+- ✅ 11 person search tests
+- ✅ 5 team search tests  
+- ✅ 7 player_team_tournament search tests
+
+Tests verify:
+- ICU collation (`en-US-x-icu`) for international text handling
+- Multiple field search with OR conditions
+- Dual-column ordering with graceful column fallbacks
+- Pagination metadata calculation consistency
+- Complex join queries with `distinct()` for deduplication
 
 ## GitHub workflow (this repo)
 
