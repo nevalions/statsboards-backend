@@ -41,6 +41,46 @@ The default pytest.ini configuration uses `--disable-warnings` to suppress third
 
 Use `-n 0` for complete test runs to avoid these warnings.
 
+### Understanding Deselected Tests
+
+The default `pytest.ini` configuration excludes tests marked with `@pytest.mark.integration` and `@pytest.mark.slow` via `-m "not integration and not slow"`. This results in 46 tests being deselected by default.
+
+**Breakdown of 46 Deselected Tests:**
+
+| Test File | Tests | Markers | Reason |
+|------------|--------|----------|--------|
+| `test_download_service.py` | 15 | `@pytest.mark.slow` | Slow download tests with retries |
+| `test_pars_integration.py` | 5 | `@pytest.mark.integration` | Hits real EESL website |
+| `test_websocket_views.py` | 22 | `@pytest.mark.slow` + `@pytest.mark.integration` | WebSocket connection tests |
+| `test_match_stats_websocket_integration.py` | 4 | `@pytest.mark.integration` | WebSocket integration tests |
+| **Total** | **46** | - | - |
+
+**Why These Exclusions Exist:**
+
+- **`@pytest.mark.slow`**: Tests that take longer to run (websocket tests with connection setup, download service with retry logic)
+- **`@pytest.mark.integration`**: Tests that:
+  - Hit external websites (EESL integration)
+  - Require real database connections beyond test fixtures
+  - Use production-like endpoints
+
+**Running Deselected Tests:**
+
+```bash
+# Include all tests (including slow and integration)
+pytest -m ""
+
+# Include only integration tests
+pytest -m integration
+
+# Include only slow tests
+pytest -m slow
+
+# Include integration and slow tests together
+pytest -m "integration or slow"
+```
+
+This is intentional - default excludes these tests during rapid development cycles while still allowing you to run them when needed.
+
 Then run tests:
 
 ```bash
