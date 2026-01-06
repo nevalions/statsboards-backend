@@ -228,3 +228,144 @@ class TestPersonServiceDBPagination:
 
         count = await person_service.get_persons_count()
         assert count == 0
+
+
+@pytest.mark.asyncio
+class TestPersonServiceDBSearch:
+    """Test full-text search functionality."""
+
+    async def test_search_persons_with_pagination_success(self, test_db: Database):
+        """Test search returns correct results."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2001, first_name="Alice", second_name="Johnson")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2002, first_name="Bob", second_name="Smith")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2003, first_name="Charlie", second_name="Johnson")
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="Johnson", skip=0, limit=10, order_by="second_name"
+        )
+
+        assert result is not None
+        assert len(result.data) == 2
+        names = [p.first_name for p in result.data]
+        assert "Alice" in names
+        assert "Charlie" in names
+        assert "Bob" not in names
+        assert result.metadata.total_items == 2
+
+    async def test_search_persons_with_pagination_empty_query(self, test_db: Database):
+        """Test search with empty query returns all persons."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3001, first_name="Alice", second_name="Zoe")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3002, first_name="Bob", second_name="Alpha")
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query=None, skip=0, limit=10
+        )
+
+        assert len(result.data) == 2
+        assert result.metadata.total_items == 2
+
+    async def test_search_persons_with_pagination_partial_match(self, test_db: Database):
+        """Test search matches partial words (full-text search)."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(
+                person_eesl_id=4001, first_name="Christopher", second_name="Anderson"
+            )
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="Christopher", skip=0, limit=10
+        )
+
+        assert len(result.data) == 1
+        assert result.data[0].first_name == "Christopher"
+
+    async def test_search_persons_with_pagination_no_results(self, test_db: Database):
+        """Test search with no matching results."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=5001, first_name="Alice", second_name="Smith")
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="XYZNonExistent", skip=0, limit=10
+        )
+
+        assert len(result.data) == 0
+        assert result.metadata.total_items == 0
+        assert result.metadata.total_pages == 0
+
+    async def test_search_persons_with_pagination_metadata(self, test_db: Database):
+        """Test pagination metadata is calculated correctly."""
+        person_service = PersonServiceDB(test_db)
+
+        for i in range(5):
+            await person_service.create_or_update_person(
+                PersonFactory.build(
+                    person_eesl_id=6000 + i,
+                    first_name=f"Test{i}",
+                    second_name="Smith",
+                )
+            )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="Smith", skip=0, limit=2, order_by="id"
+        )
+
+        assert result.metadata.page == 1
+        assert result.metadata.items_per_page == 2
+        assert result.metadata.total_items == 5
+        assert result.metadata.total_pages == 3
+        assert result.metadata.has_next is True
+        assert result.metadata.has_previous is False
+
+        result_page2 = await person_service.search_persons_with_pagination(
+            search_query="Smith", skip=2, limit=2, order_by="id"
+        )
+
+        assert result_page2.metadata.page == 2
+        assert result_page2.metadata.has_next is True
+        assert result_page2.metadata.has_previous is True
+
+        result_page3 = await person_service.search_persons_with_pagination(
+            search_query="Smith", skip=4, limit=2, order_by="id"
+        )
+
+        assert result_page3.metadata.page == 3
+        assert result_page3.metadata.has_next is False
+        assert result_page3.metadata.has_previous is True
+
+    async def test_search_persons_with_pagination_ordering(self, test_db: Database):
+        """Test search with ordering."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=7001, first_name="Alice", second_name="Zebra")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=7002, first_name="Alice", second_name="Alpha")
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="Alice", skip=0, limit=10, order_by="second_name", ascending=True
+        )
+
+        assert len(result.data) == 2
+        assert result.data[0].second_name == "Alpha"
+        assert result.data[1].second_name == "Zebra"

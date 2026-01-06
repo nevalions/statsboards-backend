@@ -9,7 +9,6 @@ from src.auth.dependencies import CurrentUser
 from src.auth.schemas import Token
 from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
-from src.users.db_services import UserServiceDB
 from src.users.schemas import UserSchema
 
 
@@ -36,6 +35,8 @@ class AuthRouter:
         ) -> Token:
             """Authenticate user and return JWT token."""
             self.logger.debug(f"Login attempt for username: {form_data.username}")
+
+            from src.users.db_services import UserServiceDB
 
             registry = get_service_registry()
             user_service = UserServiceDB(registry.database)
@@ -71,6 +72,8 @@ class AuthRouter:
         async def get_current_user_info(current_user: CurrentUser) -> UserSchema:
             """Get current user profile."""
             self.logger.debug(f"Get current user info: {current_user.id}")
+
+            from src.users.db_services import UserServiceDB
 
             registry = get_service_registry()
             user_service = UserServiceDB(registry.database)

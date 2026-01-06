@@ -38,3 +38,17 @@ class UploadResizePersonPhotoResponse(BaseModel):
     original: str
     icon: str
     webview: str
+
+
+class PaginationMetadata(BaseModel):
+    page: int
+    items_per_page: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+
+
+class PaginatedPersonResponse(BaseModel):
+    data: list[PersonSchema]
+    metadata: PaginationMetadata

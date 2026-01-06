@@ -135,8 +135,10 @@ class TestPersonViews:
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        second_names = [p["second_name"] for p in data]
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) == 2
+        second_names = [p["second_name"] for p in data["data"]]
         assert second_names == ["Brown", "Smith"]
 
     async def test_get_all_persons_paginated_endpoint_invalid_page(self, client):
@@ -168,7 +170,8 @@ class TestPersonViews:
 
         assert response.status_code == 200
         data = response.json()
-        second_names = [p["second_name"] for p in data]
+        assert "data" in data
+        second_names = [p["second_name"] for p in data["data"]]
         assert second_names == ["Apple", "Mango", "Zebra"]
 
     async def test_get_all_persons_paginated_endpoint_descending_order(self, client, test_db):
@@ -188,7 +191,7 @@ class TestPersonViews:
 
         assert response.status_code == 200
         data = response.json()
-        second_names = [p["second_name"] for p in data]
+        second_names = [p["second_name"] for p in data["data"]]
         assert second_names == sorted(second_names, reverse=True)
 
     async def test_get_all_persons_paginated_endpoint_multiple_pages(self, client, test_db):
@@ -204,11 +207,11 @@ class TestPersonViews:
         page3 = await client.get("/api/persons/paginated?page=3&items_per_page=2")
 
         assert page1.status_code == 200
-        assert len(page1.json()) == 2
+        assert len(page1.json()["data"]) == 2
         assert page2.status_code == 200
-        assert len(page2.json()) == 2
+        assert len(page2.json()["data"]) == 2
         assert page3.status_code == 200
-        assert len(page3.json()) == 1
+        assert len(page3.json()["data"]) == 1
 
     async def test_get_persons_count_endpoint(self, client, test_db):
         """Test count endpoint returns correct total."""
@@ -230,7 +233,7 @@ class TestPersonViews:
         assert response.json() == {"total": 0}
 
     async def test_existing_get_all_persons_endpoint_still_works(self, client, test_db):
-        """Test that the non-paginated endpoint still works (backward compatibility)."""
+        """Test that non-paginated endpoint still works (backward compatibility)."""
         person_service = PersonServiceDB(test_db)
         await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=6001))
         await person_service.create_or_update_person(PersonFactory.build(person_eesl_id=6002))
@@ -239,3 +242,102 @@ class TestPersonViews:
 
         assert response.status_code == 200
         assert len(response.json()) >= 2
+
+    async def test_get_all_persons_paginated_search_success(self, client, test_db):
+        """Test search functionality in paginated endpoint."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=8001, first_name="Alice", second_name="Johnson")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=8002, first_name="Bob", second_name="Smith")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=8003, first_name="Charlie", second_name="Johnson")
+        )
+
+        response = await client.get("/api/persons/paginated?search=Johnson")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) == 2
+        names = [p["first_name"] for p in data["data"]]
+        assert "Alice" in names
+        assert "Charlie" in names
+        assert "Bob" not in names
+
+    async def test_get_all_persons_paginated_with_metadata(self, client, test_db):
+        """Test paginated endpoint returns correct metadata."""
+        person_service = PersonServiceDB(test_db)
+        for i in range(5):
+            await person_service.create_or_update_person(
+                PersonFactory.build(
+                    person_eesl_id=9000 + i,
+                    first_name=f"Person{i}",
+                    second_name="Test",
+                )
+            )
+
+        response = await client.get("/api/persons/paginated?search=Test&page=1&items_per_page=2")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["metadata"]["page"] == 1
+        assert data["metadata"]["items_per_page"] == 2
+        assert data["metadata"]["total_items"] == 5
+        assert data["metadata"]["total_pages"] == 3
+        assert data["metadata"]["has_next"] is True
+        assert data["metadata"]["has_previous"] is False
+        assert len(data["data"]) == 2
+
+    async def test_get_all_persons_paginated_search_no_results(self, client, test_db):
+        """Test search with no matching results returns empty data."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=10001, first_name="Alice", second_name="Smith")
+        )
+
+        response = await client.get("/api/persons/paginated?search=XYZNonExistent")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 0
+        assert data["metadata"]["total_items"] == 0
+
+    async def test_get_all_persons_paginated_search_with_pagination(self, client, test_db):
+        """Test search works with pagination."""
+        person_service = PersonServiceDB(test_db)
+        for i in range(5):
+            await person_service.create_or_update_person(
+                PersonFactory.build(
+                    person_eesl_id=11000 + i,
+                    first_name=f"Test{i}",
+                    second_name="Searchable",
+                )
+            )
+
+        page1 = await client.get("/api/persons/paginated?search=Searchable&page=1&items_per_page=2")
+        page2 = await client.get("/api/persons/paginated?search=Searchable&page=2&items_per_page=2")
+
+        assert page1.status_code == 200
+        assert len(page1.json()["data"]) == 2
+        assert page2.status_code == 200
+        assert len(page2.json()["data"]) == 2
+
+    async def test_get_all_persons_paginated_empty_search_all_results(self, client, test_db):
+        """Test empty search query returns all persons (no filter)."""
+        person_service = PersonServiceDB(test_db)
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=12001, first_name="Alice", second_name="Zoe")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=12002, first_name="Bob", second_name="Alpha")
+        )
+
+        response = await client.get("/api/persons/paginated?search=")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) >= 2

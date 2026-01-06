@@ -6,6 +6,7 @@ from ..helpers.file_service import file_service
 from ..logging_config import get_logger
 from .db_services import PersonServiceDB
 from .schemas import (
+    PaginatedPersonResponse,
     PersonSchema,
     PersonSchemaCreate,
     PersonSchemaUpdate,
@@ -119,7 +120,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
 
         @router.get(
             "/paginated",
-            response_model=list[PersonSchema],
+            response_model=PaginatedPersonResponse,
         )
         async def get_all_persons_paginated_endpoint(
             page: int = Query(1, ge=1, description="Page number (1-based)"),
@@ -127,20 +128,22 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             order_by: str = Query("second_name", description="First sort column"),
             order_by_two: str = Query("id", description="Second sort column"),
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for full-text search"),
         ):
             self.logger.debug(
                 f"Get all persons paginated: page={page}, items_per_page={items_per_page}, "
-                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}"
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
-            persons = await self.service.get_all_persons_with_pagination(
+            response = await self.service.search_persons_with_pagination(
+                search_query=search,
                 skip=skip,
                 limit=items_per_page,
                 order_by=order_by,
                 order_by_two=order_by_two,
                 ascending=ascending,
             )
-            return [PersonSchema.model_validate(p) for p in persons]
+            return response
 
         @router.get(
             "/count",
