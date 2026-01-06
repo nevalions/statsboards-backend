@@ -812,6 +812,18 @@ Current optimizations implemented:
   - autovacuum=off, track_functions=none, track_counts=off
   - tmpfs for PostgreSQL data (in-memory storage)
 
+**Note on xdist with schema-modifying tests:**
+
+Tests that modify database schema (e.g., search tests that create triggers, indexes, or columns) cannot run in parallel with xdist due to PostgreSQL locking conflicts (deadlocks). When multiple workers try to modify schema simultaneously, they deadlock waiting for AccessExclusiveLock on the same relation.
+
+**Examples of schema-modifying tests:**
+- `tests/test_team_search.py` - Creates search triggers and indexes for person/team tables
+
+**Workaround:** Run these tests sequentially:
+```bash
+pytest tests/test_team_search.py -n 0
+```
+
 ### File Structure Per Domain
 
 Each domain module must contain:
@@ -1428,6 +1440,62 @@ See `src/person/` for complete implementation:
 - **Router**: `PersonAPIRouter.get_all_persons_paginated_endpoint()`
 - **Model**: `PersonDB.search_vector` column
 - **Migration**: `2026_01_06_1214-7468b271f771_add_full_text_search_to_person_table.py`
+
+#### Test Database Setup
+
+When adding search functionality to a new domain, update `tests/conftest.py` to include the search components:
+
+```python
+# tests/conftest.py - Add these after pg_trgm extension setup
+
+# Create {table_name} search components
+await conn.execute(
+    text(f"""
+    ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS search_vector tsvector
+""")
+)
+
+await conn.execute(
+    text(f"""
+    CREATE INDEX IF NOT EXISTS ix_{table_name}_search_vector
+    ON {table_name} USING GIN (search_vector)
+""")
+)
+
+await conn.execute(
+    text(f"""
+    CREATE OR REPLACE FUNCTION {table_name}_search_vector_update()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.search_vector :=
+            to_tsvector('english', COALESCE(NEW.search_field, ''));
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+""")
+)
+
+# Drop trigger if exists to avoid duplicate errors
+await conn.execute(
+    text(f"""
+    DROP TRIGGER IF EXISTS {table_name}_search_vector_trigger ON {table_name}
+""")
+)
+
+await conn.execute(
+    text(f"""
+    CREATE TRIGGER {table_name}_search_vector_trigger
+    BEFORE INSERT OR UPDATE OF search_field ON {table_name}
+    FOR EACH ROW
+    EXECUTE FUNCTION {table_name}_search_vector_update()
+""")
+)
+```
+
+**Important:** Search tests require sequential execution due to schema modifications (see "PostgreSQL Test Performance Optimization" section above). Run with `-n 0`:
+```bash
+pytest tests/test_{domain}_search.py -n 0
+```
 
 ### WebSocket and Real-time
 
