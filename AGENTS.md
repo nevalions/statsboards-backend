@@ -1180,41 +1180,254 @@ Key utility methods provided by base class:
 6. **Service registry** - For cross-service nested relationships
 7. **Multi-query assembly** - Building complex composite data structures
 
-### Full-Text Search Implementation
+### Search Implementation
 
-When adding full-text search to a domain:
+When adding search functionality to a domain:
 
-1. **Database Schema** (Alembic migration):
-   - Add `search_vector` column of type `tsvector`
-   - Create trigger function to update search_vector on INSERT/UPDATE
-   - Create GIN index on search_vector for performance
-   - Update existing records
+#### 1. Database Schema (Alembic Migration)
 
-2. **Service Layer**:
-   - Add `search_<entity>s_with_pagination()` method
-   - Use `@@` operator with `to_tsquery()` for matching
-   - Return tuple: (list[Model], total_count)
-   - Order by `ts_rank().desc()` for relevance
+Add `search_vector` column of type `tsvector` with GIN index and trigger:
 
-3. **Router Layer**:
-   - Add `search` query parameter to existing paginated endpoint
-   - Return new `Paginated<Entity>Response` schema
-   - Calculate metadata: total_count, total_pages, has_more
-   - Empty search query returns empty list
-
-4. **Schema**:
-   - Create `Paginated<Entity>Response` with metadata fields
-
-Example (Person domain):
 ```python
-class PaginatedPersonResponse(BaseModel):
-    data: list[PersonSchema]
-    total_count: int
-    total_pages: int
-    current_page: int
-    has_more: bool
-    items_per_page: int
+# alembic/versions/YYYY_MM_DD_HHMM-{hash}_add_search_to_{table}.py
+def upgrade() -> None:
+    # Add tsvector column
+    op.execute("""
+        ALTER TABLE {table_name}
+        ADD COLUMN search_vector tsvector;
+    """)
+
+    # Create GIN index for fast full-text search
+    op.execute("""
+        CREATE INDEX ix_{table_name}_search_vector
+        ON {table_name} USING GIN (search_vector);
+    """)
+
+    # Create trigger function to update search_vector
+    op.execute(f"""
+        CREATE OR REPLACE FUNCTION {table_name}_search_vector_update()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.search_vector :=
+                setweight(to_tsvector('english', COALESCE(NEW.field1, '')), 'A') ||
+                setweight(to_tsvector('english', COALESCE(NEW.field2, '')), 'A');
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    """)
+
+    # Create trigger to auto-update search_vector on INSERT/UPDATE
+    op.execute(f"""
+        CREATE TRIGGER {table_name}_search_vector_trigger
+        BEFORE INSERT OR UPDATE OF field1, field2 ON {table_name}
+        FOR EACH ROW
+        EXECUTE FUNCTION {table_name}_search_vector_update();
+    """)
+
+    # Update existing records
+    op.execute(f"""
+        UPDATE {table_name} SET search_vector = NULL;
+    """)
+
+
+def downgrade() -> None:
+    op.execute(f"DROP TRIGGER IF EXISTS {table_name}_search_vector_trigger ON {table_name};")
+    op.execute(f"DROP FUNCTION IF EXISTS {table_name}_search_vector_update();")
+    op.execute(f"DROP INDEX IF EXISTS ix_{table_name}_search_vector;")
+    op.execute(f"ALTER TABLE {table_name} DROP COLUMN IF EXISTS search_vector;")
 ```
+
+#### 2. Model Updates
+
+Add `search_vector` column to model:
+
+```python
+# src/core/models/{domain}.py
+from sqlalchemy.dialects.postgresql import TSVECTOR as TSVECTORType
+
+class {Model}DB(Base):
+    __tablename__ = "{table_name}"
+    __table_args__ = {"extend_existing": True}
+
+    # ... other fields ...
+
+    search_vector: Mapped[str] = mapped_column(
+        TSVECTORType(),
+        nullable=True,
+    )
+```
+
+#### 3. Schema Updates
+
+Add pagination metadata and paginated response schemas:
+
+```python
+# src/{domain}/schemas.py
+class PaginationMetadata(BaseModel):
+    page: int
+    items_per_page: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+
+
+class Paginated{Entity}Response(BaseModel):
+    data: list[{Entity}Schema]
+    metadata: PaginationMetadata
+```
+
+#### 4. Service Layer Implementation
+
+Implement `search_<entity>s_with_pagination()` method:
+
+```python
+# src/{domain}/db_services.py
+from math import ceil
+from sqlalchemy import select, func
+
+@handle_service_exceptions(
+    item_name=ITEM,
+    operation="searching {entity}s with pagination",
+    return_value_on_not_found=None,
+)
+async def search_{entity}s_with_pagination(
+    self,
+    search_query: str | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    order_by: str = "{default_field}",
+    order_by_two: str = "id",
+    ascending: bool = True,
+) -> Paginated{Entity}Response:
+    self.logger.debug(
+        f"Search {ITEM}: query={search_query}, skip={skip}, limit={limit}, "
+        f"order_by={order_by}, order_by_two={order_by_two}"
+    )
+
+    async with self.db.async_session() as session:
+        base_query = select({Model}DB)
+
+        # Search pattern matching with ICU collation for international text
+        if search_query:
+            search_pattern = f"%{search_query}%"
+            base_query = base_query.where(
+                ({Model}DB.field1.ilike(search_pattern).collate("en-US-x-icu"))
+                | ({Model}DB.field2.ilike(search_pattern).collate("en-US-x-icu"))
+            )
+
+        # Get total count
+        count_stmt = select(func.count()).select_from(base_query.subquery())
+        count_result = await session.execute(count_stmt)
+        total_items = count_result.scalar() or 0
+
+        total_pages = ceil(total_items / limit) if limit > 0 else 0
+
+        # Order by columns with fallbacks
+        try:
+            order_column = getattr({Model}DB, order_by, {Model}DB.{default_field})
+        except AttributeError:
+            self.logger.warning(f"Order column {order_by} not found, defaulting to {default_field}")
+            order_column = {Model}DB.{default_field}
+
+        try:
+            order_column_two = getattr({Model}DB, order_by_two, {Model}DB.id)
+        except AttributeError:
+            self.logger.warning(f"Order column {order_by_two} not found, defaulting to id")
+            order_column_two = {Model}DB.id
+
+        order_expr = order_column.asc() if ascending else order_column.desc()
+        order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+        # Apply pagination and ordering
+        data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+        result = await session.execute(data_query)
+        {entity}s = result.scalars().all()
+
+        return Paginated{Entity}Response(
+            data=[{Entity}Schema.model_validate(e) for e in {entity}s],
+            metadata=PaginationMetadata(
+                page=(skip // limit) + 1,
+                items_per_page=limit,
+                total_items=total_items,
+                total_pages=total_pages,
+                has_next=(skip + limit) < total_items,
+                has_previous=skip > 0,
+            ),
+        )
+```
+
+#### 5. Router Layer Updates
+
+Add `search` query parameter to paginated endpoint:
+
+```python
+# src/{domain}/views.py
+@router.get(
+    "/paginated",
+    response_model=Paginated{Entity}Response,
+)
+async def get_all_{entity}s_paginated_endpoint(
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+    order_by: str = Query("{default_field}", description="First sort column"),
+    order_by_two: str = Query("id", description="Second sort column"),
+    ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+    search: str | None = Query(None, description="Search query for text search"),
+):
+    self.logger.debug(
+        f"Get all {entity}s paginated: page={page}, items_per_page={items_per_page}, "
+        f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+    )
+    skip = (page - 1) * items_per_page
+    response = await self.service.search_{entity}s_with_pagination(
+        search_query=search,
+        skip=skip,
+        limit=items_per_page,
+        order_by=order_by,
+        order_by_two=order_by_two,
+        ascending=ascending,
+    )
+    return response
+```
+
+#### Key Implementation Details
+
+1. **Search Pattern Matching**:
+   - Uses `ilike()` for case-insensitive matching
+   - ICU collation (`en-US-x-icu`) for proper international text handling
+   - Pattern `%query%` matches anywhere in the field
+   - Searches multiple fields with OR (`|`) operator
+
+2. **Pagination Metadata**:
+   - `page`: Current page number (1-based)
+   - `items_per_page`: Number of items per page
+   - `total_items`: Total number of matching results
+   - `total_pages`: Total number of pages (ceil(total_items / items_per_page))
+   - `has_next`: Whether there is a next page
+   - `has_previous`: Whether there is a previous page
+
+3. **Ordering**:
+   - Dual column sorting for consistent pagination
+   - Graceful fallback to default columns if invalid column names provided
+   - Configurable ascending/descending order
+
+4. **Empty Search Query**:
+   - `search=None` returns all records with pagination
+   - Consistent with existing `get_all_with_pagination()` behavior
+
+5. **Error Handling**:
+   - Decorator with `return_value_on_not_found=None` for graceful handling
+   - Returns empty list and zero metadata when no results found
+
+#### Example: Person Domain
+
+See `src/person/` for complete implementation:
+- **Schema**: `PaginationMetadata`, `PaginatedPersonResponse`
+- **Service**: `PersonServiceDB.search_persons_with_pagination()`
+- **Router**: `PersonAPIRouter.get_all_persons_paginated_endpoint()`
+- **Model**: `PersonDB.search_vector` column
+- **Migration**: `2026_01_06_1214-7468b271f771_add_full_text_search_to_person_table.py`
 
 ### WebSocket and Real-time
 
