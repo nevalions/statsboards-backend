@@ -121,8 +121,8 @@ class PersonServiceDB(BaseServiceDB):
             if search_query:
                 search_pattern = f"%{search_query}%"
                 base_query = base_query.where(
-                    (PersonDB.first_name.ilike(search_pattern).collate("ru-RU-x-icu"))
-                    | (PersonDB.second_name.ilike(search_pattern).collate("ru-RU-x-icu"))
+                    (PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu"))
+                    | (PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu"))
                 )
 
             count_stmt = select(func.count()).select_from(base_query.subquery())
