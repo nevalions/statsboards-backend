@@ -369,3 +369,145 @@ class TestPersonServiceDBSearch:
         assert len(result.data) == 2
         assert result.data[0].second_name == "Alpha"
         assert result.data[1].second_name == "Zebra"
+
+    async def test_search_persons_partial_substring_match(self, test_db: Database):
+        """Test search matches partial substrings anywhere in first_name or second_name."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=8001, first_name="Малахов", second_name="Alex")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=8002, first_name="Паламарчук", second_name="Bob")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=8003, first_name="Алабин", second_name="Charlie")
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="ала", skip=0, limit=10
+        )
+
+        assert len(result.data) == 3
+        names = [p.first_name for p in result.data]
+        assert "Малахов" in names
+        assert "Паламарчук" in names
+        assert "Алабин" in names
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=8004, first_name="Christopher", second_name="Smith")
+        )
+
+        result_pher = await person_service.search_persons_with_pagination(
+            search_query="pher", skip=0, limit=10
+        )
+
+        assert len(result_pher.data) == 1
+        assert result_pher.data[0].first_name == "Christopher"
+
+    async def test_search_persons_cyrillic_characters(self, test_db: Database):
+        """Test search works with Cyrillic and multi-language characters."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=9001, first_name="Иванов", second_name="Ivan")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=9002, first_name="Пиванович", second_name="Piv")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=9003, first_name="Сииван", second_name="Sii")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=9004, first_name="иса абдулаев", second_name="Isa")
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="иван", skip=0, limit=10
+        )
+
+        assert len(result.data) == 3
+        names = [p.first_name for p in result.data]
+        assert "Иванов" in names
+        assert "Пиванович" in names
+        assert "Сииван" in names
+
+        result_isa = await person_service.search_persons_with_pagination(
+            search_query="иса", skip=0, limit=10
+        )
+
+        assert len(result_isa.data) == 1
+        assert result_isa.data[0].first_name == "иса абдулаев"
+
+    async def test_search_persons_case_insensitive(self, test_db: Database):
+        """Test search is case-insensitive (ILIKE)."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=10001, first_name="Alice", second_name="Johnson")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=10002, first_name="Charlie", second_name="Johnson")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=10003, first_name="Alice", second_name="Smith")
+        )
+
+        result_lower = await person_service.search_persons_with_pagination(
+            search_query="johnson", skip=0, limit=10
+        )
+
+        assert len(result_lower.data) == 2
+        names_lower = [p.first_name for p in result_lower.data]
+        assert "Alice" in names_lower
+        assert "Charlie" in names_lower
+
+        result_mixed = await person_service.search_persons_with_pagination(
+            search_query="aLiCe", skip=0, limit=10
+        )
+
+        assert len(result_mixed.data) == 2
+        names_mixed = [p.first_name for p in result_mixed.data]
+        assert "Alice" in names_mixed
+
+        result_upper = await person_service.search_persons_with_pagination(
+            search_query="JOHNSON", skip=0, limit=10
+        )
+
+        assert len(result_upper.data) == 2
+        names_upper = [p.first_name for p in result_upper.data]
+        assert "Alice" in names_upper
+        assert "Charlie" in names_upper
+
+    async def test_search_persons_first_or_second_name(self, test_db: Database):
+        """Test search matches first_name OR second_name fields separately."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=11001, first_name="John", second_name="Doe")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=11002, first_name="Alice", second_name="Johnson")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=11003, first_name="Charlie", second_name="Johnson")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=11004, first_name="Bob", second_name="Smith")
+        )
+
+        result = await person_service.search_persons_with_pagination(
+            search_query="John", skip=0, limit=10
+        )
+
+        assert len(result.data) == 3
+        names = [p.first_name for p in result.data]
+        assert "John" in names
+        assert "Alice" in names
+        assert "Charlie" in names
+        assert "Bob" not in names
+
+        full_names = [f"{p.first_name} {p.second_name}" for p in result.data]
+        assert "John Doe" in full_names
+        assert "Alice Johnson" in full_names
+        assert "Charlie Johnson" in full_names
