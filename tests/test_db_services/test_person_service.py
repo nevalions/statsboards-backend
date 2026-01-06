@@ -439,6 +439,40 @@ class TestPersonServiceDBSearch:
         assert len(result_isa.data) == 1
         assert result_isa.data[0].first_name == "иса абдулаев"
 
+    async def test_search_persons_cyrillic_uppercase(self, test_db: Database):
+        """Test search handles Cyrillic uppercase characters correctly."""
+        person_service = PersonServiceDB(test_db)
+
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=9101, first_name="Иванов", second_name="Test")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=9102, first_name="иван", second_name="Test2")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=9103, first_name="ИВАН", second_name="Test3")
+        )
+
+        result_lower = await person_service.search_persons_with_pagination(
+            search_query="иван", skip=0, limit=10
+        )
+
+        assert len(result_lower.data) == 3
+        names = [p.first_name for p in result_lower.data]
+        assert "Иванов" in names
+        assert "иван" in names
+        assert "ИВАН" in names
+
+        result_upper = await person_service.search_persons_with_pagination(
+            search_query="ИВАН", skip=0, limit=10
+        )
+
+        assert len(result_upper.data) == 3
+        names_upper = [p.first_name for p in result_upper.data]
+        assert "Иванов" in names_upper
+        assert "иван" in names_upper
+        assert "ИВАН" in names_upper
+
     async def test_search_persons_case_insensitive(self, test_db: Database):
         """Test search is case-insensitive (ILIKE)."""
         person_service = PersonServiceDB(test_db)
