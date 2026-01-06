@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.schema_helpers import make_fields_optional
+from src.core.schema_helpers import make_fields_optional, PaginationMetadata
 
 
 class TeamSchemaBase(BaseModel):
@@ -51,15 +51,6 @@ class UploadResizeTeamLogoResponse(BaseModel):
         ..., examples=["https://example.com/uploads/icons/manchester-united-icon.png"]
     )
     webview: str = Field(..., examples=["https://example.com/uploads/web/manchester-united.png"])
-
-
-class PaginationMetadata(BaseModel):
-    page: int
-    items_per_page: int
-    total_items: int
-    total_pages: int
-    has_next: bool
-    has_previous: bool
 
 
 class PaginatedTeamResponse(BaseModel):

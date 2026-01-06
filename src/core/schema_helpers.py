@@ -4,6 +4,15 @@ from typing import Annotated, Union, get_args, get_origin
 from pydantic import BaseModel, Field, create_model
 
 
+class PaginationMetadata(BaseModel):
+    page: int
+    items_per_page: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+
+
 def has_none_in_annotation(annotation) -> bool:
     """Check if None is already in the annotation type."""
     origin = get_origin(annotation)

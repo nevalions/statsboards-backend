@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
-from src.core.schema_helpers import make_fields_optional
+from src.core.schema_helpers import make_fields_optional, PaginationMetadata
 
 
 class PersonSchemaBase(BaseModel):
@@ -38,15 +38,6 @@ class UploadResizePersonPhotoResponse(BaseModel):
     original: str
     icon: str
     webview: str
-
-
-class PaginationMetadata(BaseModel):
-    page: int
-    items_per_page: int
-    total_items: int
-    total_pages: int
-    has_next: bool
-    has_previous: bool
 
 
 class PaginatedPersonResponse(BaseModel):

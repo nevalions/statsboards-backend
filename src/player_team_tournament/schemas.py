@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
-from src.core.schema_helpers import make_fields_optional
+from src.core.schema_helpers import make_fields_optional, PaginationMetadata
 
 
 class PlayerTeamTournamentSchemaBase(BaseModel):
@@ -40,15 +40,6 @@ class PlayerTeamTournamentWithDetailsSchema(BaseModel):
     second_name: str | None = None
     team_title: str | None = None
     position_title: str | None = None
-
-
-class PaginationMetadata(BaseModel):
-    page: int
-    items_per_page: int
-    total_items: int
-    total_pages: int
-    has_next: bool
-    has_previous: bool
 
 
 class PaginatedPlayerTeamTournamentResponse(BaseModel):

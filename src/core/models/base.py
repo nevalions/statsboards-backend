@@ -21,6 +21,7 @@ from src.core.models.mixins import (
     CRUDMixin,
     QueryMixin,
     RelationshipMixin,
+    SearchPaginationMixin,
     SerializationMixin,
 )
 from src.logging_config import get_logger
@@ -135,6 +136,7 @@ class BaseServiceDB(
     CRUDMixin,
     QueryMixin,
     RelationshipMixin,
+    SearchPaginationMixin,
     SerializationMixin,
 ):
     def __init__(self, database: Database, model: type):

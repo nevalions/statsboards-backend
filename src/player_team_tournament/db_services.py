@@ -1,4 +1,3 @@
-from math import ceil
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -15,13 +14,13 @@ from src.core.models import (
     handle_service_exceptions,
 )
 from src.core.models.base import Database
+from src.core.schema_helpers import PaginationMetadata
 from src.player.db_services import PlayerServiceDB
 
 from ..logging_config import get_logger
 from .schemas import (
     PaginatedPlayerTeamTournamentResponse,
     PaginatedPlayerTeamTournamentWithDetailsResponse,
-    PaginationMetadata,
     PlayerTeamTournamentSchema,
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
@@ -435,7 +434,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
 
         async with self.db.async_session() as session:
             if search_query:
-                search_pattern = f"%{search_query}%"
+                search_pattern = await self._build_search_pattern(search_query)
                 base_query = (
                     select(PlayerTeamTournamentDB)
                     .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
@@ -471,28 +470,14 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             count_result = await session.execute(count_stmt)
             total_items = count_result.scalar() or 0
 
-            total_pages = ceil(total_items / limit) if limit > 0 else 0
-
-            try:
-                order_column = getattr(
-                    PlayerTeamTournamentDB, order_by, PlayerTeamTournamentDB.player_number
-                )
-            except AttributeError:
-                self.logger.warning(
-                    f"Order column {order_by} not found, defaulting to player_number"
-                )
-                order_column = PlayerTeamTournamentDB.player_number
-
-            try:
-                order_column_two = getattr(
-                    PlayerTeamTournamentDB, order_by_two, PlayerTeamTournamentDB.id
-                )
-            except AttributeError:
-                self.logger.warning(f"Order column {order_by_two} not found, defaulting to id")
-                order_column_two = PlayerTeamTournamentDB.id
-
-            order_expr = order_column.asc() if ascending else order_column.desc()
-            order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+            order_expr, order_expr_two = await self._build_order_expressions(
+                PlayerTeamTournamentDB,
+                order_by,
+                order_by_two,
+                ascending,
+                PlayerTeamTournamentDB.player_number,
+                PlayerTeamTournamentDB.id,
+            )
 
             data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
             result = await session.execute(data_query)
@@ -501,12 +486,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             return PaginatedPlayerTeamTournamentResponse(
                 data=[PlayerTeamTournamentSchema.model_validate(p) for p in players],
                 metadata=PaginationMetadata(
-                    page=(skip // limit) + 1,
-                    items_per_page=limit,
-                    total_items=total_items,
-                    total_pages=total_pages,
-                    has_next=(skip + limit) < total_items,
-                    has_previous=skip > 0,
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
                 ),
             )
 
@@ -532,7 +512,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
 
         async with self.db.async_session() as session:
             if search_query:
-                search_pattern = f"%{search_query}%"
+                search_pattern = await self._build_search_pattern(search_query)
                 base_query = (
                     select(PlayerTeamTournamentDB)
                     .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
@@ -568,28 +548,14 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             count_result = await session.execute(count_stmt)
             total_items = count_result.scalar() or 0
 
-            total_pages = ceil(total_items / limit) if limit > 0 else 0
-
-            try:
-                order_column = getattr(
-                    PlayerTeamTournamentDB, order_by, PlayerTeamTournamentDB.player_number
-                )
-            except AttributeError:
-                self.logger.warning(
-                    f"Order column {order_by} not found, defaulting to player_number"
-                )
-                order_column = PlayerTeamTournamentDB.player_number
-
-            try:
-                order_column_two = getattr(
-                    PlayerTeamTournamentDB, order_by_two, PlayerTeamTournamentDB.id
-                )
-            except AttributeError:
-                self.logger.warning(f"Order column {order_by_two} not found, defaulting to id")
-                order_column_two = PlayerTeamTournamentDB.id
-
-            order_expr = order_column.asc() if ascending else order_column.desc()
-            order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+            order_expr, order_expr_two = await self._build_order_expressions(
+                PlayerTeamTournamentDB,
+                order_by,
+                order_by_two,
+                ascending,
+                PlayerTeamTournamentDB.player_number,
+                PlayerTeamTournamentDB.id,
+            )
 
             data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
             result = await session.execute(data_query)
@@ -623,11 +589,6 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     for p in players_with_details
                 ],
                 metadata=PaginationMetadata(
-                    page=(skip // limit) + 1,
-                    items_per_page=limit,
-                    total_items=total_items,
-                    total_pages=total_pages,
-                    has_next=(skip + limit) < total_items,
-                    has_previous=skip > 0,
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
                 ),
             )
