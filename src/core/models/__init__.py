@@ -24,6 +24,7 @@ __all__ = (
     "PlayerMatchDB",
     "FootballEventDB",
     "UserDB",
+    "UserRoleDB",
     "RoleDB",
 )
 

@@ -274,29 +274,6 @@ async def test_app(test_db):
     from src.users.db_services import UserServiceDB
     from src.users.views import UserAPIRouter, get_user_router
 
-    __all__ = [
-        "FootballEventServiceDB",
-        "GameClockServiceDB",
-        "PlayerServiceDB",
-        "PlayerTeamTournamentServiceDB",
-        "PositionServiceDB",
-        "ScoreboardServiceDB",
-        "Seasons.db_services import Season_views",
-        "Seasons.views import Season_views_router",
-        "seasons.db_services import SeasonServiceDB",
-        "SponsorLineServiceDB",
-        "sponsor_lines.views import SponsorLineAPIRouter",
-        "sponsors.db_services import SponsorServiceDB",
-        "sponsors.views import SponsorAPIRouter",
-        "sports.db_services import SportServiceDB",
-        "sports.views import SportAPIRouter",
-        "team_tournament.db_services import TeamTournamentServiceDB",
-        "team_tournament.views import TeamTournamentAPIRouter",
-        "UserServiceDB",
-        "users.views import UserAPIRouter",
-        "users.views import get_user_router",
-    ]
-
     app = FastAPI()
     match_service = MatchServiceDB(test_db)
     app.include_router(MatchCRUDRouter(match_service).route())

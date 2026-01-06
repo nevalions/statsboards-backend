@@ -58,7 +58,7 @@ class TestAuthViews:
         )
 
         service = UserServiceDB(test_db)
-        user = await service.create(user_data)
+        await service.create(user_data)
 
         response = await client.post(
             "/api/auth/login",

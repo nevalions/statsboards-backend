@@ -28,6 +28,19 @@ docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activ
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
+**Important: Run full test suite sequentially to avoid ResourceWarnings:**
+
+```bash
+pytest -n 0
+```
+
+The default pytest.ini configuration uses `--disable-warnings` to suppress third-party library warnings (pytest_benchmark DeprecationWarning). Running full test suite with parallel execution (`-n auto` or `-n 8`) causes ResourceWarnings due to:
+- Function-scoped `test_db` fixture creates tables/triggers/indexes for every test
+- Multiple xdist workers trying to modify schema simultaneously → PostgreSQL deadlocks
+- These are fixture architecture limitations, not code bugs
+
+Use `-n 0` for complete test runs to avoid these warnings.
+
 Then run tests:
 
 ```bash

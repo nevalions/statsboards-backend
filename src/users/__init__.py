@@ -15,6 +15,7 @@ __all__ = [
     "UserSchema",
     "UserSchemaCreate",
     "UserSchemaUpdate",
+    "UserAPIRouter",
     "get_user_router",
 ]
 api_user_router = get_user_router()

@@ -29,8 +29,8 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
     ) -> SponsorSponsorLineDB | None:
         self.logger.debug(f"Creating {ITEM}")
         is_relation_exist = await self.get_sponsor_sponsor_line_relation(
-            item.sponsor_line_id,
             item.sponsor_id,
+            item.sponsor_line_id,
         )
         if is_relation_exist:
             self.logger.debug(f"Relation {ITEM} already exists")
@@ -55,7 +55,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
     @handle_service_exceptions(
         item_name=ITEM,
         operation="fetching related sponsors",
-        return_value_on_not_found={"sponsor_line": None, "sponsors": []}
+        return_value_on_not_found={"sponsor_line": None, "sponsors": []},
     )
     async def get_related_sponsors(self, sponsor_line_id: int) -> dict:
         self.logger.debug(f"Getting sponsors by sponsor line id: {sponsor_line_id}")
