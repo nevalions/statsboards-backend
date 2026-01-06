@@ -51,3 +51,17 @@ class UploadResizeTeamLogoResponse(BaseModel):
         ..., examples=["https://example.com/uploads/icons/manchester-united-icon.png"]
     )
     webview: str = Field(..., examples=["https://example.com/uploads/web/manchester-united.png"])
+
+
+class PaginationMetadata(BaseModel):
+    page: int
+    items_per_page: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+
+
+class PaginatedTeamResponse(BaseModel):
+    data: list[TeamSchema]
+    metadata: PaginationMetadata

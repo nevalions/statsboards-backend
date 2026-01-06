@@ -1,4 +1,4 @@
-from fastapi import File, HTTPException, UploadFile
+from fastapi import File, HTTPException, Query, UploadFile
 
 from src.core import BaseRouter, db
 
@@ -12,6 +12,7 @@ from ..team_tournament.schemas import TeamTournamentSchemaCreate
 from ..tournaments.db_services import TournamentServiceDB
 from .db_services import TeamServiceDB
 from .schemas import (
+    PaginatedTeamResponse,
     TeamSchema,
     TeamSchemaCreate,
     TeamSchemaUpdate,
@@ -117,9 +118,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             self.logger.debug(f"Update team endpoint id:{item_id} data: {item}")
             update_ = await self.service.update(item_id, item)
             if update_ is None:
-                raise HTTPException(
-                    status_code=404, detail=f"Team id {item_id} not found"
-                )
+                raise HTTPException(status_code=404, detail=f"Team id {item_id} not found")
             return TeamSchema.model_validate(update_)
 
         @router.get("/id/{team_id}/matches/")
@@ -140,9 +139,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 )
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players/")
-        async def get_players_by_team_and_tournament_endpoint(
-            team_id: int, tournament_id: int
-        ):
+        async def get_players_by_team_and_tournament_endpoint(team_id: int, tournament_id: int):
             self.logger.debug(
                 f"Get players by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
@@ -170,10 +167,8 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 f"Get players with persons by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
             try:
-                return (
-                    await self.service.get_players_by_team_id_tournament_id_with_person(
-                        team_id, tournament_id
-                    )
+                return await self.service.get_players_by_team_id_tournament_id_with_person(
+                    team_id, tournament_id
                 )
             except HTTPException:
                 raise
@@ -190,12 +185,8 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo_endpoint(file: UploadFile = File(...)):
             try:
-                file_location = await file_service.save_upload_image(
-                    file, sub_folder="teams/logos"
-                )
-                self.logger.debug(
-                    f"Upload team logo endpoint file location: {file_location}"
-                )
+                file_location = await file_service.save_upload_image(file, sub_folder="teams/logos")
+                self.logger.debug(f"Upload team logo endpoint file location: {file_location}")
                 return {"logoUrl": file_location}
             except HTTPException:
                 raise
@@ -222,9 +213,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             except HTTPException:
                 raise
             except Exception as ex:
-                self.logger.error(
-                    f"Error saving and resizing team logo file: {ex}", exc_info=True
-                )
+                self.logger.error(f"Error saving and resizing team logo file: {ex}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail="Error uploading and resizing team logo",
@@ -247,14 +236,10 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             self.logger.debug(
                 f"Get and Save parsed teams from tournament eesl_id:{eesl_tournament_id} endpoint"
             )
-            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(
-                eesl_tournament_id
-            )
+            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
             self.logger.debug(f"Tournament: {tournament}")
             try:
-                teams_list = await parse_tournament_teams_index_page_eesl(
-                    eesl_tournament_id
-                )
+                teams_list = await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
                 self.logger.debug(f"Teams after parse: {teams_list}")
 
                 created_teams = []
@@ -263,12 +248,8 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     if teams_list:
                         for t in teams_list:
                             team = TeamSchemaCreate(**t)
-                            created_team = await self.service.create_or_update_team(
-                                team
-                            )
-                            self.logger.debug(
-                                f"Created or updated team after parse {created_team}"
-                            )
+                            created_team = await self.service.create_or_update_team(team)
+                            self.logger.debug(f"Created or updated team after parse {created_team}")
                             created_teams.append(created_team)
                             if created_team and tournament:
                                 dict_conv = TeamTournamentSchemaCreate(
@@ -281,22 +262,16 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                                     self.logger.debug(
                                         "Trying to create team and tournament connection after parse"
                                     )
-                                    team_tournament_connection = (
-                                        await TeamTournamentServiceDB(db).create(
-                                            dict_conv
-                                        )
-                                    )
-                                    created_team_tournament_ids.append(
-                                        team_tournament_connection
-                                    )
+                                    team_tournament_connection = await TeamTournamentServiceDB(
+                                        db
+                                    ).create(dict_conv)
+                                    created_team_tournament_ids.append(team_tournament_connection)
                                 except Exception as ex:
                                     self.logger.error(
                                         f"Error create team and tournament connection after parse {ex}",
                                         exc_info=True,
                                     )
-                        self.logger.info(
-                            f"Created teams after parsing: {created_teams}"
-                        )
+                        self.logger.info(f"Created teams after parsing: {created_teams}")
                         self.logger.info(
                             f"Created team tournament connections after parsing: {created_team_tournament_ids}"
                         )
@@ -327,6 +302,33 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     status_code=500,
                     detail="Internal server error parsing and creating teams from tournament",
                 )
+
+        @router.get(
+            "/paginated",
+            response_model=PaginatedTeamResponse,
+        )
+        async def get_all_teams_paginated_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("title", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for Cyrillic text search"),
+        ):
+            self.logger.debug(
+                f"Get all teams paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_teams_with_pagination(
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
 
         return router
 

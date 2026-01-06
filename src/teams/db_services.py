@@ -1,4 +1,7 @@
+from math import ceil
+
 from sqlalchemy import select
+from sqlalchemy.sql import func
 
 from src.core.models import (
     BaseServiceDB,
@@ -11,7 +14,13 @@ from src.core.models.base import Database
 from src.positions.db_services import PositionServiceDB
 
 from ..logging_config import get_logger
-from .schemas import TeamSchemaCreate, TeamSchemaUpdate
+from .schemas import (
+    PaginatedTeamResponse,
+    PaginationMetadata,
+    TeamSchema,
+    TeamSchemaCreate,
+    TeamSchemaUpdate,
+)
 
 ITEM = "TEAM"
 
@@ -129,3 +138,68 @@ class TeamServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching teams with pagination",
+        return_value_on_not_found=None,
+    )
+    async def search_teams_with_pagination(
+        self,
+        search_query: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "title",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedTeamResponse:
+        self.logger.debug(
+            f"Search {ITEM}: query={search_query}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = select(TeamDB)
+
+            if search_query:
+                search_pattern = f"%{search_query}%"
+                base_query = base_query.where(
+                    TeamDB.title.ilike(search_pattern).collate("en-US-x-icu")
+                )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            total_pages = ceil(total_items / limit) if limit > 0 else 0
+
+            try:
+                order_column = getattr(TeamDB, order_by, TeamDB.title)
+            except AttributeError:
+                self.logger.warning(f"Order column {order_by} not found, defaulting to title")
+                order_column = TeamDB.title
+
+            try:
+                order_column_two = getattr(TeamDB, order_by_two, TeamDB.id)
+            except AttributeError:
+                self.logger.warning(f"Order column {order_by_two} not found, defaulting to id")
+                order_column_two = TeamDB.id
+
+            order_expr = order_column.asc() if ascending else order_column.desc()
+            order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            teams = result.scalars().all()
+
+            return PaginatedTeamResponse(
+                data=[TeamSchema.model_validate(t) for t in teams],
+                metadata=PaginationMetadata(
+                    page=(skip // limit) + 1,
+                    items_per_page=limit,
+                    total_items=total_items,
+                    total_pages=total_pages,
+                    has_next=(skip + limit) < total_items,
+                    has_previous=skip > 0,
+                ),
+            )

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR as TSVECTORType
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -64,6 +65,11 @@ class TeamDB(Base):
         nullable=False,
         default="#c01c28",
         server_default="#c01c28",
+    )
+
+    search_vector: Mapped[str] = mapped_column(
+        TSVECTORType(),
+        nullable=True,
     )
 
     sport_id: Mapped[int] = mapped_column(
