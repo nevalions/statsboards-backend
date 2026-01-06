@@ -1249,80 +1249,7 @@ Key utility methods provided by base class:
 
 When adding search functionality to a domain:
 
-#### 1. Database Schema (Alembic Migration)
-
-Add `search_vector` column of type `tsvector` with GIN index and trigger:
-
-```python
-# alembic/versions/YYYY_MM_DD_HHMM-{hash}_add_search_to_{table}.py
-def upgrade() -> None:
-    # Add tsvector column
-    op.execute("""
-        ALTER TABLE {table_name}
-        ADD COLUMN search_vector tsvector;
-    """)
-
-    # Create GIN index for fast full-text search
-    op.execute("""
-        CREATE INDEX ix_{table_name}_search_vector
-        ON {table_name} USING GIN (search_vector);
-    """)
-
-    # Create trigger function to update search_vector
-    op.execute(f"""
-        CREATE OR REPLACE FUNCTION {table_name}_search_vector_update()
-        RETURNS TRIGGER AS $$
-        BEGIN
-            NEW.search_vector :=
-                setweight(to_tsvector('english', COALESCE(NEW.field1, '')), 'A') ||
-                setweight(to_tsvector('english', COALESCE(NEW.field2, '')), 'A');
-            RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;
-    """)
-
-    # Create trigger to auto-update search_vector on INSERT/UPDATE
-    op.execute(f"""
-        CREATE TRIGGER {table_name}_search_vector_trigger
-        BEFORE INSERT OR UPDATE OF field1, field2 ON {table_name}
-        FOR EACH ROW
-        EXECUTE FUNCTION {table_name}_search_vector_update();
-    """)
-
-    # Update existing records
-    op.execute(f"""
-        UPDATE {table_name} SET search_vector = NULL;
-    """)
-
-
-def downgrade() -> None:
-    op.execute(f"DROP TRIGGER IF EXISTS {table_name}_search_vector_trigger ON {table_name};")
-    op.execute(f"DROP FUNCTION IF EXISTS {table_name}_search_vector_update();")
-    op.execute(f"DROP INDEX IF EXISTS ix_{table_name}_search_vector;")
-    op.execute(f"ALTER TABLE {table_name} DROP COLUMN IF EXISTS search_vector;")
-```
-
-#### 2. Model Updates
-
-Add `search_vector` column to model:
-
-```python
-# src/core/models/{domain}.py
-from sqlalchemy.dialects.postgresql import TSVECTOR as TSVECTORType
-
-class {Model}DB(Base):
-    __tablename__ = "{table_name}"
-    __table_args__ = {"extend_existing": True}
-
-    # ... other fields ...
-
-    search_vector: Mapped[str] = mapped_column(
-        TSVECTORType(),
-        nullable=True,
-    )
-```
-
-#### 3. Schema Updates
+#### 1. Schema Updates
 
 Add pagination metadata and paginated response schemas:
 
@@ -1342,7 +1269,7 @@ class Paginated{Entity}Response(BaseModel):
     metadata: PaginationMetadata
 ```
 
-#### 4. Service Layer Implementation
+#### 2. Service Layer Implementation
 
 Implement `search_<entity>s_with_pagination()` method:
 
@@ -1422,7 +1349,7 @@ async def search_{entity}s_with_pagination(
         )
 ```
 
-#### 5. Router Layer Updates
+#### 3. Router Layer Updates
 
 Add `search` query parameter to paginated endpoint:
 
@@ -1491,63 +1418,14 @@ See `src/person/` for complete implementation:
 - **Schema**: `PaginationMetadata`, `PaginatedPersonResponse`
 - **Service**: `PersonServiceDB.search_persons_with_pagination()`
 - **Router**: `PersonAPIRouter.get_all_persons_paginated_endpoint()`
-- **Model**: `PersonDB.search_vector` column
-- **Migration**: `2026_01_06_1214-7468b271f771_add_full_text_search_to_person_table.py`
 
 #### Test Database Setup
 
-When adding search functionality to a new domain, update `tests/conftest.py` to include the search components:
+No special database setup is required for ilike-based search. Tests can use the standard test database setup.
 
-```python
-# tests/conftest.py - Add these after pg_trgm extension setup
-
-# Create {table_name} search components
-await conn.execute(
-    text(f"""
-    ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS search_vector tsvector
-""")
-)
-
-await conn.execute(
-    text(f"""
-    CREATE INDEX IF NOT EXISTS ix_{table_name}_search_vector
-    ON {table_name} USING GIN (search_vector)
-""")
-)
-
-await conn.execute(
-    text(f"""
-    CREATE OR REPLACE FUNCTION {table_name}_search_vector_update()
-    RETURNS TRIGGER AS $$
-    BEGIN
-        NEW.search_vector :=
-            to_tsvector('english', COALESCE(NEW.search_field, ''));
-        RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql
-""")
-)
-
-# Drop trigger if exists to avoid duplicate errors
-await conn.execute(
-    text(f"""
-    DROP TRIGGER IF EXISTS {table_name}_search_vector_trigger ON {table_name}
-""")
-)
-
-await conn.execute(
-    text(f"""
-    CREATE TRIGGER {table_name}_search_vector_trigger
-    BEFORE INSERT OR UPDATE OF search_field ON {table_name}
-    FOR EACH ROW
-    EXECUTE FUNCTION {table_name}_search_vector_update()
-""")
-)
-```
-
-**Important:** Search tests require sequential execution due to schema modifications (see "PostgreSQL Test Performance Optimization" section above). Run with `-n 0`:
+**Important:** Search tests using ilike can run in parallel with no special requirements. Run with:
 ```bash
-pytest tests/test_{domain}_search.py -n 0
+pytest tests/test_{domain}_search.py
 ```
 
 ### WebSocket and Real-time

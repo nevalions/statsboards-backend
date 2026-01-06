@@ -2,7 +2,6 @@ from datetime import datetime as date_type
 from typing import TYPE_CHECKING
 
 from sqlalchemy import TIMESTAMP, Integer, String
-from sqlalchemy.dialects.postgresql import TSVECTOR as TSVECTORType
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -59,11 +58,6 @@ class PersonDB(Base):
 
     person_dob: Mapped[date_type] = mapped_column(
         TIMESTAMP(timezone=True),
-        nullable=True,
-    )
-
-    search_vector: Mapped[str] = mapped_column(
-        TSVECTORType(),
         nullable=True,
     )
 

@@ -1,10 +1,22 @@
 # pg_trgm Search Optimization Guide
 
-This guide documents the implementation of PostgreSQL's `pg_trgm` extension for optimized middle-of-text search in the Statsboard backend.
+This guide documents the implementation of PostgreSQL's `pg_trgm` extension for optimized ILIKE-based search in Statsboard backend.
 
 ## Overview
 
 The `pg_trgm` (trigram) extension provides trigram-based substring matching with GIN indexes, enabling fast indexed lookups for ILIKE queries with patterns like `%text%` (middle-of-text search).
+
+## Search Approach
+
+The project uses **ILIKE with ICU collation** as the primary search method:
+- **ILIKE**: Case-insensitive pattern matching
+- **ICU collation** (`en-US-x-icu`): Proper international text handling for Cyrillic, Latin, and Unicode scripts
+- **pg_trgm indexes**: Optional performance optimization for large datasets
+
+This approach is simpler than full-text search (tsvector) while still providing:
+- Fast substring matching
+- International language support
+- Simple implementation pattern
 
 ### Benefits
 
@@ -136,9 +148,9 @@ async def test_db():
 - Create indexes after `create_all()` to ensure tables exist
 - Use `IF NOT EXISTS` for idempotent fixture execution
 
-## When to Use pg_trgm vs. Alternatives
+## When to Use pg_trgm
 
-### pg_trgm (Trigram Search)
+### pg_trgm (Trigram Index for ILIKE)
 
 **Use when**:
 - Need substring matching anywhere in text
@@ -155,21 +167,9 @@ async def test_db():
 - Search terms are always < 3 characters (trigrams ineffective)
 - Exact match is sufficient (= or IN)
 - Prefix-only search is needed (standard B-Tree index is smaller)
+- Have small datasets (< 1000 rows)
 
-### tsvector (Full-Text Search)
-
-**Use when**:
-- Need natural language search with ranking
-- Want to search across multiple fields with weights
-- Need phonetic matching (Stemming)
-- Have large documents (not just short strings)
-
-**Best for**:
-- Article content, descriptions, long documents
-- Search with relevance ranking
-- Language-aware stemming (run, runs, running → run)
-
-### B-Tree Indexes
+### B-Tree Indexes (Alternative)
 
 **Use when**:
 - Search is always prefix-based (text%)
@@ -181,6 +181,8 @@ async def test_db():
 - IDs, codes, structured identifiers
 - Prefix-only search
 - Small lookup tables
+
+**Note**: The project previously used `tsvector` for full-text search but migrated to ILIKE for simpler implementation with equivalent functionality for use cases like person/team name search.
 
 ## Performance Considerations
 
@@ -230,9 +232,13 @@ GIN indexes are typically 3-4x larger than B-Tree indexes.
 ### Person Domain
 
 See `src/person/` for complete implementation:
-- **Migration**: `alembic/versions/2026_01_06_1552-32e4ddf548e3_add_pg_trgm_extension_for_person_search.py`
 - **Service**: `PersonServiceDB.search_persons_with_pagination()` in `src/person/db_services.py`
 - **Benchmarks**: `TestPersonSearchPerformance` in `tests/test_benchmarks.py`
+
+### Team Domain
+
+See `src/teams/` for complete implementation:
+- **Service**: `TeamServiceDB.search_teams_with_pagination()` in `src/teams/db_services.py`
 
 ### Indexed Fields
 
@@ -339,12 +345,11 @@ Follow this pattern to add pg_trgm to other domains:
 - **PostgreSQL pg_trgm docs**: https://www.postgresql.org/docs/current/pgtrgm.html
 - **GIN Indexes**: https://www.postgresql.org/docs/current/gin.html
 - **ILIKE operators**: https://www.postgresql.org/docs/current/functions-matching.html
-- **Issue**: STAB-59 - Implement pg_trgm extension for middle-of-text search optimization
 
 ## Related Files
 
-- `alembic/versions/2026_01_06_1552-32e4ddf548e3_add_pg_trgm_extension_for_person_search.py` - Migration
 - `src/person/db_services.py` - Search implementation
-- `tests/conftest.py` - Test database setup
+- `src/teams/db_services.py` - Search implementation
+- `tests/conftest.py` - Test database setup (pg_trgm indexes)
 - `tests/test_benchmarks.py` - Performance benchmarks
-- `tests/test_db_services/test_person_service.py` - Search tests
+- `AGENTS.md` - Search implementation guide
