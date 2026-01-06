@@ -143,7 +143,7 @@ class PlayerTeamTournamentAPIRouter(
             order_by_two: str = Query("id", description="Second sort column"),
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
             search: str | None = Query(
-                None, description="Search query for player name, team name, or player number"
+                None, description="Search query for player first name or second name"
             ),
         ):
             self.logger.debug(
@@ -176,7 +176,7 @@ class PlayerTeamTournamentAPIRouter(
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
             search: str | None = Query(
                 None,
-                description="Search query for player name, team name, or player number",
+                description="Search query for player first name or second name",
             ),
         ):
             self.logger.debug(

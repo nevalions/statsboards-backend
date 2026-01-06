@@ -449,10 +449,8 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                         selectinload(PlayerTeamTournamentDB.position),
                     )
                     .where(
-                        PlayerTeamTournamentDB.player_number.ilike(search_pattern)
-                        | PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
+                        PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
                         | PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu")
-                        | TeamDB.title.ilike(search_pattern).collate("en-US-x-icu")
                     )
                     .distinct()
                 )
@@ -548,10 +546,8 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                         selectinload(PlayerTeamTournamentDB.position),
                     )
                     .where(
-                        PlayerTeamTournamentDB.player_number.ilike(search_pattern)
-                        | PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
+                        PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
                         | PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu")
-                        | TeamDB.title.ilike(search_pattern).collate("en-US-x-icu")
                     )
                     .distinct()
                 )

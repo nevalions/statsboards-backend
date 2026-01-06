@@ -119,8 +119,12 @@ class TestPlayerTeamTournamentSearch:
             TeamFactory.build(sport_id=sport.id, title="Спартак Москва")
         )
 
-        person1 = await person_service.create(PersonFactory.build())
-        person2 = await person_service.create(PersonFactory.build())
+        person1 = await person_service.create(
+            PersonFactory.build(first_name="Алексей", second_name="Смирнов")
+        )
+        person2 = await person_service.create(
+            PersonFactory.build(first_name="Дмитрий", second_name="Смирнов")
+        )
 
         player1 = await player_service.create(
             PlayerFactory.build(person_id=person1.id, sport_id=sport.id)
@@ -148,16 +152,16 @@ class TestPlayerTeamTournamentSearch:
             )
         )
 
-        # Search for team name
+        # Search for person name (searches both first and second name)
         result = await player_team_tournament_service.search_tournament_players_with_pagination(
             tournament_id=tournament.id,
-            search_query="Динамо",
+            search_query="Смирнов",
             skip=0,
             limit=10,
         )
 
-        assert len(result.data) == 1
-        assert result.data[0].team_id == team1.id
+        assert len(result.data) == 2
+        assert all(p.team_id in [team1.id, team2.id] for p in result.data)
 
     async def test_search_tournament_players_by_number(self, test_db):
         player_team_tournament_service = PlayerTeamTournamentServiceDB(test_db)
@@ -207,7 +211,7 @@ class TestPlayerTeamTournamentSearch:
             )
         )
 
-        # Search for player number "10"
+        # Search for player number "10" - should not match anything now (names only)
         result = await player_team_tournament_service.search_tournament_players_with_pagination(
             tournament_id=tournament.id,
             search_query="10",
@@ -215,8 +219,7 @@ class TestPlayerTeamTournamentSearch:
             limit=10,
         )
 
-        assert len(result.data) == 1
-        assert result.data[0].player_number == "10"
+        assert len(result.data) == 0
 
     async def test_search_tournament_players_pagination(self, test_db):
         player_team_tournament_service = PlayerTeamTournamentServiceDB(test_db)
