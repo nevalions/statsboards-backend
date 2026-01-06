@@ -119,14 +119,11 @@ class PersonServiceDB(BaseServiceDB):
             base_query = select(PersonDB)
 
             if search_query:
-                search_expression = func.to_tsquery("english", search_query)
-                name_concat = (
-                    func.coalesce(PersonDB.first_name, "")
-                    + " "
-                    + func.coalesce(PersonDB.second_name, "")
+                search_pattern = f"%{search_query}%"
+                base_query = base_query.where(
+                    (PersonDB.first_name.ilike(search_pattern))
+                    | (PersonDB.second_name.ilike(search_pattern))
                 )
-                search_column = func.to_tsvector("english", name_concat)
-                base_query = base_query.where(search_column.op("@@")(search_expression))
 
             count_stmt = select(func.count()).select_from(base_query.subquery())
             count_result = await session.execute(count_stmt)
