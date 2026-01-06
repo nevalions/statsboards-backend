@@ -3,6 +3,7 @@ import logging
 import pytest
 import pytest_asyncio
 
+from src.person.db_services import PersonServiceDB
 from src.positions.db_services import PositionServiceDB
 from src.seasons.db_services import SeasonServiceDB
 from src.sponsor_lines.db_services import SponsorLineServiceDB
@@ -21,6 +22,11 @@ from tests.factories import (
 )
 
 test_logger = logging.getLogger("backend_logger_tests")
+
+
+@pytest_asyncio.fixture()
+async def test_person_service(test_db) -> PersonServiceDB:
+    return PersonServiceDB(test_db)
 
 
 @pytest_asyncio.fixture()

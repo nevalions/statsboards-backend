@@ -277,3 +277,86 @@ class TestMatchStatsServicePerformance:
 
         result = await benchmark.pedantic(get_cached_stats)
         assert result is not None
+
+
+@pytest.mark.benchmark
+@pytest.mark.asyncio
+class TestPersonSearchPerformance:
+    """Benchmark tests for Person search operations with pg_trgm optimization."""
+
+    async def test_search_person_by_name_short(self, test_person_service, test_db, benchmark):
+        """Benchmark Person search with short name (3 chars)."""
+        from tests.factories import PersonFactory
+
+        for i in range(100):
+            person_data = PersonFactory.build(first_name=f"Test{i}", second_name=f"Person{i}")
+            await test_person_service.create(person_data)
+
+        async def search_short():
+            return await test_person_service.search_persons_with_pagination(
+                search_query="Tes",
+                skip=0,
+                limit=20,
+            )
+
+        result = await benchmark.pedantic(search_short)
+        assert result.metadata.total_items > 0
+
+    async def test_search_person_by_name_long(self, test_person_service, test_db, benchmark):
+        """Benchmark Person search with longer name (5+ chars)."""
+        from tests.factories import PersonFactory
+
+        for i in range(100):
+            person_data = PersonFactory.build(
+                first_name=f"Alexander{i}", second_name=f"Anderson{i}"
+            )
+            await test_person_service.create(person_data)
+
+        async def search_long():
+            return await test_person_service.search_persons_with_pagination(
+                search_query="Alexander",
+                skip=0,
+                limit=20,
+            )
+
+        result = await benchmark.pedantic(search_long)
+        assert result.metadata.total_items > 0
+
+    async def test_search_person_middle_of_text(self, test_person_service, test_db, benchmark):
+        """Benchmark Person search with substring in middle of text."""
+        from tests.factories import PersonFactory
+
+        for i in range(100):
+            person_data = PersonFactory.build(
+                first_name=f"Christopher{i}", second_name=f"Middleton{i}"
+            )
+            await test_person_service.create(person_data)
+
+        async def search_middle():
+            return await test_person_service.search_persons_with_pagination(
+                search_query="rist",
+                skip=0,
+                limit=20,
+            )
+
+        result = await benchmark.pedantic(search_middle)
+        assert result.metadata.total_items > 0
+
+    async def test_search_person_with_pagination(self, test_person_service, test_db, benchmark):
+        """Benchmark Person search with large dataset and pagination."""
+        from tests.factories import PersonFactory
+
+        for i in range(500):
+            person_data = PersonFactory.build(first_name=f"First{i}", second_name=f"Last{i}")
+            await test_person_service.create(person_data)
+
+        async def search_paginated():
+            return await test_person_service.search_persons_with_pagination(
+                search_query="First",
+                skip=100,
+                limit=50,
+            )
+
+        result = await benchmark.pedantic(search_paginated)
+        assert result.metadata.total_items >= 500
+        assert len(result.data) == 50

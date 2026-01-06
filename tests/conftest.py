@@ -6,6 +6,7 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 
 from src.core import settings
 from src.core.models.base import Base, Database
@@ -45,6 +46,24 @@ async def test_db():
     # Create tables at start of each test (faster than migrations)
     async with database.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        # Install pg_trgm extension for search optimization tests
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+
+        # Create GIN indexes for Person search optimization
+        await conn.execute(
+            text("""
+            CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm
+            ON person USING GIN (first_name gin_trgm_ops)
+        """)
+        )
+
+        await conn.execute(
+            text("""
+            CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm
+            ON person USING GIN (second_name gin_trgm_ops)
+        """)
+        )
 
     # Seed default roles
     from sqlalchemy import select
@@ -184,7 +203,6 @@ async def test_app(test_db):
         "users.views import UserAPIRouter",
         "users.views import get_user_router",
     ]
-
 
     app = FastAPI()
     match_service = MatchServiceDB(test_db)
