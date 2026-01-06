@@ -382,3 +382,57 @@ class TestPlayerTeamTournamentSearch:
         )
 
         assert len(result2.data) == 1
+
+    async def test_search_tournament_players_with_details(self, test_db):
+        player_team_tournament_service = PlayerTeamTournamentServiceDB(test_db)
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        position_service = PositionServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+        season = await season_service.create(SeasonFactoryAny.build())
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+        position = await position_service.create(
+            PositionFactory.build(sport_id=sport.id, title="Forward")
+        )
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id, title="Test Team"))
+
+        person = await person_service.create(
+            PersonFactory.build(first_name="Test", second_name="Player")
+        )
+        player = await player_service.create(
+            PlayerFactory.build(person_id=person.id, sport_id=sport.id)
+        )
+
+        await player_team_tournament_service.create(
+            PlayerTeamTournamentFactory.build(
+                player_id=player.id,
+                team_id=team.id,
+                tournament_id=tournament.id,
+                position_id=position.id,
+                player_number="99",
+            )
+        )
+
+        result = (
+            await player_team_tournament_service.search_tournament_players_with_pagination_details(
+                tournament_id=tournament.id,
+                search_query=None,
+                skip=0,
+                limit=10,
+            )
+        )
+
+        assert len(result.data) == 1
+        assert result.data[0].first_name == "Test"
+        assert result.data[0].second_name == "Player"
+        assert result.data[0].team_title == "Test Team"
+        assert result.data[0].position_title.upper() == "FORWARD"
+        assert result.data[0].player_number == "99"
+        assert result.metadata.total_items == 1

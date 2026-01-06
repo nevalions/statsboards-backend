@@ -28,6 +28,20 @@ class PlayerTeamTournamentSchema(PlayerTeamTournamentSchemaCreate):
     id: int
 
 
+class PlayerTeamTournamentWithDetailsSchema(BaseModel):
+    id: int
+    player_team_tournament_eesl_id: int | None = None
+    player_id: int
+    position_id: int | None = None
+    team_id: int | None = None
+    tournament_id: int | None = None
+    player_number: Annotated[str, Path(max_length=10)] | None = "0"
+    first_name: str | None = None
+    second_name: str | None = None
+    team_title: str | None = None
+    position_title: str | None = None
+
+
 class PaginationMetadata(BaseModel):
     page: int
     items_per_page: int
@@ -39,4 +53,9 @@ class PaginationMetadata(BaseModel):
 
 class PaginatedPlayerTeamTournamentResponse(BaseModel):
     data: list[PlayerTeamTournamentSchema]
+    metadata: PaginationMetadata
+
+
+class PaginatedPlayerTeamTournamentWithDetailsResponse(BaseModel):
+    data: list[PlayerTeamTournamentWithDetailsSchema]
     metadata: PaginationMetadata

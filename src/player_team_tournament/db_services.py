@@ -10,6 +10,7 @@ from src.core.models import (
     PersonDB,
     PlayerDB,
     PlayerTeamTournamentDB,
+    PositionDB,
     TeamDB,
     handle_service_exceptions,
 )
@@ -19,10 +20,12 @@ from src.player.db_services import PlayerServiceDB
 from ..logging_config import get_logger
 from .schemas import (
     PaginatedPlayerTeamTournamentResponse,
+    PaginatedPlayerTeamTournamentWithDetailsResponse,
     PaginationMetadata,
     PlayerTeamTournamentSchema,
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
+    PlayerTeamTournamentWithDetailsSchema,
 )
 
 ITEM = "PLAYER_TEAM_TOURNAMENT"
@@ -437,10 +440,13 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     select(PlayerTeamTournamentDB)
                     .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
                     .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+                    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
                     .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                    .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
                     .options(
                         selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
                         selectinload(PlayerTeamTournamentDB.team),
+                        selectinload(PlayerTeamTournamentDB.position),
                     )
                     .where(
                         PlayerTeamTournamentDB.player_number.ilike(search_pattern)
@@ -457,6 +463,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     .options(
                         selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
                         selectinload(PlayerTeamTournamentDB.team),
+                        selectinload(PlayerTeamTournamentDB.position),
                     )
                 )
 
@@ -495,6 +502,130 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
 
             return PaginatedPlayerTeamTournamentResponse(
                 data=[PlayerTeamTournamentSchema.model_validate(p) for p in players],
+                metadata=PaginationMetadata(
+                    page=(skip // limit) + 1,
+                    items_per_page=limit,
+                    total_items=total_items,
+                    total_pages=total_pages,
+                    has_next=(skip + limit) < total_items,
+                    has_previous=skip > 0,
+                ),
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching tournament players with pagination and details",
+        return_value_on_not_found=None,
+    )
+    async def search_tournament_players_with_pagination_details(
+        self,
+        tournament_id: int,
+        search_query: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "player_number",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedPlayerTeamTournamentWithDetailsResponse:
+        self.logger.debug(
+            f"Search tournament players with details: tournament_id={tournament_id}, query={search_query}, "
+            f"skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            if search_query:
+                search_pattern = f"%{search_query}%"
+                base_query = (
+                    select(PlayerTeamTournamentDB)
+                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                    .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+                    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                    .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
+                    .options(
+                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                        selectinload(PlayerTeamTournamentDB.team),
+                        selectinload(PlayerTeamTournamentDB.position),
+                    )
+                    .where(
+                        PlayerTeamTournamentDB.player_number.ilike(search_pattern)
+                        | PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
+                        | PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu")
+                        | TeamDB.title.ilike(search_pattern).collate("en-US-x-icu")
+                    )
+                    .distinct()
+                )
+            else:
+                base_query = (
+                    select(PlayerTeamTournamentDB)
+                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                    .options(
+                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                        selectinload(PlayerTeamTournamentDB.team),
+                        selectinload(PlayerTeamTournamentDB.position),
+                    )
+                )
+
+            count_stmt = select(func.count(func.distinct(PlayerTeamTournamentDB.id))).select_from(
+                base_query
+            )
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            total_pages = ceil(total_items / limit) if limit > 0 else 0
+
+            try:
+                order_column = getattr(
+                    PlayerTeamTournamentDB, order_by, PlayerTeamTournamentDB.player_number
+                )
+            except AttributeError:
+                self.logger.warning(
+                    f"Order column {order_by} not found, defaulting to player_number"
+                )
+                order_column = PlayerTeamTournamentDB.player_number
+
+            try:
+                order_column_two = getattr(
+                    PlayerTeamTournamentDB, order_by_two, PlayerTeamTournamentDB.id
+                )
+            except AttributeError:
+                self.logger.warning(f"Order column {order_by_two} not found, defaulting to id")
+                order_column_two = PlayerTeamTournamentDB.id
+
+            order_expr = order_column.asc() if ascending else order_column.desc()
+            order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            players = result.scalars().all()
+
+            players_with_details = []
+            for p in players:
+                players_with_details.append(
+                    {
+                        "id": p.id,
+                        "player_team_tournament_eesl_id": p.player_team_tournament_eesl_id,
+                        "player_id": p.player_id,
+                        "position_id": p.position_id,
+                        "team_id": p.team_id,
+                        "tournament_id": p.tournament_id,
+                        "player_number": p.player_number,
+                        "first_name": p.player.person.first_name
+                        if p.player and p.player.person
+                        else None,
+                        "second_name": p.player.person.second_name
+                        if p.player and p.player.person
+                        else None,
+                        "team_title": p.team.title if p.team else None,
+                        "position_title": p.position.title if p.position else None,
+                    }
+                )
+
+            return PaginatedPlayerTeamTournamentWithDetailsResponse(
+                data=[
+                    PlayerTeamTournamentWithDetailsSchema.model_validate(p)
+                    for p in players_with_details
+                ],
                 metadata=PaginationMetadata(
                     page=(skip // limit) + 1,
                     items_per_page=limit,
