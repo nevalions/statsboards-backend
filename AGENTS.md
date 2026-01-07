@@ -1404,13 +1404,19 @@ async def get_all_{entity}s_paginated_endpoint(
    - Graceful fallback to default columns if invalid column names provided
    - Configurable ascending/descending order
 
-4. **Empty Search Query**:
-   - `search=None` returns all records with pagination
-   - Consistent with existing `get_all_with_pagination()` behavior
+ 4. **Empty Search Query**:
+    - `search=None` returns all records with pagination
+    - Consistent with existing `get_all_with_pagination()` behavior
 
-5. **Error Handling**:
-   - Decorator with `return_value_on_not_found=None` for graceful handling
-   - Returns empty list and zero metadata when no results found
+ 5. **Error Handling**:
+    - Decorator with `return_value_on_not_found=None` for graceful handling
+    - Returns empty list and zero metadata when no results found
+
+ 6. **Multiple Filter Support** (Player Team Tournament):
+    - Supports combining `search_query` (person name) with `team_title` filter
+    - Filters are applied with AND logic (must match both conditions)
+    - Team title filter uses same ICU collation for international text handling
+    - Example: `search=Иван&team_title=Динамо` returns players with name matching "Иван" AND team title matching "Динамо"
 
 #### Example: Person Domain
 
@@ -1645,19 +1651,20 @@ The refactored search functionality uses:
    - `PlayerTeamTournamentServiceDB.search_tournament_players_with_pagination()`
    - `PlayerTeamTournamentServiceDB.search_tournament_players_with_pagination_details()`
 
-#### Test Coverage
+ #### Test Coverage
 
-All search tests are passing with current implementation:
-- ✅ 11 person search tests
-- ✅ 5 team search tests  
-- ✅ 7 player_team_tournament search tests
+ All search tests are passing with current implementation:
+ - ✅ 11 person search tests
+ - ✅ 5 team search tests
+ - ✅ 9 player_team_tournament search tests (includes team_title filtering)
 
-Tests verify:
-- ICU collation (`en-US-x-icu`) for international text handling
-- Multiple field search with OR conditions
-- Dual-column ordering with graceful column fallbacks
-- Pagination metadata calculation consistency
-- Complex join queries with `distinct()` for deduplication
+ Tests verify:
+ - ICU collation (`en-US-x-icu`) for international text handling
+ - Multiple field search with OR conditions
+ - Dual-column ordering with graceful column fallbacks
+ - Pagination metadata calculation consistency
+ - Complex join queries with `distinct()` for deduplication
+ - Multiple filter combinations (AND logic between search_query and team_title)
 
 ## GitHub workflow (this repo)
 

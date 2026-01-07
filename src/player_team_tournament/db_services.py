@@ -172,14 +172,15 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
         search_query: str | None = None,
+        team_title: str | None = None,
     ):
-        """Build base query with joins and optional person name search filters."""
+        """Build base query with joins and optional person name and team title search filters."""
         search_fields = [
             (PersonDB, "first_name"),
             (PersonDB, "second_name"),
         ]
 
-        if search_query:
+        if search_query or team_title:
             base_query = (
                 select(PlayerTeamTournamentDB)
                 .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
@@ -193,11 +194,20 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     selectinload(PlayerTeamTournamentDB.position),
                 )
             )
-            base_query = await self._apply_search_filters(
-                base_query,
-                search_fields,
-                search_query,
-            )
+
+            if search_query:
+                base_query = await self._apply_search_filters(
+                    base_query,
+                    search_fields,
+                    search_query,
+                )
+
+            if team_title:
+                search_pattern = await self._build_search_pattern(team_title)
+                base_query = base_query.where(
+                    TeamDB.title.ilike(search_pattern).collate("en-US-x-icu")
+                )
+
             return base_query.distinct()
         else:
             return (
@@ -462,6 +472,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
         search_query: str | None = None,
+        team_title: str | None = None,
         skip: int = 0,
         limit: int = 20,
         order_by: str = "player_number",
@@ -470,13 +481,14 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
     ) -> PaginatedPlayerTeamTournamentResponse:
         self.logger.debug(
             f"Search tournament players: tournament_id={tournament_id}, query={search_query}, "
-            f"skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
+            f"team_title={team_title}, skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
         )
 
         async with self.db.async_session() as session:
             base_query = await self._build_base_query_with_search(
                 tournament_id,
                 search_query,
+                team_title,
             )
 
             count_stmt = select(func.count(func.distinct(PlayerTeamTournamentDB.id))).select_from(
@@ -514,6 +526,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
         search_query: str | None = None,
+        team_title: str | None = None,
         skip: int = 0,
         limit: int = 20,
         order_by: str = "player_number",
@@ -522,13 +535,14 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
     ) -> PaginatedPlayerTeamTournamentWithDetailsResponse:
         self.logger.debug(
             f"Search tournament players with details: tournament_id={tournament_id}, query={search_query}, "
-            f"skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
+            f"team_title={team_title}, skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
         )
 
         async with self.db.async_session() as session:
             base_query = await self._build_base_query_with_search(
                 tournament_id,
                 search_query,
+                team_title,
             )
 
             count_stmt = select(func.count(func.distinct(PlayerTeamTournamentDB.id))).select_from(

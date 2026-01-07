@@ -145,16 +145,18 @@ class PlayerTeamTournamentAPIRouter(
             search: str | None = Query(
                 None, description="Search query for player first name or second name"
             ),
+            team_title: str | None = Query(None, description="Filter by team title"),
         ):
             self.logger.debug(
                 f"Get tournament players paginated: tournament_id={tournament_id}, page={page}, "
                 f"items_per_page={items_per_page}, order_by={order_by}, order_by_two={order_by_two}, "
-                f"ascending={ascending}, search={search}"
+                f"ascending={ascending}, search={search}, team_title={team_title}"
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_tournament_players_with_pagination(
                 tournament_id=tournament_id,
                 search_query=search,
+                team_title=team_title,
                 skip=skip,
                 limit=items_per_page,
                 order_by=order_by,
@@ -178,16 +180,18 @@ class PlayerTeamTournamentAPIRouter(
                 None,
                 description="Search query for player first name or second name",
             ),
+            team_title: str | None = Query(None, description="Filter by team title"),
         ):
             self.logger.debug(
                 f"Get tournament players paginated with details: tournament_id={tournament_id}, page={page}, "
                 f"items_per_page={items_per_page}, order_by={order_by}, order_by_two={order_by_two}, "
-                f"ascending={ascending}, search={search}"
+                f"ascending={ascending}, search={search}, team_title={team_title}"
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_tournament_players_with_pagination_details(
                 tournament_id=tournament_id,
                 search_query=search,
+                team_title=team_title,
                 skip=skip,
                 limit=items_per_page,
                 order_by=order_by,
