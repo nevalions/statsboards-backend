@@ -47,7 +47,7 @@ class PlayerDB(Base):
         back_populates="players",
     )
 
-    player_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
+    player_team_tournament: Mapped[list["PlayerTeamTournamentDB"]] = relationship(
         "PlayerTeamTournamentDB",
         cascade="all, delete-orphan",
         back_populates="player",
