@@ -1,4 +1,6 @@
-from fastapi import HTTPException
+from typing import Annotated
+
+from fastapi import HTTPException, Query
 
 from src.core import BaseRouter, db
 from src.pars_eesl.pars_all_players_from_eesl import (
@@ -9,7 +11,12 @@ from src.person.schemas import PersonSchemaCreate
 
 from ..logging_config import get_logger
 from .db_services import PlayerServiceDB
-from .schemas import PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate
+from .schemas import (
+    PaginatedPlayerWithDetailsResponse,
+    PlayerSchema,
+    PlayerSchemaCreate,
+    PlayerSchemaUpdate,
+)
 
 
 class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate]):
@@ -33,12 +40,8 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             if new_player:
                 return PlayerSchema.model_validate(new_player)
             else:
-                self.logger.error(
-                    f"Error on create or update player, got data: {player}"
-                )
-                raise HTTPException(
-                    status_code=409, detail=f"Player creation fail {player}"
-                )
+                self.logger.error(f"Error on create or update player, got data: {player}")
+                raise HTTPException(status_code=409, detail=f"Player creation fail {player}")
 
         @router.get("/eesl_id/{eesl_id}", response_model=PlayerSchema)
         async def get_player_by_eesl_id_endpoint(
@@ -65,9 +68,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 self.logger.debug(f"Update player endpoint got data: {item}")
                 update_ = await self.service.update(item_id, item)
                 if update_ is None:
-                    raise HTTPException(
-                        status_code=404, detail=f"Player id {item_id} not found"
-                    )
+                    raise HTTPException(status_code=404, detail=f"Player id {item_id} not found")
                 return PlayerSchema.model_validate(update_)
             except Exception as ex:
                 self.logger.error(f"Error on update player: {item} {ex}", exc_info=True)
@@ -94,23 +95,55 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             "/pars/all_eesl",
         )
         async def get_parse_player_with_person_endpoint():
-            self.logger.debug(
-                "Get parsed players with person endpoint limit 2 and season 8"
-            )
+            self.logger.debug("Get parsed players with person endpoint limit 2 and season 8")
             return await parse_all_players_from_eesl_index_page_eesl(
                 start_page=0, limit=2, season_id=8
             )
 
-        @router.post(
-            "/pars_and_create/all_eesl/start_page/{start_page}/season_id/{season_id}/"
+        @router.get(
+            "/paginated/details",
+            response_model=PaginatedPlayerWithDetailsResponse,
         )
+        async def get_players_paginated_details_endpoint(
+            sport_id: Annotated[int, Query(description="Sport ID filter")],
+            team_id: Annotated[int | None, Query(description="Team ID filter")] = None,
+            page: Annotated[int, Query(ge=1, description="Page number (1-based)")] = 1,
+            items_per_page: Annotated[
+                int, Query(ge=1, le=100, description="Items per page (max 100)")
+            ] = 20,
+            order_by: Annotated[str, Query(description="First sort column")] = "id",
+            order_by_two: Annotated[str, Query(description="Second sort column")] = "id",
+            ascending: Annotated[
+                bool, Query(description="Sort order (true=asc, false=desc)")
+            ] = True,
+            search: Annotated[
+                str | None, Query(description="Search query for person names")
+            ] = None,
+        ):
+            self.logger.debug(
+                f"Get players paginated with details: sport_id={sport_id}, team_id={team_id}, "
+                f"page={page}, items_per_page={items_per_page}, order_by={order_by}, "
+                f"order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_players_with_pagination_details(
+                sport_id=sport_id,
+                team_id=team_id,
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
+
+        @router.post("/pars_and_create/all_eesl/start_page/{start_page}/season_id/{season_id}/")
         async def create_parsed_players_with_person_endpoint(
             start_page: int = 0, season_id: int = 8
         ):
             try:
-                self.logger.debug(
-                    "Create parsed players with person from all eesl endpoint"
-                )
+                self.logger.debug("Create parsed players with person from all eesl endpoint")
                 players = await parse_all_players_from_eesl_index_page_eesl(
                     start_page=start_page, limit=None, season_id=season_id
                 )
@@ -120,30 +153,18 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 if players:
                     for player_with_person in players:
                         person = PersonSchemaCreate(**player_with_person["person"])
-                        created_person = await PersonServiceDB(
-                            db
-                        ).create_or_update_person(person)
+                        created_person = await PersonServiceDB(db).create_or_update_person(person)
                         created_persons.append(created_person)
                         if created_person:
-                            self.logger.debug(
-                                f"Person created successfully: {created_person}"
-                            )
+                            self.logger.debug(f"Person created successfully: {created_person}")
                             player_data_dict = player_with_person["player"]
                             player_data_dict["person_id"] = created_person.id
                             player = PlayerSchemaCreate(**player_data_dict)
-                            created_player = await self.service.create_or_update_player(
-                                player
-                            )
+                            created_player = await self.service.create_or_update_player(player)
                             created_players.append(created_player)
-                            self.logger.debug(
-                                f"Player created successfully: {created_player}"
-                            )
-                    self.logger.debug(
-                        f"Created parsed persons number:{len(created_persons)}"
-                    )
-                    self.logger.debug(
-                        f"Created parsed players number:{len(created_players)}"
-                    )
+                            self.logger.debug(f"Player created successfully: {created_player}")
+                    self.logger.debug(f"Created parsed persons number:{len(created_persons)}")
+                    self.logger.debug(f"Created parsed players number:{len(created_players)}")
                     return created_players, created_persons
                 else:
                     return []
