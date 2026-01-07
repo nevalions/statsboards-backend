@@ -194,35 +194,40 @@ src/
 │   ├── base_router.py         # Base FastAPI router classes
 │   ├── service_registry.py    # Service registry for dependency injection
 │   └── service_initialization.py  # Service registration
-├── teams/                      # Team management
+│ ├── teams/                      # Team management
 │   ├── db_services.py         # Team service layer
 │   ├── schemas.py            # Pydantic schemas
 │   └── views.py              # API endpoints
-├── matches/                    # Match management and scheduling
-├── players/                    # Player data and statistics
-├── tournaments/                # Tournament organization
-├── seasons/                    # Season management
-├── scoreboards/                # Scoreboard management
-├── gameclocks/                 # Game clock functionality
-├── playclocks/                 # Play clock functionality
-├── matchdata/                  # Real-time match data
-├── football_events/            # Game event tracking
-├── sponsors/                   # Sponsor management
-├── helpers/                    # Utility functions
+│ ├── matches/                    # Match management and scheduling
+│ ├── players/                    # Player data and statistics
+│ ├── tournaments/                # Tournament organization
+│ ├── seasons/                    # Season management
+│ ├── scoreboards/                # Scoreboard management
+│ ├── gameclocks/                 # Game clock functionality
+│ ├── playclocks/                 # Play clock functionality
+│ ├── matchdata/                  # Real-time match data
+│ ├── football_events/            # Game event tracking
+│ ├── sponsors/                   # Sponsor management
+│ ├── helpers/                    # Utility functions
 │   ├── file_service.py        # File upload/download
 │   ├── image_processing_service.py
 │   └── upload_service.py
-├── pars_eesl/                  # EESL data integration
-├── utils/                      # WebSocket handlers
-├── logging_config.py           # Logging configuration
-├── main.py                     # FastAPI application entry point
-├── runserver.py                # Development server
-└── run_prod_server.py          # Production server
+│ ├── pars_eesl/                  # EESL data integration
+│ ├── utils/                      # WebSocket handlers
+│ ├── logging_config.py           # Logging configuration
+│ ├── main.py                     # FastAPI application entry point
+│ ├── runserver.py                # Development server
+│ └── run_prod_server.py          # Production server
 tests/                          # Test suite
 ├── test_db_services/          # Service layer tests
 ├── test_views/                # API endpoint tests
 └── [test files]
-AGENTS.md                       # Development guidelines for AI assistants
+AGENTS.md                       # Quick reference for AI assistants
+DEVELOPMENT_GUIDELINES.md      # Comprehensive development guide
+SERVICE_LAYER_DECOUPLING.md    # Service registry architecture
+CONFIGURATION_VALIDATION.md    # Configuration settings
+ROUTER_REGISTRY.md          # Router registry system
+ARCHITECTURE.md             # Architecture documentation
 ```
 
 ## Key Features
@@ -289,44 +294,39 @@ Each domain module follows the standard CRUD pattern with additional custom endp
 
 ## Development Guidelines
 
-The project uses `AGENTS.md` as a comprehensive development guide for AI assistants and developers. Key guidelines include:
+For comprehensive development guidelines, coding standards, and best practices, see **[DEVELOPMENT_GUIDELINES.md](./DEVELOPMENT_GUIDELINES.md)**.
 
-### Code Style
-- Follow existing patterns rather than creating new ones
-- Use Python 3.11+ type hint syntax: `str | None` instead of `Optional[str]`
-- Always annotate function parameters and return types
-- Use Pydantic `Annotated` for field validation
-- Keep functions focused and single-responsibility
+This document covers:
+- Code style and naming conventions
+- Service layer and router patterns
+- Model patterns and relationship types
+- Error handling patterns
+- Database operations and relationship loading
+- Search implementation guidelines
+- Testing guidelines and test markers
+- Configuration validation details
 
-### Exception Handling
-- Use specific exception types instead of generic `except Exception:`
-- Import custom exceptions from `src.core.exceptions`
-- Follow the established exception handling pattern with proper logging levels
-- Log with `exc_info=True` for stack traces
+### Quick Reference
 
-### Logging Standards
-- **debug**: Detailed operation tracking
-- **info**: Significant operations (creates, updates)
-- **warning**: Expected but noteworthy situations (validation errors)
-- **error**: Unexpected errors (database errors)
-- **critical**: Unexpected exceptions that should rarely trigger
+**Testing:**
+```bash
+# Start test database
+docker-compose -f docker-compose.test-db-only.yml up -d
+# Run tests
+pytest
+```
 
-### Service Layer Pattern
-- All service classes inherit from `BaseServiceDB`
-- Use service registry for cross-service dependencies (never import other services directly)
-- Access dependencies via `self.service_registry.get("service_name")`
-- Registry uses lazy initialization to avoid circular dependencies
-- Use async/await for all database operations
-- Return database model objects, not dictionaries
-- Use structured logging with consistent format
+**Code Quality:**
+```bash
+# Lint with Ruff
+source venv/bin/activate && ruff check src/ tests/
+```
 
-### Testing Requirements
-- Tests must use PostgreSQL (not SQLite)
-- Write descriptive docstrings for test methods
-- Test both success and error paths
-- Use factory classes from `tests/factories.py`
-
-For complete development guidelines, see `AGENTS.md`.
+**Database Migrations:**
+```bash
+# Apply migrations
+alembic upgrade head
+```
 
 ## Configuration
 
@@ -376,7 +376,7 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 
 1. Fork repository
 2. Create a feature branch
-3. Make your changes following the guidelines in `AGENTS.md`
+3. Make your changes following the guidelines in `DEVELOPMENT_GUIDELINES.md`
 4. Add tests for new functionality
 5. Run tests: `docker-compose -f docker-compose.test-db-only.yml up -d && pytest`
 6. Lint code: `ruff check src/ tests/` (use `--fix` to auto-fix issues)
@@ -385,8 +385,8 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 
 **Important:**
 - All commits must be by linroot with email nevalions@gmail.com
-- Follow the existing code patterns and conventions
-- Read `AGENTS.md` for comprehensive development guidelines
+- Follow existing code patterns and conventions
+- Read `DEVELOPMENT_GUIDELINES.md` for comprehensive development guidelines
 
 ## Recent Improvements
 
