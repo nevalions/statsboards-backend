@@ -1,0 +1,1578 @@
+# Development Guidelines
+
+This document contains comprehensive development guidelines, coding standards, and best practices for the statsboards-backend project.
+
+## Table of Contents
+
+- [Essential Commands](#essential-commands)
+- [Code Style Guidelines](#code-style-guidelines)
+- [Error Handling](#error-handling)
+- [Logging](#logging)
+- [Testing](#testing)
+- [Database Operations](#database-operations)
+- [Search Implementation](#search-implementation)
+- [WebSocket and Real-time](#websocket-and-real-time)
+- [General Principles](#general-principles)
+- [Configuration Validation](#configuration-validation)
+
+## Essential Commands
+
+### Prerequisites
+
+Before running any commands, ensure the virtual environment is activated:
+
+```bash
+# activate venv directly (if using venv)
+source venv/bin/activate
+```
+
+### Testing
+
+**Important: When running in agent mode, use non-verbose until error or fail catched**
+
+```bash
+docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activate && pytest 2>&1 | tail -20
+```
+
+**Important: Before running tests, start test database:**
+
+```bash
+# Start test database (for running selective tests locally)
+docker-compose -f docker-compose.test-db-only.yml up -d
+```
+
+**Important: Run full test suite sequentially to avoid ResourceWarnings:**
+
+```bash
+pytest -n 0
+```
+
+The default pytest.ini configuration uses `--disable-warnings` to suppress third-party library warnings (pytest_benchmark DeprecationWarning). Running full test suite with parallel execution (`-n auto` or `-n 8`) causes ResourceWarnings due to:
+- Function-scoped `test_db` fixture creates tables/triggers/indexes for every test
+- Multiple xdist workers trying to modify schema simultaneously → PostgreSQL deadlocks
+- These are fixture architecture limitations, not code bugs
+
+Use `-n 0` for complete test runs to avoid these warnings.
+
+### Understanding Deselected Tests
+
+The default `pytest.ini` configuration excludes tests marked with `@pytest.mark.integration` and `@pytest.mark.slow` via `-m "not integration and not slow"`. This results in 46 tests being deselected by default.
+
+**Breakdown of 46 Deselected Tests:**
+
+| Test File | Tests | Markers | Reason |
+|------------|--------|----------|--------|
+| `test_download_service.py` | 15 | `@pytest.mark.slow` | Slow download tests with retries |
+| `test_pars_integration.py` | 5 | `@pytest.mark.integration` | Hits real EESL website |
+| `test_websocket_views.py` | 22 | `@pytest.mark.slow` + `@pytest.mark.integration` | WebSocket connection tests |
+| `test_match_stats_websocket_integration.py` | 4 | `@pytest.mark.integration` | WebSocket integration tests |
+| **Total** | **46** | - | - |
+
+**Why These Exclusions Exist:**
+
+- **`@pytest.mark.slow`**: Tests that take longer to run (websocket tests with connection setup, download service with retry logic)
+- **`@pytest.mark.integration`**: Tests that:
+  - Hit external websites (EESL integration)
+  - Require real database connections beyond test fixtures
+  - Use production-like endpoints
+
+**Running Deselected Tests:**
+
+```bash
+# Include all tests (including slow and integration)
+pytest -m ""
+
+# Include only integration tests
+pytest -m integration
+
+# Include only slow tests
+pytest -m slow
+
+# Include integration and slow tests together
+pytest -m "integration or slow"
+```
+
+This is intentional - default excludes these tests during rapid development cycles while still allowing you to run them when needed.
+
+Then run tests:
+
+```bash
+# Run all tests (parallel by default with pytest-xdist)
+pytest
+
+# Run tests sequentially (for debugging)
+pytest -n 0
+
+# Run tests for specific directory
+pytest tests/test_db_services/
+pytest tests/test_views/
+
+# Run a single test file
+pytest tests/test_db_services/test_tournament_service.py
+
+# Run a specific test function
+pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations
+
+# Run a specific test with live logs enabled
+pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceDB::test_create_tournament_with_relations -o log_cli=true
+
+# Run tests with coverage
+pytest --cov=src
+
+# Run async tests only
+pytest tests/ -k "async"
+
+# Run tests with coverage (HTML report)
+pytest --cov=src --cov-report=html
+
+# Run tests with coverage (terminal report)
+pytest --cov=src --cov-report=term-missing
+
+# Run tests with coverage (XML report for CI/CD)
+pytest --cov=src --cov-report=xml
+
+# Run property-based tests
+pytest tests/test_property_based.py
+
+# Run performance benchmarks
+pytest tests/test_benchmarks.py -m benchmark
+
+# Run E2E integration tests
+pytest tests/test_e2e.py -m e2e
+
+# Run utils tests
+pytest tests/test_utils.py
+
+# Run tests in parallel with pytest-xdist
+pytest -n auto
+
+# Run tests matching a specific marker
+pytest -m integration
+pytest -m benchmark
+pytest -m e2e
+pytest -m "not slow"
+
+# Run benchmarks with comparison to baseline
+pytest tests/test_benchmarks.py -m benchmark --benchmark-only --benchmark-compare
+
+# Run specific test types
+pytest -k "property"
+pytest -k "benchmark"
+pytest -k "e2e"
+```
+
+**Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n auto`) for faster test execution:
+
+- `-x`: Stop on first failure
+- `--tb=short`: Shortened traceback format
+- `-n auto`: Run tests in parallel using pytest-xdist (uses all available CPU cores)
+- `log_cli=false`: Live logs disabled by default (use `-o log_cli=true` to enable for debugging)
+- Session-scoped database engine: Tables created once per session instead of per-test
+- Transaction rollback per test: Fast cleanup without table drops
+
+**Note:** Database echo is disabled in test fixtures for faster test execution.
+
+**Note:** Ensure environment variables point to test database
+
+### Code Quality
+
+```bash
+# Lint with Ruff
+source venv/bin/activate && ruff check src/ tests/
+
+# Auto-fix Ruff issues where possible
+source venv/bin/activate && ruff check --fix src/ tests/
+```
+
+### Database
+
+```bash
+# Generate migration
+alembic revision --autogenerate -m "description"
+
+# Apply migrations
+alembic upgrade head
+
+# Downgrade migration
+alembic downgrade -1
+```
+
+### Running the Application
+
+```bash
+# Development server with hot reload
+python src/runserver.py
+
+# Production server
+python src/run_prod_server.py
+```
+
+### Configuration Validation
+
+```bash
+# Validate configuration before starting application
+python validate_config.py
+
+# Configuration validation also runs automatically on application startup
+```
+
+## Code Style Guidelines
+
+### Import Organization
+
+- Standard library imports first
+- Third-party imports second
+- Local application imports third
+- Use `from typing import` for type hints at the top
+- Use relative imports within domain modules (e.g., `from .schemas import ...`)
+- Use absolute imports for cross-domain imports (e.g., `from src.core.models import ...`)
+
+### Type Hints
+
+- Use Python 3.11+ type hint syntax: `str | None` instead of `Optional[str]`
+- Always annotate function parameters and return types
+- Use `Annotated` for Pydantic field validation: `Annotated[str, Path(max_length=50)]`
+- Use `TYPE_CHECKING` for circular import dependencies in models
+
+### Naming Conventions
+
+- **Classes**: PascalCase with descriptive suffixes (e.g., `TeamServiceDB`, `TeamSchema`, `TeamAPIRouter`)
+- **Functions**: snake_case with descriptive names (e.g., `create_or_update_team`, `get_team_by_eesl_id`)
+- **Variables**: snake_case (e.g., `team_id`, `tournament_id`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `ITEM = "TEAM"`)
+- **Private methods**: Prefix with underscore if needed (e.g., `_validate_data`)
+
+### Service Layer Pattern
+
+- All service classes inherit from `BaseServiceDB`
+- Initialize with database dependency: `super().__init__(database, TeamDB)`
+- Use `self.logger` for structured logging with consistent format
+- Return database model objects, not dictionaries
+- Raise `HTTPException` for client-facing errors
+- Use `async/await` for all database operations
+- **Use Service Registry for cross-service dependencies**:
+  - Never directly import and instantiate other services
+  - Access dependencies through `self.service_registry.get("service_name")`
+  - Example: `team_service = self.service_registry.get("team")`
+  - Registry is lazily initialized to avoid order issues
+  - See `SERVICE_LAYER_DECOUPLING.md` for full documentation
+
+### Router Pattern
+
+- Inherit from `BaseRouter[SchemaType, CreateSchemaType, UpdateSchemaType]`
+- Initialize with prefix and tags: `super().__init__("/api/teams", ["teams"], service)`
+- Add custom endpoints after calling `super().route()`
+- Use descriptive endpoint function names with `_endpoint` suffix
+- Return `object.__dict__` for responses to match schemas
+
+### Schema Patterns
+
+- Inheritance: `TeamSchemaBase` → `TeamSchemaCreate` → `TeamSchema`
+- `TeamSchemaUpdate` should have all fields optional
+- Add `model_config = ConfigDict(from_attributes=True)` to output schemas
+- Use Pydantic `Annotated` for validation constraints
+- Keep response models separate from request models
+
+### Model Patterns
+
+- Use `Mapped[type]` with `mapped_column()` for all columns
+- Always set `nullable=True` for optional fields
+- Use `default` and `server_default` for default values
+- Define relationships with proper `back_populates`
+- Use `TYPE_CHECKING` block for forward references (see "Forward References with TYPE_CHECKING" below)
+- Include `__table_args__ = {"extend_existing": True}` in all models
+
+### Creating New Models with Alembic
+
+**Migration Naming Convention**: `YYYY_MM_DD_HHMM-{hash}_{snake_case_description}.py`
+
+#### One-to-One Relationships
+
+**Pattern**: Foreign key column + `unique=True` constraint
+
+```python
+# src/core/models/scoreboard.py
+from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.models import Base
+
+if TYPE_CHECKING:
+    from .match import MatchDB
+
+
+class ScoreboardDB(Base):
+    __tablename__ = "scoreboard"
+    __table_args__ = {"extend_existing": True}
+
+    match_id: Mapped[int] = mapped_column(
+        ForeignKey("match.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True,  # Makes this one-to-one
+    )
+
+    matches: Mapped["MatchDB"] = relationship(
+        "MatchDB",
+        back_populates="match_scoreboard",
+    )
+```
+
+**Alembic Migration**:
+```python
+def upgrade() -> None:
+    op.add_column("scoreboard", sa.Column("match_id", sa.Integer(), nullable=True))
+    op.create_foreign_key(
+        None, "scoreboard", "match", ["match_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_unique_constraint(None, "scoreboard", ["match_id"])
+
+def downgrade() -> None:
+    op.drop_constraint(None, "scoreboard", type_="foreignkey")
+    op.drop_constraint(None, "scoreboard", type_="unique")
+    op.drop_column("scoreboard", "match_id")
+```
+
+#### One-to-Many Relationships
+
+**Pattern**: Parent-child with `cascade="all, delete-orphan"` and `passive_deletes=True`
+
+```python
+# src/core/models/match.py
+class MatchDB(Base):
+    __tablename__ = "match"
+    __table_args__ = {"extend_existing": True}
+
+    tournament_id: Mapped[int] = mapped_column(
+        ForeignKey("tournament.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    match_events: Mapped[list["FootballEventDB"]] = relationship(
+        "FootballEventDB",
+        cascade="all, delete-orphan",
+        back_populates="matches",
+        passive_deletes=True,
+    )
+```
+
+**Alembic Migration**:
+```python
+def upgrade() -> None:
+    op.create_table(
+        "match",
+        sa.Column("tournament_id", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["tournament_id"],
+            ["tournament.id"],
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+
+def downgrade() -> None:
+    op.drop_table("match")
+```
+
+#### Many-to-Many Relationships
+
+**Pattern**: Association table with composite primary key
+
+```python
+# src/core/models/user.py
+if TYPE_CHECKING:
+    from .role import RoleDB
+
+
+class UserDB(Base):
+    __tablename__ = "user"
+    __table_args__ = {"extend_existing": True}
+
+    roles: Mapped[list["RoleDB"]] = relationship(
+        "RoleDB",
+        secondary="user_role",
+        back_populates="users",
+    )
+```
+
+**Association Table**:
+```python
+# src/core/models/user_role.py
+from sqlalchemy import Column, ForeignKey, Integer, Table
+
+user_role = Table(
+    "user_role",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("user.id", ondelete="CASCADE"), primary_key=True),
+    Column("role_id", Integer, ForeignKey("role.id", ondelete="CASCADE"), primary_key=True),
+)
+```
+
+**Alembic Migration**:
+```python
+def upgrade() -> None:
+    op.create_table(
+        "user_role",
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("role_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(["role_id"], ["role.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("user_id", "role_id"),
+    )
+
+def downgrade() -> None:
+    op.drop_table("user_role")
+```
+
+**Many-to-Many with Extra Columns** (e.g., player_team_tournament):
+```python
+# Association table with extra data
+op.create_table(
+    "player_team_tournament",
+    sa.Column("player_id", sa.Integer(), nullable=True),
+    sa.Column("team_id", sa.Integer(), nullable=True),
+    sa.Column("tournament_id", sa.Integer(), nullable=True),
+    sa.Column("player_number", sa.String(length=10), server_default="0", nullable=True),
+    sa.Column("player_position", sa.String(length=20), server_default="", nullable=True),
+    sa.Column("id", sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(["player_id"], ["player.id"], ondelete="CASCADE"),
+    sa.ForeignKeyConstraint(["team_id"], ["team.id"], ondelete="SET NULL"),
+    sa.ForeignKeyConstraint(["tournament_id"], ["tournament.id"], ondelete="SET NULL"),
+    sa.PrimaryKeyConstraint("id"),
+)
+```
+
+#### Self-Referencing Relationships
+
+**Pattern**: Multiple foreign keys to same table with explicit `foreign_keys` parameter
+
+```python
+# src/core/models/match.py
+class MatchDB(Base):
+    __tablename__ = "match"
+
+    team_a_id: Mapped[int] = mapped_column(
+        ForeignKey("team.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    team_b_id: Mapped[int] = mapped_column(
+        ForeignKey("team.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    team_a: Mapped["TeamDB"] = relationship(
+        "TeamDB",
+        foreign_keys=[team_a_id],
+        back_populates="matches_as_team_a",
+        viewonly=True,
+    )
+
+    team_b: Mapped["TeamDB"] = relationship(
+        "TeamDB",
+        foreign_keys=[team_b_id],
+        back_populates="matches_as_team_b",
+        viewonly=True,
+    )
+```
+
+**Custom Join Condition** (OR condition):
+```python
+# src/core/models/team.py
+matches: Mapped["MatchDB"] = relationship(
+    "MatchDB",
+    primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+    back_populates="teams",
+)
+```
+
+#### Relationship Naming Conventions
+
+| Relationship Type | Child Side (FK) | Parent Side (Collection) |
+|-----------------|----------------|-------------------------|
+| One-to-many | `sport_id: Mapped[int]` | `tournaments: Mapped[list["TournamentDB"]]` |
+| Many-to-one | `sport: Mapped["SportDB"]` | - |
+| One-to-one | `match_id: Mapped[int]` with `unique=True` | `match_scoreboard: Mapped["ScoreboardDB"]` |
+| Many-to-many | Uses `secondary="association_table"` | Uses `secondary="association_table"` |
+
+#### Cascade Options
+
+- **`cascade="all, delete-orphan"`**: Delete children when parent is deleted (standard parent-child)
+- **`cascade="save-update, merge"`**: Only save/update/merge, don't delete children (many-to-many)
+- **`passive_deletes=True`**: Use database-level CASCADE (requires FK `ondelete="CASCADE"`)
+
+#### Foreign Key ON DELETE Options
+
+- **`ondelete="CASCADE"`**: Delete dependent records (most common)
+- **`ondelete="SET NULL"`**: Set FK to NULL when parent deleted (optional relationships)
+- **No `ondelete`**: Restrict deletion if dependent records exist
+
+#### Index Creation on Relationship Columns
+
+```python
+# Composite index on foreign keys
+op.create_index(
+    "ix_match_tournament_id_team_a_id_team_b_id",
+    "match",
+    ["tournament_id", "team_a_id", "team_b_id"]
+)
+
+# Single column index
+op.create_index(
+    "ix_football_event_match_id",
+    "football_event",
+    ["match_id"]
+)
+```
+
+**Naming convention**: `ix_{table_name}_{column_names_underscored}`
+
+### Forward References with TYPE_CHECKING
+
+**Purpose**: Break circular import dependencies while maintaining type safety for static analysis
+
+```python
+# src/core/models/user.py
+from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.models import Base
+
+# TYPE_CHECKING block: imports only execute during type checking, not runtime
+if TYPE_CHECKING:
+    from .person import PersonDB
+    from .role import RoleDB
+
+
+class UserDB(Base):
+    __tablename__ = "user"
+    __table_args__ = {"extend_existing": True}
+
+    person_id: Mapped[int] = mapped_column(
+        ForeignKey("person.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    # String annotations allow SQLAlchemy to defer resolution
+    person: Mapped["PersonDB"] = relationship(
+        "PersonDB",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    roles: Mapped[list["RoleDB"]] = relationship(
+        "RoleDB",
+        secondary="user_role",
+        back_populates="users",
+    )
+```
+
+#### Import Structure
+
+```python
+# 1. Standard library imports
+from typing import TYPE_CHECKING
+
+# 2. Third-party imports
+from sqlalchemy import ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+# 3. Local imports
+from src.core.models import Base
+
+# 4. TYPE_CHECKING block (after imports, before class)
+if TYPE_CHECKING:
+    from .person import PersonDB
+    from .role import RoleDB
+
+# 5. Class definition
+class UserDB(Base):
+    ...
+```
+
+#### Import Format Rules
+
+- **Models in same directory**: Use relative imports with single dot (`from .person import PersonDB`)
+- **Models from mixins directory**: Use double dots (`..`) to go up one level (`from ..season import SeasonDB`)
+- **Never use absolute imports** in TYPE_CHECKING block for models in same package
+- **No aliases**: Import full model name (not `from .person import PersonDB as Person`)
+
+#### Empty TYPE_CHECKING Blocks
+
+If no relationships are defined (e.g., join tables with only FKs):
+
+```python
+# src/core/models/team_tournament.py
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass  # No relationships, so no imports needed
+
+
+class TeamTournamentDB(Base):
+    # ... only foreign keys, no relationship() definitions
+```
+
+#### Relationship Type Hints
+
+```python
+# Single relationship (many-to-one or one-to-one)
+person: Mapped["PersonDB"] = relationship("PersonDB", ...)
+
+# List relationship (one-to-many)
+tournaments: Mapped[list["TournamentDB"]] = relationship("TournamentDB", ...)
+```
+
+#### TYPE_CHECKING in Mixins
+
+```python
+# src/core/models/mixins/season_sport_mixin.py
+from typing import TYPE_CHECKING
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from ..season import SeasonDB  # Double dots to go up from mixins/
+    from ..sport import SportDB
+
+
+class SeasonSportRelationMixin:
+    @declared_attr
+    def season_id(cls) -> Mapped[int]:
+        return mapped_column(ForeignKey("season.id", ondelete=cls._ondelete))
+
+    @declared_attr
+    def season(cls) -> Mapped["SeasonDB"]:
+        return relationship("SeasonDB", back_populates=cls._season_back_populates)
+```
+
+#### Why This Works
+
+1. **Runtime (TYPE_CHECKING=False)**: Imports inside block are skipped, no circular dependencies
+2. **Type Checking (TYPE_CHECKING=True)**: Imports execute, type checkers see actual classes
+3. **SQLAlchemy**: String annotations (`"PersonDB"`) work with `relationship()` regardless of actual class
+
+#### Common Pitfalls to Avoid
+
+- **Mistake 1**: Direct imports outside TYPE_CHECKING block
+  ```python
+  # BAD - causes circular import
+  from .person import PersonDB
+  person: Mapped[PersonDB] = relationship(PersonDB, ...)
+  ```
+
+- **Mistake 2**: Using TYPE_CHECKING but not using string annotations
+  ```python
+  # BAD - defeats purpose
+  if TYPE_CHECKING:
+      from .person import PersonDB
+  person: Mapped[PersonDB] = relationship(PersonDB, ...)  # Fails at runtime
+  ```
+
+- **Mistake 3**: Not importing types in TYPE_CHECKING block
+  ```python
+  # BAD - no type safety, no autocomplete
+  if TYPE_CHECKING:
+      pass
+  person: Mapped["PersonDB"] = relationship("PersonDB", ...)  # Type checker can't verify
+  ```
+
+## Error Handling
+
+**IMPORTANT**: Avoid generic `except Exception:` clauses. Use specific exception types for better debugging and error monitoring.
+
+- Import custom exceptions from `src.core.exceptions`:
+  - `ValidationError`: Data validation errors (400)
+  - `NotFoundError`: Resource not found (404)
+  - `DatabaseError`: Database operation failures (500)
+  - `BusinessLogicError`: Business rule violations (422)
+  - `ExternalServiceError`: External service failures (503)
+  - `ConfigurationError`: Configuration issues (500)
+  - `AuthenticationError`: Authentication failures (401)
+  - `AuthorizationError`: Authorization failures (403)
+  - `ConcurrencyError`: Race conditions (409)
+  - `FileOperationError`: File operations (500)
+  - `ParsingError`: Data parsing failures (400)
+
+**PREFERRED**: Use `@handle_service_exceptions` decorator to eliminate boilerplate:
+
+```python
+from src.core.models import handle_service_exceptions
+
+# For create/update operations (raise NotFoundError)
+@handle_service_exceptions(item_name=ITEM, operation="creating")
+async def create(self, item: TeamSchemaCreate) -> TeamDB:
+    team = self.model(**item.model_dump())
+    return await super().create(team)
+
+# For fetch operations that return None on NotFound
+@handle_service_exceptions(
+    item_name=ITEM,
+    operation="fetching players",
+    return_value_on_not_found=[]
+)
+async def get_players_by_team_id(self, team_id: int) -> list[PlayerDB]:
+    async with self.db.async_session() as session:
+        stmt = select(PlayerDB).where(PlayerDB.team_id == team_id)
+        results = await session.execute(stmt)
+        return results.scalars().all()
+
+# For fetch operations that raise NotFoundError
+@handle_service_exceptions(
+    item_name=ITEM,
+    operation="fetching by ID",
+    reraise_not_found=True
+)
+async def get_by_id(self, item_id: int) -> TeamDB:
+    return await super().get_by_id(item_id)
+```
+
+- **MANUAL** try/except blocks should only be used for special cases:
+  - Custom error handling that doesn't fit decorator pattern
+  - Methods with complex exception handling logic
+  - When you need to perform cleanup before re-raising
+
+- For manual try/except, catch specific exceptions in this order:
+
+  ```python
+  try:
+      # business logic
+  except HTTPException:
+      raise  # Re-raise HTTPExceptions
+  except (IntegrityError, SQLAlchemyError) as ex:
+      # Database errors
+      self.logger.error(f"Database error: {ex}", exc_info=True)
+      raise HTTPException(status_code=500, detail="Database error")
+  except ValidationError as ex:
+      # Validation errors
+      self.logger.warning(f"Validation error: {ex}", exc_info=True)
+      raise HTTPException(status_code=400, detail=str(ex))
+  except (ValueError, KeyError, TypeError) as ex:
+      # Data errors
+      self.logger.warning(f"Data error: {ex}", exc_info=True)
+      raise HTTPException(status_code=400, detail="Invalid data")
+  except NotFoundError as ex:
+      # Not found
+      self.logger.info(f"Not found: {ex}", exc_info=True)
+      raise HTTPException(status_code=404, detail=str(ex))
+  except BusinessLogicError as ex:
+      # Business logic errors
+      self.logger.error(f"Business logic error: {ex}", exc_info=True)
+      raise HTTPException(status_code=422, detail=str(ex))
+  except Exception as ex:
+      # Only for truly unexpected errors - should rarely trigger
+      self.logger.critical(f"Unexpected error: {ex}", exc_info=True)
+      raise HTTPException(status_code=500, detail="Internal server error")
+  ```
+
+- Raise `HTTPException` with appropriate status codes:
+  - 400: Bad Request (ValidationError, ValueError, KeyError, TypeError)
+  - 401: Unauthorized (AuthenticationError)
+  - 403: Forbidden (AuthorizationError)
+  - 404: Not Found (NotFoundError)
+  - 409: Conflict (IntegrityError, ConcurrencyError)
+  - 422: Unprocessable Entity (BusinessLogicError)
+  - 500: Internal Server Error (DatabaseError, unexpected errors)
+  - 503: Service Unavailable (ExternalServiceError, ConnectionError)
+  - 504: Gateway Timeout (TimeoutError)
+- Always return meaningful error messages in `detail` field
+- Never use bare `except:` clauses
+- Use appropriate logging levels:
+  - `info`: NotFoundError
+  - `warning`: ValidationError, ValueError, KeyError, TypeError
+  - `error`: DatabaseError, BusinessLogicError
+  - `critical`: Unexpected exceptions in final catch
+
+## Logging
+
+- Call `setup_logging()` at module level in services and routers
+- Initialize logger with descriptive name: `get_logger("backend_logger_TeamServiceDB", self)`
+- Use appropriate log levels:
+  - `debug`: Detailed operation tracking
+  - `info`: Significant operations (creates, updates)
+  - `warning`: Expected but noteworthy situations
+  - `error`: Unexpected errors with exceptions
+
+## Testing
+
+- Use `@pytest.mark.asyncio` for async test classes
+- Use fixtures from `tests/fixtures.py` for common setup
+- Use factory classes from `tests/factories.py` for test data
+- Write descriptive docstrings for test methods
+- Use helper functions from `tests/testhelpers.py` for assertions
+- Test both success and error paths
+
+### Testing Enhancements
+
+The project includes several enhanced testing approaches:
+
+**1. Test Factories with SubFactory** (`tests/factories.py`):
+
+- Basic factories: `SportFactoryAny`, `SeasonFactoryAny`, `TournamentFactory`, etc.
+- Enhanced factories with relations: `TournamentFactoryWithRelations`, `TeamFactoryWithRelations`, etc.
+- Use SubFactory for automatic creation of related entities
+- Example: `TournamentFactoryWithRelations.build()` creates sport, season, and tournament
+
+**2. Performance Benchmarks** (`tests/test_benchmarks.py`):
+
+- Benchmarked operations: CRUD operations, bulk inserts, complex queries
+- Run with: `pytest tests/test_benchmarks.py -m benchmark`
+- Compare with baseline: `pytest tests/test_benchmarks.py -m benchmark --benchmark-compare`
+- Focuses on critical service operations
+
+**3. Property-Based Testing** (`tests/test_property_based.py`):
+
+- Tests with Hypothesis for edge cases across wide input ranges
+- Critical functions tested: `safe_int_conversion`, `hex_to_rgb`, `convert_cyrillic_filename`, etc.
+- Run with: `pytest tests/test_property_based.py`
+- Catches edge cases traditional tests might miss
+
+**4. E2E Integration Tests** (`tests/test_e2e.py`):
+
+- Complete workflows across multiple services and endpoints
+- Scenarios: tournament management, player management, error handling
+- Run with: `pytest tests/test_e2e.py -m e2e`
+- Tests realistic user journeys
+
+**5. Utils and Logging Tests** (`tests/test_utils.py`):
+
+- Tests for `src.logging_config` module: ContextFilter, ClassNameAdapter
+- Tests for `src.utils.websocket.websocket_manager`: MatchDataWebSocketManager
+- Run with: `pytest tests/test_utils.py`
+
+**Test Markers** (defined in pytest.ini):
+
+- `@pytest.mark.integration`: Tests that hit real websites or write to production folders
+- `@pytest.mark.benchmark`: Performance benchmark tests
+- `@pytest.mark.e2e`: End-to-end integration tests
+- `@pytest.mark.slow`: Tests that take longer to run
+
+**Test Coverage**:
+
+- Configuration: `.coveragerc` for coverage settings
+- HTML report: `pytest --cov=src --cov-report=html` (view in `htmlcov/index.html`)
+- Terminal report: `pytest --cov=src --cov-report=term-missing`
+- XML report: `pytest --cov=src --cov-report=xml` (for CI/CD)
+
+**Important:** Do NOT use SQLite for tests. Tests must use PostgreSQL because:
+
+- WebSocket functionality requires PostgreSQL LISTEN/NOTIFY features
+- Tests use PostgreSQL-specific data types and functions
+- Full compatibility with production database behavior is required
+- Connection pooling and transaction isolation behavior differs
+
+### PostgreSQL Test Performance Optimization
+
+Current optimizations implemented:
+
+- Database echo disabled in test fixtures (tests/conftest.py)
+- Session-scoped database engine: Tables created once per session (major speedup)
+- Transaction rollback per test: Fast cleanup without table drops
+- No Alembic migrations: Direct table creation
+- Parallel test execution with pytest-xdist: `-n auto` runs tests on all CPU cores
+- PostgreSQL performance tuning in docker-compose.test-db-only.yml:
+  - fsync=off, synchronous_commit=off, full_page_writes=off
+  - wal_level=minimal, max_wal_senders=0
+  - autovacuum=off, track_functions=none, track_counts=off
+  - tmpfs for PostgreSQL data (in-memory storage)
+
+**Note on xdist with schema-modifying tests:**
+
+Tests that modify database schema (e.g., search tests that create triggers, indexes, or columns) cannot run in parallel with xdist due to PostgreSQL locking conflicts (deadlocks). When multiple workers try to modify schema simultaneously, they deadlock waiting for AccessExclusiveLock on the same relation.
+
+**Examples of schema-modifying tests:**
+- `tests/test_team_search.py` - Creates search triggers and indexes for person/team tables
+
+**Workaround:** Run these tests sequentially:
+```bash
+pytest tests/test_team_search.py -n 0
+```
+
+## Database Operations
+
+- Always use async context managers: `async with self.db.async_session() as session:`
+- Use SQLAlchemy 2.0 select API: `select(Model).where(Model.field == value)`
+- Use `session.execute(stmt)` and `results.scalars().all()` for queries
+- Never commit manually in service methods - let BaseServiceDB handle it
+- Use relationships defined in models rather than manual joins
+- **Use eager loading** (`selectinload()`) to prevent N+1 query problems (see "Fetching Complex Relationships in Services" below)
+
+### File Structure Per Domain
+
+Each domain module must contain:
+
+- `schemas.py`: Pydantic models for API contracts
+- `db_services.py`: Service class inheriting from `BaseServiceDB`
+- `views.py`: Router class inheriting from `BaseRouter`
+- `__init__.py`: Exports the router as `api_<domain>_router`
+
+### Fetching Complex Relationships in Services
+
+#### Loading Strategy Recommendations
+
+- **Prefer `selectinload()`** over `joinedload()` for most relationship loading (better for many-to-many)
+- **Chain `selectinload()`** for 2+ level deep nested relationships
+- **Use base mixin methods** (`get_related_item_level_one_by_id()`, `get_nested_related_item_by_id()`) when possible for consistency
+- **Add indexes** on frequently queried foreign key combinations for performance
+
+#### Level 1 Relationship Loading
+
+Use base utility methods from `RelationshipMixin` with `selectinload()` for eager loading.
+
+**Pattern**: `get_related_item_level_one_by_id(item_id, relationship_name)`
+
+```python
+# src/tournaments/db_services.py
+async def get_teams_by_tournament(
+    self,
+    tournament_id: int,
+) -> list[TeamDB]:
+    self.logger.debug(f"Get teams by {ITEM} id:{tournament_id}")
+    return await self.get_related_item_level_one_by_id(
+        tournament_id,
+        "teams",
+    )
+```
+
+#### Nested Relationship Loading (2+ Levels Deep)
+
+Use chained `selectinload()` for eager loading multiple relationship levels in a single query.
+
+```python
+# src/matches/db_services.py
+async def get_player_by_match_full_data(self, match_id: int) -> list[dict]:
+    from src.core.models.player import PlayerDB
+    from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+    async with self.db.async_session() as session:
+        stmt = (
+            select(PlayerMatchDB)
+            .where(PlayerMatchDB.match_id == match_id)
+            .options(
+                # 3-level deep loading: PlayerMatch -> PlayerTeamTournament -> Player -> Person
+                selectinload(PlayerMatchDB.player_team_tournament)
+                .selectinload(PlayerTeamTournamentDB.player)
+                .selectinload(PlayerDB.person),
+                # Parallel level 2 relationships
+                selectinload(PlayerMatchDB.match_position),
+                selectinload(PlayerMatchDB.team),
+            )
+        )
+
+        results = await session.execute(stmt)
+        players = results.scalars().all()
+
+        # Build complex data structure
+        players_with_data = []
+        for player in players:
+            players_with_data.append(
+                {
+                    "id": player.id,
+                    "player_id": (
+                        player.player_team_tournament.player_id
+                        if player.player_team_tournament
+                        else None
+                    ),
+                    "player": (
+                        player.player_team_tournament.player
+                        if player.player_team_tournament
+                        else None
+                    ),
+                    "team": player.team,
+                    "position": (
+                        {
+                            **player.match_position.__dict__,
+                            "category": player.match_position.category,
+                        }
+                        if player.match_position
+                        else None
+                    ),
+                    "player_team_tournament": player.player_team_tournament,
+                    "person": (
+                        player.player_team_tournament.player.person
+                        if player.player_team_tournament
+                        and player.player_team_tournament.player
+                        else None
+                    ),
+                    "is_starting": player.is_starting,
+                    "starting_type": player.starting_type,
+                }
+            )
+
+        return players_with_data
+```
+
+#### Many-to-Many Relationship Loading
+
+Use direct `select()` queries with where clauses for filtering junction tables.
+
+```python
+# src/teams/db_services.py
+async def get_players_by_team_id_tournament_id(
+    self,
+    team_id: int,
+    tournament_id: int,
+) -> list[PlayerTeamTournamentDB]:
+    self.logger.debug(f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}")
+    async with self.db.async_session() as session:
+        stmt = (
+            select(PlayerTeamTournamentDB)
+            .where(PlayerTeamTournamentDB.team_id == team_id)
+            .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+        )
+
+        results = await session.execute(stmt)
+        players = results.scalars().all()
+        return players
+```
+
+**Join for many-to-many**:
+```python
+async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:
+    self.logger.debug(f"Get {ITEM} related teams for tournament_id:{tournament_id}")
+    async with self.db.async_session() as session:
+        result = await session.execute(
+            select(TeamDB)
+            .join(TeamTournamentDB)
+            .where(TeamTournamentDB.tournament_id == tournament_id)
+        )
+        teams = result.scalars().all()
+        return teams
+```
+
+#### Custom Relationship Queries with Subqueries
+
+Use subqueries to exclude certain records.
+
+```python
+# src/matches/db_services.py
+async def _get_available_players(
+    self, session, team_id: int, tournament_id: int, match_id: int
+) -> list[dict]:
+    """Get players available for match (not already in match)."""
+    from src.core.models.player import PlayerDB
+
+    # Subquery to find players already in match
+    subquery = (
+        select(PlayerMatchDB.player_team_tournament_id)
+        .where(PlayerMatchDB.match_id == match_id)
+        .where(PlayerMatchDB.team_id == team_id)
+    )
+
+    # Get players NOT in the subquery (available players)
+    stmt = (
+        select(PlayerTeamTournamentDB)
+        .where(PlayerTeamTournamentDB.team_id == team_id)
+        .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+        .where(~PlayerTeamTournamentDB.id.in_(subquery))  # NOT IN subquery
+        .options(
+            selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+            selectinload(PlayerTeamTournamentDB.position),
+            selectinload(PlayerTeamTournamentDB.team),
+        )
+    )
+
+    results = await session.execute(stmt)
+    available_players = results.scalars().all()
+
+    return [
+        {
+            "id": pt.id,
+            "player_id": pt.player_id,
+            "player_team_tournament": pt,
+            "person": pt.player.person if pt.player else None,
+            "position": pt.position,
+            "team": pt.team,
+        }
+        for pt in available_players
+    ]
+```
+
+#### Nested Related Items Using Service Registry
+
+Use `get_nested_related_item_by_id()` to traverse 2-level relationships using a different service.
+
+```python
+# src/tournaments/db_services.py
+async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int) -> list[SponsorDB]:
+    sponsor_line_service = self.service_registry.get("sponsor_line")
+    self.logger.debug(f"Get sponsors of tournament sponsor line {ITEM} id:{tournament_id}")
+    # Tournament -> SponsorLine -> Sponsors
+    return await self.get_nested_related_item_by_id(
+        tournament_id,
+        sponsor_line_service,
+        "sponsor_line",
+        "sponsors",
+    )
+```
+
+```python
+# src/player_match/db_services.py
+async def get_player_in_sport(self, player_id: int) -> PlayerDB | None:
+    player_team_tournament_service = self.service_registry.get("player_team_tournament")
+    self.logger.debug(f"Get player in sport by player_id:{player_id}")
+    # PlayerMatch -> PlayerTeamTournament -> Player
+    return await self.get_nested_related_item_by_id(
+        player_id,
+        player_team_tournament_service,
+        "player_team_tournament",
+        "player",
+    )
+```
+
+#### Complex Multi-Query Assembly
+
+Combine multiple queries to build a complete context.
+
+```python
+# src/matches/db_services.py
+async def get_match_full_context(self, match_id: int) -> dict | None:
+    """Get match with all initialization data: teams, sport, positions, players."""
+    from src.core.models.player import PlayerDB
+
+    async with self.db.async_session() as session:
+        # Query 1: Match with teams and tournament
+        stmt = (
+            select(MatchDB)
+            .where(MatchDB.id == match_id)
+            .options(
+                selectinload(MatchDB.team_a),
+                selectinload(MatchDB.team_b),
+                selectinload(MatchDB.tournaments),
+            )
+        )
+
+        result = await session.execute(stmt)
+        match = result.scalar_one_or_none()
+
+        if not match:
+            return None
+
+        tournament = match.tournaments if match.tournaments else None
+
+        # Query 2: Sport with positions
+        if tournament:
+            stmt_sport = (
+                select(SportDB)
+                .where(SportDB.id == tournament.sport_id)
+                .options(selectinload(SportDB.positions))
+            )
+            result_sport = await session.execute(stmt_sport)
+            sport = result_sport.scalar_one_or_none()
+        else:
+            sport = None
+
+        # Query 3: Players with nested relationships
+        stmt_players = (
+            select(PlayerMatchDB)
+            .where(PlayerMatchDB.match_id == match_id)
+            .options(
+                selectinload(PlayerMatchDB.player_team_tournament)
+                .selectinload(PlayerTeamTournamentDB.player)
+                .selectinload(PlayerDB.person),
+                selectinload(PlayerMatchDB.match_position),
+                selectinload(PlayerMatchDB.team),
+            )
+        )
+        result_players = await session.execute(stmt_players)
+        player_matches = result_players.scalars().all()
+
+        # Query 4 & 5: Available players for home/away teams
+        home_available = await self._get_available_players(
+            session, match.team_a_id, match.tournament_id, match_id
+        )
+        away_available = await self._get_available_players(
+            session, match.team_b_id, match.tournament_id, match_id
+        )
+
+        # Build final composite structure
+        return {
+            "match": match.__dict__,
+            "teams": {
+                "home": match.team_a.__dict__ if match.team_a else None,
+                "away": match.team_b.__dict__ if match.team_b else None,
+            },
+            "sport": {
+                **(sport.__dict__ if sport else {}),
+                "positions": [pos.__dict__ for pos in sport.positions] if sport else [],
+            },
+            "tournament": tournament.__dict__ if tournament else None,
+            "players": {
+                "home_roster": home_roster,
+                "away_roster": away_roster,
+                "available_home": home_available,
+                "available_away": away_available,
+            },
+        }
+```
+
+#### Pagination with Relationship Loading
+
+Use `get_related_item_level_one_by_id()` with pagination parameters.
+
+```python
+# src/tournaments/db_services.py
+async def get_matches_by_tournament_with_pagination(
+    self,
+    tournament_id: int,
+    skip: int = 0,
+    limit: int = 20,
+    order_exp: str = "id",
+    order_exp_two: str = "id",
+) -> list[MatchDB]:
+    self.logger.debug(
+        f"Get matches by {ITEM} id:{tournament_id} with pagination: skip={skip}, limit={limit}"
+    )
+    return await self.get_related_item_level_one_by_id(
+        tournament_id,
+        "matches",
+        skip=skip,
+        limit=limit,
+        order_by=order_exp,
+        order_by_two=order_exp_two,
+    )
+```
+
+#### Base Utility Methods from RelationshipMixin
+
+Key utility methods provided by base class:
+
+| Method | Purpose |
+|--------|---------|
+| `get_related_item_level_one_by_id(id, relation)` | Fetch level 1 relationships with `selectinload()` |
+| `get_nested_related_item_by_id(id, service, rel1, rel2)` | Fetch 2-level nested relationships |
+| `create_m2m_relation(...)` | Create many-to-many relationships |
+| `find_relation(...)` | Check if relation exists in junction table |
+| `get_related_items(...)` | Fetch related items with optional property loading |
+| `get_related_items_by_two(...)` | Fetch 2-level relationships using `joinedload()` |
+
+#### Key Patterns Summary
+
+1. **`selectinload()`** - Primary loading strategy for eager loading relationships
+2. **Chained `selectinload()`** - For 2+ level deep relationships (e.g., `.selectinload(A).selectinload(B)`)
+3. **Base mixin methods** - Reusable patterns for common relationship queries
+4. **Direct `select()` with `where()`** - For many-to-many junction table queries
+5. **Subqueries with `NOT IN`** - For exclusion queries (e.g., "available players")
+6. **Service registry** - For cross-service nested relationships
+7. **Multi-query assembly** - Building complex composite data structures
+
+## Search Implementation
+
+When adding search functionality to a domain:
+
+### 1. Schema Updates
+
+Add pagination metadata and paginated response schemas:
+
+```python
+# src/{domain}/schemas.py
+class PaginationMetadata(BaseModel):
+    page: int
+    items_per_page: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool
+
+
+class Paginated{Entity}Response(BaseModel):
+    data: list[{Entity}Schema]
+    metadata: PaginationMetadata
+```
+
+### 2. Service Layer Implementation
+
+Implement `search_<entity>s_with_pagination()` method:
+
+```python
+# src/{domain}/db_services.py
+from math import ceil
+from sqlalchemy import select, func
+
+@handle_service_exceptions(
+    item_name=ITEM,
+    operation="searching {entity}s with pagination",
+    return_value_on_not_found=None,
+)
+async def search_{entity}s_with_pagination(
+    self,
+    search_query: str | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    order_by: str = "{default_field}",
+    order_by_two: str = "id",
+    ascending: bool = True,
+) -> Paginated{Entity}Response:
+    self.logger.debug(
+        f"Search {ITEM}: query={search_query}, skip={skip}, limit={limit}, "
+        f"order_by={order_by}, order_by_two={order_by_two}"
+    )
+
+    async with self.db.async_session() as session:
+        base_query = select({Model}DB)
+
+        # Search pattern matching with ICU collation for international text
+        if search_query:
+            search_pattern = f"%{search_query}%"
+            base_query = base_query.where(
+                ({Model}DB.field1.ilike(search_pattern).collate("en-US-x-icu"))
+                | ({Model}DB.field2.ilike(search_pattern).collate("en-US-x-icu"))
+            )
+
+        # Get total count
+        count_stmt = select(func.count()).select_from(base_query.subquery())
+        count_result = await session.execute(count_stmt)
+        total_items = count_result.scalar() or 0
+
+        total_pages = ceil(total_items / limit) if limit > 0 else 0
+
+        # Order by columns with fallbacks
+        try:
+            order_column = getattr({Model}DB, order_by, {Model}DB.{default_field})
+        except AttributeError:
+            self.logger.warning(f"Order column {order_by} not found, defaulting to {default_field}")
+            order_column = {Model}DB.{default_field}
+
+        try:
+            order_column_two = getattr({Model}DB, order_by_two, {Model}DB.id)
+        except AttributeError:
+            self.logger.warning(f"Order column {order_by_two} not found, defaulting to id")
+            order_column_two = {Model}DB.id
+
+        order_expr = order_column.asc() if ascending else order_column.desc()
+        order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+        # Apply pagination and ordering
+        data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+        result = await session.execute(data_query)
+        {entity}s = result.scalars().all()
+
+        return Paginated{Entity}Response(
+            data=[{Entity}Schema.model_validate(e) for e in {entity}s],
+            metadata=PaginationMetadata(
+                page=(skip // limit) + 1,
+                items_per_page=limit,
+                total_items=total_items,
+                total_pages=total_pages,
+                has_next=(skip + limit) < total_items,
+                has_previous=skip > 0,
+            ),
+        )
+```
+
+### 3. Router Layer Updates
+
+Add `search` query parameter to paginated endpoint:
+
+```python
+# src/{domain}/views.py
+@router.get(
+    "/paginated",
+    response_model=Paginated{Entity}Response,
+)
+async def get_all_{entity}s_paginated_endpoint(
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+    order_by: str = Query("{default_field}", description="First sort column"),
+    order_by_two: str = Query("id", description="Second sort column"),
+    ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+    search: str | None = Query(None, description="Search query for text search"),
+):
+    self.logger.debug(
+        f"Get all {entity}s paginated: page={page}, items_per_page={items_per_page}, "
+        f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+    )
+    skip = (page - 1) * items_per_page
+    response = await self.service.search_{entity}s_with_pagination(
+        search_query=search,
+        skip=skip,
+        limit=items_per_page,
+        order_by=order_by,
+        order_by_two=order_by_two,
+        ascending=ascending,
+    )
+    return response
+```
+
+### Key Implementation Details
+
+1. **Search Pattern Matching**:
+   - Uses `ilike()` for case-insensitive matching
+   - ICU collation (`en-US-x-icu`) for proper international text handling
+   - Pattern `%query%` matches anywhere in the field
+   - Searches multiple fields with OR (`|`) operator
+
+2. **Pagination Metadata**:
+   - `page`: Current page number (1-based)
+   - `items_per_page`: Number of items per page
+   - `total_items`: Total number of matching results
+   - `total_pages`: Total number of pages (ceil(total_items / items_per_page))
+   - `has_next`: Whether there is a next page
+   - `has_previous`: Whether there is a previous page
+
+3. **Ordering**:
+   - Dual column sorting for consistent pagination
+   - Graceful fallback to default columns if invalid column names provided
+   - Configurable ascending/descending order
+
+ 4. **Empty Search Query**:
+    - `search=None` returns all records with pagination
+    - Consistent with existing `get_all_with_pagination()` behavior
+
+ 5. **Error Handling**:
+    - Decorator with `return_value_on_not_found=None` for graceful handling
+    - Returns empty list and zero metadata when no results found
+
+ 6. **Multiple Filter Support** (Player Team Tournament):
+    - Supports combining `search_query` (person name) with `team_title` filter
+    - Filters are applied with AND logic (must match both conditions)
+    - Team title filter uses same ICU collation for international text handling
+    - Example: `search=Иван&team_title=Динамо` returns players with name matching "Иван" AND team title matching "Динамо"
+
+### Example: Person Domain
+
+See `src/person/` for complete implementation:
+- **Schema**: `PaginationMetadata`, `PaginatedPersonResponse`
+- **Service**: `PersonServiceDB.search_persons_with_pagination()`
+- **Router**: `PersonAPIRouter.get_all_persons_paginated_endpoint()`
+
+### Test Database Setup
+
+No special database setup is required for ilike-based search. Tests can use the standard test database setup.
+
+**Important:** Search tests using ilike can run in parallel with no special requirements. Run with:
+```bash
+pytest tests/test_{domain}_search.py
+```
+
+### PostgreSQL pg_trgm Optimization (Optional Performance Enhancement)
+
+The project includes optional `pg_trgm` extension for GIN index acceleration of ILIKE queries. This provides significant performance improvements for large datasets (>1000 rows).
+
+#### Overview
+
+- **pg_trgm** (trigram) extension provides trigram-based substring matching with GIN indexes
+- **ILIKE + ICU collation**: Primary search approach (international text support)
+- **GIN indexes**: Optional optimization for large datasets
+
+#### Benefits
+
+- **100-1800x performance improvement** on large datasets
+- Substring matching anywhere in text (not just prefixes)
+- Fast indexed lookups using trigrams
+- Backward compatible with existing ILIKE queries
+
+#### Trade-offs
+
+- **Index size**: GIN indexes are ~3-4x larger than standard B-Tree indexes
+- **Write performance**: 5-15% slower INSERT/UPDATE due to index maintenance
+- **Small datasets**: PostgreSQL planner may prefer sequential scan (< 1000 rows)
+
+#### Implementation Pattern
+
+**1. Database Migration**:
+
+```python
+# alembic/versions/YYYY_MM_DD_HHMM-{hash}_add_pg_trgm_for_{domain}.py
+def upgrade() -> None:
+    # Install pg_trgm extension (only once per database)
+    op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+
+    # Create GIN indexes with gin_trgm_ops for ILIKE support
+    op.execute(f"""
+        CREATE INDEX ix_{table}_{field}_trgm
+        ON {table} USING GIN ({field} gin_trgm_ops);
+    """)
+
+def downgrade() -> None:
+    op.execute(f"DROP INDEX IF EXISTS ix_{table}_{field}_trgm;")
+```
+
+**2. No Code Changes Required** - Existing ILIKE queries automatically use pg_trgm indexes when beneficial
+
+#### When to Use pg_trgm
+
+**Use when:**
+- Large datasets (>1000 rows) where full table scans are slow
+- Search patterns like `%text%` (not just prefixes)
+- Need substring matching anywhere in text
+- Multi-language text with Unicode (Cyrillic, Latin, etc.)
+
+**Avoid when:**
+- Small datasets (<1000 rows) - sequential scan may be faster
+- Short search terms (< 3 chars) - trigrams require 3+ chars
+- Prefix-only search - standard B-Tree index is smaller
+- Storage-constrained environments - GIN indexes are larger
+
+#### Example: Person Domain
+
+See `src/person/` for complete implementation:
+- **Migration**: `alembic/versions/2026_01_06_1552-32e4ddf548e3_add_pg_trgm_extension_for_person_search.py`
+- **Service**: `PersonServiceDB.search_persons_with_pagination()` in `src/person/db_services.py`
+- **Benchmarks**: `TestPersonSearchPerformance` in `tests/test_benchmarks.py`
+
+#### Verification
+
+Check if indexes are being used:
+```sql
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
+SELECT * FROM person WHERE first_name ILIKE '%query%';
+```
+- Look for `Bitmap Index Scan` or `Index Scan using ix_person_first_name_trgm`
+- `Seq Scan` indicates index not used (expected for small datasets)
+
+#### References
+
+- **PostgreSQL pg_trgm docs**: https://www.postgresql.org/docs/current/pgtrgm.html
+- **GIN Indexes**: https://www.postgresql.org/docs/current/gin.html
+- **Full guide**: `PG_TRGM_SEARCH_OPTIMIZATION.md`
+
+## WebSocket and Real-time
+
+- Use existing `ws_manager` for connection management
+- Follow event notification patterns in existing modules
+- Test connection handling and reconnection scenarios
+- Use Redis pub/sub for scalable event distribution
+- Always clean up connections on disconnect
+
+## General Principles
+
+- Follow existing patterns rather than creating new ones
+- Keep functions focused and single-responsibility
+- Prefer composition over inheritance
+- Use type hints everywhere for better IDE support
+- Write tests before or immediately after implementing features
+- Always run lint and test commands before considering a task complete
+- Never hardcode credentials or secrets - use environment variables
+- Use Pydantic Settings for configuration in `src/core/config.py`
+
+## Configuration Validation
+
+The application includes comprehensive configuration validation that runs automatically on startup:
+
+- **Database Settings Validation**:
+  - Validates required fields (host, user, password, name) are not empty
+  - Validates port is between 1 and 65535
+  - Validates connection strings are valid
+  - Main database validation is skipped when `TESTING` environment variable is set
+
+- **Application Settings Validation**:
+  - Validates CORS origins format (must start with http://, https://, or \*)
+  - Validates SSL files: both SSL_KEYFILE and SSL_CERTFILE must be provided together or neither
+
+- **Path Validation**:
+  - Required paths: static_main_path, uploads_path (must exist and be readable)
+  - Optional paths: template_path, static_path, SSL files (logged as warnings if missing)
+
+- **Database Connection Validation**:
+  - Tests basic database connectivity
+  - Logs PostgreSQL version
+  - Logs current database name
+  - Logs current database user
+  - Runs automatically on application startup via FastAPI lifespan
+
+Run `python validate_config.py` to manually validate configuration before starting the application.
+
+See `CONFIGURATION_VALIDATION.md` for complete documentation.
