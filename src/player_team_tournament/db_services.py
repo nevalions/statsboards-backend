@@ -1,4 +1,3 @@
-
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -168,6 +167,48 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             "player",
             "person",
         )
+
+    async def _build_base_query_with_search(
+        self,
+        tournament_id: int,
+        search_query: str | None = None,
+    ):
+        """Build base query with joins and optional person name search filters."""
+        search_fields = [
+            (PersonDB, "first_name"),
+            (PersonDB, "second_name"),
+        ]
+
+        if search_query:
+            base_query = (
+                select(PlayerTeamTournamentDB)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
+                .options(
+                    selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                    selectinload(PlayerTeamTournamentDB.team),
+                    selectinload(PlayerTeamTournamentDB.position),
+                )
+            )
+            base_query = await self._apply_search_filters(
+                base_query,
+                search_fields,
+                search_query,
+            )
+            return base_query.distinct()
+        else:
+            return (
+                select(PlayerTeamTournamentDB)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                .options(
+                    selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                    selectinload(PlayerTeamTournamentDB.team),
+                    selectinload(PlayerTeamTournamentDB.position),
+                )
+            )
 
     async def update(
         self,
@@ -433,36 +474,10 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         )
 
         async with self.db.async_session() as session:
-            if search_query:
-                search_pattern = await self._build_search_pattern(search_query)
-                base_query = (
-                    select(PlayerTeamTournamentDB)
-                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
-                    .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
-                    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
-                    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
-                    .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
-                    .options(
-                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
-                        selectinload(PlayerTeamTournamentDB.team),
-                        selectinload(PlayerTeamTournamentDB.position),
-                    )
-                    .where(
-                        PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
-                        | PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu")
-                    )
-                    .distinct()
-                )
-            else:
-                base_query = (
-                    select(PlayerTeamTournamentDB)
-                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
-                    .options(
-                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
-                        selectinload(PlayerTeamTournamentDB.team),
-                        selectinload(PlayerTeamTournamentDB.position),
-                    )
-                )
+            base_query = await self._build_base_query_with_search(
+                tournament_id,
+                search_query,
+            )
 
             count_stmt = select(func.count(func.distinct(PlayerTeamTournamentDB.id))).select_from(
                 base_query
@@ -511,36 +526,10 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         )
 
         async with self.db.async_session() as session:
-            if search_query:
-                search_pattern = await self._build_search_pattern(search_query)
-                base_query = (
-                    select(PlayerTeamTournamentDB)
-                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
-                    .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
-                    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
-                    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
-                    .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
-                    .options(
-                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
-                        selectinload(PlayerTeamTournamentDB.team),
-                        selectinload(PlayerTeamTournamentDB.position),
-                    )
-                    .where(
-                        PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
-                        | PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu")
-                    )
-                    .distinct()
-                )
-            else:
-                base_query = (
-                    select(PlayerTeamTournamentDB)
-                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
-                    .options(
-                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
-                        selectinload(PlayerTeamTournamentDB.team),
-                        selectinload(PlayerTeamTournamentDB.position),
-                    )
-                )
+            base_query = await self._build_base_query_with_search(
+                tournament_id,
+                search_query,
+            )
 
             count_stmt = select(func.count(func.distinct(PlayerTeamTournamentDB.id))).select_from(
                 base_query
