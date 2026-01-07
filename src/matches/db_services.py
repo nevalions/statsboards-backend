@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from src.core.models import (
@@ -16,10 +16,11 @@ from src.core.models import (
     handle_service_exceptions,
 )
 from src.core.models.base import Database
+from src.core.schema_helpers import PaginationMetadata
 from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
 
-from .schemas import MatchSchemaCreate, MatchSchemaUpdate
+from .schemas import MatchSchema, MatchSchemaCreate, MatchSchemaUpdate, PaginatedMatchResponse
 
 ITEM = "MATCH"
 
@@ -553,6 +554,62 @@ class MatchServiceDB(BaseServiceDB):
                     "available_away": away_available,
                 },
             }
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching matches with pagination",
+        return_value_on_not_found=None,
+    )
+    async def search_matches_with_pagination(
+        self,
+        search_query: str | None = None,
+        week: int | None = None,
+        tournament_id: int | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "match_date",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedMatchResponse:
+        self.logger.debug(
+            f"Search {ITEM}: query={search_query}, week={week}, tournament_id={tournament_id}, "
+            f"skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = select(MatchDB)
+
+            if search_query:
+                base_query = await self._apply_search_filters(
+                    base_query,
+                    [(MatchDB, "match_eesl_id")],
+                    search_query,
+                )
+
+            if week is not None:
+                base_query = base_query.where(MatchDB.week == week)
+
+            if tournament_id is not None:
+                base_query = base_query.where(MatchDB.tournament_id == tournament_id)
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                MatchDB, order_by, order_by_two, ascending, MatchDB.match_date, MatchDB.id
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            matches = result.scalars().all()
+
+            return PaginatedMatchResponse(
+                data=[MatchSchema.model_validate(m) for m in matches],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
 
     # async def get_scoreboard_by_match(
     #     self,

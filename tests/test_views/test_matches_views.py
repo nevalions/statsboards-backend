@@ -404,3 +404,118 @@ class TestMatchViews:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
+
+    async def test_get_matches_paginated_endpoint(self, client, test_db):
+        """Test getting matches with pagination and week filter."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date="2025-01-01",
+                week=1,
+            )
+        )
+        await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date="2025-01-08",
+                week=2,
+            )
+        )
+        await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date="2025-01-15",
+                week=3,
+            )
+        )
+
+        response = await client.get("/api/matches/paginated?week=2")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) == 1
+        assert data["data"][0]["week"] == 2
+        assert data["metadata"]["total_items"] == 1
+
+    async def test_get_matches_paginated_with_tournament_filter(self, client, test_db):
+        """Test getting matches with tournament_id filter."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament_a = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+        tournament_b = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament_a.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date="2025-01-01",
+                week=1,
+            )
+        )
+        await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament_a.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date="2025-01-08",
+                week=2,
+            )
+        )
+        await match_service.create_or_update_match(
+            MatchSchemaCreate(
+                tournament_id=tournament_b.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+                match_date="2025-01-15",
+                week=1,
+            )
+        )
+
+        response = await client.get(f"/api/matches/paginated?tournament_id={tournament_a.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) == 2
+        assert all(m["tournament_id"] == tournament_a.id for m in data["data"])
+        assert data["metadata"]["total_items"] == 2

@@ -1,4 +1,4 @@
-from fastapi import Depends, File, HTTPException, UploadFile
+from fastapi import Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter
@@ -16,6 +16,7 @@ from .schemas import (
     MatchSchema,
     MatchSchemaCreate,
     MatchSchemaUpdate,
+    PaginatedMatchResponse,
 )
 
 
@@ -461,46 +462,37 @@ class MatchCRUDRouter(
                 raise HTTPException(status_code=500, detail="Internal server error")
 
         @router.get(
-            "/id/{match_id}/team-rosters/",
-            summary="Get team rosters for match",
-            description="Get all team rosters (home, away, available) for a match in single optimized response",
-            responses={
-                200: {"description": "Rosters retrieved successfully"},
-                404: {"description": "Match not found"},
-                500: {"description": "Internal server error"},
-            },
+            "/paginated",
+            response_model=PaginatedMatchResponse,
+            summary="Search matches with pagination",
+            description="Search matches by week, tournament_id, or match_eesl_id with pagination support",
         )
-        async def get_team_rosters_endpoint(
-            match_id: int,
-            include_available: bool = True,
-            include_match_players: bool = True,
+        async def get_matches_paginated_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("match_date", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for match_eesl_id"),
+            week: int | None = Query(None, ge=1, description="Filter by week number"),
+            tournament_id: int | None = Query(None, ge=1, description="Filter by tournament_id"),
         ):
             self.logger.debug(
-                f"Get team rosters endpoint for match_id:{match_id} include_available:{include_available} include_match_players:{include_match_players}"
+                f"Get matches paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, "
+                f"search={search}, week={week}, tournament_id={tournament_id}"
             )
-            from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
-
-            ptt_service = PlayerTeamTournamentServiceDB(self.service.db)
-            try:
-                rosters = await ptt_service.get_team_rosters_for_match(
-                    match_id,
-                    include_available,
-                    include_match_players,
-                )
-                if not rosters:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Match {match_id} not found",
-                    )
-                return rosters
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error fetching rosters for match {match_id}: {ex}", exc_info=True
-                )
-                raise HTTPException(status_code=500, detail="Internal server error")
-
-        return router
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_matches_with_pagination(
+                search_query=search,
+                week=week,
+                tournament_id=tournament_id,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
 
         return router

@@ -2,7 +2,7 @@ from datetime import datetime as date_type
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.schema_helpers import make_fields_optional
+from src.core.schema_helpers import PaginationMetadata, make_fields_optional
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.scoreboards.schemas import ScoreboardSchemaCreate
 
@@ -100,3 +100,8 @@ class FootballTeamStats(BaseModel):
     turnovers: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedMatchResponse(BaseModel):
+    data: list[MatchSchema]
+    metadata: PaginationMetadata
