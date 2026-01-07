@@ -111,8 +111,6 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             items_per_page: Annotated[
                 int, Query(ge=1, le=100, description="Items per page (max 100)")
             ] = 20,
-            order_by: Annotated[str, Query(description="First sort column")] = "id",
-            order_by_two: Annotated[str, Query(description="Second sort column")] = "id",
             ascending: Annotated[
                 bool, Query(description="Sort order (true=asc, false=desc)")
             ] = True,
@@ -122,8 +120,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         ):
             self.logger.debug(
                 f"Get players paginated with details: sport_id={sport_id}, team_id={team_id}, "
-                f"page={page}, items_per_page={items_per_page}, order_by={order_by}, "
-                f"order_by_two={order_by_two}, ascending={ascending}, search={search}"
+                f"page={page}, items_per_page={items_per_page}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_players_with_pagination_details(
@@ -132,8 +129,6 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 search_query=search,
                 skip=skip,
                 limit=items_per_page,
-                order_by=order_by,
-                order_by_two=order_by_two,
                 ascending=ascending,
             )
             return response

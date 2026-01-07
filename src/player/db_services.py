@@ -93,19 +93,29 @@ class PlayerServiceDB(BaseServiceDB):
             **kwargs,
         )
 
-    async def _build_base_query_with_search(
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching players with pagination and details",
+        return_value_on_not_found=None,
+    )
+    async def search_players_with_pagination_details(
         self,
         sport_id: int,
-        team_id: int | None = None,
         search_query: str | None = None,
-    ):
-        """Build base query with joins and optional person name search filters."""
-        search_fields = [
-            (PersonDB, "first_name"),
-            (PersonDB, "second_name"),
-        ]
+        team_id: int | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "second_name",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedPlayerWithDetailsResponse:
+        self.logger.debug(
+            f"Search players with details: sport_id={sport_id}, query={search_query}, "
+            f"team_id={team_id}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}"
+        )
 
-        if search_query:
+        async with self.db.async_session() as session:
             base_query = (
                 select(PlayerDB)
                 .where(PlayerDB.sport_id == sport_id)
@@ -126,77 +136,19 @@ class PlayerServiceDB(BaseServiceDB):
                     PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id
                 ).where(PlayerTeamTournamentDB.team_id == team_id)
 
-            base_query = await self._apply_search_filters(
-                base_query,
-                search_fields,
-                search_query,
-            )
-            return base_query.distinct()
-        else:
-            base_query = (
-                select(PlayerDB)
-                .where(PlayerDB.sport_id == sport_id)
-                .options(
-                    selectinload(PlayerDB.person),
-                    selectinload(PlayerDB.player_team_tournament).selectinload(
-                        PlayerTeamTournamentDB.team
-                    ),
-                    selectinload(PlayerDB.player_team_tournament).selectinload(
-                        PlayerTeamTournamentDB.position
-                    ),
+            if search_query:
+                search_pattern = f"%{search_query}%"
+                base_query = base_query.where(
+                    (PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu"))
+                    | (PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu"))
                 )
-            )
-
-            if team_id:
-                base_query = base_query.join(
-                    PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id
-                ).where(PlayerTeamTournamentDB.team_id == team_id)
-
-            return base_query.distinct()
-
-    @handle_service_exceptions(
-        item_name=ITEM,
-        operation="searching players with pagination and details",
-        return_value_on_not_found=None,
-    )
-    async def search_players_with_pagination_details(
-        self,
-        sport_id: int,
-        search_query: str | None = None,
-        team_id: int | None = None,
-        skip: int = 0,
-        limit: int = 20,
-        order_by: str = "id",
-        order_by_two: str = "id",
-        ascending: bool = True,
-    ) -> PaginatedPlayerWithDetailsResponse:
-        self.logger.debug(
-            f"Search players with details: sport_id={sport_id}, query={search_query}, "
-            f"team_id={team_id}, skip={skip}, limit={limit}, "
-            f"order_by={order_by}, order_by_two={order_by_two}"
-        )
-
-        async with self.db.async_session() as session:
-            base_query = await self._build_base_query_with_search(
-                sport_id,
-                team_id,
-                search_query,
-            )
 
             count_stmt = select(func.count(func.distinct(PlayerDB.id))).select_from(base_query)
             count_result = await session.execute(count_stmt)
             total_items = count_result.scalar() or 0
 
-            order_expr, order_expr_two = await self._build_order_expressions(
-                PlayerDB,
-                order_by,
-                order_by_two,
-                ascending,
-                PlayerDB.id,
-                PlayerDB.id,
-            )
-
-            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            order_expr = PersonDB.second_name.asc() if ascending else PersonDB.second_name.desc()
+            data_query = base_query.order_by(order_expr).offset(skip).limit(limit)
             result = await session.execute(data_query)
             players = result.scalars().all()
 
