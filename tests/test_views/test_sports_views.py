@@ -102,8 +102,6 @@ class TestSportViews:
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
-        from src.core.models import PositionDB
-
         async with test_db.async_session() as session:
             session.add(PositionDB(title="Zebra", sport_id=sport.id))
             session.add(PositionDB(title="Alpha", sport_id=sport.id))
