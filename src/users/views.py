@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Query
 
 from src.auth.dependencies import CurrentUser, require_roles
 from src.auth.schemas import UserRoleAssign
@@ -12,7 +12,7 @@ from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
 
 from .db_services import UserServiceDB
-from .schemas import UserSchema, UserSchemaCreate, UserSchemaUpdate
+from .schemas import PaginatedUserResponse, UserSchema, UserSchemaCreate, UserSchemaUpdate
 
 ITEM = "USER"
 
@@ -201,6 +201,35 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 person_id=user.person_id,
                 roles=roles,
             )
+
+        @router.get(
+            "/search",
+            response_model=PaginatedUserResponse,
+            summary="Search users with pagination",
+            description="Search users by username, email, or person name. Supports pagination and ordering.",
+        )
+        async def search_users_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("username", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for text search"),
+        ):
+            self.logger.debug(
+                f"Search users: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_users_with_pagination(
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
 
         return router
 

@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, EmailStr, Field
 
+from src.core.schema_helpers import PaginationMetadata
+
 
 class UserSchemaCreate(BaseModel):
     """User creation schema."""
@@ -45,3 +47,8 @@ class UserAssignRole(BaseModel):
     """Assign role to user schema."""
 
     role_id: int
+
+
+class PaginatedUserResponse(BaseModel):
+    data: list[UserSchema]
+    metadata: PaginationMetadata
