@@ -1,9 +1,10 @@
 import pytest
 
+from src.core.models import PositionDB
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaUpdate
 from src.teams.db_services import TeamServiceDB
-from tests.factories import SportFactorySample, TeamFactory
+from tests.factories import PositionFactory, SportFactorySample, TeamFactory
 
 
 @pytest.mark.asyncio
@@ -96,6 +97,21 @@ class TestSportViews:
         response = await client.get(f"/api/sports/id/{sport.id}/positions")
 
         assert response.status_code == 200
+
+    async def test_get_positions_by_sport_endpoint_sorted_alphabetically(self, client, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        from src.core.models import PositionDB
+
+        async with test_db.async_session() as session:
+            session.add(PositionDB(title="Zebra", sport_id=sport.id))
+            session.add(PositionDB(title="Alpha", sport_id=sport.id))
+            session.add(PositionDB(title="Bravo", sport_id=sport.id))
+            await session.commit()
+
+        positions = await sport_service.get_positions_by_sport(sport.id)
+        assert [p.title for p in positions] == ["Alpha", "Bravo", "Zebra"]
 
     async def test_get_teams_by_sport_paginated_endpoint(self, test_db):
         sport_service = SportServiceDB(test_db)

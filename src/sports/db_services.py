@@ -1,3 +1,5 @@
+from sqlalchemy import select
+
 from src.core.decorators import handle_service_exceptions
 from src.core.models import (
     BaseServiceDB,
@@ -93,8 +95,9 @@ class SportServiceDB(BaseServiceDB):
         key: str = "id",
     ) -> list[PositionDB]:
         self.logger.debug(f"Get positions by {ITEM} id:{sport_id}")
-        return await self.get_related_item_level_one_by_key_and_value(
-            key,
-            sport_id,
-            "positions",
-        )
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PositionDB).where(PositionDB.sport_id == sport_id).order_by(PositionDB.title)
+            )
+            results = await session.execute(stmt)
+            return results.scalars().all()
