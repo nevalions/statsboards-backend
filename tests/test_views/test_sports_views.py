@@ -2,7 +2,8 @@ import pytest
 
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaUpdate
-from tests.factories import SportFactorySample
+from src.teams.db_services import TeamServiceDB
+from tests.factories import SportFactorySample, TeamFactory
 
 
 @pytest.mark.asyncio
@@ -95,3 +96,69 @@ class TestSportViews:
         response = await client.get(f"/api/sports/id/{sport.id}/positions")
 
         assert response.status_code == 200
+
+    async def test_get_teams_by_sport_paginated_endpoint(self, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team A"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team B"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team C"))
+
+        result = await team_service.search_teams_by_sport_with_pagination(sport_id=sport.id)
+
+        assert len(result.data) == 3
+        assert result.metadata.total_items == 3
+
+    async def test_get_teams_by_sport_paginated_with_search(self, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team Alpha"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team Beta"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team Gamma"))
+
+        result = await team_service.search_teams_by_sport_with_pagination(
+            sport_id=sport.id, search_query="Alpha"
+        )
+
+        assert len(result.data) == 1
+        assert result.data[0].title == "Team Alpha"
+
+    async def test_get_teams_by_sport_paginated_with_pagination(self, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team A"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team B"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team C"))
+
+        result = await team_service.search_teams_by_sport_with_pagination(
+            sport_id=sport.id, skip=0, limit=2
+        )
+
+        assert len(result.data) == 2
+        assert result.metadata.page == 1
+        assert result.metadata.items_per_page == 2
+        assert result.metadata.total_items == 3
+
+    async def test_get_teams_by_sport_paginated_endpoint_http(self, client, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team A"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team B"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team C"))
+
+        response = await client.get(f"/api/sports/id/{sport.id}/teams/paginated")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) == 3
+        assert data["metadata"]["total_items"] == 3
