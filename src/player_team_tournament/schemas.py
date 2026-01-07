@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
-from src.core.schema_helpers import make_fields_optional, PaginationMetadata
+from src.core.schema_helpers import PaginationMetadata, make_fields_optional
 
 
 class PlayerTeamTournamentSchemaBase(BaseModel):

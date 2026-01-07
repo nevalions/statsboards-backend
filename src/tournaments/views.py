@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import Depends, File, HTTPException, Path, UploadFile
+from fastapi import Depends, File, HTTPException, Path, Query, UploadFile
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
@@ -18,6 +18,7 @@ from ..sponsor_lines.schemas import SponsorLineSchema
 from ..sponsors.schemas import SponsorSchema
 from .db_services import TournamentServiceDB
 from .schemas import (
+    PaginatedTeamResponse,
     TournamentSchema,
     TournamentSchemaCreate,
     TournamentSchemaUpdate,
@@ -74,9 +75,7 @@ class TournamentAPIRouter(
             self.logger.debug(f"Update tournament endpoint id:{item_id} data: {item}")
             update_ = await self.service.update(item_id, item)
             if update_ is None:
-                raise HTTPException(
-                    status_code=404, detail=f"Tournament id {item_id} not found"
-                )
+                raise HTTPException(status_code=404, detail=f"Tournament id {item_id} not found")
             return TournamentSchema.model_validate(update_)
 
         @router.get(
@@ -90,9 +89,7 @@ class TournamentAPIRouter(
             },
         )
         async def get_tournament_by_eesl_id_endpoint(eesl_id: int):
-            self.logger.debug(
-                f"Get tournament by eesl_id endpoint got eesl_id:{eesl_id}"
-            )
+            self.logger.debug(f"Get tournament by eesl_id endpoint got eesl_id:{eesl_id}")
             tournament = await self.service.get_tournament_by_eesl_id(value=eesl_id)
             if tournament is None:
                 raise HTTPException(
@@ -115,6 +112,41 @@ class TournamentAPIRouter(
             return await self.service.get_teams_by_tournament(tournament_id)
 
         @router.get(
+            "/id/{tournament_id}/teams/paginated",
+            response_model=PaginatedTeamResponse,
+            summary="Get teams in tournament with pagination and search",
+            description="Retrieves teams participating in a specific tournament with pagination and search by team title.",
+            responses={
+                200: {"description": "Teams retrieved successfully"},
+                404: {"description": "Tournament not found"},
+            },
+        )
+        async def get_teams_by_tournament_paginated_endpoint(
+            tournament_id: int,
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("title", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for team title"),
+        ):
+            self.logger.debug(
+                f"Get teams by tournament id:{tournament_id} paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.get_teams_by_tournament_with_pagination(
+                tournament_id=tournament_id,
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
+
+        @router.get(
             "/id/{tournament_id}/players/",
             summary="Get players in tournament",
             description="Retrieves all players participating in a specific tournament.",
@@ -129,9 +161,7 @@ class TournamentAPIRouter(
 
         @router.get("/id/{tournament_id}/matches/count")
         async def get_count_of_matches_by_tournament_id_endpoint(tournament_id: int):
-            self.logger.debug(
-                f"Get count of matches by tournament id:{tournament_id} endpoint"
-            )
+            self.logger.debug(f"Get count of matches by tournament id:{tournament_id} endpoint")
             return await self.service.get_count_of_matches_by_tournament(tournament_id)
 
         @router.get("/id/{tournament_id}/matches/")
@@ -162,9 +192,7 @@ class TournamentAPIRouter(
             )
             return matches
 
-        @router.get(
-            "/id/{tournament_id}/main_sponsor/", response_model=Optional[SponsorSchema]
-        )
+        @router.get("/id/{tournament_id}/main_sponsor/", response_model=Optional[SponsorSchema])
         async def get_main_sponsor_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(
                 f"Get main_tournament_sponsor by tournament id:{tournament_id} endpoint"
@@ -191,9 +219,7 @@ class TournamentAPIRouter(
             self.logger.debug(
                 f"Get sponsors_from_sponsor_line by tournament id:{tournament_id} endpoint"
             )
-            return await self.service.get_sponsors_of_tournament_sponsor_line(
-                tournament_id
-            )
+            return await self.service.get_sponsors_of_tournament_sponsor_line(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/matches/all/data/",
@@ -233,24 +259,18 @@ class TournamentAPIRouter(
                 file_location = await file_service.save_upload_image(
                     file, sub_folder="tournaments/logos"
                 )
-                self.logger.debug(
-                    f"Upload tournament logo endpoint file location: {file_location}"
-                )
+                self.logger.debug(f"Upload tournament logo endpoint file location: {file_location}")
                 return {"logoUrl": file_location}
             except HTTPException:
                 raise
             except Exception as ex:
-                self.logger.error(
-                    f"Error uploading tournament logo: {ex}", exc_info=True
-                )
+                self.logger.error(f"Error uploading tournament logo: {ex}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail="Error uploading tournament logo",
                 )
 
-        @router.post(
-            "/upload_resize_logo", response_model=UploadResizeTournamentLogoResponse
-        )
+        @router.post("/upload_resize_logo", response_model=UploadResizeTournamentLogoResponse)
         async def upload_and_resize_tournament_logo_endpoint(
             file: UploadFile = File(...),
         ):
@@ -300,16 +320,14 @@ class TournamentAPIRouter(
                 if tournaments_list:
                     for t in tournaments_list:
                         tournament = TournamentSchemaCreate(**t)
-                        created_tournament = (
-                            await self.service.create_or_update_tournament(tournament)
+                        created_tournament = await self.service.create_or_update_tournament(
+                            tournament
                         )
                         self.logger.debug(
                             f"Created or updated tournament after parse {created_tournament}"
                         )
                         created_tournaments.append(created_tournament)
-                    self.logger.info(
-                        f"Created tournaments after parsing: {created_tournaments}"
-                    )
+                    self.logger.info(f"Created tournaments after parsing: {created_tournaments}")
                     return created_tournaments
                 else:
                     self.logger.warning("Teams list is empty")

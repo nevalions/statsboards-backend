@@ -5,6 +5,8 @@ from PIL import Image
 
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
+from src.teams.db_services import TeamServiceDB
+from src.teams.schemas import TeamSchemaCreate as TeamSchemaCreateType
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaUpdate
 from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
@@ -27,13 +29,9 @@ class TestTournamentViews:
         season_service = SeasonServiceDB(test_db)
         season = await season_service.create(SeasonFactorySample.build())
 
-        tournament_data = TournamentFactory.build(
-            sport_id=sport.id, season_id=season.id
-        )
+        tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
 
-        response = await client.post(
-            "/api/tournaments/", json=tournament_data.model_dump()
-        )
+        response = await client.post("/api/tournaments/", json=tournament_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -46,9 +44,7 @@ class TestTournamentViews:
         season = await season_service.create(SeasonFactorySample.build())
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament_data = TournamentFactory.build(
-            sport_id=sport.id, season_id=season.id
-        )
+        tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         created = await tournament_service.create_or_update_tournament(tournament_data)
 
         update_data = TournamentSchemaUpdate(title="Updated Title")
@@ -62,9 +58,7 @@ class TestTournamentViews:
     async def test_update_tournament_not_found(self, client):
         update_data = TournamentSchemaUpdate(title="Updated Title")
 
-        response = await client.put(
-            "/api/tournaments/99999/", json=update_data.model_dump()
-        )
+        response = await client.put("/api/tournaments/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
@@ -123,9 +117,7 @@ class TestTournamentViews:
 
         assert response.status_code == 200
 
-    async def test_get_count_of_matches_by_tournament_id_endpoint(
-        self, client, test_db
-    ):
+    async def test_get_count_of_matches_by_tournament_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -137,9 +129,7 @@ class TestTournamentViews:
             TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         )
 
-        response = await client.get(
-            f"/api/tournaments/id/{tournament.id}/matches/count"
-        )
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/matches/count")
 
         assert response.status_code == 200
 
@@ -187,9 +177,7 @@ class TestTournamentViews:
         season = await season_service.create(SeasonFactorySample.build())
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament_data = TournamentFactory.build(
-            sport_id=sport.id, season_id=season.id
-        )
+        tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         created = await tournament_service.create_or_update_tournament(tournament_data)
 
         response = await client.get(f"/api/tournaments/id/{created.id}")
@@ -238,3 +226,167 @@ class TestTournamentViews:
         response = await client.post("/api/tournaments/upload_resize_logo", files=files)
 
         assert response.status_code == 400
+
+    async def test_get_teams_by_tournament_paginated_endpoint(self, client, test_db):
+        """Test GET /api/tournaments/id/{tournament_id}/teams/paginated endpoint."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team1 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Manchester United",
+                sport_id=sport.id,
+                team_eesl_id=1001,
+            )
+        )
+        team2 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Manchester City",
+                sport_id=sport.id,
+                team_eesl_id=1002,
+            )
+        )
+        team3 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Liverpool",
+                sport_id=sport.id,
+                team_eesl_id=1003,
+            )
+        )
+
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        async with test_db.async_session() as session:
+            tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
+            tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
+            tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
+            session.add_all([tt1, tt2, tt3])
+            await session.commit()
+
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/teams/paginated")
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert "data" in response_data
+        assert "metadata" in response_data
+        assert len(response_data["data"]) == 3
+        assert response_data["metadata"]["total_items"] == 3
+        assert response_data["metadata"]["page"] == 1
+        assert response_data["metadata"]["items_per_page"] == 20
+
+    async def test_get_teams_by_tournament_paginated_with_search_endpoint(self, client, test_db):
+        """Test GET /api/tournaments/id/{tournament_id}/teams/paginated with search."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team1 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Manchester United",
+                sport_id=sport.id,
+                team_eesl_id=1001,
+            )
+        )
+        team2 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Manchester City",
+                sport_id=sport.id,
+                team_eesl_id=1002,
+            )
+        )
+        team3 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Liverpool",
+                sport_id=sport.id,
+                team_eesl_id=1003,
+            )
+        )
+
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        async with test_db.async_session() as session:
+            tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
+            tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
+            tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
+            session.add_all([tt1, tt2, tt3])
+            await session.commit()
+
+        response = await client.get(
+            f"/api/tournaments/id/{tournament.id}/teams/paginated?search=Manchester"
+        )
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert "data" in response_data
+        assert "metadata" in response_data
+        assert len(response_data["data"]) == 2
+        assert response_data["metadata"]["total_items"] == 2
+        team_titles = [team["title"] for team in response_data["data"]]
+        assert "Manchester United" in team_titles
+        assert "Manchester City" in team_titles
+        assert "Liverpool" not in team_titles
+
+    async def test_get_teams_by_tournament_paginated_with_page_2_endpoint(self, client, test_db):
+        """Test GET /api/tournaments/id/{tournament_id}/teams/paginated with page 2."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        teams_db = []
+        for i in range(5):
+            team = await team_service.create_or_update_team(
+                TeamSchemaCreateType(
+                    title=f"Team {i}",
+                    sport_id=sport.id,
+                    team_eesl_id=2000 + i,
+                )
+            )
+            teams_db.append(team)
+
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        async with test_db.async_session() as session:
+            tt_entries = [
+                TeamTournamentDB(tournament_id=tournament.id, team_id=team.id) for team in teams_db
+            ]
+            session.add_all(tt_entries)
+            await session.commit()
+
+        response = await client.get(
+            f"/api/tournaments/id/{tournament.id}/teams/paginated?page=2&items_per_page=2"
+        )
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert "data" in response_data
+        assert "metadata" in response_data
+        assert len(response_data["data"]) == 2
+        assert response_data["metadata"]["total_items"] == 5
+        assert response_data["metadata"]["page"] == 2
+        assert response_data["metadata"]["has_next"] is True
+        assert response_data["metadata"]["has_previous"] is True

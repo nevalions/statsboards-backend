@@ -5,6 +5,7 @@ Frontend integration guide for StatsBoards Backend APIs and WebSocket endpoints.
 ## Table of Contents
 
 - [Player Search API](#player-search-api)
+- [Teams in Tournament API](#teams-in-tournament-api)
 - [Match Stats API](#match-stats-api)
 - [WebSocket Message Formats](#websocket-message-formats)
 - [Player Match API](#player-match-api)
@@ -156,6 +157,139 @@ GET /api/players/paginated/details?sport_id=1&order_by=id&order_by_two=person_id
 | 200 | Success - players returned |
 | 400 | Bad Request - invalid query parameters |
 | 404 | Not Found - sport_id doesn't exist |
+| 500 | Internal Server Error - server error |
+
+---
+
+## Teams in Tournament API
+
+### GET /api/tournaments/id/{tournament_id}/teams/paginated
+
+Search and paginate teams in a specific tournament. Supports search by team title, pagination, and ordering.
+
+**Endpoint:**
+```
+GET /api/tournaments/id/{tournament_id}/teams/paginated
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tournament_id` | integer | Yes | Tournament ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|----------|-------------|
+| `search` | string | No | - | Search query for team title |
+| `page` | integer | No | 1 | Page number (1-based) |
+| `items_per_page` | integer | No | 20 | Items per page (max 100) |
+| `order_by` | string | No | "title" | First sort column |
+| `order_by_two` | string | No | "id" | Second sort column |
+| `ascending` | boolean | No | true | Sort order (true=asc, false=desc) |
+
+**Response (200 OK):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "team_eesl_id": 12345,
+      "title": "Manchester United",
+      "city": "Manchester",
+      "description": "Premier League football club",
+      "team_logo_url": "https://example.com/logos/manchester-united.png",
+      "team_logo_icon_url": "https://example.com/icons/manchester-united-icon.png",
+      "team_logo_web_url": "https://example.com/web/manchester-united.png",
+      "team_color": "#DA291C",
+      "sponsor_line_id": null,
+      "main_sponsor_id": 5,
+      "sport_id": 1
+    }
+  ],
+  "metadata": {
+    "page": 1,
+    "items_per_page": 20,
+    "total_items": 25,
+    "total_pages": 2,
+    "has_next": true,
+    "has_previous": false
+  }
+}
+```
+
+**Response Schema:**
+
+```typescript
+interface PaginatedTeamResponse {
+  data: Team[];
+  metadata: PaginationMetadata;
+}
+
+interface Team {
+  id: number;
+  team_eesl_id: number | null;
+  title: string;
+  city: string | null;
+  description: string | null;
+  team_logo_url: string | null;
+  team_logo_icon_url: string | null;
+  team_logo_web_url: string | null;
+  team_color: string;
+  sponsor_line_id: number | null;
+  main_sponsor_id: number | null;
+  sport_id: number;
+}
+
+interface PaginationMetadata {
+  page: number;
+  items_per_page: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+```
+
+**Search Behavior:**
+
+- Search is case-insensitive and uses ICU collation (`en-US-x-icu`) for international text support
+- Searches `title` field with pattern matching
+- Pattern matching: `%query%` (matches anywhere in team title)
+- Empty `search` parameter returns all teams in the tournament
+- Only teams that are associated with the tournament via `team_tournament` table are returned
+
+**Examples:**
+
+1. **Get all teams in tournament with pagination:**
+```
+GET /api/tournaments/id/1/teams/paginated?page=1&items_per_page=20
+```
+
+2. **Search teams by title:**
+```
+GET /api/tournaments/id/1/teams/paginated?search=Manchester&page=1&items_per_page=20
+```
+
+3. **Get second page with custom ordering:**
+```
+GET /api/tournaments/id/1/teams/paginated?page=2&items_per_page=10&order_by=title&order_by_two=id&ascending=false
+```
+
+4. **Search and paginate:**
+```
+GET /api/tournaments/id/1/teams/paginated?search=United&page=1&items_per_page=20&order_by=title&ascending=true
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 200 | Success - teams returned |
+| 400 | Bad Request - invalid query parameters |
+| 404 | Not Found - tournament_id doesn't exist |
 | 500 | Internal Server Error - server error |
 
 ---

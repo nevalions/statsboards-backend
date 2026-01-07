@@ -3,7 +3,8 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.schema_helpers import make_fields_optional
+from src.core.schema_helpers import PaginationMetadata, make_fields_optional
+from src.teams.schemas import TeamSchema
 
 
 class TournamentSchemaBase(BaseModel):
@@ -48,3 +49,8 @@ class TournamentSchema(TournamentSchemaBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int = Field(..., examples=[1])
+
+
+class PaginatedTeamResponse(BaseModel):
+    data: list[TeamSchema]
+    metadata: PaginationMetadata

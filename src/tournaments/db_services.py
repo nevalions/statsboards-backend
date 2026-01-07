@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.sql import func
 
 from src.core.decorators import handle_service_exceptions
 from src.core.models import (
@@ -8,13 +9,20 @@ from src.core.models import (
     SponsorDB,
     SponsorLineDB,
     TeamDB,
+    TeamTournamentDB,
     TournamentDB,
 )
 from src.core.models.base import Database
+from src.core.schema_helpers import PaginationMetadata
 
 from ..logging_config import get_logger
 from ..sponsor_lines.db_services import SponsorLineServiceDB
-from .schemas import TournamentSchemaCreate, TournamentSchemaUpdate
+from .schemas import (
+    PaginatedTeamResponse,
+    TeamSchema,
+    TournamentSchemaCreate,
+    TournamentSchemaUpdate,
+)
 
 ITEM = "TOURNAMENT"
 
@@ -75,6 +83,57 @@ class TournamentServiceDB(BaseServiceDB):
             tournament_id,
             "teams",
         )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching teams in tournament with pagination",
+        return_value_on_not_found=None,
+    )
+    async def get_teams_by_tournament_with_pagination(
+        self,
+        tournament_id: int,
+        search_query: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "title",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedTeamResponse:
+        self.logger.debug(
+            f"Search teams in tournament id:{tournament_id}: query={search_query}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = (
+                select(TeamDB)
+                .join(TeamTournamentDB, TeamDB.id == TeamTournamentDB.team_id)
+                .where(TeamTournamentDB.tournament_id == tournament_id)
+            )
+            base_query = await self._apply_search_filters(
+                base_query,
+                [(TeamDB, "title")],
+                search_query,
+            )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                TeamDB, order_by, order_by_two, ascending, TeamDB.title, TeamDB.id
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            teams = result.scalars().all()
+
+            return PaginatedTeamResponse(
+                data=[TeamSchema.model_validate(t) for t in teams],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
 
     # async def get_players_by_tournament(
     #         self,

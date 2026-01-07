@@ -3,6 +3,8 @@ from fastapi import HTTPException
 
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sports.schemas import SportSchemaCreate
+from src.teams.db_services import TeamServiceDB
+from src.teams.schemas import TeamSchemaCreate as TeamSchemaCreateType
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaCreate
 from tests.factories import TournamentFactory
@@ -30,8 +32,8 @@ class TestTournamentServiceDB:
         tournament_sample: TournamentSchemaCreate,
     ):
         """Test creating a tournament with related sport and season."""
-        created_tournament: TournamentSchemaCreate = (
-            await test_tournament_service.create(tournament_sample)
+        created_tournament: TournamentSchemaCreate = await test_tournament_service.create(
+            tournament_sample
         )
         assert created_tournament.season_id == season.id
         assert created_tournament.sport_id == sport.id
@@ -99,3 +101,144 @@ class TestTournamentServiceDB:
             tournament.tournament_eesl_id
         )
         assert_tournament_equal(tournament, retrieved_tournament, season, sport)
+
+    async def test_get_teams_by_tournament_with_pagination(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        test_team_service: TeamServiceDB,
+        tournament,
+        sport,
+    ):
+        """Test retrieving teams in tournament with pagination and search."""
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        team1 = TeamSchemaCreateType(
+            title="Manchester United",
+            sport_id=sport.id,
+            team_eesl_id=1001,
+        )
+        team1_db = await test_team_service.create_or_update_team(team1)
+
+        team2 = TeamSchemaCreateType(
+            title="Manchester City",
+            sport_id=sport.id,
+            team_eesl_id=1002,
+        )
+        team2_db = await test_team_service.create_or_update_team(team2)
+
+        team3 = TeamSchemaCreateType(
+            title="Liverpool",
+            sport_id=sport.id,
+            team_eesl_id=1003,
+        )
+        team3_db = await test_team_service.create_or_update_team(team3)
+
+        async with test_tournament_service.db.async_session() as session:
+            tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1_db.id)
+            tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2_db.id)
+            tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3_db.id)
+            session.add_all([tt1, tt2, tt3])
+            await session.commit()
+
+        result = await test_tournament_service.get_teams_by_tournament_with_pagination(
+            tournament_id=tournament.id,
+            skip=0,
+            limit=20,
+        )
+
+        assert result.metadata.total_items == 3
+        assert len(result.data) == 3
+        assert result.metadata.page == 1
+        assert result.metadata.items_per_page == 20
+        assert result.metadata.total_pages == 1
+
+    async def test_get_teams_by_tournament_with_search(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        test_team_service: TeamServiceDB,
+        tournament,
+        sport,
+    ):
+        """Test searching teams in tournament by title."""
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        team1 = TeamSchemaCreateType(
+            title="Manchester United",
+            sport_id=sport.id,
+            team_eesl_id=1001,
+        )
+        team1_db = await test_team_service.create_or_update_team(team1)
+
+        team2 = TeamSchemaCreateType(
+            title="Manchester City",
+            sport_id=sport.id,
+            team_eesl_id=1002,
+        )
+        team2_db = await test_team_service.create_or_update_team(team2)
+
+        team3 = TeamSchemaCreateType(
+            title="Liverpool",
+            sport_id=sport.id,
+            team_eesl_id=1003,
+        )
+        team3_db = await test_team_service.create_or_update_team(team3)
+
+        async with test_tournament_service.db.async_session() as session:
+            tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1_db.id)
+            tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2_db.id)
+            tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3_db.id)
+            session.add_all([tt1, tt2, tt3])
+            await session.commit()
+
+        result = await test_tournament_service.get_teams_by_tournament_with_pagination(
+            tournament_id=tournament.id,
+            search_query="Manchester",
+            skip=0,
+            limit=20,
+        )
+
+        assert result.metadata.total_items == 2
+        assert len(result.data) == 2
+        team_titles = [team.title for team in result.data]
+        assert "Manchester United" in team_titles
+        assert "Manchester City" in team_titles
+        assert "Liverpool" not in team_titles
+
+    async def test_get_teams_by_tournament_with_pagination_page_2(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        test_team_service: TeamServiceDB,
+        tournament,
+        sport,
+    ):
+        """Test pagination on teams in tournament (page 2)."""
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        teams_db = []
+        for i in range(5):
+            team_data = TeamSchemaCreateType(
+                title=f"Team {i}",
+                sport_id=sport.id,
+                team_eesl_id=2000 + i,
+            )
+            team_db = await test_team_service.create_or_update_team(team_data)
+            teams_db.append(team_db)
+
+        async with test_tournament_service.db.async_session() as session:
+            tt_entries = [
+                TeamTournamentDB(tournament_id=tournament.id, team_id=team.id) for team in teams_db
+            ]
+            session.add_all(tt_entries)
+            await session.commit()
+
+        result = await test_tournament_service.get_teams_by_tournament_with_pagination(
+            tournament_id=tournament.id,
+            skip=2,
+            limit=2,
+        )
+
+        assert result.metadata.total_items == 5
+        assert len(result.data) == 2
+        assert result.metadata.page == 2
+        assert result.metadata.has_next is True
+        assert result.metadata.has_previous is True
