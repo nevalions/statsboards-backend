@@ -39,7 +39,7 @@ class SportAPIRouter(
             return SportSchema.model_validate(new_)
 
         @router.put(
-            "/",
+            "/{item_id}/",
             response_model=SportSchema,
         )
         async def update_sport_endpoint(

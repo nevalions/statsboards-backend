@@ -51,7 +51,7 @@ class SeasonAPIRouter(
                     detail="Internal server error creating season",
                 )
 
-        @router.put("/", response_model=SeasonSchema)
+        @router.put("/{item_id}/", response_model=SeasonSchema)
         async def update_season_endpoint(
             item_id: int,
             item: SeasonSchemaUpdate,
@@ -111,15 +111,11 @@ class SeasonAPIRouter(
                 )
 
         @router.get("/id/{item_id}/sports/id/{sport_id}/tournaments")
-        async def tournaments_by_season_id_and_sport_endpoint(
-            item_id: int, sport_id: int
-        ):
+        async def tournaments_by_season_id_and_sport_endpoint(item_id: int, sport_id: int):
             self.logger.debug(
                 f"Get tournaments by season id {item_id} sport id:{sport_id} endpoint"
             )
-            return await self.service.get_tournaments_by_season_and_sport_ids(
-                item_id, sport_id
-            )
+            return await self.service.get_tournaments_by_season_and_sport_ids(item_id, sport_id)
 
         @router.get("/year/{season_year}", response_model=SeasonSchema)
         async def season_by_year_endpoint(season_year: int):

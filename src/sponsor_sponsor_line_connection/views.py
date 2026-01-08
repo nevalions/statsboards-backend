@@ -19,9 +19,7 @@ class SponsorSponsorLineAPIRouter(
     ]
 ):
     def __init__(self, service: SponsorSponsorLineServiceDB):
-        super().__init__(
-            "/api/sponsor_in_sponsor_line", ["sponsor_sponsor_line"], service
-        )
+        super().__init__("/api/sponsor_in_sponsor_line", ["sponsor_sponsor_line"], service)
         self.logger = get_logger("backend_logger_SponsorSponsorLineAPIRouter", self)
         self.logger.debug("Initialized SponsorSponsorLineAPIRouter")
 
@@ -56,7 +54,7 @@ class SponsorSponsorLineAPIRouter(
                 )
 
         @router.put(
-            "/",
+            "/{item_id}/",
             response_model=SponsorSponsorLineSchema,
         )
         async def update_sponsor_sponsor_line_endpoint(
@@ -84,20 +82,14 @@ class SponsorSponsorLineAPIRouter(
                 )
 
         @router.get("/{sponsor_id}in{sponsor_line_id}")
-        async def get_sponsor_sponsor_line_relation_endpoint(
-            sponsor_id: int, sponsor_line_id: int
-        ):
+        async def get_sponsor_sponsor_line_relation_endpoint(sponsor_id: int, sponsor_line_id: int):
             try:
                 self.logger.debug("Getting sponsor sponsor line relation endpoint")
-                sponsor_sponsor_line = (
-                    await self.service.get_sponsor_sponsor_line_relation(
-                        sponsor_id, sponsor_line_id
-                    )
+                sponsor_sponsor_line = await self.service.get_sponsor_sponsor_line_relation(
+                    sponsor_id, sponsor_line_id
                 )
                 if not sponsor_sponsor_line:
-                    raise HTTPException(
-                        status_code=404, detail="sponsor_sponsor_line not found"
-                    )
+                    raise HTTPException(status_code=404, detail="sponsor_sponsor_line not found")
                 return sponsor_sponsor_line
             except HTTPException:
                 raise

@@ -48,7 +48,7 @@ class SponsorAPIRouter(
             return SponsorSchema.model_validate(new_)
 
         @router.put(
-            "/",
+            "/{item_id}/",
             response_model=SponsorSchema,
         )
         async def update_sponsor_endpoint(

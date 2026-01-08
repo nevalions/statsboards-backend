@@ -37,12 +37,10 @@ class SponsorLineAPIRouter(
                 new_ = await self.service.create(item)
                 return SponsorLineSchema.model_validate(new_)
             except Exception as e:
-                self.logger.error(
-                    f"Error creating sponsor line endpoint {e}", exc_info=True
-                )
+                self.logger.error(f"Error creating sponsor line endpoint {e}", exc_info=True)
 
         @router.put(
-            "/",
+            "/{item_id}/",
             response_model=SponsorLineSchema,
         )
         async def update_sponsor_line_endpoint(
@@ -61,9 +59,7 @@ class SponsorLineAPIRouter(
             except HTTPException:
                 raise
             except Exception as e:
-                self.logger.error(
-                    f"Error updating sponsor line endpoint {e}", exc_info=True
-                )
+                self.logger.error(f"Error updating sponsor line endpoint {e}", exc_info=True)
                 raise HTTPException(
                     status_code=409,
                     detail="Error updating sponsor line",

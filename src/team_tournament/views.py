@@ -12,9 +12,7 @@ from .schemas import (
 
 # Team backend
 class TeamTournamentRouter(
-    BaseRouter[
-        TeamTournamentSchema, TeamTournamentSchemaCreate, TeamTournamentSchemaUpdate
-    ]
+    BaseRouter[TeamTournamentSchema, TeamTournamentSchemaCreate, TeamTournamentSchemaUpdate]
 ):
     def __init__(self, service: TeamTournamentServiceDB):
         super().__init__("/api/team_in_tournament", ["team_tournament"], service)
@@ -44,7 +42,7 @@ class TeamTournamentRouter(
                 )
 
         @router.put(
-            "/",
+            "/{item_id}/",
             response_model=TeamTournamentSchema,
         )
         async def update_tournament_endpoint(
@@ -59,9 +57,7 @@ class TeamTournamentRouter(
             return TeamTournamentSchema.model_validate(update_)
 
         @router.get("/{team_id}in{tournament_id}")
-        async def get_team_tournament_relation_endpoint(
-            team_id: int, tournament_id: int
-        ):
+        async def get_team_tournament_relation_endpoint(team_id: int, tournament_id: int):
             team_tournament = await self.service.get_team_tournament_relation(
                 team_id, tournament_id
             )
@@ -78,9 +74,7 @@ class TeamTournamentRouter(
         async def delete_relation_by_team_id_tournament_id_endpoint(
             team_id: int, tournament_id: int
         ):
-            await self.service.delete_relation_by_team_and_tournament_id(
-                team_id, tournament_id
-            )
+            await self.service.delete_relation_by_team_and_tournament_id(team_id, tournament_id)
 
         return router
 
