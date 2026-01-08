@@ -1,10 +1,12 @@
-from sqlalchemy import select
+from sqlalchemy import not_, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import func
 
 from src.core.decorators import handle_service_exceptions
 from src.core.models import (
     BaseServiceDB,
     MatchDB,
+    PlayerDB,
     PlayerTeamTournamentDB,
     SponsorDB,
     SponsorLineDB,
@@ -155,6 +157,34 @@ class TournamentServiceDB(BaseServiceDB):
         async with self.db.async_session() as session:
             stmt = select(PlayerTeamTournamentDB).where(
                 PlayerTeamTournamentDB.tournament_id == tournament_id
+            )
+
+            results = await session.execute(stmt)
+            players = results.scalars().all()
+            return players
+
+    @handle_service_exceptions(
+        item_name=ITEM, operation="fetching available players", return_value_on_not_found=[]
+    )
+    async def get_available_players_for_tournament(
+        self,
+        tournament_id: int,
+    ) -> list[PlayerDB]:
+        self.logger.debug(f"Get available players for {ITEM} id:{tournament_id}")
+        async with self.db.async_session() as session:
+            tournament = await session.get(TournamentDB, tournament_id)
+            if not tournament:
+                return []
+
+            subquery = select(PlayerTeamTournamentDB.player_id).where(
+                PlayerTeamTournamentDB.tournament_id == tournament_id
+            )
+
+            stmt = (
+                select(PlayerDB)
+                .where(PlayerDB.sport_id == tournament.sport_id)
+                .options(selectinload(PlayerDB.person))
+                .where(not_(PlayerDB.id.in_(subquery.scalar_subquery())))
             )
 
             results = await session.execute(stmt)

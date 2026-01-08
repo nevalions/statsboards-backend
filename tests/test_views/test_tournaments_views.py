@@ -390,3 +390,63 @@ class TestTournamentViews:
         assert response_data["metadata"]["page"] == 2
         assert response_data["metadata"]["has_next"] is True
         assert response_data["metadata"]["has_previous"] is True
+
+    async def test_get_available_players_for_tournament_endpoint(self, client, test_db):
+        """Test retrieving available players for a tournament (not connected)."""
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+        from src.person.schemas import PersonSchemaCreate as PersonSchemaCreateType
+        from src.player.schemas import PlayerSchemaCreate as PlayerSchemaCreateType
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        from src.person.db_services import PersonServiceDB
+        from src.player.db_services import PlayerServiceDB
+
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        person1 = await person_service.create(
+            PersonSchemaCreateType(first_name="John", second_name="Doe")
+        )
+        player1 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person1.id)
+        )
+
+        person2 = await person_service.create(
+            PersonSchemaCreateType(first_name="Jane", second_name="Smith")
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person2.id)
+        )
+
+        person3 = await person_service.create(
+            PersonSchemaCreateType(first_name="Bob", second_name="Wilson")
+        )
+        player3 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id)
+        )
+
+        async with test_db.async_session() as session:
+            ptt = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
+            session.add(ptt)
+            await session.commit()
+
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/players/available")
+
+        assert response.status_code == 200
+        players = response.json()
+
+        assert len(players) == 2
+        player_ids = [p["id"] for p in players]
+        assert player2.id in player_ids
+        assert player3.id in player_ids
+        assert player1.id not in player_ids

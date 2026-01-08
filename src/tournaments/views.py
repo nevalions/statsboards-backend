@@ -159,6 +159,19 @@ class TournamentAPIRouter(
             self.logger.debug(f"Get players by tournament id:{tournament_id} endpoint")
             return await self.service.get_players_by_tournament(tournament_id)
 
+        @router.get(
+            "/id/{tournament_id}/players/available",
+            summary="Get available players for tournament",
+            description="Retrieves all players in the tournament's sport who are not already connected to the tournament.",
+            responses={
+                200: {"description": "Available players retrieved successfully"},
+                404: {"description": "Tournament not found"},
+            },
+        )
+        async def get_available_players_for_tournament_endpoint(tournament_id: int):
+            self.logger.debug(f"Get available players for tournament id:{tournament_id} endpoint")
+            return await self.service.get_available_players_for_tournament(tournament_id)
+
         @router.get("/id/{tournament_id}/matches/count")
         async def get_count_of_matches_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get count of matches by tournament id:{tournament_id} endpoint")
