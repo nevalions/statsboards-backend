@@ -149,10 +149,10 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             "/count",
             response_model=dict[str, int],
         )
-        async def get_persons_count_endpoint():
+        async def get_persons_count_endpoint() -> dict[str, int]:
             self.logger.debug("Get persons count endpoint")
             count = await self.service.get_persons_count()
-            return {"total": count}
+            return {"total_items": count}
 
         @router.get(
             "/not-in-sport/{sport_id}",

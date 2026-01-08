@@ -225,14 +225,14 @@ class TestPersonViews:
         response = await client.get("/api/persons/count")
 
         assert response.status_code == 200
-        assert response.json() == {"total": 3}
+        assert response.json() == {"total_items": 3}
 
     async def test_get_persons_count_endpoint_empty(self, client, test_db):
         """Test count endpoint returns zero when no records."""
         response = await client.get("/api/persons/count")
 
         assert response.status_code == 200
-        assert response.json() == {"total": 0}
+        assert response.json() == {"total_items": 0}
 
     async def test_existing_get_all_persons_endpoint_still_works(self, client, test_db):
         """Test that non-paginated endpoint still works (backward compatibility)."""
