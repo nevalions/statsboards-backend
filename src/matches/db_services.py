@@ -557,6 +557,59 @@ class MatchServiceDB(BaseServiceDB):
 
     @handle_service_exceptions(
         item_name=ITEM,
+        operation="getting available players for team in match",
+        return_value_on_not_found=[],
+    )
+    async def get_available_players_for_team_in_match(
+        self, match_id: int, team_id: int
+    ) -> list[dict]:
+        """Get available players for a specific team in a match (not already in match roster)."""
+        from src.core.models.player import PlayerDB
+
+        self.logger.debug(f"Get available players for team id:{team_id} in match id:{match_id}")
+
+        async with self.db.async_session() as session:
+            match = await session.get(MatchDB, match_id)
+            if not match:
+                return []
+
+            subquery = (
+                select(PlayerMatchDB.player_team_tournament_id)
+                .where(PlayerMatchDB.match_id == match_id)
+                .where(PlayerMatchDB.team_id == team_id)
+            )
+
+            stmt = (
+                select(PlayerTeamTournamentDB)
+                .where(PlayerTeamTournamentDB.team_id == team_id)
+                .where(PlayerTeamTournamentDB.tournament_id == match.tournament_id)
+                .where(~PlayerTeamTournamentDB.id.in_(subquery))
+                .options(
+                    selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                    selectinload(PlayerTeamTournamentDB.team),
+                    selectinload(PlayerTeamTournamentDB.position),
+                )
+            )
+
+            results = await session.execute(stmt)
+            available_players = results.scalars().all()
+
+            return [
+                {
+                    "id": pt.id,
+                    "player_id": pt.player_id,
+                    "player_team_tournament": pt,
+                    "player": pt.player,
+                    "person": pt.player.person if pt.player else None,
+                    "position": pt.position,
+                    "team": pt.team,
+                    "player_number": pt.player_number,
+                }
+                for pt in available_players
+            ]
+
+    @handle_service_exceptions(
+        item_name=ITEM,
         operation="searching matches with pagination",
         return_value_on_not_found=None,
     )

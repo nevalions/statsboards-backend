@@ -8,6 +8,7 @@ from src.helpers.file_service import file_service
 from src.logging_config import get_logger
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.playclocks.schemas import PlayClockSchemaCreate
+from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from src.teams.schemas import UploadResizeTeamLogoResponse, UploadTeamLogoResponse
 
@@ -212,6 +213,48 @@ class MatchCRUDRouter(
         async def get_players_with_full_data_by_match_id_endpoint(match_id: int):
             self.logger.debug(f"Get players with full data by match id:{match_id} endpoint")
             return await self.service.get_player_by_match_full_data(match_id)
+
+        @router.get(
+            "/id/{match_id}/team/{team_id}/available-players/",
+            summary="Get available players for team in match",
+            description="Retrieves all players in team's tournament roster who are not already connected to this specific match.",
+            responses={
+                200: {"description": "Available players retrieved successfully"},
+                404: {"description": "Match or team not found"},
+            },
+        )
+        async def get_available_players_for_team_in_match_endpoint(match_id: int, team_id: int):
+            self.logger.debug(
+                f"Get available players for team id:{team_id} in match id:{match_id} endpoint"
+            )
+            return await self.service.get_available_players_for_team_in_match(match_id, team_id)
+
+        @router.get(
+            "/id/{match_id}/team-rosters/",
+            summary="Get team rosters for match",
+            description="Retrieves all rosters for a match: home roster, away roster, and available players.",
+            responses={
+                200: {"description": "Team rosters retrieved successfully"},
+                404: {"description": "Match not found"},
+            },
+        )
+        async def get_team_rosters_for_match_endpoint(
+            match_id: int,
+            include_available: bool = Query(True, description="Include available players"),
+            include_match_players: bool = Query(True, description="Include match players"),
+        ):
+            self.logger.debug(
+                f"Get team rosters for match id:{match_id} endpoint include_available:{include_available} include_match_players:{include_match_players}"
+            )
+            ptt_service = PlayerTeamTournamentServiceDB(self.service.db)
+            result = await ptt_service.get_team_rosters_for_match(
+                match_id,
+                include_available=include_available,
+                include_match_players=include_match_players,
+            )
+            if result is None:
+                raise HTTPException(status_code=404, detail=f"Match id {match_id} not found")
+            return result
 
         @router.get("/id/{match_id}/sponsor_line")
         async def get_sponsor_line_by_match_id_endpoint(match_id: int):
