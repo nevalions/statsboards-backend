@@ -154,6 +154,35 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             count = await self.service.get_persons_count()
             return {"total": count}
 
+        @router.get(
+            "/not-in-sport/{sport_id}",
+            response_model=PaginatedPersonResponse,
+        )
+        async def get_persons_not_in_sport_endpoint(
+            sport_id: int,
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("second_name", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for full-text search"),
+        ):
+            self.logger.debug(
+                f"Get persons not in sport {sport_id}: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.get_persons_not_in_sport(
+                sport_id=sport_id,
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
+
         return router
 
 

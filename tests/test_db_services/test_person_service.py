@@ -4,7 +4,9 @@ from src.core.models import PersonDB
 from src.core.models.base import Database
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaUpdate
-from tests.factories import PersonFactory
+from src.player.db_services import PlayerServiceDB
+from src.sports.db_services import SportServiceDB
+from tests.factories import PersonFactory, PlayerFactory, SportFactoryAny
 
 
 @pytest.mark.asyncio
@@ -545,3 +547,81 @@ class TestPersonServiceDBSearch:
         assert "John Doe" in full_names
         assert "Alice Johnson" in full_names
         assert "Charlie Johnson" in full_names
+
+
+@pytest.mark.asyncio
+class TestPersonServiceDBNotInSport:
+    """Test get_persons_not_in_sport functionality."""
+
+    async def test_get_persons_not_in_sport_filters_correctly(self, test_db: Database):
+        """Test filtering persons not connected to a specific sport."""
+        person_service = PersonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+
+        person1 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1001, first_name="Alice", second_name="Sport1")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1002, first_name="Bob", second_name="NoSport")
+        )
+        person3 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1003, first_name="Charlie", second_name="Sport2")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1004, first_name="David", second_name="NoSport2")
+        )
+
+        player1_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person1.id, player_eesl_id=2001
+        )
+        player2_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person3.id, player_eesl_id=2002
+        )
+
+        await player_service.create(player1_data)
+        await player_service.create(player2_data)
+
+        result = await person_service.get_persons_not_in_sport(sport_id=sport.id, skip=0, limit=10)
+
+        assert len(result.data) == 2
+        names = {f"{p.first_name} {p.second_name}" for p in result.data}
+        assert "Bob NoSport" in names
+        assert "David NoSport2" in names
+        assert "Alice Sport1" not in names
+        assert "Charlie Sport2" not in names
+        assert result.metadata.total_items == 2
+
+    async def test_get_persons_not_in_sport_with_search(self, test_db: Database):
+        """Test search functionality works with sport filtering."""
+        person_service = PersonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+
+        person1 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2001, first_name="Alice", second_name="TestSearch")
+        )
+        await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2002, first_name="Bob", second_name="NoSport")
+        )
+        person3 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2003, first_name="Alice", second_name="NoSport")
+        )
+
+        player1_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person1.id, player_eesl_id=3001
+        )
+
+        await player_service.create(player1_data)
+
+        result = await person_service.get_persons_not_in_sport(
+            sport_id=sport.id, search_query="Alice", skip=0, limit=10
+        )
+
+        assert len(result.data) == 1
+        assert result.data[0].first_name == "Alice"
+        assert result.data[0].second_name == "NoSport"

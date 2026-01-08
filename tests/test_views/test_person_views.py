@@ -5,7 +5,9 @@ from PIL import Image
 
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaUpdate
-from tests.factories import PersonFactory
+from src.player.db_services import PlayerServiceDB
+from src.sports.db_services import SportServiceDB
+from tests.factories import PersonFactory, PlayerFactory, SportFactoryAny
 
 
 def create_test_image():
@@ -341,3 +343,72 @@ class TestPersonViews:
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]) >= 2
+
+    async def test_get_persons_not_in_sport_endpoint(self, client, test_db):
+        """Test get persons not in sport endpoint returns correct data."""
+        person_service = PersonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+
+        person1 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1001, first_name="Alice", second_name="SportPlayer")
+        )
+        person2 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=1002, first_name="Bob", second_name="NoSportPlayer")
+        )
+        person3 = await person_service.create_or_update_person(
+            PersonFactory.build(
+                person_eesl_id=1003, first_name="Charlie", second_name="SportPlayer2"
+            )
+        )
+
+        player1_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person1.id, player_eesl_id=2001
+        )
+        player2_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person3.id, player_eesl_id=2002
+        )
+
+        await player_service.create(player1_data)
+        await player_service.create(player2_data)
+
+        response = await client.get(f"/api/persons/not-in-sport/{sport.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) == 1
+        assert data["data"][0]["first_name"] == "Bob"
+        assert data["metadata"]["total_items"] == 1
+
+    async def test_get_persons_not_in_sport_with_search(self, client, test_db):
+        """Test search parameter works with sport filtering."""
+        person_service = PersonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+
+        person1 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2001, first_name="Alice", second_name="SearchTest")
+        )
+        person2 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=2002, first_name="Alice", second_name="NoSport")
+        )
+
+        player1_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person1.id, player_eesl_id=3001
+        )
+
+        await player_service.create(player1_data)
+
+        response = await client.get(f"/api/persons/not-in-sport/{sport.id}?search=Alice")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1
+        assert data["data"][0]["first_name"] == "Alice"
+        assert data["data"][0]["second_name"] == "NoSport"
