@@ -7,6 +7,8 @@ Frontend integration guide for StatsBoards Backend APIs and WebSocket endpoints.
 - [Player Search API](#player-search-api)
 - [Teams in Tournament API](#teams-in-tournament-api)
 - [Available Players for Tournament API](#available-players-for-tournament-api)
+- [Players Without Team in Tournament API](#players-without-team-in-tournament-api)
+- [Available Players for Team in Match API](#available-players-for-team-in-match-api)
 - [Match Stats API](#match-stats-api)
 - [WebSocket Message Formats](#websocket-message-formats)
 - [Player Match API](#player-match-api)
@@ -419,6 +421,342 @@ async function loadAvailablePlayers(tournamentId: number) {
 | 500 | Internal Server Error - server error |
 
 **Note:** Returns empty array (200 OK) instead of 404 if tournament doesn't exist, making it safe for dropdown use cases.
+
+---
+
+## Players Without Team in Tournament API
+
+### GET /api/tournaments/id/{tournament_id}/players/without-team
+
+Get all players in a tournament who are not connected to any team (team_id is NULL). Useful for finding unassigned players in a tournament.
+
+**Endpoint:**
+```
+GET /api/tournaments/id/{tournament_id}/players/without-team
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tournament_id` | integer | Yes | Tournament ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|----------|-------------|
+| `search` | string | No | - | Search query for player first name or second name |
+| `page` | integer | No | 1 | Page number (1-based) |
+| `items_per_page` | integer | No | 20 | Items per page (max 100) |
+| `order_by` | string | No | "second_name" | First sort column |
+| `order_by_two` | string | No | "id" | Second sort column |
+| `ascending` | boolean | No | true | Sort order (true=asc, false=desc) |
+
+**Response (200 OK):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "player_team_tournament_eesl_id": null,
+      "player_id": 789,
+      "position_id": null,
+      "team_id": null,
+      "tournament_id": 5,
+      "player_number": "12",
+      "first_name": "John",
+      "second_name": "Doe",
+      "team_title": null,
+      "position_title": null
+    },
+    {
+      "id": 2,
+      "player_team_tournament_eesl_id": null,
+      "player_id": 790,
+      "position_id": null,
+      "team_id": null,
+      "tournament_id": 5,
+      "player_number": "15",
+      "first_name": "Jane",
+      "second_name": "Smith",
+      "team_title": null,
+      "position_title": null
+    }
+  ],
+  "metadata": {
+    "page": 1,
+    "items_per_page": 20,
+    "total_items": 2,
+    "total_pages": 1,
+    "has_next": false,
+    "has_previous": false
+  }
+}
+```
+
+**Response Schema:**
+
+```typescript
+interface PaginatedPlayerTeamTournamentWithDetailsResponse {
+  data: PlayerTeamTournamentWithDetails[];
+  metadata: PaginationMetadata;
+}
+
+interface PlayerTeamTournamentWithDetails {
+  id: number;
+  player_team_tournament_eesl_id: number | null;
+  player_id: number | null;
+  position_id: number | null;
+  team_id: number | null;
+  tournament_id: number | null;
+  player_number: string;
+  first_name: string | null;
+  second_name: string | null;
+  team_title: string | null;
+  position_title: string | null;
+}
+
+interface PaginationMetadata {
+  page: number;
+  items_per_page: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+```
+
+**Search Behavior:**
+
+- Search is case-insensitive and uses ICU collation (`en-US-x-icu`) for international text support
+- Searches both `first_name` and `second_name` fields with OR logic
+- Pattern matching: `%query%` (matches anywhere in name)
+- Only returns players with `team_id` = NULL (not assigned to any team)
+- Empty `search` parameter returns all unassigned players in tournament
+
+**Use Cases:**
+
+- **Finding unassigned players**: Discover players in tournament without a team assignment
+- **Roster management**: Identify players who need to be assigned to a team
+- **Team formation**: Browse available unassigned players for team creation
+
+**Examples:**
+
+1. **Get all players without team in tournament:**
+```
+GET /api/tournaments/id/5/players/without-team?page=1&items_per_page=20
+```
+
+2. **Search unassigned players by name:**
+```
+GET /api/tournaments/id/5/players/without-team?search=John&page=1&items_per_page=20
+```
+
+3. **Get second page with custom ordering:**
+```
+GET /api/tournaments/id/5/players/without-team?page=2&items_per_page=10&order_by=second_name&order_by_two=id&ascending=false
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 200 | Success - players returned (empty array if none) |
+| 400 | Bad Request - invalid query parameters |
+| 404 | Not Found - tournament_id doesn't exist |
+| 500 | Internal Server Error - server error |
+
+---
+
+## Available Players for Team in Match API
+
+### GET /api/matches/id/{match_id}/team/{team_id}/available-players/
+
+Get all players in a team's tournament roster who are not already connected to a specific match. This endpoint is designed for dropdown selection of available players when adding players to a match roster.
+
+**Endpoint:**
+```
+GET /api/matches/id/{match_id}/team/{team_id}/available-players/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `match_id` | integer | Yes | Match ID |
+| `team_id` | integer | Yes | Team ID |
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": 789,
+    "player_id": 791,
+    "player_team_tournament": {
+      "id": 789,
+      "player_team_tournament_eesl_id": null,
+      "player_id": 791,
+      "position_id": 10,
+      "team_id": 1,
+      "tournament_id": 5,
+      "player_number": "8"
+    },
+    "player": {
+      "id": 791,
+      "sport_id": 1,
+      "person_id": 125,
+      "player_eesl_id": 12347
+    },
+    "person": {
+      "id": 125,
+      "person_eesl_id": null,
+      "first_name": "Backup",
+      "second_name": "Quarterback",
+      "person_photo_url": "/static/uploads/persons/photos/125.jpg",
+      "person_photo_icon_url": "/static/uploads/persons/icons/125.jpg",
+      "person_photo_web_url": "/static/uploads/persons/web/125.jpg",
+      "person_dob": "1995-06-15T00:00:00"
+    },
+    "position": {
+      "id": 10,
+      "title": "Quarterback",
+      "category": "offense",
+      "sport_id": 1
+    },
+    "team": {
+      "id": 1,
+      "team_eesl_id": 12345,
+      "title": "Team A",
+      "city": "Boston",
+      "description": "Professional football team",
+      "team_logo_url": "/static/uploads/teams/logos/1.jpg",
+      "team_logo_icon_url": "/static/uploads/teams/icons/1.jpg",
+      "team_logo_web_url": "/static/uploads/teams/web/1.jpg",
+      "team_color": "#FF0000",
+      "sponsor_line_id": null,
+      "main_sponsor_id": 5,
+      "sport_id": 1
+    },
+    "player_number": "8"
+  }
+]
+```
+
+**Response Schema:**
+
+```typescript
+interface AvailablePlayerMatch {
+  id: number;
+  player_id: number | null;
+  player_team_tournament: PlayerTeamTournament;
+  player: Player | null;
+  person: Person | null;
+  position: Position | null;
+  team: Team | null;
+  player_number: string;
+}
+
+interface PlayerTeamTournament {
+  id: number;
+  player_team_tournament_eesl_id: number | null;
+  player_id: number | null;
+  position_id: number | null;
+  team_id: number | null;
+  tournament_id: number | null;
+  player_number: string;
+}
+
+interface Player {
+  id: number;
+  sport_id: number | null;
+  person_id: number | null;
+  player_eesl_id: number | null;
+}
+
+interface Person {
+  id: number;
+  person_eesl_id: number | null;
+  first_name: string;
+  second_name: string;
+  person_photo_url: string | null;
+  person_photo_icon_url: string | null;
+  person_photo_web_url: string | null;
+  person_dob: string | null;
+}
+
+interface Position {
+  id: number;
+  title: string;
+  category: 'offense' | 'defense' | 'special' | 'other' | null;
+  sport_id: number;
+}
+
+interface Team {
+  id: number;
+  team_eesl_id: number | null;
+  title: string;
+  city: string | null;
+  description: string | null;
+  team_logo_url: string | null;
+  team_logo_icon_url: string | null;
+  team_logo_web_url: string | null;
+  team_color: string;
+  sponsor_line_id: number | null;
+  main_sponsor_id: number | null;
+  sport_id: number;
+}
+```
+
+**Behavior:**
+
+- Retrieves all `PlayerTeamTournament` records matching the team_id and match's tournament_id
+- Excludes players who already have a `PlayerMatch` connection to this match
+- Returns players with full related data: player, person, position, team
+- Returns empty array if match doesn't exist or no available players
+- Designed for efficient dropdown rendering with all necessary data pre-loaded
+
+**Use Cases:**
+
+- **Player selection dropdown**: When adding players to a match roster
+- **Substitution management**: Finding bench players available for substitution
+- **Match administration**: Managing match rosters by adding/removing players
+
+**Examples:**
+
+1. **Get available players for team in match:**
+```
+GET /api/matches/id/123/team/1/available-players/
+```
+
+2. **Use in dropdown for adding players to match:**
+```typescript
+async function loadAvailablePlayers(matchId: number, teamId: number) {
+  const response = await fetch(
+    `/api/matches/id/${matchId}/team/${teamId}/available-players/`
+  );
+  const players: AvailablePlayerMatch[] = await response.json();
+  
+  // Render dropdown
+  return players.map(player => ({
+    value: player.player_team_tournament.id,
+    label: `${player.person?.first_name} ${player.person?.second_name} (${player.player_number})`,
+    avatar: player.person?.person_photo_icon_url,
+    position: player.position?.title
+  }));
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 200 | Success - available players returned (empty array if none) |
+| 404 | Not Found - match doesn't exist |
+| 500 | Internal Server Error - server error |
+
+**Note:** Returns empty array (200 OK) instead of 404 if match doesn't exist, making it safe for dropdown use cases without requiring error handling.
 
 ---
 
