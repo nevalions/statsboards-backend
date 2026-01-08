@@ -1,6 +1,10 @@
 import pytest
 from fastapi import HTTPException
 
+from src.person.db_services import PersonServiceDB
+from src.person.schemas import PersonSchemaCreate as PersonSchemaCreateType
+from src.player.db_services import PlayerServiceDB
+from src.player.schemas import PlayerSchemaCreate as PlayerSchemaCreateType
 from src.seasons.schemas import SeasonSchemaCreate
 from src.sports.schemas import SportSchemaCreate
 from src.teams.db_services import TeamServiceDB
@@ -235,6 +239,172 @@ class TestTournamentServiceDB:
             tournament_id=tournament.id,
             skip=2,
             limit=2,
+        )
+
+        assert result.metadata.total_items == 5
+        assert len(result.data) == 2
+        assert result.metadata.page == 2
+        assert result.metadata.has_next is True
+        assert result.metadata.has_previous is True
+
+
+@pytest.mark.asyncio
+class TestTournamentServiceDBPlayersWithoutTeam:
+    """Test get_players_without_team_in_tournament functionality."""
+
+    async def test_get_players_without_team_in_tournament_filters_correctly(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        test_team_service: TeamServiceDB,
+        tournament,
+        sport,
+    ):
+        """Test filtering players in tournament who are not connected to any team."""
+        person_service = PersonServiceDB(test_tournament_service.db)
+        player_service = PlayerServiceDB(test_tournament_service.db)
+
+        person1 = await person_service.create(
+            PersonSchemaCreateType(first_name="Alice", second_name="TeamPlayer")
+        )
+        player1 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person1.id, player_eesl_id=9001)
+        )
+
+        person2 = await person_service.create(
+            PersonSchemaCreateType(first_name="Bob", second_name="NoTeam")
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person2.id, player_eesl_id=9002)
+        )
+
+        person3 = await person_service.create(
+            PersonSchemaCreateType(first_name="Charlie", second_name="TeamPlayer2")
+        )
+        player3 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id, player_eesl_id=9003)
+        )
+
+        team_db = await test_team_service.create_or_update_team(
+            TeamSchemaCreateType(title="Test Team", sport_id=sport.id, team_eesl_id=5000)
+        )
+
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+        async with test_tournament_service.db.async_session() as session:
+            ptt1 = PlayerTeamTournamentDB(
+                player_id=player1.id, tournament_id=tournament.id, team_id=team_db.id
+            )
+            ptt2 = PlayerTeamTournamentDB(
+                player_id=player2.id, tournament_id=tournament.id, team_id=None
+            )
+            ptt3 = PlayerTeamTournamentDB(
+                player_id=player3.id, tournament_id=tournament.id, team_id=team_db.id
+            )
+            session.add_all([ptt1, ptt2, ptt3])
+            await session.commit()
+
+        result = await test_tournament_service.get_players_without_team_in_tournament(
+            tournament_id=tournament.id, skip=0, limit=10
+        )
+
+        assert len(result.data) == 1
+        assert result.data[0].first_name == "Bob"
+        assert result.data[0].second_name == "NoTeam"
+        assert result.metadata.total_items == 1
+
+    async def test_get_players_without_team_in_tournament_with_search(
+        self,
+        test_tournament_service: TournamentServiceDB,
+        test_team_service: TeamServiceDB,
+        tournament,
+        sport,
+    ):
+        """Test search functionality works with team filtering."""
+        person_service = PersonServiceDB(test_tournament_service.db)
+        player_service = PlayerServiceDB(test_tournament_service.db)
+
+        person1 = await person_service.create(
+            PersonSchemaCreateType(first_name="Alice", second_name="NoTeam")
+        )
+        player1 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person1.id, player_eesl_id=9011)
+        )
+
+        person2 = await person_service.create(
+            PersonSchemaCreateType(first_name="Alice", second_name="HasTeam")
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person2.id, player_eesl_id=9012)
+        )
+
+        person3 = await person_service.create(
+            PersonSchemaCreateType(first_name="Bob", second_name="NoTeam")
+        )
+        player3 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id, player_eesl_id=9013)
+        )
+
+        team_db = await test_team_service.create_or_update_team(
+            TeamSchemaCreateType(title="Test Team", sport_id=sport.id, team_eesl_id=5001)
+        )
+
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+        async with test_tournament_service.db.async_session() as session:
+            ptt1 = PlayerTeamTournamentDB(
+                player_id=player1.id, tournament_id=tournament.id, team_id=None
+            )
+            ptt2 = PlayerTeamTournamentDB(
+                player_id=player2.id, tournament_id=tournament.id, team_id=team_db.id
+            )
+            ptt3 = PlayerTeamTournamentDB(
+                player_id=player3.id, tournament_id=tournament.id, team_id=None
+            )
+            session.add_all([ptt1, ptt2, ptt3])
+            await session.commit()
+
+        result = await test_tournament_service.get_players_without_team_in_tournament(
+            tournament_id=tournament.id, search_query="Alice", skip=0, limit=10
+        )
+
+        assert len(result.data) == 1
+        assert result.data[0].first_name == "Alice"
+        assert result.data[0].second_name == "NoTeam"
+        assert result.metadata.total_items == 1
+
+    async def test_get_players_without_team_in_tournament_pagination(
+        self, test_tournament_service: TournamentServiceDB, tournament, sport
+    ):
+        """Test pagination functionality."""
+        person_service = PersonServiceDB(test_tournament_service.db)
+        player_service = PlayerServiceDB(test_tournament_service.db)
+
+        players = []
+        for i in range(5):
+            person = await person_service.create(
+                PersonSchemaCreateType(first_name=f"Player{i}", second_name="NoTeam")
+            )
+            player = await player_service.create(
+                PlayerSchemaCreateType(
+                    sport_id=sport.id, person_id=person.id, player_eesl_id=9500 + i
+                )
+            )
+            players.append(player)
+
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+        async with test_tournament_service.db.async_session() as session:
+            ptt_entries = [
+                PlayerTeamTournamentDB(
+                    player_id=player.id, tournament_id=tournament.id, team_id=None
+                )
+                for player in players
+            ]
+            session.add_all(ptt_entries)
+            await session.commit()
+
+        result = await test_tournament_service.get_players_without_team_in_tournament(
+            tournament_id=tournament.id, skip=2, limit=2
         )
 
         assert result.metadata.total_items == 5

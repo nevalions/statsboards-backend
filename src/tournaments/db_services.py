@@ -18,6 +18,10 @@ from src.core.models.base import Database
 from src.core.schema_helpers import PaginationMetadata
 
 from ..logging_config import get_logger
+from ..player.schemas import (
+    PaginatedPlayerWithDetailsResponse,
+    PlayerWithDetailsSchema,
+)
 from ..sponsor_lines.db_services import SponsorLineServiceDB
 from .schemas import (
     PaginatedTeamResponse,
@@ -190,6 +194,75 @@ class TournamentServiceDB(BaseServiceDB):
             results = await session.execute(stmt)
             players = results.scalars().all()
             return players
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="fetching players without team in tournament",
+        return_value_on_not_found=None,
+    )
+    async def get_players_without_team_in_tournament(
+        self,
+        tournament_id: int,
+        search_query: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "second_name",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedPlayerWithDetailsResponse:
+        from src.core.models.person import PersonDB
+
+        self.logger.debug(
+            f"Get players without team in tournament {tournament_id}: query={search_query}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = (
+                select(PlayerDB)
+                .join(PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id)
+                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                .where(PlayerTeamTournamentDB.team_id.is_(None))
+                .options(selectinload(PlayerDB.person))
+            )
+
+            if search_query:
+                search_pattern = f"%{search_query}%"
+                base_query = base_query.where(
+                    (PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu"))
+                    | (PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu"))
+                )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr = PersonDB.second_name.asc() if ascending else PersonDB.second_name.desc()
+            order_expr_two = PersonDB.id.asc() if ascending else PersonDB.id.desc()
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            players = result.scalars().all()
+
+            return PaginatedPlayerWithDetailsResponse(
+                data=[
+                    PlayerWithDetailsSchema.model_validate(
+                        {
+                            "id": p.id,
+                            "sport_id": p.sport_id,
+                            "person_id": p.person_id,
+                            "player_eesl_id": p.player_eesl_id,
+                            "first_name": p.person.first_name if p.person else None,
+                            "second_name": p.person.second_name if p.person else None,
+                            "player_team_tournaments": [],
+                        }
+                    )
+                    for p in players
+                ],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
 
     async def get_count_of_matches_by_tournament(
         self,
