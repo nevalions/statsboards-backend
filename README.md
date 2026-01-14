@@ -223,11 +223,15 @@ tests/                          # Test suite
 ├── test_views/                # API endpoint tests
 └── [test files]
 AGENTS.md                       # Quick reference for AI assistants
-DEVELOPMENT_GUIDELINES.md      # Comprehensive development guide
-SERVICE_LAYER_DECOUPLING.md    # Service registry architecture
-CONFIGURATION_VALIDATION.md    # Configuration settings
-ROUTER_REGISTRY.md          # Router registry system
-ARCHITECTURE.md             # Architecture documentation
+README.md                       # Project overview and setup
+docs/                          # Documentation
+    ├── API_DOCUMENTATION.md             # API endpoints reference
+    ├── ARCHITECTURE.md                # Architecture documentation
+    ├── CONFIGURATION_VALIDATION.md      # Configuration settings and validation
+    ├── DEVELOPMENT_GUIDELINES.md       # Comprehensive development guide
+    ├── PG_TRGM_SEARCH_OPTIMIZATION.md # PostgreSQL search optimization guide
+    ├── ROUTER_REGISTRY.md             # Router registry system
+    └── SERVICE_LAYER_DECOUPLING.md    # Service layer architecture
 ```
 
 ## Key Features
@@ -294,7 +298,7 @@ Each domain module follows the standard CRUD pattern with additional custom endp
 
 ## Development Guidelines
 
-For comprehensive development guidelines, coding standards, and best practices, see **[DEVELOPMENT_GUIDELINES.md](./DEVELOPMENT_GUIDELINES.md)**.
+For comprehensive development guidelines, coding standards, and best practices, see **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)**.
 
 This document covers:
 - Code style and naming conventions
@@ -354,7 +358,7 @@ Run configuration validation manually:
 python validate_config.py
 ```
 
-Configuration validation also runs automatically on application startup before services are initialized. See `CONFIGURATION_VALIDATION.md` for complete documentation.
+Configuration validation also runs automatically on application startup before services are initialized. See `docs/CONFIGURATION_VALIDATION.md` for complete documentation.
 
 ### Logging
 
@@ -376,7 +380,7 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 
 1. Fork repository
 2. Create a feature branch
-3. Make your changes following the guidelines in `DEVELOPMENT_GUIDELINES.md`
+3. Make your changes following the guidelines in `docs/DEVELOPMENT_GUIDELINES.md`
 4. Add tests for new functionality
 5. Run tests: `docker-compose -f docker-compose.test-db-only.yml up -d && pytest`
 6. Lint code: `ruff check src/ tests/` (use `--fix` to auto-fix issues)
@@ -386,7 +390,7 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 **Important:**
 - All commits must be by linroot with email nevalions@gmail.com
 - Follow existing code patterns and conventions
-- Read `DEVELOPMENT_GUIDELINES.md` for comprehensive development guidelines
+- Read `docs/DEVELOPMENT_GUIDELINES.md` for comprehensive development guidelines
 
 ## Recent Improvements
 
@@ -442,7 +446,7 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 - Centralized service registration in `src/core/service_initialization.py`
 - Lazy initialization to avoid circular dependencies
 - Improved testability through dependency injection
-- See `SERVICE_LAYER_DECOUPLING.md` for complete documentation
+- See `docs/SERVICE_LAYER_DECOUPLING.md` for complete documentation
 
 ## License
 

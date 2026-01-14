@@ -4,7 +4,7 @@ This file provides guidance for agentic coding assistants working in this reposi
 
 ## Overview
 
-For detailed development guidelines, coding standards, and best practices, see **[DEVELOPMENT_GUIDELINES.md](./DEVELOPMENT_GUIDELINES.md)**.
+For detailed development guidelines, coding standards, and best practices, see **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)**.
 
 This document serves as a quick reference for common operations and links to the comprehensive guidelines.
 
@@ -50,17 +50,17 @@ alembic downgrade -1
 
 ### Key Documents
 
-- **[DEVELOPMENT_GUIDELINES.md](./DEVELOPMENT_GUIDELINES.md)** - Comprehensive development guide with all coding standards, patterns, and best practices
-- **[SERVICE_LAYER_DECOUPLING.md](./SERVICE_LAYER_DECOUPLING.md)** - Service layer architecture and dependency injection patterns
-- **[CONFIGURATION_VALIDATION.md](./CONFIGURATION_VALIDATION.md)** - Configuration settings and validation details
+- **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)** - Comprehensive development guide with all coding standards, patterns, and best practices
+- **[SERVICE_LAYER_DECOUPLING.md](docs/SERVICE_LAYER_DECOUPLING.md)** - Service layer architecture and dependency injection patterns
+- **[CONFIGURATION_VALIDATION.md](docs/CONFIGURATION_VALIDATION.md)** - Configuration settings and validation details
 
 ### Test Suite Status
 
-All 500+ tests are passing. For detailed test information and recent fixes, see the [Test Suite Status](./DEVELOPMENT_GUIDELINES.md#test-suite-status) section in DEVELOPMENT_GUIDELINES.md.
+All 500+ tests are passing. For detailed test information and recent fixes, see the [Test Suite Status](docs/DEVELOPMENT_GUIDELINES.md#test-suite-status) section in DEVELOPMENT_GUIDELINES.md.
 
 ### Search Testing Guidelines
 
-Search functionality has been refactored to use shared `SearchPaginationMixin` for consistency. See the [Search Testing Guidelines](./DEVELOPMENT_GUIDELINES.md#search-testing-guidelines) section in DEVELOPMENT_GUIDELINES.md for details.
+Search functionality has been refactored to use shared `SearchPaginationMixin` for consistency. See the [Search Testing Guidelines](docs/DEVELOPMENT_GUIDELINES.md#search-testing-guidelines) section in DEVELOPMENT_GUIDELINES.md for details.
 
 ### Tooling and Testing
 
@@ -92,7 +92,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 
 ### Workflow References
 
-See DEVELOPMENT_GUIDELINES.md for:
+See docs/DEVELOPMENT_GUIDELINES.md for:
 - Code style guidelines and naming conventions
 - Service layer and router patterns
 - Model patterns and relationship types
