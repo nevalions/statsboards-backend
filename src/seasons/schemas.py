@@ -15,6 +15,7 @@ class SeasonSchemaBase(BaseModel):
         ),
     ]
     description: str | None = None
+    iscurrent: bool = False
 
 
 SeasonSchemaUpdate = make_fields_optional(SeasonSchemaBase)

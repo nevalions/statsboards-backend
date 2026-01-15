@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Integer, Text
+from sqlalchemy import Boolean, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -22,6 +22,12 @@ class SeasonDB(Base):
         nullable=True,
         default="",
         server_default="",
+    )
+    iscurrent: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+        server_default="false",
     )
 
     tournaments: Mapped[list["TournamentDB"]] = relationship(
