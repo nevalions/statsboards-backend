@@ -159,7 +159,7 @@ class PersonServiceDB(BaseServiceDB):
                 PlayerDB.sport_id == sport_id,
             )
 
-            stmt = select(PersonDB).where(~exists(subquery))
+            stmt = select(PersonDB).where(~exists(subquery)).order_by(PersonDB.second_name, PersonDB.id)
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
