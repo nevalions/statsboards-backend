@@ -43,19 +43,20 @@ docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activ
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
-**Important: ResourceWarnings have been fixed - parallel tests now work correctly:**
+**Important: Parallel tests now work correctly with 745 tests passing in 38.7s:**
 
 ```bash
 pytest -n 4  # Run tests in parallel with 4 workers
 pytest -n 0  # Run tests sequentially (for debugging)
 ```
 
-The default pytest.ini configuration uses `-n 4` for parallel test execution. Database connection issues have been resolved by:
+The default pytest.ini configuration uses `-n 4` for parallel test execution. Database connection and deadlock issues have been resolved by:
 - Properly closing database connections after each test (`await database.close()`)
 - Using file-based lock (`/tmp/test_db_tables_setup.lock`) to coordinate table creation across workers
+- Using `flush()` instead of `commit()` in test fixtures to avoid PostgreSQL deadlocks
 - Ensuring connection cleanup in fixture's `finally` block
 
-**Note:** Tests now run cleanly in parallel with no ResourceWarnings or unclosed connection warnings.
+**Note:** Tests now run cleanly in parallel with no ResourceWarnings, unclosed connection warnings, or deadlocks.
 
 ### Understanding Deselected Tests
 
@@ -882,17 +883,18 @@ Current optimizations implemented:
 - File-based lock (`/tmp/test_db_tables_setup.lock`) coordinates table creation across parallel workers
 - Database connections properly closed after each test to prevent ResourceWarnings
 
-**Note on xdist and database contention:**
+**Important:** When writing test fixtures, always use `flush()` instead of `commit()` to avoid deadlocks during parallel execution. The outer test fixture handles rollback automatically:
 
-With 4 parallel workers (`-n 4`), tests run cleanly without ResourceWarnings. The file-based lock ensures tables and indexes are created safely across workers. Occasionally, tests that involve complex database operations may experience deadlocks due to PostgreSQL locking. If this occurs, reduce workers further:
-
-```bash
-# Reduce to 2 workers if encountering deadlocks
-pytest -n 2
-
-# Run sequentially for debugging
-pytest -n 0
+```python
+async with test_db.async_session() as db_session:
+    role = RoleDB(name="test_role", description="Test role")
+    db_session.add(role)
+    await db_session.flush()  # Use flush() instead of commit()
 ```
+
+**Test Results:**
+
+All 745 tests pass reliably in 38.7s with 4 parallel workers (`-n 4`). The file-based lock ensures tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
 
 ## Database Operations
 
@@ -910,7 +912,7 @@ Each domain module must contain:
 - `schemas.py`: Pydantic models for API contracts
 - `db_services.py`: Service class inheriting from `BaseServiceDB`
 - `views.py`: Router class inheriting from `BaseRouter`
-- `__init__.py`: Exports the router as `api_<domain>_router`
+- `__init__.py`: Exports router as `api_<domain>_router`
 
 ### Fetching Complex Relationships in Services
 

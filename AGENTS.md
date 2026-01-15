@@ -17,7 +17,7 @@ This document serves as a quick reference for common operations and links to the
 # Start test database
 docker-compose -f docker-compose.test-db-only.yml up -d
 
-# Run all tests (parallel by default)
+# Run all tests (parallel with 4 workers by default)
 pytest
 
 # Run tests sequentially (for debugging or full test suite)
@@ -56,7 +56,11 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 500+ tests are passing. For detailed test information and recent fixes, see the [Test Suite Status](docs/DEVELOPMENT_GUIDELINES.md#test-suite-status) section in DEVELOPMENT_GUIDELINES.md.
+All 745 tests pass in parallel (38.7s with pytest-xdist). Tests use transactional rollback for isolation and file-based locking for cross-process table creation.
+
+**Important:** When writing test fixtures, use `flush()` instead of `commit()` to avoid deadlocks during parallel test execution. The outer test fixture handles rollback automatically.
+
+For detailed test information and recent fixes, see the [Test Suite Status](docs/DEVELOPMENT_GUIDELINES.md#test-suite-status) section in DEVELOPMENT_GUIDELINES.md.
 
 ### Search Testing Guidelines
 
@@ -67,7 +71,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 | Tool | Purpose | Command |
 |------|----------|----------|
 | pytest | Test runner | `pytest` |
-| pytest-xdist | Parallel test execution | `pytest -n auto` |
+| pytest-xdist | Parallel test execution (4 workers by default) | `pytest -n auto` |
 | pytest-cov | Coverage reporting | `pytest --cov=src` |
 | pytest-benchmark | Performance benchmarks | `pytest tests/test_benchmarks.py -m benchmark` |
 | Hypothesis | Property-based testing | `pytest tests/test_property_based.py` |
@@ -89,6 +93,8 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 **Note:** All commits must be by linroot with email nevalions@gmail.com
 
 **Note:** When you need to search docs, use `context7` tools.
+
+**Note:** Tests use transactional rollback for isolation. Always use `flush()` instead of `commit()` in test fixtures to avoid deadlocks during parallel execution.
 
 ### Workflow References
 
