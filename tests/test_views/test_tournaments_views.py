@@ -410,7 +410,6 @@ class TestTournamentViews:
             TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         )
 
-
         person_service = PersonServiceDB(test_db)
         player_service = PlayerServiceDB(test_db)
 
@@ -457,7 +456,6 @@ class TestTournamentViews:
         from src.core.models.team_tournament import TeamTournamentDB
         from src.person.schemas import PersonSchemaCreate as PersonSchemaCreateType
         from src.player.schemas import PlayerSchemaCreate as PlayerSchemaCreateType
-
 
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -527,3 +525,58 @@ class TestTournamentViews:
         assert len(response_data["data"]) == 1
         assert response_data["data"][0]["first_name"] == "Bob"
         assert response_data["data"][0]["second_name"] == "NoTeam"
+
+    async def test_get_available_teams_for_tournament_endpoint(self, client, test_db):
+        """Test retrieving available teams for a tournament (not connected)."""
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+
+        team1_data = TeamSchemaCreateType(
+            title="Team Alpha",
+            sport_id=sport.id,
+            team_eesl_id=7001,
+        )
+        team1 = await team_service.create_or_update_team(team1_data)
+
+        team2_data = TeamSchemaCreateType(
+            title="Team Beta",
+            sport_id=sport.id,
+            team_eesl_id=7002,
+        )
+        team2 = await team_service.create_or_update_team(team2_data)
+
+        team3_data = TeamSchemaCreateType(
+            title="Team Gamma",
+            sport_id=sport.id,
+            team_eesl_id=7003,
+        )
+        team3 = await team_service.create_or_update_team(team3_data)
+
+        async with test_db.async_session() as session:
+            tt = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
+            session.add(tt)
+            await session.commit()
+
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/teams/available")
+
+        assert response.status_code == 200
+        teams = response.json()
+
+        assert len(teams) == 2
+        team_ids = [t["id"] for t in teams]
+        assert team2.id in team_ids
+        assert team3.id in team_ids
+        assert team1.id not in team_ids
+        assert teams[0]["title"] < teams[1]["title"]

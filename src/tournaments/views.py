@@ -174,6 +174,19 @@ class TournamentAPIRouter(
             return await self.service.get_available_players_for_tournament(tournament_id)
 
         @router.get(
+            "/id/{tournament_id}/teams/available",
+            summary="Get available teams for tournament",
+            description="Retrieves all teams in the tournament's sport who are not already connected to the tournament.",
+            responses={
+                200: {"description": "Available teams retrieved successfully"},
+                404: {"description": "Tournament not found"},
+            },
+        )
+        async def get_available_teams_for_tournament_endpoint(tournament_id: int):
+            self.logger.debug(f"Get available teams for tournament id:{tournament_id} endpoint")
+            return await self.service.get_available_teams_for_tournament(tournament_id)
+
+        @router.get(
             "/id/{tournament_id}/players/without-team",
             response_model=PaginatedPlayerWithDetailsResponse,
             summary="Get players in tournament without team",

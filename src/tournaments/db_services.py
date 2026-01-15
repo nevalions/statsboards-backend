@@ -196,6 +196,34 @@ class TournamentServiceDB(BaseServiceDB):
             return players
 
     @handle_service_exceptions(
+        item_name=ITEM, operation="fetching available teams", return_value_on_not_found=[]
+    )
+    async def get_available_teams_for_tournament(
+        self,
+        tournament_id: int,
+    ) -> list[TeamDB]:
+        self.logger.debug(f"Get available teams for {ITEM} id:{tournament_id}")
+        async with self.db.async_session() as session:
+            tournament = await session.get(TournamentDB, tournament_id)
+            if not tournament:
+                return []
+
+            subquery = select(TeamTournamentDB.team_id).where(
+                TeamTournamentDB.tournament_id == tournament_id
+            )
+
+            stmt = (
+                select(TeamDB)
+                .where(TeamDB.sport_id == tournament.sport_id)
+                .where(not_(TeamDB.id.in_(subquery.scalar_subquery())))
+                .order_by(TeamDB.title)
+            )
+
+            results = await session.execute(stmt)
+            teams = results.scalars().all()
+            return teams
+
+    @handle_service_exceptions(
         item_name=ITEM,
         operation="fetching players without team in tournament",
         return_value_on_not_found=None,
