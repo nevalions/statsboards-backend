@@ -19,7 +19,6 @@ db_url = settings.test_db.test_db_url
 pytest_plugins = ["tests.fixtures"]
 
 
-# Custom markers
 def pytest_configure(config):
     """Configure custom pytest markers."""
     config.addinivalue_line(
@@ -30,64 +29,86 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: marks test as slow-running")
 
 
+async def _ensure_tables_created():
+    """Ensure database tables and indexes are created using file-based lock."""
+    import fcntl
+
+    lock_file = "/tmp/test_db_tables_setup.lock"
+
+    # Use file-based lock for cross-process coordination
+    with open(lock_file, "w") as f:
+        try:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        except (ImportError, AttributeError):
+            # Windows doesn't have fcntl, try msvcrt
+            try:
+                import msvcrt
+
+                msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+            except (ImportError, OSError):
+                pass
+
+        db_url_str = str(db_url)
+        assert "test" in db_url_str, "Test DB URL must contain 'test'"
+
+        database = Database(db_url_str, echo=False)
+
+        try:
+            # Create tables
+            async with database.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+
+                # Create GIN indexes
+                for index_sql in [
+                    "CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
+                    "CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
+                    "CREATE INDEX IF NOT EXISTS ix_team_title_trgm ON team USING GIN (title gin_trgm_ops)",
+                ]:
+                    try:
+                        await conn.execute(text(index_sql))
+                    except Exception:
+                        pass
+
+            # Seed default roles
+            from src.core.models.role import RoleDB
+            from sqlalchemy import select
+
+            async with database.async_session() as session:
+                existing_roles = await session.execute(select(RoleDB.name))
+                existing_names = {r[0] for r in existing_roles.fetchall()}
+
+                if not existing_names:
+                    default_roles_data = [
+                        ("user", "Basic viewer role"),
+                        ("admin", "Administrator with full access"),
+                        ("editor", "Can edit content"),
+                        ("player", "Player account"),
+                        ("coach", "Coach account"),
+                        ("streamer", "Streamer account"),
+                    ]
+
+                    for name, description in default_roles_data:
+                        role = RoleDB(name=name, description=description)
+                        session.add(role)
+
+                    await session.commit()
+        finally:
+            await database.close()
+
+
 # Database fixture that ensures a clean state using transactions, function-scoped
 @pytest_asyncio.fixture(scope="function")
 async def test_db():
     """Database fixture that ensures a clean state using transactions."""
-    db_url_str = str(db_url)
-    assert "test" in db_url_str, "Test DB URL must contain 'test'"
+    await _ensure_tables_created()
 
+    db_url_str = str(db_url)
     database = Database(db_url_str, echo=False)
 
     # Initialize service registry for each test with fresh database
     init_service_registry(database)
     register_all_services(database)
-
-    # Create tables at start of each test (faster than migrations)
-    async with database.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-        # Install pg_trgm extension for search optimization tests
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-
-        # Create GIN indexes for Person search optimization
-        # Use try/except to handle race conditions in parallel test execution
-        for index_sql in [
-            "CREATE INDEX ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
-            "CREATE INDEX ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
-            "CREATE INDEX ix_team_title_trgm ON team USING GIN (title gin_trgm_ops)",
-        ]:
-            try:
-                await conn.execute(text(index_sql))
-            except Exception:
-                # Index already exists (race condition in parallel tests)
-                pass
-
-    # Seed default roles
-    from sqlalchemy import select
-
-    from src.core.models.role import RoleDB
-
-    async with database.async_session() as session:
-        # Check if roles already exist (for parallel test execution)
-        existing_roles = await session.execute(select(RoleDB.name))
-        existing_names = {r[0] for r in existing_roles.fetchall()}
-
-        if not existing_names:
-            default_roles_data = [
-                ("user", "Basic viewer role"),
-                ("admin", "Administrator with full access"),
-                ("editor", "Can edit content"),
-                ("player", "Player account"),
-                ("coach", "Coach account"),
-                ("streamer", "Streamer account"),
-            ]
-
-            for name, description in default_roles_data:
-                role = RoleDB(name=name, description=description)
-                session.add(role)
-
-            await session.commit()
 
     # Use a transactional connection for tests
     async with database.engine.connect() as connection:
@@ -99,8 +120,8 @@ async def test_db():
             if transaction.is_active:
                 await transaction.rollback()
         finally:
-            # No need to drop tables - transaction rollback cleans up
-            pass
+            await connection.close()
+            await database.close()
 
 
 @pytest.fixture(scope="session")

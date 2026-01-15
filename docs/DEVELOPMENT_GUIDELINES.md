@@ -43,18 +43,19 @@ docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activ
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
-**Important: Run full test suite sequentially to avoid ResourceWarnings:**
+**Important: ResourceWarnings have been fixed - parallel tests now work correctly:**
 
 ```bash
-pytest -n 0
+pytest -n 4  # Run tests in parallel with 4 workers
+pytest -n 0  # Run tests sequentially (for debugging)
 ```
 
-The default pytest.ini configuration uses `--disable-warnings` to suppress third-party library warnings (pytest_benchmark DeprecationWarning). Running full test suite with parallel execution (`-n auto` or `-n 8`) causes ResourceWarnings due to:
-- Function-scoped `test_db` fixture creates tables/triggers/indexes for every test
-- Multiple xdist workers trying to modify schema simultaneously → PostgreSQL deadlocks
-- These are fixture architecture limitations, not code bugs
+The default pytest.ini configuration uses `-n 4` for parallel test execution. Database connection issues have been resolved by:
+- Properly closing database connections after each test (`await database.close()`)
+- Using file-based lock (`/tmp/test_db_tables_setup.lock`) to coordinate table creation across workers
+- Ensuring connection cleanup in fixture's `finally` block
 
-Use `-n 0` for complete test runs to avoid these warnings.
+**Note:** Tests now run cleanly in parallel with no ResourceWarnings or unclosed connection warnings.
 
 ### Understanding Deselected Tests
 
@@ -870,26 +871,27 @@ The project includes several enhanced testing approaches:
 Current optimizations implemented:
 
 - Database echo disabled in test fixtures (tests/conftest.py)
-- Session-scoped database engine: Tables created once per session (major speedup)
 - Transaction rollback per test: Fast cleanup without table drops
-- No Alembic migrations: Direct table creation
-- Parallel test execution with pytest-xdist: `-n auto` runs tests on all CPU cores
+- No Alembic migrations: Direct table creation with file-based lock coordination
+- Parallel test execution with pytest-xdist: `-n 4` uses 4 workers to balance speed and stability
 - PostgreSQL performance tuning in docker-compose.test-db-only.yml:
   - fsync=off, synchronous_commit=off, full_page_writes=off
   - wal_level=minimal, max_wal_senders=0
   - autovacuum=off, track_functions=none, track_counts=off
   - tmpfs for PostgreSQL data (in-memory storage)
+- File-based lock (`/tmp/test_db_tables_setup.lock`) coordinates table creation across parallel workers
+- Database connections properly closed after each test to prevent ResourceWarnings
 
-**Note on xdist with schema-modifying tests:**
+**Note on xdist and database contention:**
 
-Tests that modify database schema (e.g., search tests that create triggers, indexes, or columns) cannot run in parallel with xdist due to PostgreSQL locking conflicts (deadlocks). When multiple workers try to modify schema simultaneously, they deadlock waiting for AccessExclusiveLock on the same relation.
+With 4 parallel workers (`-n 4`), tests run cleanly without ResourceWarnings. The file-based lock ensures tables and indexes are created safely across workers. Occasionally, tests that involve complex database operations may experience deadlocks due to PostgreSQL locking. If this occurs, reduce workers further:
 
-**Examples of schema-modifying tests:**
-- `tests/test_team_search.py` - Creates search triggers and indexes for person/team tables
-
-**Workaround:** Run these tests sequentially:
 ```bash
-pytest tests/test_team_search.py -n 0
+# Reduce to 2 workers if encountering deadlocks
+pytest -n 2
+
+# Run sequentially for debugging
+pytest -n 0
 ```
 
 ## Database Operations
