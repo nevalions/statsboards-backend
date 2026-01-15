@@ -155,6 +155,17 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             return {"total_items": count}
 
         @router.get(
+            "/not-in-sport/{sport_id}/all",
+            response_model=list[PersonSchema],
+        )
+        async def get_all_persons_not_in_sport_endpoint(
+            sport_id: int,
+        ):
+            self.logger.debug(f"Get all persons not in sport {sport_id}")
+            persons = await self.service.get_all_persons_not_in_sport(sport_id=sport_id)
+            return [PersonSchema.model_validate(p) for p in persons]
+
+        @router.get(
             "/not-in-sport/{sport_id}",
             response_model=PaginatedPersonResponse,
         )

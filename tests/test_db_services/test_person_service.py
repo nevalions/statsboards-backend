@@ -608,7 +608,7 @@ class TestPersonServiceDBNotInSport:
         await person_service.create_or_update_person(
             PersonFactory.build(person_eesl_id=2002, first_name="Bob", second_name="NoSport")
         )
-        person3 = await person_service.create_or_update_person(
+        await person_service.create_or_update_person(
             PersonFactory.build(person_eesl_id=2003, first_name="Alice", second_name="NoSport")
         )
 
@@ -625,3 +625,44 @@ class TestPersonServiceDBNotInSport:
         assert len(result.data) == 1
         assert result.data[0].first_name == "Alice"
         assert result.data[0].second_name == "NoSport"
+
+    async def test_get_all_persons_not_in_sport_no_pagination(self, test_db: Database):
+        """Test get all persons not in sport without pagination."""
+        person_service = PersonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+
+        person1 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3001, first_name="Alice", second_name="SportPlayer")
+        )
+        person2 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3002, first_name="Bob", second_name="NoSportPlayer")
+        )
+        person3 = await person_service.create_or_update_person(
+            PersonFactory.build(
+                person_eesl_id=3003, first_name="Charlie", second_name="SportPlayer2"
+            )
+        )
+        person4 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3004, first_name="David", second_name="NoSport2")
+        )
+
+        player1_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person1.id, player_eesl_id=4001
+        )
+        player2_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person3.id, player_eesl_id=4002
+        )
+
+        await player_service.create(player1_data)
+        await player_service.create(player2_data)
+
+        persons = await person_service.get_all_persons_not_in_sport(sport_id=sport.id)
+
+        assert len(persons) == 2
+        assert person2.id in [p.id for p in persons]
+        assert person4.id in [p.id for p in persons]
+        assert person1.id not in [p.id for p in persons]
+        assert person3.id not in [p.id for p in persons]

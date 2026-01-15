@@ -381,7 +381,8 @@ class TestPersonViews:
         assert "data" in data
         assert "metadata" in data
         assert len(data["data"]) == 1
-        assert data["data"][0]["first_name"] == "Bob"
+        assert data["data"][0]["first_name"] == person2.first_name
+        assert data["data"][0]["second_name"] == person2.second_name
         assert data["metadata"]["total_items"] == 1
 
     async def test_get_persons_not_in_sport_with_search(self, client, test_db):
@@ -410,5 +411,44 @@ class TestPersonViews:
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]) == 1
-        assert data["data"][0]["first_name"] == "Alice"
-        assert data["data"][0]["second_name"] == "NoSport"
+        assert data["data"][0]["first_name"] == person2.first_name
+        assert data["data"][0]["second_name"] == person2.second_name
+
+    async def test_get_all_persons_not_in_sport_endpoint(self, client, test_db):
+        """Test get all persons not in sport endpoint without pagination."""
+        person_service = PersonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+
+        person1 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3001, first_name="Alice", second_name="SportPlayer")
+        )
+        person2 = await person_service.create_or_update_person(
+            PersonFactory.build(person_eesl_id=3002, first_name="Bob", second_name="NoSportPlayer")
+        )
+        person3 = await person_service.create_or_update_person(
+            PersonFactory.build(
+                person_eesl_id=3003, first_name="Charlie", second_name="SportPlayer2"
+            )
+        )
+
+        player1_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person1.id, player_eesl_id=4001
+        )
+        player2_data = PlayerFactory.build(
+            sport_id=sport.id, person_id=person3.id, player_eesl_id=4002
+        )
+
+        await player_service.create(player1_data)
+        await player_service.create(player2_data)
+
+        response = await client.get(f"/api/persons/not-in-sport/{sport.id}/all")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["first_name"] == person2.first_name
+        assert data[0]["second_name"] == person2.second_name

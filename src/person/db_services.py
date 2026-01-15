@@ -142,6 +142,29 @@ class PersonServiceDB(BaseServiceDB):
 
     @handle_service_exceptions(
         item_name=ITEM,
+        operation="fetching all persons not in sport",
+        return_value_on_not_found=[],
+    )
+    async def get_all_persons_not_in_sport(
+        self,
+        sport_id: int,
+    ) -> list[PersonDB]:
+        from sqlalchemy import exists
+
+        self.logger.debug(f"Get all {ITEM} not in sport {sport_id}")
+
+        async with self.db.async_session() as session:
+            subquery = select(PlayerDB.id).where(
+                PlayerDB.person_id == PersonDB.id,
+                PlayerDB.sport_id == sport_id,
+            )
+
+            stmt = select(PersonDB).where(~exists(subquery))
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    @handle_service_exceptions(
+        item_name=ITEM,
         operation="fetching persons not in sport",
         return_value_on_not_found=None,
     )
