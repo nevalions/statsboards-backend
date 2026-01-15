@@ -18,7 +18,7 @@ async def test_user_with_role(test_db: Database):
     async with test_db.async_session() as db_session:
         role = RoleDB(name="test_role", description="Test role")
         db_session.add(role)
-        await db_session.commit()
+        await db_session.flush()
 
         user_data = UserSchemaCreate(
             username="test_api_user",
@@ -31,18 +31,17 @@ async def test_user_with_role(test_db: Database):
             hashed_password=get_password_hash(user_data.password),
         )
         db_session.add(user)
-        await db_session.commit()
+        await db_session.flush()
 
         db_session.add(UserRoleDB(user_id=user.id, role_id=role.id))
-        await db_session.commit()
+        await db_session.flush()
 
         await db_session.refresh(user)
         await db_session.refresh(user, ["roles"])
 
         yield user
 
-        await db_session.delete(user)
-        await db_session.commit()
+        await db_session.flush()
 
 
 class TestAuthViews:
