@@ -16,6 +16,8 @@ class MatchSchemaBase(BaseModel):
     tournament_id: int | None = Field(None, examples=[1])
     sponsor_line_id: int | None = Field(None, examples=[1])
     main_sponsor_id: int | None = Field(None, examples=[5])
+    isprivate: bool = Field(False, examples=[False, True])
+    user_id: int | None = Field(None, examples=[1])
 
 
 MatchSchemaUpdate = make_fields_optional(MatchSchemaBase)

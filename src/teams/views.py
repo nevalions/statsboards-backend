@@ -314,14 +314,19 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             order_by_two: str = Query("id", description="Second sort column"),
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
             search: str | None = Query(None, description="Search query for Cyrillic text search"),
+            user_id: int | None = Query(None, description="Filter by user_id"),
+            isprivate: bool | None = Query(None, description="Filter by isprivate status"),
         ):
             self.logger.debug(
                 f"Get all teams paginated: page={page}, items_per_page={items_per_page}, "
-                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}, "
+                f"user_id={user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_teams_with_pagination(
                 search_query=search,
+                user_id=user_id,
+                isprivate=isprivate,
                 skip=skip,
                 limit=items_per_page,
                 order_by=order_by,

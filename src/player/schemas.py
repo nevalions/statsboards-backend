@@ -10,6 +10,8 @@ class PlayerSchemaBase(BaseModel):
     sport_id: int | None = Field(None, examples=[1])
     person_id: int | None = Field(None, examples=[1])
     player_eesl_id: int | None = Field(None, examples=[98765])
+    isprivate: bool = Field(False, examples=[False, True])
+    user_id: int | None = Field(None, examples=[1])
 
 
 PlayerSchemaUpdate = make_fields_optional(PlayerSchemaBase)

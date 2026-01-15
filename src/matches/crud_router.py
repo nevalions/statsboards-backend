@@ -519,17 +519,22 @@ class MatchCRUDRouter(
             search: str | None = Query(None, description="Search query for match_eesl_id"),
             week: int | None = Query(None, ge=1, description="Filter by week number"),
             tournament_id: int | None = Query(None, ge=1, description="Filter by tournament_id"),
+            user_id: int | None = Query(None, description="Filter by user_id"),
+            isprivate: bool | None = Query(None, description="Filter by isprivate status"),
         ):
             self.logger.debug(
                 f"Get matches paginated: page={page}, items_per_page={items_per_page}, "
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, "
-                f"search={search}, week={week}, tournament_id={tournament_id}"
+                f"search={search}, week={week}, tournament_id={tournament_id}, "
+                f"user_id={user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_matches_with_pagination(
                 search_query=search,
                 week=week,
                 tournament_id=tournament_id,
+                user_id=user_id,
+                isprivate=isprivate,
                 skip=skip,
                 limit=items_per_page,
                 order_by=order_by,

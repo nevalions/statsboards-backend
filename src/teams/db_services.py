@@ -145,6 +145,8 @@ class TeamServiceDB(BaseServiceDB):
     async def search_teams_with_pagination(
         self,
         search_query: str | None = None,
+        user_id: int | None = None,
+        isprivate: bool | None = None,
         skip: int = 0,
         limit: int = 20,
         order_by: str = "title",
@@ -158,6 +160,13 @@ class TeamServiceDB(BaseServiceDB):
 
         async with self.db.async_session() as session:
             base_query = select(TeamDB)
+
+            if user_id is not None:
+                base_query = base_query.where(TeamDB.user_id == user_id)
+
+            if isprivate is not None:
+                base_query = base_query.where(TeamDB.isprivate == isprivate)
+
             base_query = await self._apply_search_filters(
                 base_query,
                 [(TeamDB, "title")],

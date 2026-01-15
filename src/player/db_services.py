@@ -103,6 +103,8 @@ class PlayerServiceDB(BaseServiceDB):
         sport_id: int,
         search_query: str | None = None,
         team_id: int | None = None,
+        user_id: int | None = None,
+        isprivate: bool | None = None,
         skip: int = 0,
         limit: int = 20,
         order_by: str = "second_name",
@@ -130,6 +132,12 @@ class PlayerServiceDB(BaseServiceDB):
                     ),
                 )
             )
+
+            if user_id is not None:
+                base_query = base_query.where(PlayerDB.user_id == user_id)
+
+            if isprivate is not None:
+                base_query = base_query.where(PlayerDB.isprivate == isprivate)
 
             if team_id:
                 base_query = base_query.join(

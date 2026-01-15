@@ -102,6 +102,8 @@ class PersonServiceDB(BaseServiceDB):
     async def search_persons_with_pagination(
         self,
         search_query: str | None = None,
+        owner_user_id: int | None = None,
+        isprivate: bool | None = None,
         skip: int = 0,
         limit: int = 20,
         order_by: str = "second_name",
@@ -115,6 +117,13 @@ class PersonServiceDB(BaseServiceDB):
 
         async with self.db.async_session() as session:
             base_query = select(PersonDB)
+
+            if owner_user_id is not None:
+                base_query = base_query.where(PersonDB.owner_user_id == owner_user_id)
+
+            if isprivate is not None:
+                base_query = base_query.where(PersonDB.isprivate == isprivate)
+
             base_query = await self._apply_search_filters(
                 base_query,
                 [(PersonDB, "first_name"), (PersonDB, "second_name")],
@@ -159,7 +168,11 @@ class PersonServiceDB(BaseServiceDB):
                 PlayerDB.sport_id == sport_id,
             )
 
-            stmt = select(PersonDB).where(~exists(subquery)).order_by(PersonDB.second_name, PersonDB.id)
+            stmt = (
+                select(PersonDB)
+                .where(~exists(subquery))
+                .order_by(PersonDB.second_name, PersonDB.id)
+            )
             result = await session.execute(stmt)
             return list(result.scalars().all())
 

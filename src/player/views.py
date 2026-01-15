@@ -117,16 +117,23 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             search: Annotated[
                 str | None, Query(description="Search query for person names")
             ] = None,
+            user_id: Annotated[int | None, Query(description="Filter by user_id")] = None,
+            isprivate: Annotated[
+                bool | None, Query(description="Filter by isprivate status")
+            ] = None,
         ):
             self.logger.debug(
                 f"Get players paginated with details: sport_id={sport_id}, team_id={team_id}, "
-                f"page={page}, items_per_page={items_per_page}, ascending={ascending}, search={search}"
+                f"page={page}, items_per_page={items_per_page}, ascending={ascending}, search={search}, "
+                f"user_id={user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_players_with_pagination_details(
                 sport_id=sport_id,
                 team_id=team_id,
                 search_query=search,
+                user_id=user_id,
+                isprivate=isprivate,
                 skip=skip,
                 limit=items_per_page,
                 ascending=ascending,

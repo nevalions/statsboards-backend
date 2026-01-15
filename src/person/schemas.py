@@ -2,7 +2,7 @@ from datetime import datetime as date_type
 from typing import Annotated
 
 from fastapi import Path
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
 
@@ -15,6 +15,8 @@ class PersonSchemaBase(BaseModel):
     person_photo_web_url: Annotated[str, Path(max_length=500)] | None = ""
     person_dob: date_type | None = None
     person_eesl_id: int | None = None
+    isprivate: bool = Field(False, examples=[False, True])
+    owner_user_id: int | None = Field(None, examples=[1])
 
 
 PersonSchemaUpdate = make_fields_optional(PersonSchemaBase)

@@ -26,6 +26,8 @@ class TeamSchemaBase(BaseModel):
     sponsor_line_id: int | None = Field(None, examples=[1])
     main_sponsor_id: int | None = Field(None, examples=[5])
     sport_id: int = Field(..., examples=[1])
+    isprivate: bool = Field(False, examples=[False, True])
+    user_id: int | None = Field(None, examples=[1])
 
 
 TeamSchemaUpdate = make_fields_optional(TeamSchemaBase)
