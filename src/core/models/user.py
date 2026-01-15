@@ -6,8 +6,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.models import Base
 
 if TYPE_CHECKING:
+    from .match import MatchDB
     from .person import PersonDB
+    from .player import PlayerDB
     from .role import RoleDB
+    from .team import TeamDB
+    from .tournament import TournamentDB
 
 
 class UserDB(Base):
@@ -46,6 +50,27 @@ class UserDB(Base):
 
     person: Mapped["PersonDB"] = relationship(
         "PersonDB",
+        back_populates="user",
+        foreign_keys="UserDB.person_id",
+    )
+
+    tournaments: Mapped[list["TournamentDB"]] = relationship(
+        "TournamentDB",
+        back_populates="user",
+    )
+
+    players: Mapped[list["PlayerDB"]] = relationship(
+        "PlayerDB",
+        back_populates="user",
+    )
+
+    matches: Mapped[list["MatchDB"]] = relationship(
+        "MatchDB",
+        back_populates="user",
+    )
+
+    teams: Mapped[list["TeamDB"]] = relationship(
+        "TeamDB",
         back_populates="user",
     )
 

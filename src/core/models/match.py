@@ -1,7 +1,7 @@
 from datetime import datetime as date_type
 from typing import TYPE_CHECKING
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Integer, func
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -17,11 +17,24 @@ if TYPE_CHECKING:
     from .sponsor_line import SponsorLineDB
     from .team import TeamDB
     from .tournament import TournamentDB
+    from .user import UserDB
 
 
 class MatchDB(Base):
     __tablename__ = "match"
     __table_args__ = {"extend_existing": True}
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", name="fk_match_user", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    isprivate: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
 
     match_date: Mapped[date_type] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, server_default=func.now()
@@ -75,6 +88,11 @@ class MatchDB(Base):
 
     tournaments: Mapped["TournamentDB"] = relationship(
         "TournamentDB",
+        back_populates="matches",
+    )
+
+    user: Mapped["UserDB"] = relationship(
+        "UserDB",
         back_populates="matches",
     )
 

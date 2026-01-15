@@ -13,6 +13,7 @@ This document contains comprehensive development guidelines, coding standards, a
 - [Search Implementation](#search-implementation)
 - [Advanced Filtering Patterns](#advanced-filtering-patterns)
 - [WebSocket and Real-time](#websocket-and-real-time)
+- [User Ownership and Privacy](#user-ownership-and-privacy)
 - [General Principles](#general-principles)
 - [Configuration Validation](#configuration-validation)
 
@@ -1537,6 +1538,117 @@ SELECT * FROM person WHERE first_name ILIKE '%query%';
 - Test connection handling and reconnection scenarios
 - Use Redis pub/sub for scalable event distribution
 - Always clean up connections on disconnect
+
+## User Ownership and Privacy
+
+Several core models support user ownership and privacy controls:
+
+### Models with Ownership and Privacy
+
+The following models include user ownership and privacy fields:
+
+- **TournamentDB** - `user_id` (FK to user.id), `isprivate` (default: false)
+- **PlayerDB** - `user_id` (FK to user.id), `isprivate` (default: false)
+- **PersonDB** - `owner_user_id` (FK to user.id), `isprivate` (default: false)
+- **MatchDB** - `user_id` (FK to user.id), `isprivate` (default: false)
+- **TeamDB** - `user_id` (FK to user.id), `isprivate` (default: false)
+
+### Field Details
+
+#### user_id / owner_user_id
+
+- **Type**: `Mapped[int]`
+- **Foreign Key**: References `user.id` with `ON DELETE SET NULL`
+- **Nullable**: Yes (allows items without specific owner)
+- **Purpose**: Associates items with a specific user for access control
+
+#### isprivate
+
+- **Type**: `Mapped[bool]`
+- **Default**: `False`
+- **Server Default**: `"false"`
+- **Nullable**: No
+- **Purpose**: Allows users to hide their items from other users
+
+### Model Patterns
+
+```python
+from typing import TYPE_CHECKING
+from sqlalchemy import Boolean, ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.models import Base
+
+if TYPE_CHECKING:
+    from .user import UserDB
+
+class ExampleDB(Base):
+    __tablename__ = "example"
+    __table_args__ = {"extend_existing": True}
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", name="fk_example_user", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    isprivate: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
+
+    user: Mapped["UserDB"] = relationship(
+        "UserDB",
+        back_populates="examples",
+    )
+```
+
+### Usage Patterns
+
+#### Filtering by User Ownership
+
+```python
+# Get only user's items
+from src.core.models.tournament import TournamentDB
+from sqlalchemy import select
+
+async def get_user_tournaments(user_id: int, session: AsyncSession) -> list[TournamentDB]:
+    stmt = select(TournamentDB).where(TournamentDB.user_id == user_id)
+    result = await session.execute(stmt)
+    return result.scalars().all()
+```
+
+#### Combining Ownership with Privacy
+
+```python
+# Get user's items, excluding private ones (or including based on policy)
+from src.core.models.player import PlayerDB
+
+async def get_accessible_players(user_id: int, session: AsyncSession) -> list[PlayerDB]:
+    stmt = select(PlayerDB).where(
+        (PlayerDB.user_id == user_id) | (~PlayerDB.isprivate)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+```
+
+### Migration Notes
+
+When adding user ownership to new models:
+
+1. Add foreign key with explicit name: `name="fk_{table}_user"`
+2. Use `ondelete="SET NULL"` to preserve records when user is deleted
+3. Add `isprivate` column with `default=False` and `server_default="false"`
+4. Add bidirectional relationship in UserDB
+5. Include constraint names in migrations to avoid circular dependency issues
+
+### Important Notes
+
+- **PersonDB** uses `owner_user_id` instead of `user_id` to distinguish from authentication relationship
+- All foreign keys to `user` table use `ON DELETE SET NULL` to preserve data integrity
+- `isprivate` defaults to `false` to maintain backwards compatibility
+- Foreign keys have explicit names to enable clean table drops without circular dependency errors
 
 ## General Principles
 

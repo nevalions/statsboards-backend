@@ -1,7 +1,7 @@
 from datetime import datetime as date_type
 from typing import TYPE_CHECKING
 
-from sqlalchemy import TIMESTAMP, Integer, String
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -14,6 +14,18 @@ if TYPE_CHECKING:
 class PersonDB(Base):
     __tablename__ = "person"
     __table_args__ = {"extend_existing": True}
+
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", name="fk_person_owner_user", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    isprivate: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
 
     person_eesl_id: Mapped[int] = mapped_column(
         Integer,
@@ -73,4 +85,10 @@ class PersonDB(Base):
         back_populates="person",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        foreign_keys="UserDB.person_id",
+    )
+
+    owner_user: Mapped["UserDB"] = relationship(
+        "UserDB",
+        foreign_keys=[owner_user_id],
     )

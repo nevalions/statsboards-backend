@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer
+from sqlalchemy import Boolean, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -9,11 +9,29 @@ if TYPE_CHECKING:
     from .person import PersonDB
     from .player_team_tournament import PlayerTeamTournamentDB
     from .sport import SportDB
+    from .user import UserDB
 
 
 class PlayerDB(Base):
     __tablename__ = "player"
     __table_args__ = {"extend_existing": True}
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    isprivate: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", name="fk_player_user", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     sport_id: Mapped[int] = mapped_column(
         ForeignKey(
@@ -44,6 +62,11 @@ class PlayerDB(Base):
 
     sport: Mapped["SportDB"] = relationship(
         "SportDB",
+        back_populates="players",
+    )
+
+    user: Mapped["UserDB"] = relationship(
+        "UserDB",
         back_populates="players",
     )
 
