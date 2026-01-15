@@ -1423,11 +1423,81 @@ async def get_all_{entity}s_paginated_endpoint(
     - `search=None` returns all records with pagination
     - Consistent with existing `get_all_with_pagination()` behavior
 
- 5. **Error Handling**:
+  5. **Error Handling**:
     - Decorator with `return_value_on_not_found=None` for graceful handling
     - Returns empty list and zero metadata when no results found
 
- 6. **Multiple Filter Support** (Player Team Tournament):
+### Common Pitfalls in Paginated Search
+
+#### ❌ CRITICAL: Incorrect Count Query Pattern
+
+**BUG**: Using `select_from(base_query)` instead of `select_from(base_query.subquery())` in count queries causes incorrect pagination when queries include joins.
+
+```python
+# ❌ WRONG - Causes incorrect counts with joins
+count_stmt = select(func.count(func.distinct(ModelDB.id))).select_from(base_query)
+```
+
+**Why it fails**: When `base_query` includes joins (e.g., to PersonDB, TeamDB), `select_from(base_query)` counts all joined rows, not just the distinct model rows. This inflates `total_items` and causes incorrect `total_pages`.
+
+```python
+# ✅ CORRECT - Count distinct model rows after joins
+count_stmt = select(func.count()).select_from(base_query.subquery())
+```
+
+**Impact**:
+- Flag sport with 2 players showed 701 players (71 pages) instead of 2 players (1 page)
+- Tournament with 43 players showed 699 players (70 pages) instead of 43 players (5 pages)
+
+**Examples of this bug** (all fixed):
+- `src/player/db_services.py:146` - `search_players_with_pagination_details()`
+- `src/player_team_tournament/db_services.py:494` - `search_tournament_players_with_pagination()`
+- `src/player_team_tournament/db_services.py:548` - `search_tournament_players_with_pagination_details()`
+
+#### How to Implement Paginated Search When No Pattern Exists
+
+When adding paginated search to a new domain:
+
+1. **Check existing search implementations** in similar domains:
+   ```bash
+   grep -rn "func.count()" src/ --include="*.py" | grep "select_from"
+   ```
+
+2. **Follow the correct pattern** from existing working code:
+   - `src/person/db_services.py` - `search_persons_with_pagination()`
+   - `src/teams/db_services.py` - `search_teams_with_pagination()`
+   - `src/matches/db_services.py` - `search_matches_with_pagination()`
+
+3. **Key checklist for count query**:
+   ```python
+   # 1. Use subquery() to collapse joins
+   base_query = select(ModelDB).join(...)
+   count_stmt = select(func.count()).select_from(base_query.subquery())  # ✅ CORRECT
+
+   # 2. Execute and handle null
+   count_result = await session.execute(count_stmt)
+   total_items = count_result.scalar() or 0
+
+   # 3. Verify count matches actual data size
+   # For debugging: check if base_query returns expected row count
+   ```
+
+4. **Test with joins**:
+   ```python
+   # Test case: Query with joins should not inflate count
+   base_query = select(PlayerDB).join(PersonDB, ...).join(TeamDB, ...)
+   # Count should equal number of distinct PlayerDB rows, NOT joined rows
+   ```
+
+5. **Add tests** for pagination accuracy:
+   ```python
+   async def test_pagination_with_joins_correct_count():
+       # Create 10 players across 3 teams
+       # Query with team join
+       # Verify total_items == 10, not 30 (10 players × 3 teams)
+   ```
+
+  6. **Multiple Filter Support** (Player Team Tournament):
     - Supports combining `search_query` (person name) with `team_title` filter
     - Filters are applied with AND logic (must match both conditions)
     - Team title filter uses same ICU collation for international text handling

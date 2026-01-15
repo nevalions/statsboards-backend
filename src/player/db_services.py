@@ -143,7 +143,7 @@ class PlayerServiceDB(BaseServiceDB):
                     | (PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu"))
                 )
 
-            count_stmt = select(func.count(func.distinct(PlayerDB.id))).select_from(base_query)
+            count_stmt = select(func.count()).select_from(base_query.subquery())
             count_result = await session.execute(count_stmt)
             total_items = count_result.scalar() or 0
 
