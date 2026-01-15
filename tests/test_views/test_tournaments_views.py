@@ -11,7 +11,12 @@ from src.teams.db_services import TeamServiceDB
 from src.teams.schemas import TeamSchemaCreate as TeamSchemaCreateType
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaUpdate
-from tests.factories import SeasonFactorySample, SportFactorySample, TournamentFactory
+from tests.factories import (
+    PersonFactory,
+    SeasonFactorySample,
+    SportFactorySample,
+    TournamentFactory,
+)
 
 
 def create_test_image():
@@ -172,6 +177,60 @@ class TestTournamentViews:
         response = await client.get(f"/api/tournaments/id/{tournament.id}/players/")
 
         assert response.status_code == 200
+
+    async def test_get_players_by_tournament_id_sorted_by_name(self, client, test_db):
+        """Test that players are sorted by name (second_name, first_name)."""
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+        from src.player.schemas import PlayerSchemaCreate
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        player_service = PlayerServiceDB(test_db)
+
+        person_service = PersonServiceDB(test_db)
+        person1 = await person_service.create(
+            PersonFactory.build(second_name="Zimmerman", first_name="Alice")
+        )
+        person2 = await person_service.create(
+            PersonFactory.build(second_name="Brown", first_name="Bob")
+        )
+        person3 = await person_service.create(
+            PersonFactory.build(second_name="Brown", first_name="Alice")
+        )
+
+        player1 = await player_service.create(
+            PlayerSchemaCreate(sport_id=sport.id, person_id=person1.id)
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreate(sport_id=sport.id, person_id=person2.id)
+        )
+        player3 = await player_service.create(
+            PlayerSchemaCreate(sport_id=sport.id, person_id=person3.id)
+        )
+
+        async with test_db.async_session() as session:
+            ptt1 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player1.id)
+            ptt2 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player2.id)
+            ptt3 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player3.id)
+            session.add_all([ptt1, ptt2, ptt3])
+            await session.commit()
+
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/players/")
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert len(response_data) == 3
+        player_ids = [p["player_id"] for p in response_data]
+        assert player_ids == [player3.id, player2.id, player1.id]
 
     async def test_get_count_of_matches_by_tournament_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)

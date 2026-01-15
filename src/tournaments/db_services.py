@@ -163,10 +163,16 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ) -> list[PlayerTeamTournamentDB]:
+        from src.core.models.person import PersonDB
+
         self.logger.debug(f"Get players by {ITEM} id:{tournament_id}")
         async with self.db.async_session() as session:
-            stmt = select(PlayerTeamTournamentDB).where(
-                PlayerTeamTournamentDB.tournament_id == tournament_id
+            stmt = (
+                select(PlayerTeamTournamentDB)
+                .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                .order_by(PersonDB.second_name, PersonDB.first_name)
             )
 
             results = await session.execute(stmt)
@@ -180,6 +186,8 @@ class TournamentServiceDB(BaseServiceDB):
         self,
         tournament_id: int,
     ) -> list[PlayerDB]:
+        from src.core.models.person import PersonDB
+
         self.logger.debug(f"Get available players for {ITEM} id:{tournament_id}")
         async with self.db.async_session() as session:
             tournament = await session.get(TournamentDB, tournament_id)
@@ -195,6 +203,8 @@ class TournamentServiceDB(BaseServiceDB):
                 .where(PlayerDB.sport_id == tournament.sport_id)
                 .options(selectinload(PlayerDB.person))
                 .where(not_(PlayerDB.id.in_(subquery.scalar_subquery())))
+                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                .order_by(PersonDB.second_name, PersonDB.first_name)
             )
 
             results = await session.execute(stmt)
