@@ -4,7 +4,9 @@ import pytest
 from PIL import Image
 
 from src.person.db_services import PersonServiceDB
+from src.person.schemas import PersonSchemaCreate as PersonSchemaCreateType
 from src.player.db_services import PlayerServiceDB
+from src.player.schemas import PlayerSchemaCreate as PlayerSchemaCreateType
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
@@ -567,8 +569,6 @@ class TestTournamentViews:
         """Test retrieving players without team in tournament."""
         from src.core.models.player_team_tournament import PlayerTeamTournamentDB
         from src.core.models.team_tournament import TeamTournamentDB
-        from src.person.schemas import PersonSchemaCreate as PersonSchemaCreateType
-        from src.player.schemas import PlayerSchemaCreate as PlayerSchemaCreateType
 
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -638,6 +638,171 @@ class TestTournamentViews:
         assert len(response_data["data"]) == 1
         assert response_data["data"][0]["first_name"] == "Bob"
         assert response_data["data"][0]["second_name"] == "NoTeam"
+
+    async def test_get_players_by_tournament_paginated_endpoint(self, client, test_db):
+        """Test retrieving all players in tournament with pagination and search."""
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        person1 = await person_service.create(
+            PersonSchemaCreateType(first_name="Alice", second_name="Smith")
+        )
+        player1 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person1.id, player_eesl_id=8001)
+        )
+
+        person2 = await person_service.create(
+            PersonSchemaCreateType(first_name="Bob", second_name="Johnson")
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person2.id, player_eesl_id=8002)
+        )
+
+        person3 = await person_service.create(
+            PersonSchemaCreateType(first_name="Charlie", second_name="Anderson")
+        )
+        player3 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id, player_eesl_id=8003)
+        )
+
+        async with test_db.async_session() as session:
+            ptt1 = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
+            ptt2 = PlayerTeamTournamentDB(player_id=player2.id, tournament_id=tournament.id)
+            ptt3 = PlayerTeamTournamentDB(player_id=player3.id, tournament_id=tournament.id)
+            session.add_all([ptt1, ptt2, ptt3])
+            await session.commit()
+
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/players/paginated")
+
+        assert response.status_code == 200
+        response_data = response.json()
+
+        assert response_data["metadata"]["total_items"] == 3
+        assert len(response_data["data"]) == 3
+        assert response_data["data"][0]["second_name"] == "Anderson"
+
+    async def test_get_players_by_tournament_paginated_with_search_endpoint(self, client, test_db):
+        """Test retrieving all players in tournament with search."""
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        person1 = await person_service.create(
+            PersonSchemaCreateType(first_name="Alice", second_name="Smith")
+        )
+        player1 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person1.id, player_eesl_id=8001)
+        )
+
+        person2 = await person_service.create(
+            PersonSchemaCreateType(first_name="Bob", second_name="Smith")
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person2.id, player_eesl_id=8002)
+        )
+
+        async with test_db.async_session() as session:
+            ptt1 = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
+            ptt2 = PlayerTeamTournamentDB(player_id=player2.id, tournament_id=tournament.id)
+            session.add_all([ptt1, ptt2])
+            await session.commit()
+
+        response = await client.get(
+            f"/api/tournaments/id/{tournament.id}/players/paginated?search=Smith"
+        )
+
+        assert response.status_code == 200
+        response_data = response.json()
+
+        assert response_data["metadata"]["total_items"] == 2
+        assert len(response_data["data"]) == 2
+
+    async def test_get_players_without_team_in_tournament_all_endpoint(self, client, test_db):
+        """Test retrieving all players without team in tournament without pagination."""
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+
+        person1 = await person_service.create(
+            PersonSchemaCreateType(first_name="Alice", second_name="TeamPlayer")
+        )
+        player1 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person1.id, player_eesl_id=8001)
+        )
+
+        person2 = await person_service.create(
+            PersonSchemaCreateType(first_name="Bob", second_name="NoTeam")
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person2.id, player_eesl_id=8002)
+        )
+
+        person3 = await person_service.create(
+            PersonSchemaCreateType(first_name="Charlie", second_name="AnotherNoTeam")
+        )
+        player3 = await player_service.create(
+            PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id, player_eesl_id=8003)
+        )
+
+        async with test_db.async_session() as session:
+            ptt1 = PlayerTeamTournamentDB(
+                player_id=player1.id, tournament_id=tournament.id, team_id=None
+            )
+            ptt2 = PlayerTeamTournamentDB(
+                player_id=player2.id, tournament_id=tournament.id, team_id=None
+            )
+            ptt3 = PlayerTeamTournamentDB(
+                player_id=player3.id, tournament_id=tournament.id, team_id=None
+            )
+            session.add_all([ptt1, ptt2, ptt3])
+            await session.commit()
+
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/players/without-team/all")
+
+        assert response.status_code == 200
+        response_data = response.json()
+
+        assert len(response_data) == 3
+        assert response_data[0]["second_name"] == "AnotherNoTeam"
+        assert response_data[1]["second_name"] == "NoTeam"
+        assert response_data[2]["second_name"] == "TeamPlayer"
 
     async def test_get_available_teams_for_tournament_endpoint(self, client, test_db):
         """Test retrieving available teams for a tournament (not connected)."""

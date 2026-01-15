@@ -308,6 +308,118 @@ class TournamentServiceDB(BaseServiceDB):
                 ),
             )
 
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="fetching players in tournament with pagination",
+        return_value_on_not_found=None,
+    )
+    async def get_players_by_tournament_with_pagination(
+        self,
+        tournament_id: int,
+        search_query: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "second_name",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedPlayerWithDetailsResponse:
+        from src.core.models.person import PersonDB
+
+        self.logger.debug(
+            f"Get players in tournament {tournament_id} paginated: query={search_query}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = (
+                select(PlayerDB)
+                .join(PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id)
+                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                .options(selectinload(PlayerDB.person))
+            )
+            base_query = await self._apply_search_filters(
+                base_query,
+                [(PersonDB, "first_name"), (PersonDB, "second_name")],
+                search_query,
+            )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                PersonDB, order_by, order_by_two, ascending, PersonDB.second_name, PersonDB.id
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            players = result.scalars().all()
+
+            return PaginatedPlayerWithDetailsResponse(
+                data=[
+                    PlayerWithDetailsSchema.model_validate(
+                        {
+                            "id": p.id,
+                            "sport_id": p.sport_id,
+                            "person_id": p.person_id,
+                            "player_eesl_id": p.player_eesl_id,
+                            "first_name": p.person.first_name if p.person else None,
+                            "second_name": p.person.second_name if p.person else None,
+                            "player_team_tournaments": [],
+                        }
+                    )
+                    for p in players
+                ],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="fetching players without team in tournament without pagination",
+        return_value_on_not_found=[],
+    )
+    async def get_players_without_team_in_tournament_simple(
+        self,
+        tournament_id: int,
+    ) -> list[PlayerWithDetailsSchema]:
+        from src.core.models.person import PersonDB
+
+        self.logger.debug(
+            f"Get players without team in tournament {tournament_id} without pagination"
+        )
+
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerDB)
+                .join(PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id)
+                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                .where(PlayerTeamTournamentDB.team_id.is_(None))
+                .options(selectinload(PlayerDB.person))
+                .order_by(PersonDB.second_name, PersonDB.first_name)
+            )
+
+            result = await session.execute(stmt)
+            players = result.scalars().all()
+
+            return [
+                PlayerWithDetailsSchema.model_validate(
+                    {
+                        "id": p.id,
+                        "sport_id": p.sport_id,
+                        "person_id": p.person_id,
+                        "player_eesl_id": p.player_eesl_id,
+                        "first_name": p.person.first_name if p.person else None,
+                        "second_name": p.person.second_name if p.person else None,
+                        "player_team_tournaments": [],
+                    }
+                )
+                for p in players
+            ]
+
     async def get_count_of_matches_by_tournament(
         self,
         tournament_id: int,

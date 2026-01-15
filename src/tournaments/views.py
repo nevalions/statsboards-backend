@@ -14,7 +14,10 @@ from src.pars_eesl.pars_season import parse_season_and_create_jsons
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
-from ..player.schemas import PaginatedPlayerWithDetailsResponse
+from ..player.schemas import (
+    PaginatedPlayerWithDetailsResponse,
+    PlayerWithDetailsSchema,
+)
 from ..sponsor_lines.schemas import SponsorLineSchema
 from ..sponsors.schemas import SponsorSchema
 from .db_services import TournamentServiceDB
@@ -161,6 +164,40 @@ class TournamentAPIRouter(
             return await self.service.get_players_by_tournament(tournament_id)
 
         @router.get(
+            "/id/{tournament_id}/players/paginated",
+            response_model=PaginatedPlayerWithDetailsResponse,
+            summary="Get players in tournament with pagination and search",
+            description="Retrieves all players participating in a specific tournament with pagination and search by player name.",
+            responses={
+                200: {"description": "Players retrieved successfully"},
+                404: {"description": "Tournament not found"},
+            },
+        )
+        async def get_players_by_tournament_paginated_endpoint(
+            tournament_id: int,
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("second_name", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for player name"),
+        ):
+            self.logger.debug(
+                f"Get players by tournament id:{tournament_id} paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            return await self.service.get_players_by_tournament_with_pagination(
+                tournament_id=tournament_id,
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+
+        @router.get(
             "/id/{tournament_id}/players/available",
             summary="Get available players for tournament",
             description="Retrieves all players in the tournament's sport who are not already connected to the tournament.",
@@ -219,6 +256,20 @@ class TournamentAPIRouter(
                 order_by_two=order_by_two,
                 ascending=ascending,
             )
+
+        @router.get(
+            "/id/{tournament_id}/players/without-team/all",
+            response_model=list[PlayerWithDetailsSchema],
+            summary="Get all players in tournament without team",
+            description="Retrieves all players in the tournament who are not connected to any team (team_id is NULL), sorted by second name.",
+            responses={
+                200: {"description": "Players without team retrieved successfully"},
+                404: {"description": "Tournament not found"},
+            },
+        )
+        async def get_players_without_team_in_tournament_all_endpoint(tournament_id: int):
+            self.logger.debug(f"Get all players without team in tournament id:{tournament_id}")
+            return await self.service.get_players_without_team_in_tournament_simple(tournament_id)
 
         @router.get("/id/{tournament_id}/matches/count")
         async def get_count_of_matches_by_tournament_id_endpoint(tournament_id: int):
