@@ -491,9 +491,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 team_title,
             )
 
-            count_stmt = select(func.count(func.distinct(PlayerTeamTournamentDB.id))).select_from(
-                base_query
-            )
+            count_stmt = select(func.count()).select_from(base_query.subquery())
             count_result = await session.execute(count_stmt)
             total_items = count_result.scalar() or 0
 
@@ -545,9 +543,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 team_title,
             )
 
-            count_stmt = select(func.count(func.distinct(PlayerTeamTournamentDB.id))).select_from(
-                base_query
-            )
+            count_stmt = select(func.count()).select_from(base_query.subquery())
             count_result = await session.execute(count_stmt)
             total_items = count_result.scalar() or 0
 
