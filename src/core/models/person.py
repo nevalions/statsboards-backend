@@ -73,7 +73,7 @@ class PersonDB(Base):
         nullable=True,
     )
 
-    player: Mapped["PlayerDB"] = relationship(
+    players: Mapped[list["PlayerDB"]] = relationship(
         "PlayerDB",
         cascade="all, delete-orphan",
         back_populates="person",

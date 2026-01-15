@@ -21,6 +21,13 @@ class PlayerSchemaCreate(PlayerSchemaBase):
     pass
 
 
+class PlayerAddToSportSchema(BaseModel):
+    person_id: int = Field(..., description="Person ID to add as player")
+    sport_id: int = Field(..., description="Sport ID to add player to")
+    isprivate: bool | None = Field(None, examples=[False])
+    user_id: int | None = Field(None, examples=[1])
+
+
 class PlayerSchema(PlayerSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 

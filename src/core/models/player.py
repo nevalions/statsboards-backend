@@ -57,7 +57,7 @@ class PlayerDB(Base):
 
     person: Mapped["PersonDB"] = relationship(
         "PersonDB",
-        back_populates="player",
+        back_populates="players",
     )
 
     sport: Mapped["SportDB"] = relationship(

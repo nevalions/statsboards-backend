@@ -13,6 +13,7 @@ from ..logging_config import get_logger
 from .db_services import PlayerServiceDB
 from .schemas import (
     PaginatedPlayerWithDetailsResponse,
+    PlayerAddToSportSchema,
     PlayerSchema,
     PlayerSchemaCreate,
     PlayerSchemaUpdate,
@@ -139,6 +140,57 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 ascending=ascending,
             )
             return response
+
+        @router.post("/add-person-to-sport", response_model=PlayerSchema)
+        async def add_person_to_sport_endpoint(
+            data: PlayerAddToSportSchema,
+        ):
+            self.logger.debug(
+                f"Add person to sport: person_id={data.person_id}, sport_id={data.sport_id}"
+            )
+            try:
+                player = await self.service.add_person_to_sport(
+                    person_id=data.person_id,
+                    sport_id=data.sport_id,
+                    isprivate=data.isprivate,
+                    user_id=data.user_id,
+                )
+                return PlayerSchema.model_validate(player)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error adding person {data.person_id} to sport {data.sport_id}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error adding person to sport",
+                )
+
+        @router.delete("/remove-person-from-sport/personid/{person_id}/sportid/{sport_id}")
+        async def remove_person_from_sport_endpoint(
+            person_id: int,
+            sport_id: int,
+        ):
+            self.logger.debug(f"Remove person {person_id} from sport {sport_id}")
+            try:
+                success = await self.service.remove_person_from_sport(
+                    person_id=person_id,
+                    sport_id=sport_id,
+                )
+                return {"success": success, "message": "Player removed from sport"}
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error removing person {person_id} from sport {sport_id}: {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error removing person from sport",
+                )
 
         @router.post("/pars_and_create/all_eesl/start_page/{start_page}/season_id/{season_id}/")
         async def create_parsed_players_with_person_endpoint(

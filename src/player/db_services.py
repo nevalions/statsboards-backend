@@ -95,6 +95,80 @@ class PlayerServiceDB(BaseServiceDB):
 
     @handle_service_exceptions(
         item_name=ITEM,
+        operation="adding person to sport",
+    )
+    async def add_person_to_sport(
+        self,
+        person_id: int,
+        sport_id: int,
+        isprivate: bool | None = None,
+        user_id: int | None = None,
+    ) -> PlayerDB:
+        self.logger.debug(f"Add person {person_id} to sport {sport_id}")
+
+        existing = await self.get_player_by_person_and_sport(person_id, sport_id)
+        if existing:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=409,
+                detail=f"Player already exists for person_id={person_id} and sport_id={sport_id}",
+            )
+
+        player_data = {
+            "person_id": person_id,
+            "sport_id": sport_id,
+        }
+        if isprivate is not None:
+            player_data["isprivate"] = isprivate
+        if user_id is not None:
+            player_data["user_id"] = user_id
+
+        player_schema = PlayerSchemaCreate(**player_data)
+        return await self.create(player_schema)
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="removing person from sport",
+        reraise_not_found=True,
+    )
+    async def remove_person_from_sport(
+        self,
+        person_id: int,
+        sport_id: int,
+    ) -> bool:
+        self.logger.debug(f"Remove person {person_id} from sport {sport_id}")
+
+        player = await self.get_player_by_person_and_sport(person_id, sport_id)
+        if player is None:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=404,
+                detail=f"Player not found for person_id={person_id} and sport_id={sport_id}",
+            )
+
+        await self.delete(player.id)
+        return True
+
+    async def get_player_by_person_and_sport(
+        self,
+        person_id: int,
+        sport_id: int,
+    ) -> PlayerDB | None:
+        self.logger.debug(f"Get player for person {person_id} and sport {sport_id}")
+
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerDB)
+                .where(PlayerDB.person_id == person_id)
+                .where(PlayerDB.sport_id == sport_id)
+            )
+            result = await session.execute(stmt)
+            return result.scalars().first()
+
+    @handle_service_exceptions(
+        item_name=ITEM,
         operation="searching players with pagination and details",
         return_value_on_not_found=None,
     )
