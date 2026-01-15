@@ -103,6 +103,60 @@ class TestTournamentViews:
 
         assert response.status_code == 200
 
+    async def test_get_teams_by_tournament_id_sorted_by_title(self, client, test_db):
+        """Test that teams are sorted by title."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team1 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Zebras",
+                sport_id=sport.id,
+                team_eesl_id=1003,
+            )
+        )
+        team2 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Alpha United",
+                sport_id=sport.id,
+                team_eesl_id=1001,
+            )
+        )
+        team3 = await team_service.create_or_update_team(
+            TeamSchemaCreateType(
+                title="Midland FC",
+                sport_id=sport.id,
+                team_eesl_id=1002,
+            )
+        )
+
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        async with test_db.async_session() as session:
+            tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
+            tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
+            tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
+            session.add_all([tt1, tt2, tt3])
+            await session.commit()
+
+        response = await client.get(f"/api/tournaments/id/{tournament.id}/teams/")
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert len(response_data) == 3
+        assert response_data[0]["title"] == "Alpha United"
+        assert response_data[1]["title"] == "Midland FC"
+        assert response_data[2]["title"] == "Zebras"
+
     async def test_get_players_by_tournament_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())

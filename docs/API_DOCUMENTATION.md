@@ -499,6 +499,69 @@ GET /api/players/paginated/details?sport_id=1&order_by=id&order_by_two=person_id
 
 ## Teams in Tournament API
 
+### GET /api/tournaments/id/{tournament_id}/teams/
+
+Retrieves all teams participating in a specific tournament, sorted alphabetically by team title.
+
+**Endpoint:**
+```
+GET /api/tournaments/id/{tournament_id}/teams/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tournament_id` | integer | Yes | Tournament ID |
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": 1,
+    "team_eesl_id": 12345,
+    "title": "Manchester United",
+    "city": "Manchester",
+    "description": "Premier League football club",
+    "team_logo_url": "https://example.com/logos/manchester-united.png",
+    "team_logo_icon_url": "https://example.com/icons/manchester-united-icon.png",
+    "team_logo_web_url": "https://example.com/web/manchester-united.png",
+    "team_color": "#DA291C",
+    "sponsor_line_id": null,
+    "main_sponsor_id": 5,
+    "sport_id": 1
+  },
+  {
+    "id": 2,
+    "team_eesl_id": 12346,
+    "title": "Liverpool",
+    "city": "Liverpool",
+    "description": "Premier League football club",
+    "team_logo_url": "https://example.com/logos/liverpool.png",
+    "team_logo_icon_url": "https://example.com/icons/liverpool-icon.png",
+    "team_logo_web_url": "https://example.com/web/liverpool.png",
+    "team_color": "#C8102E",
+    "sponsor_line_id": null,
+    "main_sponsor_id": null,
+    "sport_id": 1
+  }
+]
+```
+
+**Behavior:**
+
+- Returns all teams associated with the tournament via `team_tournament` table
+- Results are sorted alphabetically by team title (ascending order)
+- Returns empty array if tournament doesn't exist or has no teams
+
+**Examples:**
+
+1. **Get all teams in tournament:**
+```
+GET /api/tournaments/id/1/teams/
+```
+
 ### GET /api/tournaments/id/{tournament_id}/teams/paginated
 
 Search and paginate teams in a specific tournament. Supports search by team title, pagination, and ordering.
@@ -627,6 +690,69 @@ GET /api/tournaments/id/1/teams/paginated?search=United&page=1&items_per_page=20
 | 400 | Bad Request - invalid query parameters |
 | 404 | Not Found - tournament_id doesn't exist |
 | 500 | Internal Server Error - server error |
+
+### GET /api/team_in_tournament/tournament/id/{tournament_id}/teams
+
+Retrieves all teams participating in a specific tournament, sorted alphabetically by team title.
+
+**Endpoint:**
+```
+GET /api/team_in_tournament/tournament/id/{tournament_id}/teams
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tournament_id` | integer | Yes | Tournament ID |
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": 1,
+    "team_eesl_id": 12345,
+    "title": "Manchester United",
+    "city": "Manchester",
+    "description": "Premier League football club",
+    "team_logo_url": "https://example.com/logos/manchester-united.png",
+    "team_logo_icon_url": "https://example.com/icons/manchester-united-icon.png",
+    "team_logo_web_url": "https://example.com/web/manchester-united.png",
+    "team_color": "#DA291C",
+    "sponsor_line_id": null,
+    "main_sponsor_id": 5,
+    "sport_id": 1
+  },
+  {
+    "id": 2,
+    "team_eesl_id": 12346,
+    "title": "Liverpool",
+    "city": "Liverpool",
+    "description": "Premier League football club",
+    "team_logo_url": "https://example.com/logos/liverpool.png",
+    "team_logo_icon_url": "https://example.com/icons/liverpool-icon.png",
+    "team_logo_web_url": "https://example.com/web/liverpool.png",
+    "team_color": "#C8102E",
+    "sponsor_line_id": null,
+    "main_sponsor_id": null,
+    "sport_id": 1
+  }
+]
+```
+
+**Behavior:**
+
+- Returns all teams associated with the tournament via `team_tournament` table
+- Results are sorted alphabetically by team title (ascending order)
+- Returns empty array if tournament doesn't exist or has no teams
+
+**Examples:**
+
+1. **Get all teams in tournament:**
+```
+GET /api/team_in_tournament/tournament/id/1/teams
+```
 
 ---
 

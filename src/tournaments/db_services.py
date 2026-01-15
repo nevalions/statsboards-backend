@@ -85,10 +85,16 @@ class TournamentServiceDB(BaseServiceDB):
         tournament_id: int,
     ) -> list[TeamDB]:
         self.logger.debug(f"Get teams by {ITEM} id:{tournament_id}")
-        return await self.get_related_item_level_one_by_id(
-            tournament_id,
-            "teams",
-        )
+        async with self.db.async_session() as session:
+            stmt = (
+                select(TeamDB)
+                .join(TeamTournamentDB, TeamDB.id == TeamTournamentDB.team_id)
+                .where(TeamTournamentDB.tournament_id == tournament_id)
+                .order_by(TeamDB.title)
+            )
+            results = await session.execute(stmt)
+            teams = results.scalars().all()
+            return teams
 
     @handle_service_exceptions(
         item_name=ITEM,

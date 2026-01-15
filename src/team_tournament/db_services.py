@@ -58,6 +58,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
                 select(TeamDB)
                 .join(TeamTournamentDB)
                 .where(TeamTournamentDB.tournament_id == tournament_id)
+                .order_by(TeamDB.title)
             )
             teams = result.scalars().all()
             return teams
