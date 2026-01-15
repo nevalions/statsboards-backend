@@ -34,8 +34,7 @@ class TestSponsorViews:
         update_data = SponsorSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            "/api/sponsors/",
-            params={"item_id": created.id},
+            f"/api/sponsors/{created.id}/",
             json=update_data.model_dump(),
         )
 
@@ -45,7 +44,7 @@ class TestSponsorViews:
         update_data = SponsorSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            "/api/sponsors/", params={"item_id": 99999}, json=update_data.model_dump()
+            "/api/sponsors/99999/", json=update_data.model_dump()
         )
 
         assert response.status_code == 404

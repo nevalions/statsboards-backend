@@ -100,8 +100,7 @@ class TestTeamTournamentViews:
         )
 
         response = await client.put(
-            "/api/team_in_tournament/",
-            params={"item_id": created.id},
+            f"/api/team_in_tournament/{created.id}/",
             json=update_data.model_dump(),
         )
 
@@ -111,8 +110,7 @@ class TestTeamTournamentViews:
         update_data = TeamTournamentSchemaUpdate(team_id=1, tournament_id=1)
 
         response = await client.put(
-            "/api/team_in_tournament/",
-            params={"item_id": 99999},
+            "/api/team_in_tournament/99999/",
             json=update_data.model_dump(),
         )
 

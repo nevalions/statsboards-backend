@@ -82,7 +82,7 @@ class TestAvailablePlayersForTeamInMatch:
         player2 = await player_service.create(
             PlayerSchemaCreate(person_id=person2.id, eesl_id=2, height="188", weight="104")
         )
-        ptt2 = await ptt_service.create(
+        _ptt2 = await ptt_service.create(
             PlayerTeamTournamentSchemaCreate(
                 player_id=player2.id,
                 team_id=team.id,

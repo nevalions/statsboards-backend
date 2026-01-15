@@ -23,8 +23,7 @@ class TestSeasonViews:
         update_data = SeasonSchemaUpdate(year=2025)
 
         response = await client.put(
-            "/api/seasons/",
-            params={"item_id": created.id},
+            f"/api/seasons/{created.id}/",
             json=update_data.model_dump(),
         )
 
@@ -34,7 +33,7 @@ class TestSeasonViews:
         update_data = SeasonSchemaUpdate(year=2025)
 
         response = await client.put(
-            "/api/seasons/", params={"item_id": 99999}, json=update_data.model_dump()
+            "/api/seasons/99999/", json=update_data.model_dump()
         )
 
         assert response.status_code == 404

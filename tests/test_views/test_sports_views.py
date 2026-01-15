@@ -4,7 +4,7 @@ from src.core.models import PositionDB
 from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaUpdate
 from src.teams.db_services import TeamServiceDB
-from tests.factories import PositionFactory, SportFactorySample, TeamFactory
+from tests.factories import SportFactorySample, TeamFactory
 
 
 @pytest.mark.asyncio
@@ -25,8 +25,7 @@ class TestSportViews:
         update_data = SportSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            "/api/sports/",
-            params={"item_id": created.id},
+            f"/api/sports/{created.id}/",
             json=update_data.model_dump(),
         )
 
@@ -36,7 +35,7 @@ class TestSportViews:
         update_data = SportSchemaUpdate(title="Updated Title")
 
         response = await client.put(
-            "/api/sports/", params={"item_id": 99999}, json=update_data.model_dump()
+            "/api/sports/99999/", json=update_data.model_dump()
         )
 
         assert response.status_code == 404

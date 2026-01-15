@@ -73,8 +73,7 @@ class TestSponsorSponsorLineViews:
         update_data = SponsorSponsorLineSchemaUpdate(position=2)
 
         response = await client.put(
-            "/api/sponsor_in_sponsor_line/",
-            params={"item_id": created.id},
+            f"/api/sponsor_in_sponsor_line/{created.id}/",
             json=update_data.model_dump(),
         )
 
@@ -84,8 +83,7 @@ class TestSponsorSponsorLineViews:
         update_data = SponsorSponsorLineSchemaUpdate(position=2)
 
         response = await client.put(
-            "/api/sponsor_in_sponsor_line/",
-            params={"item_id": 99999},
+            "/api/sponsor_in_sponsor_line/99999/",
             json=update_data.model_dump(),
         )
 

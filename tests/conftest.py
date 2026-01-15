@@ -51,26 +51,17 @@ async def test_db():
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
 
         # Create GIN indexes for Person search optimization
-        await conn.execute(
-            text("""
-            CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm
-            ON person USING GIN (first_name gin_trgm_ops)
-        """)
-        )
-
-        await conn.execute(
-            text("""
-            CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm
-            ON person USING GIN (second_name gin_trgm_ops)
-        """)
-        )
-
-        await conn.execute(
-            text("""
-            CREATE INDEX IF NOT EXISTS ix_team_title_trgm
-            ON team USING GIN (title gin_trgm_ops)
-        """)
-        )
+        # Use try/except to handle race conditions in parallel test execution
+        for index_sql in [
+            "CREATE INDEX ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
+            "CREATE INDEX ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
+            "CREATE INDEX ix_team_title_trgm ON team USING GIN (title gin_trgm_ops)",
+        ]:
+            try:
+                await conn.execute(text(index_sql))
+            except Exception:
+                # Index already exists (race condition in parallel tests)
+                pass
 
     # Seed default roles
     from sqlalchemy import select
