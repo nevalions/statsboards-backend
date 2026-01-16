@@ -289,6 +289,23 @@ The API provides comprehensive endpoints for:
 - **Playclocks**: `GET /api/playclocks/`, `POST /api/playclocks/`, `PUT /api/playclocks/{id}/`
 - **Football Events**: `GET /api/football_events/`, `POST /api/football_events/`, `PUT /api/football_events/{id}/`
 
+### Combined Schema Endpoints
+
+For endpoints that return full nested relationship data:
+
+- **Matches with Details**: `GET /api/matches/{id}/with-details/`
+- **Teams with Details**: `GET /api/teams/{id}/with-details/`
+- **Tournaments with Details**: `GET /api/tournaments/{id}/with-details/`
+
+These endpoints return nested objects (teams, tournaments, sponsors) instead of just foreign key IDs, providing richer data in a single API call.
+
+**See [COMBINED_SCHEMAS.md](docs/COMBINED_SCHEMAS.md)** for detailed guide on:
+- All available combined schemas
+- When to use basic vs. combined schemas
+- Creating new complex schemas with eager loading
+- Performance optimization strategies
+- Frontend integration examples
+
 Each domain module follows the standard CRUD pattern with additional custom endpoints as needed.
 
 ## WebSocket Endpoints
@@ -298,9 +315,12 @@ Each domain module follows the standard CRUD pattern with additional custom endp
 
 ## Development Guidelines
 
-For comprehensive development guidelines, coding standards, and best practices, see **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)**.
+For comprehensive development guidelines, coding standards and best practices, see:
 
-This document covers:
+- **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)** - General development patterns, service layer, testing
+- **[COMBINED_SCHEMAS.md](docs/COMBINED_SCHEMAS.md)** - Using and creating combined schemas with nested relationships
+
+These documents cover:
 - Code style and naming conventions
 - Service layer and router patterns
 - Model patterns and relationship types

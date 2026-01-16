@@ -17,7 +17,9 @@ from .schemas import (
     MatchSchema,
     MatchSchemaCreate,
     MatchSchemaUpdate,
+    MatchWithDetailsSchema,
     PaginatedMatchResponse,
+    PaginatedMatchWithDetailsResponse,
 )
 
 
@@ -182,6 +184,26 @@ class MatchCRUDRouter(
                     detail=f"Match eesl_id({eesl_id}) not found",
                 )
             return MatchSchema.model_validate(match)
+
+        @router.get(
+            "/id/{match_id}/with-details/",
+            response_model=MatchWithDetailsSchema,
+            summary="Get match with full details",
+            description="Retrieves a match with nested team_a, team_b, tournament, and sponsor details.",
+            responses={
+                200: {"description": "Match found with full details"},
+                404: {"description": "Match not found"},
+            },
+        )
+        async def get_match_with_details_endpoint(match_id: int):
+            self.logger.debug(f"Get match with full details endpoint id:{match_id}")
+            match = await self.service.get_match_with_details(match_id)
+            if match is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Match id({match_id}) not found",
+                )
+            return MatchWithDetailsSchema.model_validate(match)
 
         @router.get(
             "/id/{match_id}/sport/",

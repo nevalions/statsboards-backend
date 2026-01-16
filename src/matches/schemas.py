@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.scoreboards.schemas import ScoreboardSchemaCreate
+from src.teams.schemas import TeamSchema
+from src.tournaments.schemas import TournamentSchema
 
 
 class MatchSchemaBase(BaseModel):
@@ -106,4 +108,15 @@ class FootballTeamStats(BaseModel):
 
 class PaginatedMatchResponse(BaseModel):
     data: list[MatchSchema]
+    metadata: PaginationMetadata
+
+
+class MatchWithDetailsSchema(MatchSchema):
+    team_a: TeamSchema | None = Field(None, description="Team A with full details")
+    team_b: TeamSchema | None = Field(None, description="Team B with full details")
+    tournament: TournamentSchema | None = Field(None, description="Tournament with full details")
+
+
+class PaginatedMatchWithDetailsResponse(BaseModel):
+    data: list[MatchWithDetailsSchema]
     metadata: PaginationMetadata

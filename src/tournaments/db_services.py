@@ -1,5 +1,6 @@
+
 from sqlalchemy import not_, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql import func
 
 from src.core.decorators import handle_service_exceptions
@@ -18,10 +19,6 @@ from src.core.models.base import Database
 from src.core.schema_helpers import PaginationMetadata
 
 from ..logging_config import get_logger
-from ..player.schemas import (
-    PaginatedPlayerWithDetailsResponse,
-    PlayerWithDetailsSchema,
-)
 from ..sponsor_lines.db_services import SponsorLineServiceDB
 from .schemas import (
     PaginatedTeamResponse,
@@ -66,6 +63,31 @@ class TournamentServiceDB(BaseServiceDB):
             value=value,
             field_name=field_name,
         )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="fetching tournament with details",
+        return_value_on_not_found=None,
+    )
+    async def get_tournament_with_details(
+        self,
+        tournament_id: int,
+    ) -> TournamentDB | None:
+        self.logger.debug(f"Get {ITEM} with details id:{tournament_id}")
+        async with self.db.async_session() as session:
+            stmt = (
+                select(TournamentDB)
+                .where(TournamentDB.id == tournament_id)
+                .options(
+                    joinedload(TournamentDB.season),
+                    joinedload(TournamentDB.sport),
+                    selectinload(TournamentDB.teams),
+                    joinedload(TournamentDB.main_sponsor),
+                    joinedload(TournamentDB.sponsor_line),
+                )
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
 
     async def update(
         self,
@@ -253,12 +275,13 @@ class TournamentServiceDB(BaseServiceDB):
         order_by: str = "second_name",
         order_by_two: str = "id",
         ascending: bool = True,
-    ) -> PaginatedPlayerWithDetailsResponse:
+    ) -> list["PlayerWithDetailsSchema"]:
         from src.core.models.person import PersonDB
 
+        from ..player.schemas import PlayerWithDetailsSchema
+
         self.logger.debug(
-            f"Get players without team in tournament {tournament_id}: query={search_query}, skip={skip}, limit={limit}, "
-            f"order_by={order_by}, order_by_two={order_by_two}"
+            f"Get players without team in tournament {tournament_id} without pagination"
         )
 
         async with self.db.async_session() as session:
@@ -322,8 +345,13 @@ class TournamentServiceDB(BaseServiceDB):
         order_by: str = "second_name",
         order_by_two: str = "id",
         ascending: bool = True,
-    ) -> PaginatedPlayerWithDetailsResponse:
+    ) -> "PaginatedPlayerWithDetailsResponse":
         from src.core.models.person import PersonDB
+
+        from ..player.schemas import (
+            PaginatedPlayerWithDetailsResponse,
+            PlayerWithDetailsSchema,
+        )
 
         self.logger.debug(
             f"Get players in tournament {tournament_id} paginated: query={search_query}, skip={skip}, limit={limit}, "
@@ -384,8 +412,10 @@ class TournamentServiceDB(BaseServiceDB):
     async def get_players_without_team_in_tournament_simple(
         self,
         tournament_id: int,
-    ) -> list[PlayerWithDetailsSchema]:
+    ) -> list["PlayerWithDetailsSchema"]:
         from src.core.models.person import PersonDB
+
+        from ..player.schemas import PlayerWithDetailsSchema
 
         self.logger.debug(
             f"Get players without team in tournament {tournament_id} without pagination"

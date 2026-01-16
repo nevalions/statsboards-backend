@@ -10,6 +10,7 @@ This document contains comprehensive development guidelines, coding standards, a
 - [Logging](#logging)
 - [Testing](#testing)
 - [Database Operations](#database-operations)
+  - [Combined Pydantic Schemas](#combined-pydantic-schemas)
 - [Search Implementation](#search-implementation)
 - [Advanced Filtering Patterns](#advanced-filtering-patterns)
 - [WebSocket and Real-time](#websocket-and-real-time)
@@ -1263,6 +1264,49 @@ Key utility methods provided by base class:
 5. **Subqueries with `NOT IN`** - For exclusion queries (e.g., "available players")
 6. **Service registry** - For cross-service nested relationships
 7. **Multi-query assembly** - Building complex composite data structures
+
+### Combined Pydantic Schemas
+
+**See [COMBINED_SCHEMAS.md](COMBINED_SCHEMAS.md)** for comprehensive guide on:
+
+- **Available combined schemas**: Full list of schemas with nested relationships (`MatchWithDetailsSchema`, `TeamWithDetailsSchema`, etc.)
+- **How to use them**: API endpoints, response examples, frontend integration patterns
+- **Creating new complex schemas**: Step-by-step guide with eager loading strategies
+- **Performance considerations**: Choosing between `joinedload` vs `selectinload`, avoiding N+1 queries
+- **Best practices**: Circular import handling, `from_attributes=True`, pagination wrappers, testing patterns
+
+**Quick Reference:**
+
+| Schema | Endpoint | Use Case |
+|--------|----------|-----------|
+| `MatchWithDetailsSchema` | `GET /api/matches/{id}/with-details/` | Full match display with teams, tournament |
+| `TeamWithDetailsSchema` | `GET /api/teams/{id}/with-details/` | Team page with sport, sponsors |
+| `TournamentWithDetailsSchema` | `GET /api/tournaments/{id}/with-details/` | Tournament page with all teams |
+
+**Key Pattern:**
+
+```python
+# Service method with eager loading
+async def get_match_with_details(self, match_id: int) -> MatchDB | None:
+    async with self.db.async_session() as session:
+        stmt = (
+            select(MatchDB)
+            .where(MatchDB.id == match_id)
+            .options(
+                joinedload(MatchDB.team_a),  # Single: use joinedload
+                joinedload(MatchDB.team_b),
+                joinedload(MatchDB.tournaments),  # Single: use joinedload
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+# API endpoint returns combined schema
+@router.get("/id/{match_id}/with-details/", response_model=MatchWithDetailsSchema)
+async def get_match_with_details_endpoint(match_id: int):
+    match = await self.service.get_match_with_details(match_id)
+    return MatchWithDetailsSchema.model_validate(match)
+```
 
 ## Search Implementation
 

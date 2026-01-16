@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import func
 
 from src.core.models import (
@@ -55,6 +56,29 @@ class TeamServiceDB(BaseServiceDB):
             value=value,
             field_name=field_name,
         )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="fetching team with details",
+        return_value_on_not_found=None,
+    )
+    async def get_team_with_details(
+        self,
+        team_id: int,
+    ) -> TeamDB | None:
+        self.logger.debug(f"Get {ITEM} with details id:{team_id}")
+        async with self.db.async_session() as session:
+            stmt = (
+                select(TeamDB)
+                .where(TeamDB.id == team_id)
+                .options(
+                    joinedload(TeamDB.sport),
+                    joinedload(TeamDB.main_sponsor),
+                    joinedload(TeamDB.sponsor_line),
+                )
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
 
     async def get_matches_by_team_id(
         self,

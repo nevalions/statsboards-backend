@@ -4,6 +4,9 @@ from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
+from src.sponsor_lines.schemas import SponsorLineSchema
+from src.sponsors.schemas import SponsorSchema
+from src.sports.schemas import SportSchema
 
 
 class TeamSchemaBase(BaseModel):
@@ -57,4 +60,17 @@ class UploadResizeTeamLogoResponse(BaseModel):
 
 class PaginatedTeamResponse(BaseModel):
     data: list[TeamSchema]
+    metadata: PaginationMetadata
+
+
+class TeamWithDetailsSchema(TeamSchema):
+    sport: SportSchema | None = Field(None, description="Sport with full details")
+    main_sponsor: SponsorSchema | None = Field(None, description="Main sponsor with full details")
+    sponsor_line: SponsorLineSchema | None = Field(
+        None, description="Sponsor line with full details"
+    )
+
+
+class PaginatedTeamWithDetailsResponse(BaseModel):
+    data: list[TeamWithDetailsSchema]
     metadata: PaginationMetadata

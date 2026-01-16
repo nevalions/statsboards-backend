@@ -16,6 +16,7 @@ from .schemas import (
     TeamSchema,
     TeamSchemaCreate,
     TeamSchemaUpdate,
+    TeamWithDetailsSchema,
     UploadResizeTeamLogoResponse,
     UploadTeamLogoResponse,
 )
@@ -99,6 +100,26 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     detail=f"Tournament eesl_id({eesl_id}) not found",
                 )
             return TeamSchema.model_validate(team)
+
+        @router.get(
+            "/id/{team_id}/with-details/",
+            response_model=TeamWithDetailsSchema,
+            summary="Get team with full details",
+            description="Retrieves a team with nested sport, main sponsor, and sponsor line details.",
+            responses={
+                200: {"description": "Team found with full details"},
+                404: {"description": "Team not found"},
+            },
+        )
+        async def get_team_with_details_endpoint(team_id: int):
+            self.logger.debug(f"Get team with full details endpoint id:{team_id}")
+            team = await self.service.get_team_with_details(team_id)
+            if team is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Team id({team_id}) not found",
+                )
+            return TeamWithDetailsSchema.model_validate(team)
 
         @router.put(
             "/{item_id}/",

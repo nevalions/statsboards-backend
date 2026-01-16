@@ -26,6 +26,7 @@ from .schemas import (
     TournamentSchema,
     TournamentSchemaCreate,
     TournamentSchemaUpdate,
+    TournamentWithDetailsSchema,
     UploadResizeTournamentLogoResponse,
     UploadTournamentLogoResponse,
 )
@@ -101,6 +102,26 @@ class TournamentAPIRouter(
                     detail=f"Tournament eesl_id({eesl_id}) not found",
                 )
             return TournamentSchema.model_validate(tournament)
+
+        @router.get(
+            "/id/{tournament_id}/with-details/",
+            response_model=TournamentWithDetailsSchema,
+            summary="Get tournament with full details",
+            description="Retrieves a tournament with nested season, sport, teams, and sponsor details.",
+            responses={
+                200: {"description": "Tournament found with full details"},
+                404: {"description": "Tournament not found"},
+            },
+        )
+        async def get_tournament_with_details_endpoint(tournament_id: int):
+            self.logger.debug(f"Get tournament with full details endpoint id:{tournament_id}")
+            tournament = await self.service.get_tournament_with_details(tournament_id)
+            if tournament is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Tournament id({tournament_id}) not found",
+                )
+            return TournamentWithDetailsSchema.model_validate(tournament)
 
         @router.get(
             "/id/{tournament_id}/teams/",
