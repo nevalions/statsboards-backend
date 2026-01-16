@@ -30,9 +30,10 @@ db_logger_helper = logging.getLogger("backend_logger_base_db")
 
 
 class Database:
-    def __init__(self, db_url: str, echo: bool = False):
+    def __init__(self, db_url: str, echo: bool = False, test_mode: bool = False):
         self.logger = get_logger("backend_logger_base_db", self)
         self.logger.info(f"Initializing Database with URL: {db_url}, Echo: {echo}")
+        self.test_mode = test_mode
 
         try:
             pool_size = 3 if "test" in db_url else 5

@@ -86,7 +86,7 @@ async def test_db():
     await _ensure_tables_created()
 
     assert "test" in db_url, "Test DB URL must contain 'test'"
-    database = Database(db_url, echo=False)
+    database = Database(db_url, echo=False, test_mode=True)
 
     # Initialize service registry for each test with fresh database
     init_service_registry(database)

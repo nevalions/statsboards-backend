@@ -121,7 +121,7 @@ async def test_db(test_db_url):
     """Database fixture that ensures a clean state using transactions."""
     await _ensure_tables_created(test_db_url)
 
-    database = Database(test_db_url, echo=False)
+    database = Database(test_db_url, echo=False, test_mode=True)
 
     init_service_registry(database)
     register_all_services(database)

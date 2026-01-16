@@ -52,13 +52,12 @@ pytest -n 0  # Run tests sequentially (for debugging)
 ```
 
 The default pytest.ini configuration uses `-n 4` for parallel test execution. Database connection and deadlock issues have been resolved by:
-- Properly closing database connections after each test (`await database.close()`)
 - Using worker-specific lock files (`/tmp/test_db_tables_setup_{db_name}.lock`) to coordinate table creation across parallel workers
 - Using 2 parallel databases (test_db, test_db2) distributed across 4 workers:
   - gw0, gw2 → test_db
   - gw1, gw3 → test_db2
-- Using `flush()` instead of `commit()` in test fixtures to avoid PostgreSQL deadlocks
-- Ensuring connection cleanup in fixture's `finally` block
+- Using `test_mode=True` in Database class which replaces `commit()` with `flush()` in CRUDMixin to avoid PostgreSQL deadlocks
+- Transactional rollback per test via the outer test fixture
 
 **Note:** Tests now run cleanly in parallel with no ResourceWarnings, unclosed connection warnings, or deadlocks.
 
@@ -875,7 +874,14 @@ Current optimizations implemented:
 - Worker distribution: gw0, gw2 → test_db; gw1, gw3 → test_db2
 - Database connections properly closed after each test to prevent ResourceWarnings
 
-**Important:** When writing test fixtures, always use `flush()` instead of `commit()` to avoid deadlocks during parallel execution. The outer test fixture handles rollback automatically:
+**Important:** Test fixtures use `test_mode=True` in Database class, which automatically replaces `commit()` with `flush()` in CRUDMixin to avoid deadlocks during parallel execution. The outer test fixture handles rollback automatically:
+
+```python
+# Test fixtures in tests/conftest.py and tests/test_views/conftest.py
+database = Database(test_db_url, echo=False, test_mode=True)
+```
+
+When writing direct session code in test fixtures, still use `flush()` instead of `commit()`:
 
 ```python
 async with test_db.async_session() as db_session:

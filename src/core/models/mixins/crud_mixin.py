@@ -26,7 +26,10 @@ class CRUDMixin:
                 if isinstance(item, BaseModel):
                     item = self.model(**item.model_dump())
                 session.add(item)
-                await session.commit()
+                if hasattr(self.db, "test_mode") and self.db.test_mode:
+                    await session.flush()
+                else:
+                    await session.commit()
                 await session.refresh(item)
                 self.logger.info(f"{self.model.__name__} created successfully: {item.__dict__}")
                 return item
