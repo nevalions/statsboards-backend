@@ -58,6 +58,19 @@ class PlayerTeamTournamentWithFullDetailsSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PlayerTeamTournamentWithFullDetailsSchemaRef(BaseModel):
+    """Reference schema for use in PlayerWithFullDetailsSchema"""
+
+    id: int
+    player_team_tournament_eesl_id: int | None = None
+    player_id: int
+    player_number: Annotated[str, Path(max_length=10)] | None = "0"
+    team: "TeamSchema | None" = Field(None, description="Team with full details")
+    tournament: "TournamentSchema | None" = Field(None, description="Tournament with full details")
+    position: "PositionSchema | None" = Field(None, description="Position with full details")
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PaginatedPlayerTeamTournamentResponse(BaseModel):
     data: list[PlayerTeamTournamentSchema]
     metadata: PaginationMetadata

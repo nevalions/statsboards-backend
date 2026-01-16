@@ -143,8 +143,54 @@ GET /api/tournaments/with-details/paginated?page=1&items_per_page=20&search=quer
 - `ascending`: Sort order (true=asc, false=desc)
 - `search`: Search query for tournament title
 - `user_id`: Filter by user_id
+ - `isprivate`: Filter by isprivate status
+ - `sport_id`: Filter by sport_id
+
+### Player Endpoints
+
+```bash
+# Get player with FK IDs only
+GET /api/players/{id}/
+
+# Get players with pagination and flat details
+GET /api/players/paginated/details?sport_id=1&page=1&items_per_page=20&search=query
+
+# Search players with pagination and full details
+GET /api/players/paginated/full-details?sport_id=1&page=1&items_per_page=20&search=query
+```
+
+**Query Parameters (players):**
+- `sport_id`: Sport ID filter (required)
+- `team_id`: Team ID filter (optional)
+- `page`: Page number (1-based)
+- `items_per_page`: Items per page (max 100)
+- `ascending`: Sort order (true=asc, false=desc)
+- `search`: Search query for person names (first_name, second_name)
+- `user_id`: Filter by user_id
 - `isprivate`: Filter by isprivate status
-- `sport_id`: Filter by sport_id
+
+### PlayerTeamTournament Endpoints
+
+```bash
+# Get PTT with FK IDs only
+GET /api/players_team_tournament/{id}/
+
+# Get PTTs in tournament with pagination and flat details
+GET /api/players_team_tournament/tournament/{tournament_id}/players/paginated?page=1&items_per_page=20&search=query
+
+# Search PTTs in tournament with pagination and full details
+GET /api/players_team_tournament/tournament/{tournament_id}/players/paginated/full-details?page=1&items_per_page=20&search=query
+```
+
+**Query Parameters (players_team_tournament):**
+- `tournament_id`: Tournament ID (required, path parameter)
+- `page`: Page number (1-based)
+- `items_per_page`: Items per page (max 100)
+- `order_by`: First sort column (default: player_number)
+- `order_by_two`: Second sort column (default: id)
+- `ascending`: Sort order (true=asc, false=desc)
+- `search`: Search query for player first name or second name
+- `team_title`: Filter by team title
 
 ## Usage Examples
 

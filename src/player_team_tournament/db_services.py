@@ -10,6 +10,7 @@ from src.core.models import (
     PlayerTeamTournamentDB,
     PositionDB,
     TeamDB,
+    TournamentDB,
     handle_service_exceptions,
 )
 from src.core.models.base import Database
@@ -20,10 +21,12 @@ from ..logging_config import get_logger
 from .schemas import (
     PaginatedPlayerTeamTournamentResponse,
     PaginatedPlayerTeamTournamentWithDetailsResponse,
+    PaginatedPlayerTeamTournamentWithFullDetailsResponse,
     PlayerTeamTournamentSchema,
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
     PlayerTeamTournamentWithDetailsSchema,
+    PlayerTeamTournamentWithFullDetailsSchema,
 )
 
 ITEM = "PLAYER_TEAM_TOURNAMENT"
@@ -586,6 +589,118 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 data=[
                     PlayerTeamTournamentWithDetailsSchema.model_validate(p)
                     for p in players_with_details
+                ],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching tournament players with pagination and full details",
+        return_value_on_not_found=None,
+    )
+    async def search_tournament_players_with_pagination_full_details(
+        self,
+        tournament_id: int,
+        search_query: str | None = None,
+        team_title: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "player_number",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedPlayerTeamTournamentWithFullDetailsResponse:
+        self.logger.debug(
+            f"Search tournament players with full details: tournament_id={tournament_id}, query={search_query}, "
+            f"team_title={team_title}, skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        search_fields = [
+            (PersonDB, "first_name"),
+            (PersonDB, "second_name"),
+        ]
+
+        async with self.db.async_session() as session:
+            if search_query or team_title:
+                base_query = (
+                    select(PlayerTeamTournamentDB)
+                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                    .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+                    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                    .join(TournamentDB, PlayerTeamTournamentDB.tournament_id == TournamentDB.id)
+                    .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
+                    .options(
+                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                        selectinload(PlayerTeamTournamentDB.team),
+                        selectinload(PlayerTeamTournamentDB.tournament),
+                        selectinload(PlayerTeamTournamentDB.position),
+                    )
+                )
+
+                if search_query:
+                    base_query = await self._apply_search_filters(
+                        base_query,
+                        search_fields,
+                        search_query,
+                    )
+
+                if team_title:
+                    search_pattern = await self._build_search_pattern(team_title)
+                    base_query = base_query.where(
+                        TeamDB.title.ilike(search_pattern).collate("en-US-x-icu")
+                    )
+            else:
+                base_query = (
+                    select(PlayerTeamTournamentDB)
+                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                    .options(
+                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                        selectinload(PlayerTeamTournamentDB.team),
+                        selectinload(PlayerTeamTournamentDB.tournament),
+                        selectinload(PlayerTeamTournamentDB.position),
+                    )
+                )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                PlayerTeamTournamentDB,
+                order_by,
+                order_by_two,
+                ascending,
+                PlayerTeamTournamentDB.player_number,
+                PlayerTeamTournamentDB.id,
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            players = result.scalars().unique().all()
+
+            players_with_full_details = []
+            for p in players:
+                players_with_full_details.append(
+                    {
+                        "id": p.id,
+                        "player_team_tournament_eesl_id": p.player_team_tournament_eesl_id,
+                        "player_id": p.player_id,
+                        "position_id": p.position_id,
+                        "team_id": p.team_id,
+                        "tournament_id": p.tournament_id,
+                        "player_number": p.player_number,
+                        "team": p.team,
+                        "tournament": p.tournament,
+                        "position": p.position,
+                    }
+                )
+
+            return PaginatedPlayerTeamTournamentWithFullDetailsResponse(
+                data=[
+                    PlayerTeamTournamentWithFullDetailsSchema.model_validate(p)
+                    for p in players_with_full_details
                 ],
                 metadata=PaginationMetadata(
                     **await self._calculate_pagination_metadata(total_items, skip, limit),

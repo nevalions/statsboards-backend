@@ -13,6 +13,7 @@ from ..logging_config import get_logger
 from .db_services import PlayerServiceDB
 from .schemas import (
     PaginatedPlayerWithDetailsResponse,
+    PaginatedPlayerWithFullDetailsResponse,
     PlayerAddToSportSchema,
     PlayerSchema,
     PlayerSchemaCreate,
@@ -130,6 +131,46 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_players_with_pagination_details(
+                sport_id=sport_id,
+                team_id=team_id,
+                search_query=search,
+                user_id=user_id,
+                isprivate=isprivate,
+                skip=skip,
+                limit=items_per_page,
+                ascending=ascending,
+            )
+            return response
+
+        @router.get(
+            "/paginated/full-details",
+            response_model=PaginatedPlayerWithFullDetailsResponse,
+        )
+        async def get_players_paginated_full_details_endpoint(
+            sport_id: Annotated[int, Query(description="Sport ID filter")],
+            team_id: Annotated[int | None, Query(description="Team ID filter")] = None,
+            page: Annotated[int, Query(ge=1, description="Page number (1-based)")] = 1,
+            items_per_page: Annotated[
+                int, Query(ge=1, le=100, description="Items per page (max 100)")
+            ] = 20,
+            ascending: Annotated[
+                bool, Query(description="Sort order (true=asc, false=desc)")
+            ] = True,
+            search: Annotated[
+                str | None, Query(description="Search query for person names")
+            ] = None,
+            user_id: Annotated[int | None, Query(description="Filter by user_id")] = None,
+            isprivate: Annotated[
+                bool | None, Query(description="Filter by isprivate status")
+            ] = None,
+        ):
+            self.logger.debug(
+                f"Get players paginated with full details: sport_id={sport_id}, team_id={team_id}, "
+                f"page={page}, items_per_page={items_per_page}, ascending={ascending}, search={search}, "
+                f"user_id={user_id}, isprivate={isprivate}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_players_with_pagination_full_details(
                 sport_id=sport_id,
                 team_id=team_id,
                 search_query=search,

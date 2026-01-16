@@ -7,10 +7,7 @@ from src.core.schema_helpers import PaginationMetadata, make_fields_optional
 
 if TYPE_CHECKING:
     from src.person.schemas import PersonSchema
-    from src.positions.schemas import PositionSchema
     from src.sports.schemas import SportSchema
-    from src.teams.schemas import TeamSchema
-    from src.tournaments.schemas import TournamentSchema
 
 
 class PlayerSchemaBase(BaseModel):
@@ -50,15 +47,6 @@ class PlayerTeamTournamentInfoSchema(BaseModel):
     position_id: int | None = None
     position_title: str | None = None
     tournament_id: int | None = None
-
-
-class PlayerTeamTournamentWithFullDetailsSchema(BaseModel):
-    id: int
-    player_team_tournament_eesl_id: int | None = None
-    player_number: Annotated[str, Path(max_length=10)] | None = "0"
-    team: "TeamSchema | None" = Field(None, description="Team with full details")
-    tournament: "TournamentSchema | None" = Field(None, description="Tournament with full details")
-    position: "PositionSchema | None" = Field(None, description="Position with full details")
 
 
 class PlayerWithDetailsSchema(PlayerSchema):
