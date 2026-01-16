@@ -92,7 +92,7 @@ async def _ensure_tables_created():
                         role = RoleDB(name=name, description=description)
                         session.add(role)
 
-                    await session.commit()
+                    await session.flush()
         finally:
             await database.close()
 

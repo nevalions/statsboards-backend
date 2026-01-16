@@ -153,7 +153,7 @@ class TestTournamentViews:
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
             session.add_all([tt1, tt2, tt3])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/teams/")
 
@@ -224,7 +224,7 @@ class TestTournamentViews:
             ptt2 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player2.id)
             ptt3 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player3.id)
             session.add_all([ptt1, ptt2, ptt3])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/players/")
 
@@ -387,7 +387,7 @@ class TestTournamentViews:
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
             session.add_all([tt1, tt2, tt3])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/teams/paginated")
 
@@ -443,7 +443,7 @@ class TestTournamentViews:
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
             session.add_all([tt1, tt2, tt3])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(
             f"/api/tournaments/id/{tournament.id}/teams/paginated?search=Manchester"
@@ -492,7 +492,7 @@ class TestTournamentViews:
                 TeamTournamentDB(tournament_id=tournament.id, team_id=team.id) for team in teams_db
             ]
             session.add_all(tt_entries)
-            await session.commit()
+            await session.flush()
 
         response = await client.get(
             f"/api/tournaments/id/{tournament.id}/teams/paginated?page=2&items_per_page=2"
@@ -552,7 +552,7 @@ class TestTournamentViews:
         async with test_db.async_session() as session:
             ptt = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
             session.add(ptt)
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/players/available")
 
@@ -627,7 +627,7 @@ class TestTournamentViews:
             )
             tt = TeamTournamentDB(tournament_id=tournament.id, team_id=team_db.id)
             session.add_all([ptt1, ptt2, ptt3, tt])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/players/without-team")
 
@@ -683,7 +683,7 @@ class TestTournamentViews:
             ptt2 = PlayerTeamTournamentDB(player_id=player2.id, tournament_id=tournament.id)
             ptt3 = PlayerTeamTournamentDB(player_id=player3.id, tournament_id=tournament.id)
             session.add_all([ptt1, ptt2, ptt3])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/players/paginated")
 
@@ -730,7 +730,7 @@ class TestTournamentViews:
             ptt1 = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
             ptt2 = PlayerTeamTournamentDB(player_id=player2.id, tournament_id=tournament.id)
             session.add_all([ptt1, ptt2])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(
             f"/api/tournaments/id/{tournament.id}/players/paginated?search=Smith"
@@ -792,7 +792,7 @@ class TestTournamentViews:
                 player_id=player3.id, tournament_id=tournament.id, team_id=None
             )
             session.add_all([ptt1, ptt2, ptt3])
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/players/without-team/all")
 
@@ -845,7 +845,7 @@ class TestTournamentViews:
         async with test_db.async_session() as session:
             tt = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
             session.add(tt)
-            await session.commit()
+            await session.flush()
 
         response = await client.get(f"/api/tournaments/id/{tournament.id}/teams/available")
 

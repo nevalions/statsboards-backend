@@ -34,9 +34,7 @@ class TestSportViews:
     async def test_update_sport_not_found(self, client):
         update_data = SportSchemaUpdate(title="Updated Title")
 
-        response = await client.put(
-            "/api/sports/99999/", json=update_data.model_dump()
-        )
+        response = await client.put("/api/sports/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
@@ -105,7 +103,7 @@ class TestSportViews:
             session.add(PositionDB(title="Zebra", sport_id=sport.id))
             session.add(PositionDB(title="Alpha", sport_id=sport.id))
             session.add(PositionDB(title="Bravo", sport_id=sport.id))
-            await session.commit()
+            await session.flush()
 
         positions = await sport_service.get_positions_by_sport(sport.id)
         assert [p.title for p in positions] == ["Alpha", "Bravo", "Zebra"]

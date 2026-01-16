@@ -142,7 +142,7 @@ class TestTournamentServiceDB:
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2_db.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3_db.id)
             session.add_all([tt1, tt2, tt3])
-            await session.commit()
+            await session.flush()
 
         result = await test_tournament_service.get_teams_by_tournament_with_pagination(
             tournament_id=tournament.id,
@@ -192,7 +192,7 @@ class TestTournamentServiceDB:
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2_db.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3_db.id)
             session.add_all([tt1, tt2, tt3])
-            await session.commit()
+            await session.flush()
 
         result = await test_tournament_service.get_teams_by_tournament_with_pagination(
             tournament_id=tournament.id,
@@ -233,7 +233,7 @@ class TestTournamentServiceDB:
                 TeamTournamentDB(tournament_id=tournament.id, team_id=team.id) for team in teams_db
             ]
             session.add_all(tt_entries)
-            await session.commit()
+            await session.flush()
 
         result = await test_tournament_service.get_teams_by_tournament_with_pagination(
             tournament_id=tournament.id,
@@ -301,7 +301,7 @@ class TestTournamentServiceDBPlayersWithoutTeam:
                 player_id=player3.id, tournament_id=tournament.id, team_id=team_db.id
             )
             session.add_all([ptt1, ptt2, ptt3])
-            await session.commit()
+            await session.flush()
 
         result = await test_tournament_service.get_players_without_team_in_tournament(
             tournament_id=tournament.id, skip=0, limit=10
@@ -361,7 +361,7 @@ class TestTournamentServiceDBPlayersWithoutTeam:
                 player_id=player3.id, tournament_id=tournament.id, team_id=None
             )
             session.add_all([ptt1, ptt2, ptt3])
-            await session.commit()
+            await session.flush()
 
         result = await test_tournament_service.get_players_without_team_in_tournament(
             tournament_id=tournament.id, search_query="Alice", skip=0, limit=10
@@ -401,7 +401,7 @@ class TestTournamentServiceDBPlayersWithoutTeam:
                 for player in players
             ]
             session.add_all(ptt_entries)
-            await session.commit()
+            await session.flush()
 
         result = await test_tournament_service.get_players_without_team_in_tournament(
             tournament_id=tournament.id, skip=2, limit=2

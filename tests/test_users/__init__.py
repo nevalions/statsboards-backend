@@ -20,13 +20,12 @@ async def test_user(session):
         user = UserDB(**user_data.model_dump())
         user.hashed_password = get_password_hash(user_data.password)
         db_session.add(user)
-        await db_session.commit()
+        await db_session.flush()
         await db_session.refresh(user)
 
         yield user
 
         await db_session.delete(user)
-        await db_session.commit()
 
 
 class TestUserServiceDB:

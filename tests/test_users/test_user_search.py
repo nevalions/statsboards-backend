@@ -50,7 +50,9 @@ class TestUserSearch:
             )
             session.add_all([user1, user2, user3])
             await session.flush()
-            await session.commit()
+            await session.refresh(user1)
+            await session.refresh(user2)
+            await session.refresh(user3)
 
         result = await service.search_users_with_pagination(
             search_query=None,
@@ -75,7 +77,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2001, first_name="John", second_name="Doe")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -95,7 +98,9 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add_all([user1, user2])
-            await session.commit()
+            await session.flush()
+            await session.refresh(user1)
+            await session.refresh(user2)
 
         result = await service.search_users_with_pagination(
             search_query="searchable",
@@ -120,7 +125,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2002, first_name="John", second_name="Doe")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -140,7 +146,9 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add_all([user1, user2])
-            await session.commit()
+            await session.flush()
+            await session.refresh(user1)
+            await session.refresh(user2)
 
         result = await service.search_users_with_pagination(
             search_query="searchable",
@@ -166,7 +174,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2003, first_name="TestName", second_name="Doe")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -179,7 +188,8 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add(user)
-            await session.commit()
+            await session.flush()
+            await session.refresh(user)
 
         result = await service.search_users_with_pagination(
             search_query="TestName",
@@ -203,7 +213,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2004, first_name="John", second_name="Searchable")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -216,7 +227,8 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add(user)
-            await session.commit()
+            await session.flush()
+            await session.refresh(user)
 
         result = await service.search_users_with_pagination(
             search_query="Searchable",
@@ -240,7 +252,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2005, first_name="Алексей", second_name="Петров")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -253,7 +266,8 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add(user)
-            await session.commit()
+            await session.flush()
+            await session.refresh(user)
 
         result = await service.search_users_with_pagination(
             search_query="Алексей",
@@ -277,7 +291,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2006, first_name="John", second_name="Doe")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -290,7 +305,8 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add(user)
-            await session.commit()
+            await session.flush()
+            await session.refresh(user)
 
         result = await service.search_users_with_pagination(
             search_query="caseuser",
@@ -314,7 +330,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2007, first_name="Pagination", second_name="Test")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -328,7 +345,7 @@ class TestUserSearch:
                     is_active=True,
                 )
                 session.add(user)
-            await session.commit()
+            await session.flush()
 
         result = await service.search_users_with_pagination(
             search_query=None,
@@ -401,7 +418,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2008, first_name="Order", second_name="Test")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -428,7 +446,10 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add_all([user1, user2, user3])
-            await session.commit()
+            await session.flush()
+            await session.refresh(user1)
+            await session.refresh(user2)
+            await session.refresh(user3)
 
         result = await service.search_users_with_pagination(
             search_query=None,
@@ -464,7 +485,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2009, first_name="Metadata", second_name="Test")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -478,7 +500,7 @@ class TestUserSearch:
                     is_active=True,
                 )
                 session.add(user)
-            await session.commit()
+            await session.flush()
 
         result = await service.search_users_with_pagination(
             search_query=None,
@@ -505,7 +527,8 @@ class TestUserSearch:
         async with test_db.async_session() as session:
             person = PersonDB(person_eesl_id=2010, first_name="PartialMatch", second_name="Test")
             session.add(person)
-            await session.commit()
+            await session.flush()
+            await session.refresh(person)
 
         from src.core.models.user import UserDB
 
@@ -518,7 +541,8 @@ class TestUserSearch:
                 is_active=True,
             )
             session.add(user)
-            await session.commit()
+            await session.flush()
+            await session.refresh(user)
 
         result = await service.search_users_with_pagination(
             search_query="Part",

@@ -41,7 +41,7 @@ class TestUserServiceDB:
                 second_name="Person",
             )
             session.add(person)
-            await session.commit()
+            await session.flush()
             await session.refresh(person)
 
         user_data = UserSchemaCreate(

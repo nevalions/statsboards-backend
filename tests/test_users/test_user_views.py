@@ -24,13 +24,12 @@ async def test_user(test_db: Database):
             hashed_password=get_password_hash(user_data.password),
         )
         db_session.add(user_obj)
-        await db_session.commit()
+        await db_session.flush()
         await db_session.refresh(user_obj)
 
         yield user_obj
 
         await db_session.delete(user_obj)
-        await db_session.commit()
 
 
 class TestUserViews:
@@ -128,7 +127,7 @@ class TestUserViews:
                 hashed_password=get_password_hash(user_data.password),
             )
             db_session.add(user)
-            await db_session.commit()
+            await db_session.flush()
 
         response = await client.post(
             "/api/users/register",
