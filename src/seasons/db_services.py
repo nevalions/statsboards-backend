@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import and_, select
+from sqlalchemy import and_, asc, select
 
 from src.core.decorators import handle_service_exceptions
 from src.core.models import (
@@ -66,14 +66,16 @@ class SeasonServiceDB(BaseServiceDB):
         key: str = "year",
     ) -> list[TournamentDB]:
         self.logger.debug(f"Get tournaments by {ITEM} year:{year}")
-        tournaments = await self.get_related_item_level_one_by_key_and_value(
-            key,
-            year,
-            "tournaments",
-        )
-        if not tournaments:
-            return []
-        return tournaments
+        async with self.db.async_session() as session:
+            stmt = (
+                select(TournamentDB)
+                .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
+                .where(getattr(SeasonDB, key) == year)
+                .order_by(asc(TournamentDB.title))
+            )
+            results = await session.execute(stmt)
+            tournaments = results.scalars().all()
+            return tournaments
 
     @handle_service_exceptions(
         item_name=ITEM, operation="fetching tournaments", return_value_on_not_found=[]
@@ -90,6 +92,7 @@ class SeasonServiceDB(BaseServiceDB):
                 .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
                 .join(SportDB, TournamentDB.sport_id == SportDB.id)
                 .where(and_(SeasonDB.year == year, SportDB.id == sport_id))
+                .order_by(asc(TournamentDB.title))
             )
             results = await session.execute(stmt)
             tournaments = results.scalars().all()
@@ -111,6 +114,7 @@ class SeasonServiceDB(BaseServiceDB):
                 .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
                 .join(SportDB, TournamentDB.sport_id == SportDB.id)
                 .where(and_(SeasonDB.id == season_id, SportDB.id == sport_id))
+                .order_by(asc(TournamentDB.title))
             )
             results = await session.execute(stmt)
             tournaments = results.scalars().all()
