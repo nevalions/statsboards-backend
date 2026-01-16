@@ -92,10 +92,10 @@ Once running, visit:
 ### Running Tests
 
 ```bash
-# Start test database (required before running tests)
+# Start test database (creates test_db and test_db2 for parallel execution)
 docker-compose -f docker-compose.test-db-only.yml up -d
 
-# Run all tests
+# Run all tests (4 workers across 2 databases by default)
 pytest
 
 # Run tests for specific directory
@@ -117,8 +117,9 @@ pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceD
 
 **Important:**
 - Test database must be started before running tests: `docker-compose -f docker-compose.test-db-only.yml up -d`
+- Tests use 2 parallel databases (test_db, test_db2) with 4 workers for faster execution
 - Tests use PostgreSQL (not SQLite) to ensure production compatibility
-- The `pytest.ini` file includes performance optimizations: `-x -v --tb=short`
+- The `pytest.ini` file includes performance optimizations: `-x -v --tb=short -n 4`
 - Database echo is disabled in test fixtures for faster execution
 
 ### Code Quality
@@ -267,7 +268,7 @@ docs/                          # Documentation
 ### Code Quality
 - Consistent service layer pattern with `BaseServiceDB`
 - Service registry pattern for dependency injection and decoupling
-- Comprehensive test coverage (500+ tests)
+- Comprehensive test coverage (758 tests, passing in ~44s with 4 parallel workers)
 - Type hints throughout codebase
 - Async/await for all database operations
 - Mixin-based CRUD, query, and relationship operations
@@ -433,9 +434,9 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
   - **test_views/test_websocket_views.py**: Fixed WebSocket functionality tests (47 tests passing)
     - Corrected import path for MatchDataWebSocketManager
     - Marked integration test requiring real database connections
-  - **test_pars_integration.py**: Integration tests working with proper markers (5 tests passing)
-    - Tests run correctly with `-m integration` flag
-- All 500+ tests now passing when excluding integration tests
+   - **test_pars_integration.py**: Integration tests working with proper markers (5 tests passing)
+     - Tests run correctly with `-m integration` flag
+- All 758 tests now passing when excluding integration tests (in ~44s with 4 parallel workers)
 - Integration tests pass when run with appropriate markers
 
 ### Exception Handling Refactoring
@@ -461,8 +462,8 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 - Improved query performance in service layer
 
 ### Testing Improvements
-- 527+ comprehensive tests passing
-- Test database optimization with Docker
+- 758 comprehensive tests passing (in ~44s with 4 parallel workers across 2 databases)
+- Test database optimization with Docker (creates test_db and test_db2)
 - PostgreSQL requirement for tests (not SQLite)
 - Factory pattern for test data generation
 - Comprehensive test coverage across all services

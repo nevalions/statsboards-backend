@@ -14,10 +14,10 @@ This document serves as a quick reference for common operations and links to the
 
 **Testing:**
 ```bash
-# Start test database
+# Start test database (creates test_db and test_db2)
 docker-compose -f docker-compose.test-db-only.yml up -d
 
-# Run all tests (parallel with 4 workers by default)
+# Run all tests (parallel with 4 workers by default using 2 databases)
 pytest
 
 # Run tests sequentially (for debugging or full test suite)
@@ -56,7 +56,14 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 804 tests pass in parallel (~2:45 with pytest-xdist). Tests use transactional rollback for isolation and file-based locking for cross-process table creation.
+All 758 tests pass in parallel (~44s with pytest-xdist using 4 workers). Tests use:
+- Transactional rollback for isolation
+- 2 parallel databases (test_db, test_db2) distributed across 4 workers
+- Worker-specific lock files for safe table creation
+
+**Worker distribution:**
+- gw0, gw2 → test_db
+- gw1, gw3 → test_db2
 
 **Important:** When writing test fixtures, use `flush()` instead of `commit()` to avoid deadlocks during parallel test execution. The outer test fixture handles rollback automatically.
 
@@ -71,7 +78,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 | Tool | Purpose | Command |
 |------|----------|----------|
 | pytest | Test runner | `pytest` |
-| pytest-xdist | Parallel test execution (2 workers by default) | `pytest -n auto` |
+| pytest-xdist | Parallel test execution (4 workers by default using 2 databases) | `pytest -n auto` |
 | pytest-cov | Coverage reporting | `pytest --cov=src` |
 | pytest-benchmark | Performance benchmarks | `pytest tests/test_benchmarks.py -m benchmark` |
 | Hypothesis | Property-based testing | `pytest tests/test_property_based.py` |

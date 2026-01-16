@@ -44,16 +44,19 @@ docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activ
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
-**Important: Parallel tests now work correctly with 758 tests passing in 42.7s:**
+**Important: Parallel tests now work correctly with 758 tests passing in ~44s:**
 
 ```bash
-  pytest -n 2  # Run tests in parallel with 2 workers
+  pytest -n 4  # Run tests in parallel with 4 workers (using 2 databases)
 pytest -n 0  # Run tests sequentially (for debugging)
 ```
 
 The default pytest.ini configuration uses `-n 4` for parallel test execution. Database connection and deadlock issues have been resolved by:
 - Properly closing database connections after each test (`await database.close()`)
-- Using file-based lock (`/tmp/test_db_tables_setup.lock`) to coordinate table creation across workers
+- Using worker-specific lock files (`/tmp/test_db_tables_setup_{db_name}.lock`) to coordinate table creation across parallel workers
+- Using 2 parallel databases (test_db, test_db2) distributed across 4 workers:
+  - gw0, gw2 → test_db
+  - gw1, gw3 → test_db2
 - Using `flush()` instead of `commit()` in test fixtures to avoid PostgreSQL deadlocks
 - Ensuring connection cleanup in fixture's `finally` block
 
@@ -166,11 +169,11 @@ pytest -k "benchmark"
 pytest -k "e2e"
 ```
 
-**Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n 2`) for faster test execution:
+**Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n 4`) for faster test execution:
 
 - `-x`: Stop on first failure
 - `--tb=short`: Shortened traceback format
-- `-n 2`: Run tests in parallel using pytest-xdist (uses 2 workers to reduce contention)
+- `-n 4`: Run tests in parallel using pytest-xdist (uses 4 workers across 2 databases)
 - `log_cli=false`: Live logs disabled by default (use `-o log_cli=true` to enable for debugging)
 - Session-scoped database engine: Tables created once per session instead of per-test
 - Transaction rollback per test: Fast cleanup without table drops
@@ -875,13 +878,15 @@ Current optimizations implemented:
 - Database echo disabled in test fixtures (tests/conftest.py)
 - Transaction rollback per test: Fast cleanup without table drops
 - No Alembic migrations: Direct table creation with file-based lock coordination
-- Parallel test execution with pytest-xdist: `-n 2` uses 2 workers to reduce parallel contention and avoid event loop errors
+- Parallel test execution with pytest-xdist: `-n 4` uses 4 workers across 2 databases (test_db, test_db2)
 - PostgreSQL performance tuning in docker-compose.test-db-only.yml:
   - fsync=off, synchronous_commit=off, full_page_writes=off
   - wal_level=minimal, max_wal_senders=0
   - autovacuum=off, track_functions=none, track_counts=off
   - tmpfs for PostgreSQL data (in-memory storage)
-- File-based lock (`/tmp/test_db_tables_setup.lock`) coordinates table creation across parallel workers
+  - Creates both test_db and test_db2 databases on startup
+- Worker-specific lock files (`/tmp/test_db_tables_setup_{db_name}.lock`) coordinate table creation across parallel workers
+- Worker distribution: gw0, gw2 → test_db; gw1, gw3 → test_db2
 - Database connections properly closed after each test to prevent ResourceWarnings
 
 **Important:** When writing test fixtures, always use `flush()` instead of `commit()` to avoid deadlocks during parallel execution. The outer test fixture handles rollback automatically:
@@ -895,7 +900,7 @@ async with test_db.async_session() as db_session:
 
 **Test Results:**
 
-All 804 tests pass reliably in ~2:45 with 2 parallel workers (`-n 2`). The file-based lock ensures tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
+All 758 tests pass reliably in ~44s with 4 parallel workers (`-n 4`) across 2 databases. Worker-specific lock files ensure tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
 
 ## Database Operations
 

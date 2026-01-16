@@ -13,8 +13,6 @@ from src.core.models.base import Base, Database
 from src.core.service_initialization import register_all_services
 from src.core.service_registry import init_service_registry
 
-db_url = settings.test_db.test_db_url
-
 # Import fixtures from fixtures.py
 pytest_plugins = ["tests.fixtures"]
 
@@ -29,37 +27,59 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: marks test as slow-running")
 
 
-async def _ensure_tables_created():
+def get_db_url_for_worker(worker_id: str):
+    """Get database URL based on worker ID."""
+    base_url = str(settings.test_db.test_db_url)
+
+    if worker_id == "master":
+        return base_url
+
+    worker_num = int(worker_id.replace("gw", ""))
+    db_num = worker_num % 2
+
+    if db_num == 1:
+        return base_url.replace(settings.test_db.name, f"{settings.test_db.name}2")
+
+    return base_url
+
+
+@pytest.fixture(scope="session")
+def worker_id(request):
+    """Get the current worker ID."""
+    if hasattr(request, "node") and hasattr(request.node, "workerinput"):
+        return request.node.workerinput.get("workerid", "master")
+    return "master"
+
+
+@pytest.fixture(scope="session")
+def test_db_url(worker_id):
+    """Get database URL for the current worker."""
+    return get_db_url_for_worker(worker_id)
+
+
+async def _ensure_tables_created(db_url_str: str):
     """Ensure database tables and indexes are created using file-based lock."""
     import fcntl
 
-    lock_file = "/tmp/test_db_tables_setup.lock"
+    # Create lock file based on database name to coordinate workers per database
+    db_name = db_url_str.split("/")[-1]
+    lock_file = f"/tmp/test_db_tables_setup_{db_name}.lock"
 
-    # Use file-based lock for cross-process coordination
     with open(lock_file, "w") as f:
         try:
             fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         except (ImportError, AttributeError):
-            # Windows doesn't have fcntl, try msvcrt
-            try:
-                import msvcrt
+            pass
 
-                msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
-            except (ImportError, OSError):
-                pass
-
-        db_url_str = str(db_url)
         assert "test" in db_url_str, "Test DB URL must contain 'test'"
 
         database = Database(db_url_str, echo=False)
 
         try:
-            # Create tables
             async with database.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
 
-                # Create GIN indexes
                 for index_sql in [
                     "CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
                     "CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
@@ -70,7 +90,6 @@ async def _ensure_tables_created():
                     except Exception:
                         pass
 
-            # Seed default roles
             from src.core.models.role import RoleDB
             from sqlalchemy import select
 
@@ -97,20 +116,16 @@ async def _ensure_tables_created():
             await database.close()
 
 
-# Database fixture that ensures a clean state using transactions, function-scoped
 @pytest_asyncio.fixture(scope="function")
-async def test_db():
+async def test_db(test_db_url):
     """Database fixture that ensures a clean state using transactions."""
-    await _ensure_tables_created()
+    await _ensure_tables_created(test_db_url)
 
-    db_url_str = str(db_url)
-    database = Database(db_url_str, echo=False)
+    database = Database(test_db_url, echo=False)
 
-    # Initialize service registry for each test with fresh database
     init_service_registry(database)
     register_all_services(database)
 
-    # Use a transactional connection for tests
     async with database.engine.connect() as connection:
         transaction = await connection.begin()
         database.async_session.configure(bind=connection)
@@ -129,12 +144,10 @@ def test_downloads_dir():
     """Fixture to create and clean up test downloads directory."""
     downloads_dir = os.path.join(os.path.dirname(__file__), "test_downloads")
 
-    # Create directory before tests
     os.makedirs(downloads_dir, exist_ok=True)
 
     yield downloads_dir
 
-    # Clean up after all tests complete
     if os.path.exists(downloads_dir):
         shutil.rmtree(downloads_dir)
         print(f"\nCleaned up test downloads directory: {downloads_dir}")
@@ -143,7 +156,6 @@ def test_downloads_dir():
 @pytest.fixture
 def test_uploads_path(test_downloads_dir, monkeypatch):
     """Fixture to patch uploads_path for integration tests."""
-    # Patch settings.uploads_path property
     from src.core.config import settings
 
     monkeypatch.setattr(
@@ -157,7 +169,6 @@ async def test_app(test_db):
     """Create FastAPI test app with all routers."""
     from src.core.service_registry import init_service_registry
 
-    # Re-initialize service registry for test environment
     init_service_registry(test_db)
 
     from src.auth.views import api_auth_router
@@ -226,11 +237,6 @@ async def test_app(test_db):
     app.include_router(api_auth_router)
     app.include_router(UserAPIRouter(UserServiceDB(test_db)).route())
     app.include_router(get_user_router())
-
-    # Import routers that are already instantiated at module level - not included in test app
-    # from tests.fixtures import api_player_match_router, api_sponsor_sponsor_line_router
-    # app.include_router(api_player_match_router)
-    # app.include_router(api_sponsor_sponsor_line_router)
 
     yield app
 
