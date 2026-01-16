@@ -890,10 +890,7 @@ All 743 tests pass reliably in ~42s with 4 parallel workers (`-n 4`) across 2 da
 
 **Known Warnings:**
 
-- **4 DeprecationWarnings** from `passlib` library using deprecated `crypt` module (external dependency, will be removed in Python 3.13)
-  - Location: `venv/lib/python3.12/site-packages/passlib/utils/__init__.py:854`
-  - This is an external library issue and does not affect test functionality
-  - Will need to be addressed when upgrading to Python 3.13
+None. Previously had deprecation warnings from `passlib` library (using deprecated `crypt` module). These were resolved by removing `passlib` and using `bcrypt` directly (v4.3.0) for password hashing.
 
 ## Database Operations
 
