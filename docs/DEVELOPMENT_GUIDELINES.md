@@ -44,7 +44,7 @@ docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activ
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
-**Important: Parallel tests now work correctly with 758 tests passing in ~44s:**
+**Important: Parallel tests now work correctly with 743 tests passing in ~42s:**
 
 ```bash
   pytest -n 4  # Run tests in parallel with 4 workers (using 2 databases)
@@ -886,7 +886,7 @@ async with test_db.async_session() as db_session:
 
 **Test Results:**
 
-All 758 tests pass reliably in ~44s with 4 parallel workers (`-n 4`) across 2 databases. Worker-specific lock files ensure tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
+All 743 tests pass reliably in ~42s with 4 parallel workers (`-n 4`) across 2 databases. Worker-specific lock files ensure tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
 
 ## Database Operations
 

@@ -67,24 +67,24 @@ class TestImageProcessingService:
     @pytest.mark.asyncio
     async def test_resize_image(self, image_service, sample_image):
         """Test image resizing."""
-        image = Image.open(sample_image)
-        height = 50
-        resized_image = await image_service.resize_image(image, height)
-        assert resized_image.height == 50
-        assert resized_image.width == 50
+        with Image.open(sample_image) as image:
+            height = 50
+            resized_image = await image_service.resize_image(image, height)
+            assert resized_image.height == 50
+            assert resized_image.width == 50
 
     @pytest.mark.asyncio
     async def test_resize_and_save(self, image_service, sample_image, tmp_path):
         """Test resizing and saving image."""
-        image = Image.open(sample_image)
-        height = 50
-        dest = tmp_path / "resized_image.jpg"
+        with Image.open(sample_image) as image:
+            height = 50
+            dest = tmp_path / "resized_image.jpg"
 
-        await image_service.resize_and_save(dest, "resized_image.jpg", height, image)
-        assert dest.exists()
+            await image_service.resize_and_save(dest, "resized_image.jpg", height, image)
+            assert dest.exists()
 
-        resized_image = Image.open(dest)
-        assert resized_image.height == 50
+            with Image.open(dest) as resized_image:
+                assert resized_image.height == 50
 
     @pytest.mark.asyncio
     async def test_generate_filename(self, image_service):

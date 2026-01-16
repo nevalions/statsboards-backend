@@ -89,8 +89,9 @@ async def _ensure_tables_created(db_url_str: str):
                     except Exception:
                         pass
 
-            from src.core.models.role import RoleDB
             from sqlalchemy import select
+
+            from src.core.models.role import RoleDB
 
             async with database.async_session() as session:
                 existing_roles = await session.execute(select(RoleDB.name))
