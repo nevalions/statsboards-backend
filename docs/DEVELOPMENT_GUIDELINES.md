@@ -61,11 +61,11 @@ The default pytest.ini configuration uses `-n 4` for parallel test execution. Da
 
 **Note:** Tests now run cleanly in parallel with no ResourceWarnings, unclosed connection warnings, or deadlocks.
 
-### Understanding Deselected Tests
+### Understanding Test Markers
 
-The default `pytest.ini` configuration excludes tests marked with `@pytest.mark.integration` and `@pytest.mark.slow` via `-m "not integration and not slow"`. This results in 46 tests being deselected by default.
+Tests in the suite use markers to categorize test types. All 743 tests run by default, but markers allow selective execution when needed.
 
-**Breakdown of 46 Deselected Tests:**
+**Breakdown of Marked Tests:**
 
 | Test File | Tests | Markers | Reason |
 |------------|--------|----------|--------|
@@ -73,9 +73,9 @@ The default `pytest.ini` configuration excludes tests marked with `@pytest.mark.
 | `test_pars_integration.py` | 5 | `@pytest.mark.integration` | Hits real EESL website |
 | `test_websocket_views.py` | 22 | `@pytest.mark.slow` + `@pytest.mark.integration` | WebSocket connection tests |
 | `test_match_stats_websocket_integration.py` | 4 | `@pytest.mark.integration` | WebSocket integration tests |
-| **Total** | **46** | - | - |
+| **Total Marked** | **46** | - | - |
 
-**Why These Exclusions Exist:**
+**Marker Definitions:**
 
 - **`@pytest.mark.slow`**: Tests that take longer to run (websocket tests with connection setup, download service with retry logic)
 - **`@pytest.mark.integration`**: Tests that:
@@ -83,23 +83,29 @@ The default `pytest.ini` configuration excludes tests marked with `@pytest.mark.
   - Require real database connections beyond test fixtures
   - Use production-like endpoints
 
-**Running Deselected Tests:**
+**Running Selective Tests:**
 
 ```bash
-# Include all tests (including slow and integration)
-pytest -m ""
-
-# Include only integration tests
+# Run only integration tests
 pytest -m integration
 
-# Include only slow tests
+# Run only slow tests
 pytest -m slow
 
-# Include integration and slow tests together
+# Run integration and slow tests together
 pytest -m "integration or slow"
+
+# Exclude slow tests only
+pytest -m "not slow"
+
+# Exclude integration tests only
+pytest -m "not integration"
+
+# Exclude both slow and integration tests
+pytest -m "not integration and not slow"
 ```
 
-This is intentional - default excludes these tests during rapid development cycles while still allowing you to run them when needed.
+All 743 tests run by default with `pytest -n 4` in ~42s.
 
 Then run tests:
 
