@@ -23,6 +23,7 @@ from ..sponsors.schemas import SponsorSchema
 from .db_services import TournamentServiceDB
 from .schemas import (
     PaginatedTeamResponse,
+    PaginatedTournamentWithDetailsResponse,
     TournamentSchema,
     TournamentSchemaCreate,
     TournamentSchemaUpdate,
@@ -122,6 +123,45 @@ class TournamentAPIRouter(
                     detail=f"Tournament id({tournament_id}) not found",
                 )
             return TournamentWithDetailsSchema.model_validate(tournament)
+
+        @router.get(
+            "/with-details/paginated",
+            response_model=PaginatedTournamentWithDetailsResponse,
+            summary="Search tournaments with pagination and full details",
+            description="Search tournaments by title, sport_id with pagination and nested season, sport, teams, and sponsor details",
+            responses={
+                200: {"description": "Tournaments retrieved successfully"},
+            },
+        )
+        async def get_tournaments_with_details_paginated_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("title", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for tournament title"),
+            user_id: int | None = Query(None, description="Filter by user_id"),
+            isprivate: bool | None = Query(None, description="Filter by isprivate status"),
+            sport_id: int | None = Query(None, description="Filter by sport_id"),
+        ):
+            self.logger.debug(
+                f"Get tournaments with details paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}, "
+                f"user_id={user_id}, isprivate={isprivate}, sport_id={sport_id}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_tournaments_with_details_pagination(
+                search_query=search,
+                user_id=user_id,
+                isprivate=isprivate,
+                sport_id=sport_id,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
 
         @router.get(
             "/id/{tournament_id}/teams/",

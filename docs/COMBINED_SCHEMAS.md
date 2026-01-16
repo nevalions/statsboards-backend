@@ -81,7 +81,22 @@ GET /api/matches/{id}/
 
 # Get match with nested team, tournament, sponsor details
 GET /api/matches/{id}/with-details/
+
+# Search matches with pagination and full details
+GET /api/matches/with-details/paginated?page=1&items_per_page=20&search=query
 ```
+
+**Query Parameters (matches):**
+- `page`: Page number (1-based)
+- `items_per_page`: Items per page (max 100)
+- `order_by`: First sort column (default: match_date)
+- `order_by_two`: Second sort column (default: id)
+- `ascending`: Sort order (true=asc, false=desc)
+- `search`: Search query for match_eesl_id
+- `week`: Filter by week number
+- `tournament_id`: Filter by tournament_id
+- `user_id`: Filter by user_id
+- `isprivate`: Filter by isprivate status
 
 ### Team Endpoints
 
@@ -91,7 +106,21 @@ GET /api/teams/{id}/
 
 # Get team with nested sport, sponsor details
 GET /api/teams/{id}/with-details/
+
+# Search teams with pagination and full details
+GET /api/teams/with-details/paginated?page=1&items_per_page=20&search=query
 ```
+
+**Query Parameters (teams):**
+- `page`: Page number (1-based)
+- `items_per_page`: Items per page (max 100)
+- `order_by`: First sort column (default: title)
+- `order_by_two`: Second sort column (default: id)
+- `ascending`: Sort order (true=asc, false=desc)
+- `search`: Search query for team title
+- `user_id`: Filter by user_id
+- `isprivate`: Filter by isprivate status
+- `sport_id`: Filter by sport_id
 
 ### Tournament Endpoints
 
@@ -101,7 +130,21 @@ GET /api/tournaments/{id}/
 
 # Get tournament with nested season, sport, teams, sponsors
 GET /api/tournaments/{id}/with-details/
+
+# Search tournaments with pagination and full details
+GET /api/tournaments/with-details/paginated?page=1&items_per_page=20&search=query
 ```
+
+**Query Parameters (tournaments):**
+- `page`: Page number (1-based)
+- `items_per_page`: Items per page (max 100)
+- `order_by`: First sort column (default: title)
+- `order_by_two`: Second sort column (default: id)
+- `ascending`: Sort order (true=asc, false=desc)
+- `search`: Search query for tournament title
+- `user_id`: Filter by user_id
+- `isprivate`: Filter by isprivate status
+- `sport_id`: Filter by sport_id
 
 ## Usage Examples
 
@@ -196,6 +239,116 @@ async def get_match_for_display(match_id: int) -> MatchWithDetailsSchema:
     service = MatchServiceDB(db)
     match_db = await service.get_match_with_details(match_id)
     return MatchWithDetailsSchema.model_validate(match_db)
+```
+
+### Paginated Search with Details Examples
+
+**Frontend Example (React Query):**
+
+```tsx
+function MatchList({ page, searchQuery }: { page: number, searchQuery: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['matches', 'with-details', page, searchQuery],
+    queryFn: () => fetch(
+      `/api/matches/with-details/paginated?page=${page}&items_per_page=20&search=${searchQuery}`
+    ).then(r => r.json())
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div className="match-list">
+      {data?.data.map(match => (
+        <div key={match.id} className="match-item">
+          <img src={match.team_a?.team_logo_url} alt={match.team_a?.title} />
+          <span>{match.team_a?.title}</span>
+          <span>vs</span>
+          <span>{match.team_b?.title}</span>
+          <img src={match.team_b?.team_logo_url} alt={match.team_b?.title} />
+        </div>
+      ))}
+      <div className="pagination">
+        <span>Page {data?.metadata.page} of {data?.metadata.total_pages}</span>
+      </div>
+    </div>
+  );
+}
+```
+
+**Frontend Example (React with Filters):**
+
+```tsx
+function TeamList() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [sportId, setSportId] = useState<number | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ['teams', 'with-details', page, search, sportId],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        items_per_page: '20',
+        search,
+      });
+      if (sportId) params.append('sport_id', sportId.toString());
+
+      return fetch(`/api/teams/with-details/paginated?${params}`)
+        .then(r => r.json());
+    }
+  });
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="Search teams..."
+        value={search}
+        onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+      />
+      <select
+        onChange={(e) => { setPage(1); setSportId(Number(e.target.value) || null); }}
+      >
+        <option value="">All Sports</option>
+        <option value="1">Football</option>
+        <option value="2">Basketball</option>
+      </select>
+
+      {data?.data.map(team => (
+        <div key={team.id}>
+          <h3>{team.title}</h3>
+          <span>Sport: {team.sport?.title}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Backend Service Example:**
+
+```python
+from src.teams.db_services import TeamServiceDB
+from src.teams.schemas import PaginatedTeamWithDetailsResponse
+
+async def get_teams_for_dashboard(
+    page: int,
+    search: str | None = None,
+    sport_id: int | None = None,
+) -> PaginatedTeamWithDetailsResponse:
+    service = TeamServiceDB(db)
+    skip = (page - 1) * 20
+
+    result = await service.search_teams_with_details_pagination(
+        search_query=search,
+        sport_id=sport_id,
+        skip=skip,
+        limit=20,
+        order_by="title",
+        order_by_two="id",
+        ascending=True,
+    )
+    return result
 ```
 
 ## Creating New Complex Schemas
@@ -497,6 +650,25 @@ for match in matches:
 - Building dashboards that show related data
 - Avoiding multiple API calls
 - Desktop/tablet web applications
+
+**Use Paginated Combined Schema (`/with-details/paginated`) when:**
+- Listing resources with full details (match lists, team listings, tournament lists)
+- Displaying tables with nested data (team names, tournament titles)
+- Implementing search/filter functionality with rich results
+- Building UIs that need both listing and detail views
+- Reducing the number of API calls for list pages
+
+**Example:**
+```typescript
+// Instead of multiple calls:
+const matches = await fetch('/api/matches/paginated').then(r => r.json());
+const teams = await fetch('/api/teams/').then(r => r.json());
+// Then merging client-side...
+
+// Use single call:
+const matchesWithDetails = await fetch('/api/matches/with-details/paginated').then(r => r.json());
+// Contains matches with nested team, tournament objects
+```
 
 ### Pagination for Large Collections
 

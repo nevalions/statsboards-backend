@@ -565,4 +565,43 @@ class MatchCRUDRouter(
             )
             return response
 
+        @router.get(
+            "/with-details/paginated",
+            response_model=PaginatedMatchWithDetailsResponse,
+            summary="Search matches with pagination and full details",
+            description="Search matches by week, tournament_id, or match_eesl_id with pagination and nested team, tournament, sponsor objects",
+        )
+        async def get_matches_with_details_paginated_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("match_date", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for match_eesl_id"),
+            week: int | None = Query(None, ge=1, description="Filter by week number"),
+            tournament_id: int | None = Query(None, ge=1, description="Filter by tournament_id"),
+            user_id: int | None = Query(None, description="Filter by user_id"),
+            isprivate: bool | None = Query(None, description="Filter by isprivate status"),
+        ):
+            self.logger.debug(
+                f"Get matches with details paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, "
+                f"search={search}, week={week}, tournament_id={tournament_id}, "
+                f"user_id={user_id}, isprivate={isprivate}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_matches_with_details_pagination(
+                search_query=search,
+                week=week,
+                tournament_id=tournament_id,
+                user_id=user_id,
+                isprivate=isprivate,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
+
         return router

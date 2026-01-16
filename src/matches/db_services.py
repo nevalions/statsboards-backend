@@ -25,6 +25,7 @@ from .schemas import (
     MatchSchemaCreate,
     MatchSchemaUpdate,
     PaginatedMatchResponse,
+    PaginatedMatchWithDetailsResponse,
 )
 
 ITEM = "MATCH"
@@ -697,6 +698,78 @@ class MatchServiceDB(BaseServiceDB):
 
             return PaginatedMatchResponse(
                 data=[MatchSchema.model_validate(m) for m in matches],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching matches with pagination and details",
+        return_value_on_not_found=None,
+    )
+    async def search_matches_with_details_pagination(
+        self,
+        search_query: str | None = None,
+        week: int | None = None,
+        tournament_id: int | None = None,
+        user_id: int | None = None,
+        isprivate: bool | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "match_date",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedMatchWithDetailsResponse:
+        self.logger.debug(
+            f"Search {ITEM} with details: query={search_query}, week={week}, tournament_id={tournament_id}, "
+            f"skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = select(MatchDB).options(
+                joinedload(MatchDB.team_a),
+                joinedload(MatchDB.team_b),
+                joinedload(MatchDB.tournaments),
+                joinedload(MatchDB.main_sponsor),
+                joinedload(MatchDB.sponsor_line),
+            )
+
+            if user_id is not None:
+                base_query = base_query.where(MatchDB.user_id == user_id)
+
+            if isprivate is not None:
+                base_query = base_query.where(MatchDB.isprivate == isprivate)
+
+            if search_query:
+                base_query = await self._apply_search_filters(
+                    base_query,
+                    [(MatchDB, "match_eesl_id")],
+                    search_query,
+                )
+
+            if week is not None:
+                base_query = base_query.where(MatchDB.week == week)
+
+            if tournament_id is not None:
+                base_query = base_query.where(MatchDB.tournament_id == tournament_id)
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                MatchDB, order_by, order_by_two, ascending, MatchDB.match_date, MatchDB.id
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            matches = result.scalars().unique().all()
+
+            from .schemas import MatchWithDetailsSchema
+
+            return PaginatedMatchWithDetailsResponse(
+                data=[MatchWithDetailsSchema.model_validate(m) for m in matches],
                 metadata=PaginationMetadata(
                     **await self._calculate_pagination_metadata(total_items, skip, limit),
                 ),

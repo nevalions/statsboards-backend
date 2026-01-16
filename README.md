@@ -293,9 +293,15 @@ The API provides comprehensive endpoints for:
 
 For endpoints that return full nested relationship data:
 
+**Single Resource Endpoints:**
 - **Matches with Details**: `GET /api/matches/{id}/with-details/`
 - **Teams with Details**: `GET /api/teams/{id}/with-details/`
 - **Tournaments with Details**: `GET /api/tournaments/{id}/with-details/`
+
+**Paginated Search Endpoints:**
+- **Matches with Details**: `GET /api/matches/with-details/paginated`
+- **Teams with Details**: `GET /api/teams/with-details/paginated`
+- **Tournaments with Details**: `GET /api/tournaments/with-details/paginated`
 
 These endpoints return nested objects (teams, tournaments, sponsors) instead of just foreign key IDs, providing richer data in a single API call.
 
@@ -305,6 +311,7 @@ These endpoints return nested objects (teams, tournaments, sponsors) instead of 
 - Creating new complex schemas with eager loading
 - Performance optimization strategies
 - Frontend integration examples
+- Paginated combined schema usage
 
 Each domain module follows the standard CRUD pattern with additional custom endpoints as needed.
 

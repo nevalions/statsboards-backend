@@ -1,4 +1,3 @@
-
 from sqlalchemy import not_, select
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql import func
@@ -19,9 +18,11 @@ from src.core.models.base import Database
 from src.core.schema_helpers import PaginationMetadata
 
 from ..logging_config import get_logger
+from ..player.schemas import PaginatedPlayerWithDetailsResponse, PlayerWithDetailsSchema
 from ..sponsor_lines.db_services import SponsorLineServiceDB
 from .schemas import (
     PaginatedTeamResponse,
+    PaginatedTournamentWithDetailsResponse,
     TeamSchema,
     TournamentSchemaCreate,
     TournamentSchemaUpdate,
@@ -507,6 +508,73 @@ class TournamentServiceDB(BaseServiceDB):
             "sponsor_line",
             "sponsors",
         )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching tournaments with pagination and details",
+        return_value_on_not_found=None,
+    )
+    async def search_tournaments_with_details_pagination(
+        self,
+        search_query: str | None = None,
+        user_id: int | None = None,
+        isprivate: bool | None = None,
+        sport_id: int | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "title",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedTournamentWithDetailsResponse:
+        self.logger.debug(
+            f"Search {ITEM} with details: query={search_query}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}, sport_id={sport_id}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = select(TournamentDB).options(
+                joinedload(TournamentDB.season),
+                joinedload(TournamentDB.sport),
+                selectinload(TournamentDB.teams),
+                joinedload(TournamentDB.main_sponsor),
+                joinedload(TournamentDB.sponsor_line),
+            )
+
+            if user_id is not None:
+                base_query = base_query.where(TournamentDB.user_id == user_id)
+
+            if isprivate is not None:
+                base_query = base_query.where(TournamentDB.isprivate == isprivate)
+
+            if sport_id is not None:
+                base_query = base_query.where(TournamentDB.sport_id == sport_id)
+
+            base_query = await self._apply_search_filters(
+                base_query,
+                [(TournamentDB, "title")],
+                search_query,
+            )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                TournamentDB, order_by, order_by_two, ascending, TournamentDB.title, TournamentDB.id
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            tournaments = result.scalars().unique().all()
+
+            from .schemas import TournamentWithDetailsSchema
+
+            return PaginatedTournamentWithDetailsResponse(
+                data=[TournamentWithDetailsSchema.model_validate(t) for t in tournaments],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
 
     # async def get_sponsors_of_tournament_sponsor_line(self, tournament_id: int):
     #     sponsor_line = await self.get_related_items_level_one_by_id(

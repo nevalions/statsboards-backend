@@ -16,6 +16,7 @@ from src.positions.db_services import PositionServiceDB
 from ..logging_config import get_logger
 from .schemas import (
     PaginatedTeamResponse,
+    PaginatedTeamWithDetailsResponse,
     TeamSchema,
     TeamSchemaCreate,
     TeamSchemaUpdate,
@@ -258,6 +259,71 @@ class TeamServiceDB(BaseServiceDB):
 
             return PaginatedTeamResponse(
                 data=[TeamSchema.model_validate(t) for t in teams],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching teams with pagination and details",
+        return_value_on_not_found=None,
+    )
+    async def search_teams_with_details_pagination(
+        self,
+        search_query: str | None = None,
+        user_id: int | None = None,
+        isprivate: bool | None = None,
+        sport_id: int | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "title",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedTeamWithDetailsResponse:
+        self.logger.debug(
+            f"Search {ITEM} with details: query={search_query}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}, sport_id={sport_id}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = select(TeamDB).options(
+                joinedload(TeamDB.sport),
+                joinedload(TeamDB.main_sponsor),
+                joinedload(TeamDB.sponsor_line),
+            )
+
+            if user_id is not None:
+                base_query = base_query.where(TeamDB.user_id == user_id)
+
+            if isprivate is not None:
+                base_query = base_query.where(TeamDB.isprivate == isprivate)
+
+            if sport_id is not None:
+                base_query = base_query.where(TeamDB.sport_id == sport_id)
+
+            base_query = await self._apply_search_filters(
+                base_query,
+                [(TeamDB, "title")],
+                search_query,
+            )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                TeamDB, order_by, order_by_two, ascending, TeamDB.title, TeamDB.id
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            teams = result.scalars().all()
+
+            from .schemas import TeamWithDetailsSchema
+
+            return PaginatedTeamWithDetailsResponse(
+                data=[TeamWithDetailsSchema.model_validate(t) for t in teams],
                 metadata=PaginationMetadata(
                     **await self._calculate_pagination_metadata(total_items, skip, limit),
                 ),
