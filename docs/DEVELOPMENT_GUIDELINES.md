@@ -47,7 +47,7 @@ docker-compose -f docker-compose.test-db-only.yml up -d
 **Important: Parallel tests now work correctly with 758 tests passing in 42.7s:**
 
 ```bash
-pytest -n 4  # Run tests in parallel with 4 workers
+  pytest -n 2  # Run tests in parallel with 2 workers
 pytest -n 0  # Run tests sequentially (for debugging)
 ```
 
@@ -166,11 +166,11 @@ pytest -k "benchmark"
 pytest -k "e2e"
 ```
 
-**Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n auto`) for faster test execution:
+**Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n 2`) for faster test execution:
 
 - `-x`: Stop on first failure
 - `--tb=short`: Shortened traceback format
-- `-n auto`: Run tests in parallel using pytest-xdist (uses all available CPU cores)
+- `-n 2`: Run tests in parallel using pytest-xdist (uses 2 workers to reduce contention)
 - `log_cli=false`: Live logs disabled by default (use `-o log_cli=true` to enable for debugging)
 - Session-scoped database engine: Tables created once per session instead of per-test
 - Transaction rollback per test: Fast cleanup without table drops
@@ -875,7 +875,7 @@ Current optimizations implemented:
 - Database echo disabled in test fixtures (tests/conftest.py)
 - Transaction rollback per test: Fast cleanup without table drops
 - No Alembic migrations: Direct table creation with file-based lock coordination
-- Parallel test execution with pytest-xdist: `-n 4` uses 4 workers to balance speed and stability
+- Parallel test execution with pytest-xdist: `-n 2` uses 2 workers to reduce parallel contention and avoid event loop errors
 - PostgreSQL performance tuning in docker-compose.test-db-only.yml:
   - fsync=off, synchronous_commit=off, full_page_writes=off
   - wal_level=minimal, max_wal_senders=0
@@ -895,7 +895,7 @@ async with test_db.async_session() as db_session:
 
 **Test Results:**
 
-All 758 tests pass reliably in 42.7s with 4 parallel workers (`-n 4`). The file-based lock ensures tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
+All 804 tests pass reliably in ~2:45 with 2 parallel workers (`-n 2`). The file-based lock ensures tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
 
 ## Database Operations
 

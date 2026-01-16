@@ -47,10 +47,7 @@ async def fetch_list_of_matches_data(matches: list[Any]) -> list[dict[str, Any]]
             teams = {team.id: team for team in results.scalars().all()}
 
         match_data_list = await asyncio.gather(
-            *[
-                match_service_db.get_matchdata_by_match(match_id)
-                for match_id in match_ids
-            ]
+            *[match_service_db.get_matchdata_by_match(match_id) for match_id in match_ids]
         )
 
         for idx, match in enumerate(matches):
@@ -78,9 +75,7 @@ async def fetch_list_of_matches_data(matches: list[Any]) -> list[dict[str, Any]]
 
         return all_match_data
     except Exception as e:
-        fetch_data_logger.error(
-            f"Error while fetching list of matches data: {e}", exc_info=True
-        )
+        fetch_data_logger.error(f"Error while fetching list of matches data: {e}", exc_info=True)
 
 
 async def fetch_match_data(match_id: int) -> dict[str, Any] | None:
@@ -150,12 +145,8 @@ async def fetch_with_scoreboard_data(match_id: int) -> dict[str, Any] | None:
                     f"Scoreboard Data not found for match_id:{match_id}, creating new..."
                 )
                 scoreboard_data_schema = ScoreboardSchemaCreate(match_id=match_id)
-                fetch_data_logger.debug(
-                    f"Schema for scoreboard data {scoreboard_data_schema}"
-                )
-                scoreboard_data = await scoreboard_data_service.create(
-                    scoreboard_data_schema
-                )
+                fetch_data_logger.debug(f"Schema for scoreboard data {scoreboard_data_schema}")
+                scoreboard_data = await scoreboard_data_service.create(scoreboard_data_schema)
 
             final_match_with_scoreboard_data_fetched = {
                 "data": {
@@ -182,6 +173,10 @@ async def fetch_with_scoreboard_data(match_id: int) -> dict[str, Any] | None:
         fetch_data_logger.error(
             f"Error while fetching matchdata with scoreboard: {e}", exc_info=True
         )
+        return {
+            "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }
 
 
 async def fetch_gameclock(match_id: int) -> dict[str, Any] | None:
@@ -213,6 +208,10 @@ async def fetch_gameclock(match_id: int) -> dict[str, Any] | None:
             }
     except Exception as e:
         fetch_data_logger.error(f"Error while fetching gameclock: {e}", exc_info=True)
+        return {
+            "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }
 
 
 async def fetch_playclock(match_id: int) -> dict[str, Any] | None:
@@ -243,6 +242,10 @@ async def fetch_playclock(match_id: int) -> dict[str, Any] | None:
             }
     except Exception as e:
         fetch_data_logger.error(f"Error while fetching playclock: {e}", exc_info=True)
+        return {
+            "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }
 
 
 async def fetch_matches_with_data_by_tournament_paginated(
@@ -258,10 +261,8 @@ async def fetch_matches_with_data_by_tournament_paginated(
 
     try:
         # Fetch matches with pagination
-        paginated_matches = (
-            await tournament_service_db.get_matches_by_tournament_with_pagination(
-                tournament_id, skip, limit, order_exp, order_exp_two
-            )
+        paginated_matches = await tournament_service_db.get_matches_by_tournament_with_pagination(
+            tournament_id, skip, limit, order_exp, order_exp_two
         )
 
         match_ids = [match.id for match in paginated_matches]
@@ -280,16 +281,12 @@ async def fetch_matches_with_data_by_tournament_paginated(
             *[fetch_with_scoreboard_data(match_id) for match_id in match_ids]
         )
 
-        fetch_data_logger.debug(
-            f"Fetched matches with fulldata: {full_match_data_list}"
-        )
+        fetch_data_logger.debug(f"Fetched matches with fulldata: {full_match_data_list}")
 
         return full_match_data_list
 
     except Exception as e:
-        fetch_data_logger.error(
-            f"Error fetching tournament matches data: {e}", exc_info=True
-        )
+        fetch_data_logger.error(f"Error fetching tournament matches data: {e}", exc_info=True)
         return {
             "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
             "error": str(e),
@@ -300,12 +297,8 @@ def instance_to_dict(instance: dict[str, Any]) -> dict[str, Any] | None:
     logger.debug(f"Instance to dictionary convert instance: {instance}")
     logger.debug(f"Instance to dictionary convert instance type: {type(instance)}")
     try:
-        result_dict = {
-            key: value for key, value in instance.items() if not key.startswith("_")
-        }
-        logger.info(
-            f"Instance to dictionary completed successfully. Result: {result_dict}"
-        )
+        result_dict = {key: value for key, value in instance.items() if not key.startswith("_")}
+        logger.info(f"Instance to dictionary completed successfully. Result: {result_dict}")
         return result_dict
     except Exception as e:
         logger.error(f"Error converting instance to dictionary: {e}")
@@ -319,9 +312,7 @@ def deep_dict_convert(obj: dict[str, Any]) -> dict[str, Any] | None:
         result_dict = {}
         for key, value in obj.items():
             if not key.startswith("_"):
-                if isinstance(
-                    value, datetime.datetime
-                ):  # check against datetime.datetime
+                if isinstance(value, datetime.datetime):  # check against datetime.datetime
                     logger.info(f"Converting {key} to datetime")
                     result_dict[key] = value.isoformat()
                 elif isinstance(value, dict):
@@ -329,9 +320,7 @@ def deep_dict_convert(obj: dict[str, Any]) -> dict[str, Any] | None:
                     result_dict[key] = deep_dict_convert(value)
                 else:
                     result_dict[key] = value
-        logger.debug(
-            f"Deep dictionary convert completed successfully. Result: {result_dict}"
-        )
+        logger.debug(f"Deep dictionary convert completed successfully. Result: {result_dict}")
         return result_dict
     except Exception as e:
         logger.error(f"Error in deep dictionary convert: {e}")

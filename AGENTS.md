@@ -56,7 +56,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 745 tests pass in parallel (38.7s with pytest-xdist). Tests use transactional rollback for isolation and file-based locking for cross-process table creation.
+All 804 tests pass in parallel (~2:45 with pytest-xdist). Tests use transactional rollback for isolation and file-based locking for cross-process table creation.
 
 **Important:** When writing test fixtures, use `flush()` instead of `commit()` to avoid deadlocks during parallel test execution. The outer test fixture handles rollback automatically.
 
@@ -71,7 +71,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 | Tool | Purpose | Command |
 |------|----------|----------|
 | pytest | Test runner | `pytest` |
-| pytest-xdist | Parallel test execution (4 workers by default) | `pytest -n auto` |
+| pytest-xdist | Parallel test execution (2 workers by default) | `pytest -n auto` |
 | pytest-cov | Coverage reporting | `pytest --cov=src` |
 | pytest-benchmark | Performance benchmarks | `pytest tests/test_benchmarks.py -m benchmark` |
 | Hypothesis | Property-based testing | `pytest tests/test_property_based.py` |
