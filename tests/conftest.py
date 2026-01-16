@@ -22,7 +22,6 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: marks test as integration test (hits real website)"
     )
-    config.addinivalue_line("markers", "benchmark: marks test as performance benchmark")
     config.addinivalue_line("markers", "e2e: marks test as end-to-end integration test")
     config.addinivalue_line("markers", "slow: marks test as slow-running")
 

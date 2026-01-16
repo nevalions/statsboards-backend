@@ -80,7 +80,6 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 | pytest | Test runner | `pytest` |
 | pytest-xdist | Parallel test execution (4 workers by default using 2 databases) | `pytest -n auto` |
 | pytest-cov | Coverage reporting | `pytest --cov=src` |
-| pytest-benchmark | Performance benchmarks | `pytest tests/test_benchmarks.py -m benchmark` |
 | Hypothesis | Property-based testing | `pytest tests/test_property_based.py` |
 | Ruff | Linting | `ruff check src/ tests/` |
 | Alembic | Database migrations | `alembic upgrade head` |
@@ -88,7 +87,6 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 ### Test Markers
 
 - `@pytest.mark.integration` - Tests that hit external websites or write to production folders
-- `@pytest.mark.benchmark` - Performance benchmark tests
 - `@pytest.mark.e2e` - End-to-end integration tests
 - `@pytest.mark.slow` - Slow-running tests
 - `@pytest.mark.property` - Property-based tests

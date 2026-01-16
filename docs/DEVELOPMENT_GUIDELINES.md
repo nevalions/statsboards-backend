@@ -142,9 +142,6 @@ pytest --cov=src --cov-report=xml
 # Run property-based tests
 pytest tests/test_property_based.py
 
-# Run performance benchmarks
-pytest tests/test_benchmarks.py -m benchmark
-
 # Run E2E integration tests
 pytest tests/test_e2e.py -m e2e
 
@@ -156,16 +153,11 @@ pytest -n auto
 
 # Run tests matching a specific marker
 pytest -m integration
-pytest -m benchmark
 pytest -m e2e
 pytest -m "not slow"
 
-# Run benchmarks with comparison to baseline
-pytest tests/test_benchmarks.py -m benchmark --benchmark-only --benchmark-compare
-
 # Run specific test types
 pytest -k "property"
-pytest -k "benchmark"
 pytest -k "e2e"
 ```
 
@@ -823,14 +815,7 @@ The project includes several enhanced testing approaches:
 - Use SubFactory for automatic creation of related entities
 - Example: `TournamentFactoryWithRelations.build()` creates sport, season, and tournament
 
-**2. Performance Benchmarks** (`tests/test_benchmarks.py`):
-
-- Benchmarked operations: CRUD operations, bulk inserts, complex queries
-- Run with: `pytest tests/test_benchmarks.py -m benchmark`
-- Compare with baseline: `pytest tests/test_benchmarks.py -m benchmark --benchmark-compare`
-- Focuses on critical service operations
-
-**3. Property-Based Testing** (`tests/test_property_based.py`):
+**2. Property-Based Testing** (`tests/test_property_based.py`):
 
 - Tests with Hypothesis for edge cases across wide input ranges
 - Critical functions tested: `safe_int_conversion`, `hex_to_rgb`, `convert_cyrillic_filename`, etc.
@@ -853,7 +838,7 @@ The project includes several enhanced testing approaches:
 **Test Markers** (defined in pytest.ini):
 
 - `@pytest.mark.integration`: Tests that hit real websites or write to production folders
-- `@pytest.mark.benchmark`: Performance benchmark tests
+
 - `@pytest.mark.e2e`: End-to-end integration tests
 - `@pytest.mark.slow`: Tests that take longer to run
 
@@ -1636,7 +1621,6 @@ def downgrade() -> None:
 See `src/person/` for complete implementation:
 - **Migration**: `alembic/versions/2026_01_06_1552-32e4ddf548e3_add_pg_trgm_extension_for_person_search.py`
 - **Service**: `PersonServiceDB.search_persons_with_pagination()` in `src/person/db_services.py`
-- **Benchmarks**: `TestPersonSearchPerformance` in `tests/test_benchmarks.py`
 
 #### Verification
 
