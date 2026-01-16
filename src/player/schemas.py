@@ -7,6 +7,7 @@ from src.core.schema_helpers import PaginationMetadata, make_fields_optional
 
 if TYPE_CHECKING:
     from src.person.schemas import PersonSchema
+    from src.player_team_tournament.schemas import PlayerTeamTournamentWithFullDetailsSchema
     from src.sports.schemas import SportSchema
 
 
@@ -50,8 +51,8 @@ class PlayerTeamTournamentInfoSchema(BaseModel):
 
 
 class PlayerWithDetailsSchema(PlayerSchema):
-    person: "PersonSchema | None" = Field(None, description="Person with full details")
-    sport: "SportSchema | None" = Field(None, description="Sport with full details")
+    first_name: str | None = Field(None, description="Person's first name")
+    second_name: str | None = Field(None, description="Person's second name")
     player_team_tournaments: list[PlayerTeamTournamentInfoSchema] = Field(
         default_factory=list, description="Player team tournament associations"
     )

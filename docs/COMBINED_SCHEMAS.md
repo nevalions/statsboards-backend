@@ -60,7 +60,7 @@ Combined schemas provide full nested objects instead of just foreign key IDs, ma
 | Schema | Description | Relationships Included |
 |--------|-------------|------------------------|
 | `PlayerSchema` | Basic player with FK IDs | `sport_id`, `person_id` |
-| `PlayerWithDetailsSchema` | Player with person and sport | `person`, `sport`, `player_team_tournaments[]` (flat) |
+| `PlayerWithDetailsSchema` | Player with person name fields | `first_name`, `second_name`, `player_team_tournaments[]` (flat) |
 | `PlayerWithFullDetailsSchema` | Player with fully nested PTTs | `person`, `sport`, `player_team_tournaments[]` (nested) |
 
 ### PlayerTeamTournament Schemas
