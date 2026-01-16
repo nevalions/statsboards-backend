@@ -52,53 +52,41 @@ async def test_team_service(test_db) -> TeamServiceDB:
 @pytest_asyncio.fixture
 async def season(test_season_service):
     """Create and return a season instance in the database."""
-    try:
-        test_logger.info("Creating test season")
-        data = SeasonFactorySample.build()
-        season = await test_season_service.create(data)
-        return season
-    except Exception as e:
-        test_logger.error(f"Error creating test season {e}", exc_info=True)
+    test_logger.info("Creating test season")
+    data = SeasonFactorySample.build()
+    season = await test_season_service.create(data)
+    return season
 
 
 @pytest_asyncio.fixture
 async def sport(test_sport_service):
     """Create and return a sport instance in the database."""
-    try:
-        test_logger.info("Creating test sport")
-        data = SportFactorySample.build()
-        sport = await test_sport_service.create(data)
-        return sport
-    except Exception as e:
-        test_logger.error(f"Error creating test sport {e}", exc_info=True)
+    test_logger.info("Creating test sport")
+    data = SportFactorySample.build()
+    sport = await test_sport_service.create(data)
+    return sport
 
 
 @pytest_asyncio.fixture
 async def tournament(test_tournament_service, sport, season):
     """Create and return a tournament instance in the database."""
-    try:
-        test_logger.info(
-            f"Creating test tournament with sport_id: {sport.id} and season_id: {season.id}"
-        )
-        data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
-        tournament = await test_tournament_service.create(data)
-        return tournament
-    except Exception as e:
-        test_logger.error(f"Error creating test tournament {e}", exc_info=True)
+    test_logger.info(
+        f"Creating test tournament with sport_id: {sport.id} and season_id: {season.id}"
+    )
+    data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+    tournament = await test_tournament_service.create(data)
+    return tournament
 
 
 @pytest_asyncio.fixture
 async def teams_data(test_team_service, sport):
     """Create and return two test teams in the database."""
-    try:
-        test_logger.info(f"Creating test teams with sport_id: {sport.id}")
-        team1 = TeamFactory.build(sport_id=sport.id, team_eesl_id=801, title="Team A")
-        team2 = TeamFactory.build(sport_id=sport.id, team_eesl_id=802, title="Team B")
-        created_team1 = await test_team_service.create_or_update_team(team1)
-        created_team2 = await test_team_service.create_or_update_team(team2)
-        return created_team1, created_team2
-    except Exception as e:
-        test_logger.error(f"Error creating test teams {e}", exc_info=True)
+    test_logger.info(f"Creating test teams with sport_id: {sport.id}")
+    team1 = TeamFactory.build(sport_id=sport.id, team_eesl_id=801, title="Team A")
+    team2 = TeamFactory.build(sport_id=sport.id, team_eesl_id=802, title="Team B")
+    created_team1 = await test_team_service.create_or_update_team(team1)
+    created_team2 = await test_team_service.create_or_update_team(team2)
+    return created_team1, created_team2
 
 
 async def creat_tournaments(
@@ -118,11 +106,8 @@ async def creat_tournaments(
             season_id=season.id,
             title=f"Tournament {i + 1}",  # Ensure unique title
         )
-        try:
-            tournament = await test_tournament_service.create(data)
-            tournaments_list.append(tournament)
-        except Exception as e:
-            test_logger.error(f"Error creating test tournament {i + 1}: {e}", exc_info=True)
+        tournament = await test_tournament_service.create(data)
+        tournaments_list.append(tournament)
     return tournaments_list
 
 
@@ -170,37 +155,28 @@ async def test_sponsor_line_service(test_db) -> SponsorLineServiceDB:
 @pytest_asyncio.fixture
 async def position(test_position_service, sport):
     """Create and return a position instance in database."""
-    try:
-        test_logger.info("Creating test position")
-        data = PositionFactory.build(sport_id=sport.id)
-        position = await test_position_service.create(data)
-        return position
-    except Exception as e:
-        test_logger.error(f"Error creating test position {e}", exc_info=True)
+    test_logger.info("Creating test position")
+    data = PositionFactory.build(sport_id=sport.id)
+    position = await test_position_service.create(data)
+    return position
 
 
 @pytest_asyncio.fixture
 async def sponsor(test_sponsor_service):
     """Create and return a sponsor instance in database."""
-    try:
-        test_logger.info("Creating test sponsor")
-        data = SponsorFactory.build()
-        sponsor = await test_sponsor_service.create(data)
-        return sponsor
-    except Exception as e:
-        test_logger.error(f"Error creating test sponsor {e}", exc_info=True)
+    test_logger.info("Creating test sponsor")
+    data = SponsorFactory.build()
+    sponsor = await test_sponsor_service.create(data)
+    return sponsor
 
 
 @pytest_asyncio.fixture
 async def sponsor_line(test_sponsor_line_service):
     """Create and return a sponsor line instance in database."""
-    try:
-        test_logger.info("Creating test sponsor line")
-        data = SponsorLineFactory.build()
-        sponsor_line = await test_sponsor_line_service.create(data)
-        return sponsor_line
-    except Exception as e:
-        test_logger.error(f"Error creating test sponsor line {e}", exc_info=True)
+    test_logger.info("Creating test sponsor line")
+    data = SponsorLineFactory.build()
+    sponsor_line = await test_sponsor_line_service.create(data)
+    return sponsor_line
 
 
 @pytest.fixture(scope="function")

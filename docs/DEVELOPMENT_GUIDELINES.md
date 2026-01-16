@@ -803,6 +803,7 @@ async def get_by_id(self, item_id: int) -> TeamDB:
 - Write descriptive docstrings for test methods
 - Use helper functions from `tests/testhelpers.py` for assertions
 - Test both success and error paths
+- **Never suppress exceptions in fixtures**: Let exceptions propagate to expose fixture failures immediately. Exception masking leads to confusing downstream test failures with unclear error messages
 
 ### Testing Enhancements
 
