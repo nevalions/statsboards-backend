@@ -900,6 +900,7 @@ None. Previously had deprecation warnings from `passlib` library (using deprecat
 - Never commit manually in service methods - let BaseServiceDB handle it
 - Use relationships defined in models rather than manual joins
 - **Use eager loading** (`selectinload()`) to prevent N+1 query problems (see "Fetching Complex Relationships in Services" below)
+- **Add `order_by` to relationships** for predictable query results, especially important for parallel test execution
 
 ### File Structure Per Domain
 

@@ -31,6 +31,7 @@ class SportDB(Base):
         back_populates="sport",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        order_by="TournamentDB.id",
     )
 
     players: Mapped[list["PlayerDB"]] = relationship(
