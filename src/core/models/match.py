@@ -161,7 +161,7 @@ class MatchDB(Base):
         passive_deletes=True,
     )
 
-    match_events: Mapped["FootballEventDB"] = relationship(
+    match_events: Mapped[list["FootballEventDB"]] = relationship(
         "FootballEventDB",
         cascade="all, delete-orphan",
         back_populates="matches",

@@ -1,6 +1,6 @@
 """Authentication and authorization schemas."""
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class Token(BaseModel):
@@ -44,15 +44,14 @@ class UserUpdate(BaseModel):
 class UserResponse(BaseModel):
     """User response schema."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     username: str
     email: str
     is_active: bool
     person_id: int | None = None
     roles: list[str] = []
-
-    class Config:
-        from_attributes = True
 
 
 class RoleCreate(BaseModel):
@@ -71,13 +70,12 @@ class RoleUpdate(BaseModel):
 class RoleResponse(BaseModel):
     """Role response schema."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     description: str | None = None
     user_count: int = 0
-
-    class Config:
-        from_attributes = True
 
 
 class UserRoleAssign(BaseModel):

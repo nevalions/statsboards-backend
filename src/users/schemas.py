@@ -1,6 +1,6 @@
 """User domain schemas."""
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from src.core.schema_helpers import PaginationMetadata
 
@@ -25,15 +25,14 @@ class UserSchemaUpdate(BaseModel):
 class UserSchema(BaseModel):
     """User response schema."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     username: str
     email: str
     is_active: bool
     person_id: int | None = None
     roles: list[str] = []
-
-    class Config:
-        from_attributes = True
 
 
 class UserChangePassword(BaseModel):
