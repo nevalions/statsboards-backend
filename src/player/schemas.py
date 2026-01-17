@@ -98,3 +98,32 @@ class PlayerCareerResponseSchema(BaseModel):
 
     career_by_team: list[CareerByTeamSchema] = Field(default_factory=list)
     career_by_tournament: list[CareerByTournamentSchema] = Field(default_factory=list)
+
+
+class TournamentAssignmentSchema(BaseModel):
+    """Specific tournament assignment for a player"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    team_title: str | None = None
+    team_id: int | None = None
+    position_title: str | None = None
+    position_id: int | None = None
+    player_number: str | None = None
+    tournament_title: str | None = None
+    tournament_year: str | None = None
+    tournament_id: int | None = None
+
+
+class PlayerDetailInTournamentResponse(BaseModel):
+    """Player detail in tournament context"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    sport_id: int
+    person: PersonSchema
+    sport: SportSchema
+    tournament_assignment: TournamentAssignmentSchema
+    career_by_team: list[CareerByTeamSchema] = Field(default_factory=list)
+    career_by_tournament: list[CareerByTournamentSchema] = Field(default_factory=list)

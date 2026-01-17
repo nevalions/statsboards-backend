@@ -16,6 +16,7 @@ from .schemas import (
     PaginatedPlayerWithFullDetailsResponse,
     PlayerAddToSportSchema,
     PlayerCareerResponseSchema,
+    PlayerDetailInTournamentResponse,
     PlayerSchema,
     PlayerSchemaCreate,
     PlayerSchemaUpdate,
@@ -109,6 +110,28 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error fetching player career",
+                )
+
+        @router.get(
+            "/id/{player_id}/in-tournament/{tournament_id}",
+            response_model=PlayerDetailInTournamentResponse,
+        )
+        async def player_detail_in_tournament_endpoint(player_id: int, tournament_id: int):
+            self.logger.debug(
+                f"Get player {player_id} detail in tournament {tournament_id} endpoint"
+            )
+            try:
+                return await self.service.get_player_detail_in_tournament(player_id, tournament_id)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error getting player {player_id} detail in tournament {tournament_id} {ex}",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail="Internal server error fetching player detail in tournament",
                 )
 
         @router.get(

@@ -22,12 +22,14 @@ from .schemas import (
     PaginatedPlayerWithDetailsResponse,
     PaginatedPlayerWithFullDetailsResponse,
     PlayerCareerResponseSchema,
+    PlayerDetailInTournamentResponse,
     PlayerSchema,
     PlayerSchemaCreate,
     PlayerSchemaUpdate,
     PlayerWithDetailsSchema,
     PlayerWithFullDetailsSchema,
     TeamAssignmentSchema,
+    TournamentAssignmentSchema,
 )
 
 if TYPE_CHECKING:
@@ -504,6 +506,159 @@ class PlayerServiceDB(BaseServiceDB):
             )
 
             return PlayerCareerResponseSchema(
+                career_by_team=career_by_team,
+                career_by_tournament=career_by_tournament,
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="fetching player detail in tournament context",
+        reraise_not_found=True,
+    )
+    async def get_player_detail_in_tournament(
+        self, player_id: int, tournament_id: int
+    ) -> PlayerDetailInTournamentResponse:
+        self.logger.debug(f"Get player {player_id} detail in tournament {tournament_id}")
+
+        async with self.db.async_session() as session:
+            stmt = (
+                select(PlayerDB)
+                .options(
+                    selectinload(PlayerDB.person),
+                    selectinload(PlayerDB.sport),
+                    selectinload(PlayerDB.player_team_tournament).selectinload(
+                        PlayerTeamTournamentDB.team
+                    ),
+                    selectinload(PlayerDB.player_team_tournament).selectinload(
+                        PlayerTeamTournamentDB.position
+                    ),
+                    selectinload(PlayerDB.player_team_tournament)
+                    .selectinload(PlayerTeamTournamentDB.tournament)
+                    .selectinload(TournamentDB.season),
+                )
+                .where(PlayerDB.id == player_id)
+            )
+
+            result = await session.execute(stmt)
+            player = result.scalars().first()
+
+            if not player:
+                from fastapi import HTTPException
+
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Player id:{player_id} not found",
+                )
+
+            tournament_assignment = None
+            for ptt in player.player_team_tournament:
+                if ptt.tournament_id == tournament_id:
+                    tournament_assignment = TournamentAssignmentSchema(
+                        team_title=ptt.team.title if ptt.team else None,
+                        team_id=ptt.team_id,
+                        position_title=ptt.position.title if ptt.position else None,
+                        position_id=ptt.position_id,
+                        player_number=ptt.player_number,
+                        tournament_title=ptt.tournament.title if ptt.tournament else None,
+                        tournament_year=str(ptt.tournament.season.year)
+                        if ptt.tournament and ptt.tournament.season
+                        else None,
+                        tournament_id=ptt.tournament_id,
+                    )
+                    break
+
+            if not tournament_assignment:
+                from fastapi import HTTPException
+
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Player {player_id} not found in tournament {tournament_id}",
+                )
+
+            assignments = [
+                TeamAssignmentSchema(
+                    id=ptt.id,
+                    team_id=ptt.team_id,
+                    team_title=ptt.team.title if ptt.team else None,
+                    position_id=ptt.position_id,
+                    position_title=ptt.position.title if ptt.position else None,
+                    player_number=ptt.player_number,
+                    tournament_id=ptt.tournament_id,
+                    tournament_title=ptt.tournament.title if ptt.tournament else None,
+                    season_id=ptt.tournament.season_id if ptt.tournament else None,
+                    season_year=ptt.tournament.season.year
+                    if ptt.tournament and ptt.tournament.season
+                    else None,
+                )
+                for ptt in player.player_team_tournament
+            ]
+
+            career_by_team_dict: dict[int | None, list[TeamAssignmentSchema]] = {}
+            career_by_tournament_dict: dict[
+                tuple[int | None, int | None], list[TeamAssignmentSchema]
+            ] = {}
+
+            for assignment in assignments:
+                team_id = assignment.team_id
+                if team_id not in career_by_team_dict:
+                    career_by_team_dict[team_id] = []
+                career_by_team_dict[team_id].append(assignment)
+
+                tournament_id_assignment = assignment.tournament_id
+                season_id = assignment.season_id
+                key = (tournament_id_assignment, season_id)
+                if key not in career_by_tournament_dict:
+                    career_by_tournament_dict[key] = []
+                career_by_tournament_dict[key].append(assignment)
+
+            career_by_team = sorted(
+                [
+                    CareerByTeamSchema(
+                        team_id=team_id,
+                        team_title=(
+                            assignments_by_team[0].team_title if assignments_by_team else None
+                        ),
+                        assignments=assignments_by_team,
+                    )
+                    for team_id, assignments_by_team in career_by_team_dict.items()
+                    if team_id is not None
+                ],
+                key=lambda x: x.team_title or "",
+            )
+
+            career_by_tournament = sorted(
+                [
+                    CareerByTournamentSchema(
+                        tournament_id=tournament_id_assignment,
+                        tournament_title=(
+                            assignments_by_tournament[0].tournament_title
+                            if assignments_by_tournament
+                            else None
+                        ),
+                        season_id=season_id,
+                        season_year=(
+                            assignments_by_tournament[0].season_year
+                            if assignments_by_tournament
+                            else None
+                        ),
+                        assignments=assignments_by_tournament,
+                    )
+                    for (
+                        tournament_id_assignment,
+                        season_id,
+                    ), assignments_by_tournament in career_by_tournament_dict.items()
+                    if tournament_id_assignment is not None
+                ],
+                key=lambda x: (x.season_year or 0),
+                reverse=True,
+            )
+
+            return PlayerDetailInTournamentResponse(
+                id=player.id,
+                sport_id=player.sport_id,
+                person=player.person,
+                sport=player.sport,
+                tournament_assignment=tournament_assignment,
                 career_by_team=career_by_team,
                 career_by_tournament=career_by_tournament,
             )
