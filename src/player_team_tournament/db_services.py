@@ -781,6 +781,33 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 ascending,
             )
 
+            # Always include joins for order_by columns from related tables
+            # since _build_order_expressions_with_joins may reference PersonDB, TeamDB, PositionDB
+            order_by_needs_joins = order_by in [
+                "first_name",
+                "second_name",
+                "team_title",
+                "position_title",
+            ] or (
+                order_by_two
+                and order_by_two in ["first_name", "second_name", "team_title", "position_title"]
+            )
+
+            if order_by_needs_joins and not (search_query or team_title):
+                base_query = (
+                    select(PlayerTeamTournamentDB)
+                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                    .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+                    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                    .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
+                    .options(
+                        selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                        selectinload(PlayerTeamTournamentDB.team),
+                        selectinload(PlayerTeamTournamentDB.position),
+                    )
+                )
+
             data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
             result = await session.execute(data_query)
             players = result.scalars().all()
