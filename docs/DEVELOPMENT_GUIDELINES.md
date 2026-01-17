@@ -12,6 +12,7 @@ This document contains comprehensive development guidelines, coding standards, a
 - [Database Operations](#database-operations)
   - [Combined Pydantic Schemas](#combined-pydantic-schemas)
 - [Search Implementation](#search-implementation)
+- [Grouped Data Schemas and Career Endpoint Pattern](#grouped-data-schemas-and-career-endpoint-pattern)
 - [Advanced Filtering Patterns](#advanced-filtering-patterns)
 - [WebSocket and Real-time](#websocket-and-real-time)
 - [User Ownership and Privacy](#user-ownership-and-privacy)
@@ -1655,6 +1656,341 @@ SELECT * FROM person WHERE first_name ILIKE '%query%';
 - **PostgreSQL pg_trgm docs**: https://www.postgresql.org/docs/current/pgtrgm.html
 - **GIN Indexes**: https://www.postgresql.org/docs/current/gin.html
 - **Full guide**: `PG_TRGM_SEARCH_OPTIMIZATION.md`
+
+## Grouped Data Schemas and Career Endpoint Pattern
+
+### Overview
+
+When implementing endpoints that return pre-grouped historical data (e.g., player careers, event histories), use structured schemas to encapsulate grouping logic in the backend rather than frontend. This pattern separates concerns and provides optimized queries with single round-trip data loading.
+
+### Pattern Components
+
+#### 1. Base Assignment Schema
+
+```python
+# src/player/schemas.py
+class TeamAssignmentSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    team_id: int | None = None
+    team_title: str | None = None
+    position_id: int | None = None
+    position_title: str | None = None
+    player_number: str | None = None
+    tournament_id: int | None = None
+    tournament_title: str | None = None
+    season_id: int | None = None
+    season_year: int | None = None
+```
+
+**Purpose**: Represents a single historical record (e.g., one player assignment to a team/tournament).
+
+#### 2. Grouped Container Schemas
+
+```python
+class CareerByTeamSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    team_id: int | None = None
+    team_title: str | None = None
+    assignments: list[TeamAssignmentSchema] = Field(default_factory=list)
+
+
+class CareerByTournamentSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    tournament_id: int | None = None
+    tournament_title: str | None = None
+    season_id: int | None = None
+    season_year: int | None = None
+    assignments: list[TeamAssignmentSchema] = Field(default_factory=list)
+```
+
+**Purpose**: Groups assignments by logical dimensions (team, tournament/season).
+
+#### 3. Response Schema
+
+```python
+class PlayerCareerResponseSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    career_by_team: list[CareerByTeamSchema] = Field(default_factory=list)
+    career_by_tournament: list[CareerByTournamentSchema] = Field(default_factory=list)
+```
+
+**Purpose**: Wrapper containing multiple grouped views of the same data.
+
+### Service Layer Implementation
+
+#### Optimized Query with Eager Loading
+
+```python
+# src/player/db_services.py
+@handle_service_exceptions(
+    item_name=ITEM, operation="fetching player career data"
+)
+async def get_player_career(self, player_id: int) -> PlayerCareerResponseSchema:
+    self.logger.debug(f"Get player career data for player_id:{player_id}")
+
+    async with self.db.async_session() as session:
+        # Single optimized query with all nested relationships
+        stmt = (
+            select(PlayerDB)
+            .options(
+                selectinload(PlayerDB.person),
+                selectinload(PlayerDB.player_team_tournament).selectinload(
+                    PlayerTeamTournamentDB.team
+                ),
+                selectinload(PlayerDB.player_team_tournament).selectinload(
+                    PlayerTeamTournamentDB.position
+                ),
+                selectinload(PlayerDB.player_team_tournament).selectinload(
+                    PlayerTeamTournamentDB.tournament
+                ).selectinload(TournamentDB.season),
+            )
+            .where(PlayerDB.id == player_id)
+        )
+
+        result = await session.execute(stmt)
+        player = result.scalars().first()
+
+        if not player:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=404,
+                detail=f"Player id:{player_id} not found",
+            )
+```
+
+#### Dictionary-Based Grouping Pattern
+
+```python
+        # Build assignment list
+        assignments = [
+            TeamAssignmentSchema(
+                id=ptt.id,
+                team_id=ptt.team_id,
+                team_title=ptt.team.title if ptt.team else None,
+                position_id=ptt.position_id,
+                position_title=ptt.position.title if ptt.position else None,
+                player_number=ptt.player_number,
+                tournament_id=ptt.tournament_id,
+                tournament_title=ptt.tournament.title if ptt.tournament else None,
+                season_id=ptt.tournament.season_id if ptt.tournament else None,
+                season_year=ptt.tournament.season.year if ptt.tournament and ptt.tournament.season else None,
+            )
+            for ptt in player.player_team_tournament
+        ]
+
+        # Group by team_id
+        career_by_team_dict: dict[int | None, list[TeamAssignmentSchema]] = {}
+        for assignment in assignments:
+            team_id = assignment.team_id
+            if team_id not in career_by_team_dict:
+                career_by_team_dict[team_id] = []
+            career_by_team_dict[team_id].append(assignment)
+
+        # Group by (tournament_id, season_id) tuple
+        career_by_tournament_dict: dict[
+            tuple[int | None, int | None], list[TeamAssignmentSchema]
+        ] = {}
+        for assignment in assignments:
+            tournament_id = assignment.tournament_id
+            season_id = assignment.season_id
+            key = (tournament_id, season_id)
+            if key not in career_by_tournament_dict:
+                career_by_tournament_dict[key] = []
+            career_by_tournament_dict[key].append(assignment)
+
+        # Build grouped responses with sorting
+        career_by_team = sorted(
+            [
+                CareerByTeamSchema(
+                    team_id=team_id,
+                    team_title=(
+                        assignments_by_team[0].team_title if assignments_by_team else None
+                    ),
+                    assignments=assignments_by_team,
+                )
+                for team_id, assignments_by_team in career_by_team_dict.items()
+                if team_id is not None
+            ],
+            key=lambda x: x.team_title or "",
+        )
+
+        career_by_tournament = sorted(
+            [
+                CareerByTournamentSchema(
+                    tournament_id=tournament_id,
+                    tournament_title=(
+                        assignments_by_tournament[0].tournament_title
+                        if assignments_by_tournament
+                        else None
+                    ),
+                    season_id=season_id,
+                    season_year=(
+                        assignments_by_tournament[0].season_year
+                        if assignments_by_tournament
+                        else None
+                    ),
+                    assignments=assignments_by_tournament,
+                )
+                for (
+                    tournament_id,
+                    season_id,
+                ), assignments_by_tournament in career_by_tournament_dict.items()
+                if tournament_id is not None
+            ],
+            key=lambda x: (x.season_year or 0),
+            reverse=True,  # Newest first
+        )
+
+        return PlayerCareerResponseSchema(
+            career_by_team=career_by_team,
+            career_by_tournament=career_by_tournament,
+        )
+```
+
+### Router Layer Implementation
+
+```python
+# src/player/views.py
+@router.get("/id/{player_id}/career", response_model=PlayerCareerResponseSchema)
+async def player_career_endpoint(player_id: int):
+    self.logger.debug(f"Get player career for player_id:{player_id} endpoint")
+    try:
+        return await self.service.get_player_career(player_id)
+    except HTTPException:
+        raise
+    except Exception as ex:
+        self.logger.error(
+            f"Error getting player career for player_id:{player_id} {ex}",
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error fetching player career",
+        )
+```
+
+### Key Implementation Details
+
+#### 1. Single Query with Nested `selectinload()`
+
+- Chained `selectinload()` loads 4 relationship levels in one query
+- Prevents N+1 query problems across team, position, tournament, season
+- `selectinload()` preferred over `joinedload()` for many-to-many relationships
+
+#### 2. Dictionary-Based Grouping
+
+- Use Python dictionaries for O(1) grouping lookups
+- Composite keys (tuples) for multi-dimensional grouping: `(tournament_id, season_id)`
+- Filter out `None` values to exclude incomplete records
+
+#### 3. Response Sorting
+
+- **By team**: Alphabetical by `team_title`
+- **By tournament/season**: Chronological descending (newest first) via `reverse=True`
+
+#### 4. 404 Handling
+
+- Service raises `HTTPException` with 404 when player not found
+- Router re-raises HTTPExceptions, wraps others in 500 error
+
+### When to Use This Pattern
+
+**Use grouped data schemas when:**
+
+- Frontend needs multiple views of the same historical data
+- Grouping logic is complex or prone to errors
+- Backend can optimize queries better than frontend
+- Need consistent grouping across multiple clients
+
+**Do NOT use when:**
+
+- Data is flat and ungrouped (use standard schemas)
+- Grouping is dynamic based on user input (frontend should handle)
+- Simple one-level relationships suffice
+
+### Example: Player Career Endpoint
+
+**Endpoint**: `GET /api/players/id/{player_id}/career`
+
+**Response**:
+```json
+{
+  "career_by_team": [
+    {
+      "team_id": 1,
+      "team_title": "FC Barcelona",
+      "assignments": [
+        {
+          "id": 101,
+          "team_id": 1,
+          "team_title": "FC Barcelona",
+          "position_id": 3,
+          "position_title": "Forward",
+          "player_number": "10",
+          "tournament_id": 5,
+          "tournament_title": "La Liga 2024",
+          "season_id": 2,
+          "season_year": 2024
+        }
+      ]
+    }
+  ],
+  "career_by_tournament": [
+    {
+      "tournament_id": 5,
+      "tournament_title": "La Liga 2024",
+      "season_id": 2,
+      "season_year": 2024,
+      "assignments": [
+        {
+          "id": 101,
+          "team_id": 1,
+          "team_title": "FC Barcelona",
+          "position_id": 3,
+          "position_title": "Forward",
+          "player_number": "10",
+          "tournament_id": 5,
+          "tournament_title": "La Liga 2024",
+          "season_id": 2,
+          "season_year": 2024
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Testing Guidelines
+
+```python
+# tests/test_player_service.py
+async def test_get_player_career_success(player_with_assignments):
+    player_id = player_with_assignments.id
+    response = await player_service.get_player_career(player_id)
+
+    assert isinstance(response, PlayerCareerResponseSchema)
+    assert len(response.career_by_team) > 0
+    assert len(response.career_by_tournament) > 0
+    # Verify chronological ordering
+    assert response.career_by_tournament[0].season_year >= response.career_by_tournament[-1].season_year
+
+async def test_get_player_career_not_found():
+    with pytest.raises(HTTPException) as exc_info:
+        await player_service.get_player_career(999999)
+    assert exc_info.value.status_code == 404
+```
+
+### References
+
+- **Implementation**: `src/player/schemas.py`, `src/player/db_services.py`, `src/player/views.py`
+- **Related Issues**: STAB-67, STAB-68, STAB-69
+- **PR**: https://github.com/nevalions/statsboards-backend/pull/11
 
 ## WebSocket and Real-time
 
