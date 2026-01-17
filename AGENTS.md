@@ -56,7 +56,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 743 tests pass in parallel (~42s with pytest-xdist using 4 workers). Tests use:
+All 875 tests pass in parallel (~60s with pytest-xdist using 4 workers). Tests use:
 - Transactional rollback for isolation
 - 2 parallel databases (test_db, test_db2) distributed across 4 workers
 - Worker-specific lock files for safe table creation
@@ -64,6 +64,8 @@ All 743 tests pass in parallel (~42s with pytest-xdist using 4 workers). Tests u
 **Worker distribution:**
 - gw0, gw2 → test_db
 - gw1, gw3 → test_db2
+
+**Coverage:** ~69% overall, with comprehensive coverage of core utilities, error handling, router registry, Redis services, SSE queues, and match parser.
 
 **Important:** When writing test fixtures, use `flush()` instead of `commit()` to avoid deadlocks during parallel test execution. The outer test fixture handles rollback automatically.
 
