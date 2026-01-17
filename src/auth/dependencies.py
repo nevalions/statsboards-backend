@@ -4,11 +4,9 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from src.auth.security import decode_access_token
-from src.core.models import UserDB, db
+from src.core.models import UserDB
 from src.core.service_registry import get_service_registry
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -117,30 +115,31 @@ def require_roles(*required_roles: str):
         Raises:
             HTTPException: If user lacks required roles.
         """
-        async with db.async_session() as session:
-            stmt = (
-                select(UserDB)
-                .where(UserDB.id == current_user.id)
-                .options(selectinload(UserDB.roles))
+        service_registry = get_service_registry()
+        user_service = service_registry.get("user")
+        if user_service is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="User service not available",
             )
-            result = await session.execute(stmt)
-            user = result.scalar_one_or_none()
 
-            if user is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found",
-                )
+        user = await user_service.get_by_id_with_roles(current_user.id)
 
-            user_roles = {role.name for role in user.roles}
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
 
-            if not any(role in user_roles for role in required_roles):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Access denied. Required roles: {', '.join(required_roles)}",
-                )
+        user_roles = {role.name for role in user.roles}
 
-            return user
+        if not any(role in user_roles for role in required_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required roles: {', '.join(required_roles)}",
+            )
+
+        return user
 
     return role_checker
 

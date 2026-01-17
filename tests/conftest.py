@@ -192,6 +192,8 @@ async def test_app(test_db):
     from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
     from src.positions.db_services import PositionServiceDB
     from src.positions.views import PositionAPIRouter
+    from src.roles.db_services import RoleServiceDB
+    from src.roles.views import RoleAPIRouter
     from src.scoreboards.db_services import ScoreboardServiceDB
     from src.scoreboards.views import ScoreboardAPIRouter
     from src.seasons.db_services import SeasonServiceDB
@@ -237,6 +239,21 @@ async def test_app(test_db):
     app.include_router(api_auth_router)
     app.include_router(UserAPIRouter(UserServiceDB(test_db)).route())
     app.include_router(get_user_router())
+    try:
+        role_router = RoleAPIRouter(RoleServiceDB(test_db)).route()
+        app.include_router(role_router)
+        print("Role routes:")
+        for route in role_router.routes:
+            print(f"  {route.path} - {route.methods}")
+    except Exception as e:
+        print(f"Error including role router: {e}")
+        import traceback
+
+        traceback.print_exc()
+
+    print("All app routes:")
+    for route in app.routes:
+        print(f"  {route.path}")
 
     yield app
 

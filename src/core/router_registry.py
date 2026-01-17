@@ -166,5 +166,6 @@ def configure_routers(registry: RouterRegistry) -> RouterRegistry:
     registry.register_router("src.football_events", "api_football_event_router", priority=160)
     registry.register_router("src.auth", "api_auth_router", priority=190)
     registry.register_router("src.users", "api_user_router", priority=200)
+    registry.register_router("src.roles", "api_role_router", priority=201)
 
     return registry
