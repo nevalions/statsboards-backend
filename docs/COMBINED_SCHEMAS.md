@@ -68,8 +68,40 @@ Combined schemas provide full nested objects instead of just foreign key IDs, ma
 | Schema | Description | Relationships Included |
 |--------|-------------|------------------------|
 | `PlayerTeamTournamentSchema` | Basic PTT with FK IDs | `player_id`, `team_id`, `tournament_id`, `position_id` |
-| `PlayerTeamTournamentWithDetailsSchema` | PTT with flattened fields | `team_title`, `position_title` |
-| `PlayerTeamTournamentWithFullDetailsSchema` | PTT with nested objects | `team`, `tournament`, `position` |
+| `PlayerTeamTournamentWithDetailsSchema` | PTT with flattened fields | `team_title`, `position_title`, `first_name`, `second_name` |
+| `PlayerTeamTournamentWithDetailsAndPhotosSchema` | PTT with flattened fields and person photos | `team_title`, `position_title`, `first_name`, `second_name`, `person_photo_url`, `person_photo_icon_url` |
+ | `PlayerTeamTournamentWithFullDetailsSchema` | PTT with nested objects | `team`, `tournament`, `position` |
+
+**Example Response (PlayerTeamTournamentWithDetailsAndPhotosSchema):**
+```json
+{
+  "data": [
+    {
+      "id": 1632,
+      "player_team_tournament_eesl_id": 5005,
+      "player_id": 2170,
+      "player_number": "10",
+      "team_id": 6286,
+      "team_title": "Team Alpha",
+      "tournament_id": 3996,
+      "position_id": 852,
+      "position_title": "Quarterback",
+      "first_name": "John",
+      "second_name": "Doe",
+      "person_photo_url": "/static/uploads/persons/photos/123.jpg",
+      "person_photo_icon_url": "/static/uploads/persons/icons/123.jpg"
+    }
+  ],
+  "metadata": {
+    "page": 1,
+    "items_per_page": 20,
+    "total_items": 1,
+    "total_pages": 1,
+    "has_next": false,
+    "has_previous": false
+  }
+}
+```
 
 ## API Endpoints
 
@@ -177,6 +209,9 @@ GET /api/players_team_tournament/{id}/
 
 # Get PTTs in tournament with pagination and flat details
 GET /api/players_team_tournament/tournament/{tournament_id}/players/paginated?page=1&items_per_page=20&search=query
+
+# Get PTTs in tournament with pagination and flat details with person photos
+GET /api/players_team_tournament/tournament/{tournament_id}/players/paginated/details-with-photos?page=1&items_per_page=20&search=query
 
 # Search PTTs in tournament with pagination and full details
 GET /api/players_team_tournament/tournament/{tournament_id}/players/paginated/full-details?page=1&items_per_page=20&search=query

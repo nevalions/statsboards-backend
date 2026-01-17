@@ -1376,6 +1376,7 @@ Key utility methods provided by base class:
 | `MatchWithDetailsSchema` | `GET /api/matches/{id}/with-details/` | Full match display with teams, tournament |
 | `TeamWithDetailsSchema` | `GET /api/teams/{id}/with-details/` | Team page with sport, sponsors |
 | `TournamentWithDetailsSchema` | `GET /api/tournaments/{id}/with-details/` | Tournament page with all teams |
+| `PlayerTeamTournamentWithDetailsAndPhotosSchema` | `GET /api/players_team_tournament/tournament/{tournament_id}/players/paginated/details-with-photos` | Tournament player list with photos for avatars |
 
 **Key Pattern:**
 
