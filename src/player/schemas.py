@@ -1,9 +1,11 @@
-from typing import Annotated, Any
+from __future__ import annotations
 
-from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
+from src.core.shared_schemas import PlayerTeamTournamentWithTitles
+from src.person.schemas import PersonSchema
+from src.sports.schemas import SportSchema
 
 
 class PlayerSchemaBase(BaseModel):
@@ -34,40 +36,29 @@ class PlayerSchema(PlayerSchemaCreate):
     id: int = Field(..., examples=[1])
 
 
-class PlayerTeamTournamentInfoSchema(BaseModel):
-    id: int
-    player_team_tournament_eesl_id: int | None = None
-    player_number: Annotated[str, Path(max_length=10)] | None = "0"
-    team_id: int | None = None
-    team_title: str | None = None
-    position_id: int | None = None
-    position_title: str | None = None
-    tournament_id: int | None = None
-
-
 class PlayerWithDetailsSchema(PlayerSchema):
     first_name: str | None = Field(None, description="Person's first name")
     second_name: str | None = Field(None, description="Person's second name")
-    player_team_tournaments: list[PlayerTeamTournamentInfoSchema] = Field(
+    player_team_tournaments: list[PlayerTeamTournamentWithTitles] = Field(
         default_factory=list, description="Player team tournament associations"
     )
 
 
 class PlayerWithFullDetailsSchema(PlayerSchema):
-    person: Any = Field(None, description="Person with full details")
-    sport: Any = Field(None, description="Sport with full details")
-    player_team_tournaments: list[Any] = Field(
+    person: PersonSchema | None = Field(None, description="Person with full details")
+    sport: SportSchema | None = Field(None, description="Sport with full details")
+    player_team_tournaments: list[PlayerTeamTournamentWithTitles] = Field(
         default_factory=list, description="Player team tournament associations with nested details"
     )
 
 
 class PaginatedPlayerWithFullDetailsResponse(BaseModel):
-    data: list["PlayerWithFullDetailsSchema"]
+    data: list[PlayerWithFullDetailsSchema]
     metadata: PaginationMetadata
 
 
 class PaginatedPlayerWithDetailsResponse(BaseModel):
-    data: list["PlayerWithDetailsSchema"]
+    data: list[PlayerWithDetailsSchema]
     metadata: PaginationMetadata
 
 
@@ -109,8 +100,3 @@ class PlayerCareerResponseSchema(BaseModel):
 
     career_by_team: list[CareerByTeamSchema] = Field(default_factory=list)
     career_by_tournament: list[CareerByTournamentSchema] = Field(default_factory=list)
-
-
-PlayerWithFullDetailsSchema.model_rebuild()
-PaginatedPlayerWithFullDetailsResponse.model_rebuild()
-PaginatedPlayerWithDetailsResponse.model_rebuild()

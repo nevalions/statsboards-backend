@@ -280,6 +280,7 @@ python validate_config.py
 - Add `model_config = ConfigDict(from_attributes=True)` to output schemas
 - Use Pydantic `Annotated` for validation constraints
 - Keep response models separate from request models
+- Add `from __future__ import annotations` at the top of schema files to enable forward references without quotes (modern Python 3.7+ pattern)
 
 ### Model Patterns
 

@@ -1,18 +1,16 @@
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
+from src.core.shared_schemas import (
+    PlayerTeamTournamentBaseFields,
+    PlayerTeamTournamentWithTitles,
+)
 
 
-class PlayerTeamTournamentSchemaBase(BaseModel):
-    player_team_tournament_eesl_id: int | None = None
-    player_id: int
-    position_id: int | None = None
-    team_id: int | None = None
-    tournament_id: int | None = None
-    player_number: Annotated[str, Path(max_length=10)] | None = "0"
+class PlayerTeamTournamentSchemaBase(PlayerTeamTournamentBaseFields):
+    pass
 
 
 PlayerTeamTournamentSchemaUpdate = make_fields_optional(PlayerTeamTournamentSchemaBase)
@@ -28,38 +26,24 @@ class PlayerTeamTournamentSchema(PlayerTeamTournamentSchemaCreate):
     id: int
 
 
-class PlayerTeamTournamentWithDetailsSchema(BaseModel):
-    id: int
-    player_team_tournament_eesl_id: int | None = None
+class PlayerTeamTournamentWithDetailsSchema(PlayerTeamTournamentWithTitles):
     player_id: int
-    position_id: int | None = None
-    team_id: int | None = None
-    tournament_id: int | None = None
-    player_number: Annotated[str, Path(max_length=10)] | None = "0"
     first_name: str | None = None
     second_name: str | None = None
-    team_title: str | None = None
-    position_title: str | None = None
 
 
-class PlayerTeamTournamentWithFullDetailsSchema(BaseModel):
+class PlayerTeamTournamentWithFullDetailsSchema(PlayerTeamTournamentBaseFields):
     id: int
-    player_team_tournament_eesl_id: int | None = None
-    player_id: int
-    player_number: Annotated[str, Path(max_length=10)] | None = "0"
     team: Any = Field(None, description="Team with full details")
     tournament: Any = Field(None, description="Tournament with full details")
     position: Any = Field(None, description="Position with full details")
     model_config = ConfigDict(from_attributes=True)
 
 
-class PlayerTeamTournamentWithFullDetailsSchemaRef(BaseModel):
+class PlayerTeamTournamentWithFullDetailsSchemaRef(PlayerTeamTournamentBaseFields):
     """Reference schema for use in PlayerWithFullDetailsSchema"""
 
     id: int
-    player_team_tournament_eesl_id: int | None = None
-    player_id: int
-    player_number: Annotated[str, Path(max_length=10)] | None = "0"
     team: Any = Field(None, description="Team with full details")
     tournament: Any = Field(None, description="Tournament with full details")
     position: Any = Field(None, description="Position with full details")
