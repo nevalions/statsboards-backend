@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from src.core.decorators import handle_service_exceptions
-from src.core.models import BaseServiceDB, RoleDB
+from src.core.models import BaseServiceDB, RoleDB, UserRoleDB
 from src.core.models.base import Database
 from src.core.models.mixins.search_pagination_mixin import SearchPaginationMixin
 from src.core.schema_helpers import PaginationMetadata
@@ -59,23 +59,14 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
             if role is None:
                 return None
 
-            count_stmt = select(func.count()).select_from(
-                select(RoleDB.users).where(RoleDB.id == role_id).subquery()
+            count_stmt = (
+                select(func.count()).select_from(UserRoleDB).where(UserRoleDB.role_id == role_id)
             )
             count_result = await session.execute(count_stmt)
             user_count = count_result.scalar() or 0
 
             role.user_count = user_count
             return role
-            count_result = await session.execute(count_stmt)
-            user_count = count_result.scalar() or 0
-
-            return RoleSchema(
-                id=role_row.id,
-                name=role_row.name,
-                description=role_row.description,
-                user_count=user_count,
-            )
 
     async def update(
         self,
@@ -174,14 +165,13 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
 
             if role_ids:
                 count_stmt = (
-                    select(RoleDB.id, func.count().label("user_count"))
-                    .join(RoleDB.users)
-                    .where(RoleDB.id.in_(role_ids))
-                    .group_by(RoleDB.id)
+                    select(UserRoleDB.role_id, func.count(UserRoleDB.user_id).label("user_count"))
+                    .where(UserRoleDB.role_id.in_(role_ids))
+                    .group_by(UserRoleDB.role_id)
                 )
                 count_results = await session.execute(count_stmt)
                 for row in count_results.all():
-                    user_counts[row.id] = row.user_count
+                    user_counts[row.role_id] = row.user_count
 
             roles_with_count = [
                 RoleSchema(
@@ -195,51 +185,6 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
 
             return PaginatedRoleResponse(
                 data=roles_with_count,
-                metadata=PaginationMetadata(
-                    **await self._calculate_pagination_metadata(total_items, skip, limit),
-                ),
-            )
-
-        async with self.db.async_session() as session:
-            base_query = (
-                select(
-                    RoleDB,
-                    func.count(RoleDB.users).label("user_count"),
-                )
-                .outerjoin(RoleDB.users)
-                .group_by(RoleDB.id)
-            )
-
-            base_query = await self._apply_search_filters(
-                base_query,
-                [(RoleDB, "name")],
-                search_query,
-            )
-
-            count_stmt = select(func.count()).select_from(base_query.subquery())
-            count_result = await session.execute(count_stmt)
-            total_items = count_result.scalar() or 0
-
-            order_expr, order_expr_two = await self._build_order_expressions(
-                RoleDB, order_by, order_by_two, ascending, RoleDB.name, RoleDB.id
-            )
-
-            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
-            result = await session.execute(data_query)
-            roles_data = result.all()
-
-            roles = [
-                RoleSchema(
-                    id=row.RoleDB.id,
-                    name=row.RoleDB.name,
-                    description=row.RoleDB.description,
-                    user_count=row.user_count or 0,
-                )
-                for row in roles_data
-            ]
-
-            return PaginatedRoleResponse(
-                data=roles,
                 metadata=PaginationMetadata(
                     **await self._calculate_pagination_metadata(total_items, skip, limit),
                 ),

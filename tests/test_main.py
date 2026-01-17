@@ -56,7 +56,7 @@ async def test_lifespan_startup(mock_settings, mock_db, mock_ws_manager, mock_re
     app = FastAPI()
 
     with (
-        patch("src.main.init_service_registry", AsyncMock()) as mock_init,
+        patch("src.main.init_service_registry", Mock()) as mock_init,
         patch("src.main.register_all_services", Mock()) as mock_register,
     ):
         async with lifespan(app):
@@ -74,7 +74,7 @@ async def test_lifespan_shutdown(mock_settings, mock_db, mock_ws_manager):
     app = FastAPI()
 
     with (
-        patch("src.main.init_service_registry", AsyncMock()),
+        patch("src.main.init_service_registry", Mock()),
         patch("src.main.register_all_services", Mock()),
     ):
         async with lifespan(app):
