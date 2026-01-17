@@ -35,6 +35,16 @@ class PlayerTeamTournamentWithDetailsSchema(PlayerTeamTournamentWithTitles):
     second_name: str | None = None
 
 
+class PlayerTeamTournamentWithDetailsAndPhotosSchema(PlayerTeamTournamentWithTitles):
+    """Mixed schema with player details and person photo fields for tournament players display."""
+
+    player_id: int
+    first_name: str | None = None
+    second_name: str | None = None
+    person_photo_url: str | None = ""
+    person_photo_icon_url: str | None = ""
+
+
 class PlayerTeamTournamentWithFullDetailsSchema(PlayerTeamTournamentBaseFields):
     id: int
     team: TeamSchema | None = Field(None, description="Team with full details")
@@ -65,4 +75,9 @@ class PaginatedPlayerTeamTournamentWithDetailsResponse(BaseModel):
 
 class PaginatedPlayerTeamTournamentWithFullDetailsResponse(BaseModel):
     data: list[PlayerTeamTournamentWithFullDetailsSchema]
+    metadata: PaginationMetadata
+
+
+class PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse(BaseModel):
+    data: list[PlayerTeamTournamentWithDetailsAndPhotosSchema]
     metadata: PaginationMetadata

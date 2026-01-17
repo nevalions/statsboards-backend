@@ -20,11 +20,13 @@ from src.player.db_services import PlayerServiceDB
 from ..logging_config import get_logger
 from .schemas import (
     PaginatedPlayerTeamTournamentResponse,
+    PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse,
     PaginatedPlayerTeamTournamentWithDetailsResponse,
     PaginatedPlayerTeamTournamentWithFullDetailsResponse,
     PlayerTeamTournamentSchema,
     PlayerTeamTournamentSchemaCreate,
     PlayerTeamTournamentSchemaUpdate,
+    PlayerTeamTournamentWithDetailsAndPhotosSchema,
     PlayerTeamTournamentWithDetailsSchema,
     PlayerTeamTournamentWithFullDetailsSchema,
 )
@@ -701,6 +703,89 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 data=[
                     PlayerTeamTournamentWithFullDetailsSchema.model_validate(p)
                     for p in players_with_full_details
+                ],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching tournament players with pagination and details with photos",
+        return_value_on_not_found=None,
+    )
+    async def search_tournament_players_with_pagination_details_and_photos(
+        self,
+        tournament_id: int,
+        search_query: str | None = None,
+        team_title: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "player_number",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse:
+        self.logger.debug(
+            f"Search tournament players with details and photos: tournament_id={tournament_id}, query={search_query}, "
+            f"team_title={team_title}, skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = await self._build_base_query_with_search(
+                tournament_id,
+                search_query,
+                team_title,
+            )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr, order_expr_two = await self._build_order_expressions(
+                PlayerTeamTournamentDB,
+                order_by,
+                order_by_two,
+                ascending,
+                PlayerTeamTournamentDB.player_number,
+                PlayerTeamTournamentDB.id,
+            )
+
+            data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            players = result.scalars().all()
+
+            players_with_details_and_photos = []
+            for p in players:
+                players_with_details_and_photos.append(
+                    {
+                        "id": p.id,
+                        "player_team_tournament_eesl_id": p.player_team_tournament_eesl_id,
+                        "player_id": p.player_id,
+                        "position_id": p.position_id,
+                        "team_id": p.team_id,
+                        "tournament_id": p.tournament_id,
+                        "player_number": p.player_number,
+                        "first_name": p.player.person.first_name
+                        if p.player and p.player.person
+                        else None,
+                        "second_name": p.player.person.second_name
+                        if p.player and p.player.person
+                        else None,
+                        "team_title": p.team.title if p.team else None,
+                        "position_title": p.position.title if p.position else None,
+                        "person_photo_url": p.player.person.person_photo_url
+                        if p.player and p.player.person
+                        else None,
+                        "person_photo_icon_url": p.player.person.person_photo_icon_url
+                        if p.player and p.player.person
+                        else None,
+                    }
+                )
+
+            return PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse(
+                data=[
+                    PlayerTeamTournamentWithDetailsAndPhotosSchema.model_validate(p)
+                    for p in players_with_details_and_photos
                 ],
                 metadata=PaginationMetadata(
                     **await self._calculate_pagination_metadata(total_items, skip, limit),
