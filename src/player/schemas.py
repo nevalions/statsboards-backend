@@ -3,17 +3,15 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
-from src.core.shared_schemas import PlayerTeamTournamentWithTitles
+from src.core.shared_schemas import PlayerTeamTournamentWithTitles, PrivacyFieldsBase
 from src.person.schemas import PersonSchema
 from src.sports.schemas import SportSchema
 
 
-class PlayerSchemaBase(BaseModel):
+class PlayerSchemaBase(PrivacyFieldsBase):
     sport_id: int | None = Field(None, examples=[1])
     person_id: int | None = Field(None, examples=[1])
     player_eesl_id: int | None = Field(None, examples=[98765])
-    isprivate: bool = Field(False, examples=[False, True])
-    user_id: int | None = Field(None, examples=[1])
 
 
 PlayerSchemaUpdate = make_fields_optional(PlayerSchemaBase)

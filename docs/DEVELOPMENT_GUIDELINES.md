@@ -282,6 +282,42 @@ python validate_config.py
 - Keep response models separate from request models
 - Add `from __future__ import annotations` at the top of schema files to enable forward references without quotes (modern Python 3.7+ pattern)
 
+#### Shared Base Classes (src/core/shared_schemas.py)
+
+Use shared base classes to avoid duplication across schemas:
+
+**SponsorFieldsBase** - For entities with sponsor relationships
+```python
+from src.core.shared_schemas import SponsorFieldsBase
+
+class TeamSchemaBase(SponsorFieldsBase):
+    # Inherits: sponsor_line_id, main_sponsor_id
+    # Add entity-specific fields below
+    title: str
+    sport_id: int
+```
+
+**PrivacyFieldsBase** - For entities with privacy/ownership fields
+```python
+from src.core.shared_schemas import PrivacyFieldsBase
+
+class TeamSchemaBase(SponsorFieldsBase, PrivacyFieldsBase):
+    # Inherits: sponsor_line_id, main_sponsor_id, isprivate, user_id
+    # Add entity-specific fields below
+    title: str
+    sport_id: int
+```
+
+**PlayerTeamTournamentBaseFields** and **PlayerTeamTournamentWithTitles** - For player-team-tournament relationships
+```python
+from src.core.shared_schemas import PlayerTeamTournamentBaseFields, PlayerTeamTournamentWithTitles
+
+class PlayerTeamTournamentWithDetailsSchema(PlayerTeamTournamentBaseFields):
+    id: int
+    first_name: str | None = None
+    second_name: str | None = None
+```
+
 ### Model Patterns
 
 - Use `Mapped[type]` with `mapped_column()` for all columns

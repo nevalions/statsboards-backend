@@ -20,9 +20,9 @@ from ..player.schemas import (
 )
 from ..sponsor_lines.schemas import SponsorLineSchema
 from ..sponsors.schemas import SponsorSchema
+from ..teams.schemas import PaginatedTeamResponse
 from .db_services import TournamentServiceDB
 from .schemas import (
-    PaginatedTeamResponse,
     PaginatedTournamentWithDetailsResponse,
     TournamentSchema,
     TournamentSchemaCreate,

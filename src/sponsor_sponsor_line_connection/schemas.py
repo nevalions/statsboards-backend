@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, ConfigDict
 
 from src.core.schema_helpers import make_fields_optional

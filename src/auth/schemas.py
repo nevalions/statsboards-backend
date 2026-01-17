@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Authentication and authorization schemas."""
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field

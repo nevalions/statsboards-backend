@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
+from src.core.shared_schemas import PrivacyFieldsBase, SponsorFieldsBase
 from src.seasons.schemas import SeasonSchema
 from src.sponsor_lines.schemas import SponsorLineSchema
 from src.sponsors.schemas import SponsorSchema
@@ -11,7 +14,7 @@ from src.sports.schemas import SportSchema
 from src.teams.schemas import TeamSchema
 
 
-class TournamentSchemaBase(BaseModel):
+class TournamentSchemaBase(SponsorFieldsBase, PrivacyFieldsBase):
     tournament_eesl_id: int | None = Field(None, examples=[67890])
     title: Annotated[str, Path(max_length=255)] = Field(
         "Tournament", examples=["Premier League", "La Liga"]
@@ -28,10 +31,6 @@ class TournamentSchemaBase(BaseModel):
     )
     season_id: int = Field(..., examples=[1])
     sport_id: int = Field(..., examples=[1])
-    sponsor_line_id: int | None = Field(None, examples=[1])
-    main_sponsor_id: int | None = Field(None, examples=[5])
-    isprivate: bool = Field(False, examples=[False, True])
-    user_id: int | None = Field(None, examples=[1])
 
 
 TournamentSchemaUpdate = make_fields_optional(TournamentSchemaBase)
@@ -57,8 +56,8 @@ class TournamentSchema(TournamentSchemaBase):
     id: int = Field(..., examples=[1])
 
 
-class PaginatedTeamResponse(BaseModel):
-    data: list[TeamSchema]
+class PaginatedTournamentResponse(BaseModel):
+    data: list[TournamentSchema]
     metadata: PaginationMetadata
 
 

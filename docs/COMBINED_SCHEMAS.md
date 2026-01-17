@@ -61,7 +61,7 @@ Combined schemas provide full nested objects instead of just foreign key IDs, ma
 |--------|-------------|------------------------|
 | `PlayerSchema` | Basic player with FK IDs | `sport_id`, `person_id` |
 | `PlayerWithDetailsSchema` | Player with person name fields | `first_name`, `second_name`, `player_team_tournaments[]` (flat) |
-| `PlayerWithFullDetailsSchema` | Player with fully nested PTTs (uses `Any` type for compatibility) | `person` (Any), `sport` (Any), `player_team_tournaments[]` (nested) |
+| `PlayerWithFullDetailsSchema` | Player with fully nested PTTs | `person`, `sport`, `player_team_tournaments[]` (nested) |
 
 ### PlayerTeamTournament Schemas
 
@@ -69,7 +69,7 @@ Combined schemas provide full nested objects instead of just foreign key IDs, ma
 |--------|-------------|------------------------|
 | `PlayerTeamTournamentSchema` | Basic PTT with FK IDs | `player_id`, `team_id`, `tournament_id`, `position_id` |
 | `PlayerTeamTournamentWithDetailsSchema` | PTT with flattened fields | `team_title`, `position_title` |
-| `PlayerTeamTournamentWithFullDetailsSchema` | PTT with nested objects (uses `Any` type for compatibility) | `team` (Any), `tournament` (Any), `position` (Any) |
+| `PlayerTeamTournamentWithFullDetailsSchema` | PTT with nested objects | `team`, `tournament`, `position` |
 
 ## API Endpoints
 
@@ -413,6 +413,8 @@ Determine which relationships to include in your new schema:
 Create a new schema file or add to existing one:
 
 ```python
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict, Field
 from src.core.schema_helpers import PaginationMetadata
@@ -424,7 +426,7 @@ if TYPE_CHECKING:
 
 class SponsorWithMatchesSchema(SponsorSchema):
     """Extended sponsor schema with full match details."""
-    matches: list["MatchSchema"] = Field(
+    matches: list[MatchSchema] = Field(
         default_factory=list,
         description="Matches sponsored by this sponsor"
     )
@@ -435,30 +437,15 @@ class PaginatedSponsorWithMatchesResponse(BaseModel):
     metadata: PaginationMetadata
 ```
 
-**Note on Forward References vs `Any` Type:**
+**Important Schema Guidelines:**
 
-For schemas that will be used in `/paginated/full-details` endpoints (i.e., paginated responses with OpenAPI generation), consider using `Any` type instead of forward references to avoid Pydantic v2 schema generation errors:
-
-```python
-from typing import Any
-
-class SponsorWithMatchesSchema(SponsorSchema):
-    """Extended sponsor schema with full match details."""
-    matches: list[Any] = Field(
-        default_factory=list,
-        description="Matches sponsored by this sponsor"
-    )
-```
-
-Use `Any` type when:
-- The schema is used in `response_model` for paginated endpoints
-- Forward references cause "class-not-fully-defined" errors in OpenAPI generation
-- The schema is referenced by multiple other schemas creating circular dependencies
-
-Use forward references with `TYPE_CHECKING` when:
-- The schema is only used in CRUD operations (not paginated endpoints)
-- No OpenAPI schema generation issues occur
-- Circular dependencies can be managed with `TYPE_CHECKING`
+- **Always add** `from __future__ import annotations` at top of schema files
+- This enables modern Python3.7+ forward reference syntax without quotes
+- Use actual schema types (e.g., `MatchSchema`) instead of `Any` for proper type safety
+- Use `TYPE_CHECKING` blocks only when truly needed for circular import management
+- Consider using shared base classes from `src/core/shared_schemas.py`:
+  - `SponsorFieldsBase` - For entities with sponsor relationships
+  - `PrivacyFieldsBase` - For entities with privacy/ownership fields
 
 ### Step 3: Add Service Method with Eager Loading
 

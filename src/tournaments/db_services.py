@@ -20,10 +20,9 @@ from src.core.schema_helpers import PaginationMetadata
 from ..logging_config import get_logger
 from ..player.schemas import PaginatedPlayerWithDetailsResponse, PlayerWithDetailsSchema
 from ..sponsor_lines.db_services import SponsorLineServiceDB
+from ..teams.schemas import PaginatedTeamResponse, TeamSchema
 from .schemas import (
-    PaginatedTeamResponse,
     PaginatedTournamentWithDetailsResponse,
-    TeamSchema,
     TournamentSchemaCreate,
     TournamentSchemaUpdate,
 )

@@ -1,25 +1,24 @@
+from __future__ import annotations
+
 from datetime import datetime as date_type
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
+from src.core.shared_schemas import PrivacyFieldsBase, SponsorFieldsBase
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.scoreboards.schemas import ScoreboardSchemaCreate
 from src.teams.schemas import TeamSchema
 from src.tournaments.schemas import TournamentSchema
 
 
-class MatchSchemaBase(BaseModel):
+class MatchSchemaBase(SponsorFieldsBase, PrivacyFieldsBase):
     match_date: date_type | None = Field(None, examples=["2024-01-15T15:00:00"])
     week: int = Field(1, examples=[1, 2, 3])
     match_eesl_id: int | None = Field(None, examples=[12345])
     team_a_id: int = Field(..., examples=[1])
     team_b_id: int = Field(..., examples=[2])
     tournament_id: int | None = Field(None, examples=[1])
-    sponsor_line_id: int | None = Field(None, examples=[1])
-    main_sponsor_id: int | None = Field(None, examples=[5])
-    isprivate: bool = Field(False, examples=[False, True])
-    user_id: int | None = Field(None, examples=[1])
 
 
 MatchSchemaUpdate = make_fields_optional(MatchSchemaBase)

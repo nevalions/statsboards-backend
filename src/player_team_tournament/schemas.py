@@ -1,4 +1,4 @@
-from typing import Any
+from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -7,6 +7,9 @@ from src.core.shared_schemas import (
     PlayerTeamTournamentBaseFields,
     PlayerTeamTournamentWithTitles,
 )
+from src.positions.schemas import PositionSchema
+from src.teams.schemas import TeamSchema
+from src.tournaments.schemas import TournamentSchema
 
 
 class PlayerTeamTournamentSchemaBase(PlayerTeamTournamentBaseFields):
@@ -34,9 +37,9 @@ class PlayerTeamTournamentWithDetailsSchema(PlayerTeamTournamentWithTitles):
 
 class PlayerTeamTournamentWithFullDetailsSchema(PlayerTeamTournamentBaseFields):
     id: int
-    team: Any = Field(None, description="Team with full details")
-    tournament: Any = Field(None, description="Tournament with full details")
-    position: Any = Field(None, description="Position with full details")
+    team: TeamSchema | None = Field(None, description="Team with full details")
+    tournament: TournamentSchema | None = Field(None, description="Tournament with full details")
+    position: PositionSchema | None = Field(None, description="Position with full details")
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -44,9 +47,9 @@ class PlayerTeamTournamentWithFullDetailsSchemaRef(PlayerTeamTournamentBaseField
     """Reference schema for use in PlayerWithFullDetailsSchema"""
 
     id: int
-    team: Any = Field(None, description="Team with full details")
-    tournament: Any = Field(None, description="Tournament with full details")
-    position: Any = Field(None, description="Position with full details")
+    team: TeamSchema | None = Field(None, description="Team with full details")
+    tournament: TournamentSchema | None = Field(None, description="Tournament with full details")
+    position: PositionSchema | None = Field(None, description="Position with full details")
     model_config = ConfigDict(from_attributes=True)
 
 
