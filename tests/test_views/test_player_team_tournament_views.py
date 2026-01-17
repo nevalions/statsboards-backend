@@ -56,16 +56,12 @@ class TestPlayerTeamTournamentViews:
             player_team_tournament_eesl_id=100,
         )
 
-        response = await client.post(
-            "/api/players_team_tournament/", json=ptt_data.model_dump()
-        )
+        response = await client.post("/api/players_team_tournament/", json=ptt_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_get_player_team_tournament_by_eesl_id_endpoint(
-        self, client, test_db
-    ):
+    async def test_get_player_team_tournament_by_eesl_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -144,14 +140,17 @@ class TestPlayerTeamTournamentViews:
                 position_id=position.id,
                 team_id=team.id,
                 tournament_id=tournament.id,
+                player_number="1",
             )
         )
+
         await ptt_service.create(
             PlayerTeamTournamentSchemaCreate(
                 player_id=player2.id,
                 position_id=position.id,
                 team_id=team.id,
                 tournament_id=tournament.id,
+                player_number="2",
             )
         )
 
@@ -201,9 +200,7 @@ class TestPlayerTeamTournamentViews:
 
         assert response.status_code == 404
 
-    async def test_get_person_by_player_team_tournament_id_endpoint(
-        self, client, test_db
-    ):
+    async def test_get_person_by_player_team_tournament_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -240,8 +237,186 @@ class TestPlayerTeamTournamentViews:
         )
         created = await ptt_service.create_or_update_player_team_tournament(ptt_data)
 
+        response = await client.get(f"/api/players_team_tournament/id/{created.id}/person/")
+
+        assert response.status_code == 200
+
+    async def test_paginated_players_includes_team_null(self, client, test_db):
+        """Test that paginated endpoint returns players with team_id: null."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        position_service = PositionServiceDB(test_db)
+        position = await position_service.create(
+            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        )
+
+        player_service = PlayerServiceDB(test_db)
+        player1 = await player_service.create_or_update_player(PlayerFactory.build())
+        player2 = await player_service.create_or_update_player(PlayerFactory.build())
+
+        ptt_service = PlayerTeamTournamentServiceDB(test_db)
+
+        await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player1.id,
+                position_id=position.id,
+                team_id=team.id,
+                tournament_id=tournament.id,
+                player_number="1",
+            )
+        )
+
+        await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player2.id,
+                position_id=position.id,
+                team_id=None,
+                tournament_id=tournament.id,
+                player_number="2",
+            )
+        )
+
         response = await client.get(
-            f"/api/players_team_tournament/id/{created.id}/person/"
+            f"/api/players_team_tournament/tournament/{tournament.id}/players/paginated"
         )
 
         assert response.status_code == 200
+        data = response.json()
+        assert data["metadata"]["total_items"] == 2
+        assert len(data["data"]) == 2
+
+        team_ids = [p["team_id"] for p in data["data"]]
+        assert team.id in team_ids
+        assert None in team_ids
+
+    async def test_paginated_details_with_photos_includes_team_null(self, client, test_db):
+        """Test that paginated with details and photos endpoint returns players with team_id: null."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        position_service = PositionServiceDB(test_db)
+        position = await position_service.create(
+            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        )
+
+        player_service = PlayerServiceDB(test_db)
+        player1 = await player_service.create_or_update_player(PlayerFactory.build())
+        player2 = await player_service.create_or_update_player(PlayerFactory.build())
+
+        ptt_service = PlayerTeamTournamentServiceDB(test_db)
+
+        await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player1.id,
+                position_id=position.id,
+                team_id=team.id,
+                tournament_id=tournament.id,
+                player_number="1",
+            )
+        )
+
+        await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player2.id,
+                position_id=position.id,
+                team_id=None,
+                tournament_id=tournament.id,
+                player_number="2",
+            )
+        )
+
+        response = await client.get(
+            f"/api/players_team_tournament/tournament/{tournament.id}/players/paginated/details-with-photos"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["metadata"]["total_items"] == 2
+        assert len(data["data"]) == 2
+
+        team_titles = [p["team_title"] for p in data["data"]]
+        assert team.title in team_titles
+        assert None in team_titles
+
+    async def test_paginated_full_details_includes_team_null(self, client, test_db):
+        """Test that paginated with full details endpoint returns players with team_id: null."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        position_service = PositionServiceDB(test_db)
+        position = await position_service.create(
+            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        )
+
+        player_service = PlayerServiceDB(test_db)
+        player1 = await player_service.create_or_update_player(PlayerFactory.build())
+        player2 = await player_service.create_or_update_player(PlayerFactory.build())
+
+        ptt_service = PlayerTeamTournamentServiceDB(test_db)
+
+        await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player1.id,
+                position_id=position.id,
+                team_id=team.id,
+                tournament_id=tournament.id,
+                player_number="1",
+            )
+        )
+
+        await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player2.id,
+                position_id=position.id,
+                team_id=None,
+                tournament_id=tournament.id,
+                player_number="2",
+            )
+        )
+
+        response = await client.get(
+            f"/api/players_team_tournament/tournament/{tournament.id}/players/paginated/full-details"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["metadata"]["total_items"] == 2
+        assert len(data["data"]) == 2
+
+        team_ids = [p["team_id"] for p in data["data"]]
+        assert team.id in team_ids
+        assert None in team_ids

@@ -1191,6 +1191,73 @@ async def _get_available_players(
     ]
 ```
 
+#### Joins with Nullable Foreign Keys
+
+**Use `outerjoin()` instead of `join()` when the foreign key is nullable** to include records where the related field is `NULL`.
+
+**Problem**: Inner joins filter out records with `NULL` foreign keys.
+
+**Example - PlayerTeamTournament with optional team assignment**:
+
+```python
+# WRONG - Filters out players with team_id: NULL
+base_query = (
+    select(PlayerTeamTournamentDB)
+    .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)  # INNER JOIN
+    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+)
+
+# CORRECT - Includes players with team_id: NULL
+base_query = (
+    select(PlayerTeamTournamentDB)
+    .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+    .outerjoin(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)  # OUTER JOIN
+    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+)
+```
+
+**Rules**:
+- Use `join()` for required relationships (non-nullable FK, `ondelete="CASCADE"`)
+- Use `outerjoin()` for optional relationships (nullable FK, `ondelete="SET NULL"` or `ondelete="RESTRICT"`)
+- Check model definition: `ForeignKey("table.id", ondelete="...")` with `nullable=True` → use `outerjoin()`
+
+**Example - Tournament players paginated with optional team**:
+
+```python
+# src/player_team_tournament/db_services.py
+async def _build_base_query_with_search(
+    self,
+    tournament_id: int,
+    search_query: str | None = None,
+    team_title: str | None = None,
+):
+    search_fields = [
+        (PersonDB, "first_name"),
+        (PersonDB, "second_name"),
+    ]
+
+    if search_query or team_title:
+        base_query = (
+            select(PlayerTeamTournamentDB)
+            .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+            .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
+            .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+            .outerjoin(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)  # team_id is nullable
+            .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)  # position_id is nullable
+            .options(
+                selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
+                selectinload(PlayerTeamTournamentDB.team),
+                selectinload(PlayerTeamTournamentDB.position),
+            )
+        )
+        ...
+```
+
+**Testing**: Always test both cases - records with the FK set and records with `NULL` values.
+
 #### Nested Related Items Using Service Registry
 
 Use `get_nested_related_item_by_id()` to traverse 2-level relationships using a different service.

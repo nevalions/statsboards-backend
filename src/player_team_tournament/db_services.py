@@ -225,7 +225,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
                 .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
                 .join(PersonDB, PlayerDB.person_id == PersonDB.id)
-                .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                .outerjoin(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
                 .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
                 .options(
                     selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
@@ -664,7 +664,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
                     .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
                     .join(PersonDB, PlayerDB.person_id == PersonDB.id)
-                    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                    .outerjoin(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
                     .join(TournamentDB, PlayerTeamTournamentDB.tournament_id == TournamentDB.id)
                     .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
                     .options(
@@ -799,7 +799,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
                     .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
                     .join(PersonDB, PlayerDB.person_id == PersonDB.id)
-                    .join(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
+                    .outerjoin(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
                     .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
                     .options(
                         selectinload(PlayerTeamTournamentDB.player).selectinload(PlayerDB.person),
