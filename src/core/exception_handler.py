@@ -31,7 +31,7 @@ EXCEPTION_MAPPING: dict[type[Exception], tuple[int, str]] = {
     IntegrityError: (status.HTTP_409_CONFLICT, "Conflict"),
     DatabaseError: (status.HTTP_500_INTERNAL_SERVER_ERROR, "Database Error"),
     SQLAlchemyError: (status.HTTP_500_INTERNAL_SERVER_ERROR, "Database Error"),
-    BusinessLogicError: (status.HTTP_422_UNPROCESSABLE_ENTITY, "Unprocessable Entity"),
+    BusinessLogicError: (status.HTTP_422_UNPROCESSABLE_CONTENT, "Unprocessable Entity"),
     ExternalServiceError: (status.HTTP_503_SERVICE_UNAVAILABLE, "Service Unavailable"),
     ConfigurationError: (status.HTTP_500_INTERNAL_SERVER_ERROR, "Configuration Error"),
     FileOperationError: (status.HTTP_500_INTERNAL_SERVER_ERROR, "File Operation Error"),
@@ -81,7 +81,7 @@ async def business_logic_exception_handler(
 ) -> JSONResponse:
     """Handle business logic errors"""
     return create_error_response(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         detail=exc.message,
         exc_type="BusinessLogicError",
     )

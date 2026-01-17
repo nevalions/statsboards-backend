@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-"""User domain schemas."""
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from src.core.schema_helpers import PaginationMetadata
+
+"""User domain schemas."""
 
 
 class UserSchemaCreate(BaseModel):

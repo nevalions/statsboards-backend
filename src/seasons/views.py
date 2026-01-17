@@ -1,11 +1,11 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
 
 from ..logging_config import get_logger
 from .db_services import SeasonServiceDB
-from .schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
+from .schemas import PaginatedSeasonResponse, SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
 
 
 class SeasonAPIRouter(
@@ -165,6 +165,35 @@ class SeasonAPIRouter(
         ):
             self.logger.debug(f"Get matches by season year: {year} endpoint")
             return await self.service.get_matches_by_year(year)
+
+        @router.get(
+            "/paginated",
+            response_model=PaginatedSeasonResponse,
+            summary="Search seasons with pagination",
+            description="Search seasons by description with pagination and standard query parameters",
+        )
+        async def search_seasons_paginated_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("year", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for description search"),
+        ):
+            self.logger.debug(
+                f"Search seasons paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_seasons_with_pagination(
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
 
         return router
 

@@ -212,3 +212,131 @@ class TestSeasonServiceDB:
             sport_id=sport_id,
         )
         assert_tournaments_equal(tournaments, fetched_tournaments)
+
+    async def test_search_seasons_with_pagination_success(
+        self,
+        test_season_service,
+    ):
+        """Test search seasons with pagination returns correct results."""
+        for i in range(5):
+            await test_season_service.create(SeasonFactorySample.build(year=2020 + i))
+
+        result = await test_season_service.search_seasons_with_pagination(
+            skip=0,
+            limit=2,
+            order_by="year",
+            order_by_two="id",
+            ascending=True,
+        )
+
+        assert result is not None
+        assert len(result.data) == 2
+        assert result.metadata.page == 1
+        assert result.metadata.items_per_page == 2
+        assert result.metadata.total_items >= 5
+        assert result.metadata.total_pages >= 3
+        assert result.metadata.has_next is True
+        assert result.metadata.has_previous is False
+
+    async def test_search_seasons_with_pagination_search_query(
+        self,
+        test_season_service,
+    ):
+        """Test search seasons with query filters correctly."""
+        await test_season_service.create(
+            SeasonFactorySample.build(year=2025, description="Season Alpha")
+        )
+        await test_season_service.create(
+            SeasonFactorySample.build(year=2026, description="Season Beta")
+        )
+        await test_season_service.create(
+            SeasonFactorySample.build(year=2027, description="Season Gamma")
+        )
+
+        result = await test_season_service.search_seasons_with_pagination(
+            search_query="Season",
+            skip=0,
+            limit=10,
+            order_by="year",
+            order_by_two="id",
+            ascending=True,
+        )
+
+        assert result is not None
+        assert len(result.data) == 3
+        assert result.metadata.total_items == 3
+
+    async def test_search_seasons_with_pagination_empty_search(
+        self,
+        test_season_service,
+    ):
+        """Test empty search query returns all seasons."""
+        await test_season_service.create(SeasonFactorySample.build(year=2023))
+        await test_season_service.create(SeasonFactorySample.build(year=2024))
+
+        result = await test_season_service.search_seasons_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=10,
+            order_by="year",
+            order_by_two="id",
+            ascending=True,
+        )
+
+        assert result is not None
+        assert len(result.data) >= 2
+
+    async def test_search_seasons_with_pagination_ordering(
+        self,
+        test_season_service,
+    ):
+        """Test ordering works correctly."""
+        await test_season_service.create(SeasonFactorySample.build(year=2023))
+        await test_season_service.create(SeasonFactorySample.build(year=2024))
+        await test_season_service.create(SeasonFactorySample.build(year=2026))
+
+        result_asc = await test_season_service.search_seasons_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=10,
+            order_by="year",
+            order_by_two="id",
+            ascending=True,
+        )
+
+        result_desc = await test_season_service.search_seasons_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=10,
+            order_by="year",
+            order_by_two="id",
+            ascending=False,
+        )
+
+        assert result_asc is not None
+        assert result_desc is not None
+        years_asc = [s.year for s in result_asc.data]
+        years_desc = [s.year for s in result_desc.data]
+        assert years_asc == sorted(years_asc)
+        assert years_desc == sorted(years_desc, reverse=True)
+
+    async def test_search_seasons_with_pagination_empty_results(
+        self,
+        test_season_service,
+    ):
+        """Test empty results returns empty list."""
+        result = await test_season_service.search_seasons_with_pagination(
+            search_query="NonExistent",
+            skip=0,
+            limit=10,
+            order_by="year",
+            order_by_two="id",
+            ascending=True,
+        )
+
+        assert result is not None
+        assert len(result.data) == 0
+        assert result.metadata.total_items == 0
+        assert result.metadata.total_pages == 0
+        assert result.metadata.has_next is False
+        assert result.metadata.has_previous is False

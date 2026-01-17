@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
-from src.core.schema_helpers import make_fields_optional
+from src.core.schema_helpers import PaginationMetadata, make_fields_optional
 
 
 class SponsorSchemaBase(BaseModel):
@@ -25,6 +25,11 @@ class SponsorSchema(SponsorSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class PaginatedSponsorResponse(BaseModel):
+    data: list[SponsorSchema]
+    metadata: PaginationMetadata
 
 
 class UploadSponsorLogoResponse(BaseModel):

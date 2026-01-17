@@ -1,4 +1,4 @@
-from fastapi import File, HTTPException, UploadFile
+from fastapi import File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 
 from src.core import BaseRouter, db
@@ -7,6 +7,7 @@ from src.helpers.file_service import file_service
 from ..logging_config import get_logger
 from .db_services import SponsorServiceDB
 from .schemas import (
+    PaginatedSponsorResponse,
     SponsorSchema,
     SponsorSchemaCreate,
     SponsorSchemaUpdate,
@@ -101,6 +102,35 @@ class SponsorAPIRouter(
                     status_code=500,
                     detail="Error uploading sponsor logo",
                 )
+
+        @router.get(
+            "/paginated",
+            response_model=PaginatedSponsorResponse,
+            summary="Search sponsors with pagination",
+            description="Search sponsors by title with pagination and standard query parameters",
+        )
+        async def search_sponsors_paginated_endpoint(
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("title", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for title search"),
+        ):
+            self.logger.debug(
+                f"Search sponsors paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await self.service.search_sponsors_with_pagination(
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
 
         return router
 
