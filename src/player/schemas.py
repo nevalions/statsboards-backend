@@ -42,6 +42,18 @@ class PlayerWithDetailsSchema(PlayerSchema):
     )
 
 
+class PlayerWithDetailsAndPhotosSchema(PlayerWithDetailsSchema):
+    """Mixed schema with player details and person photo fields for sport players display."""
+
+    person_photo_url: str | None = ""
+    person_photo_icon_url: str | None = ""
+
+
+class PaginatedPlayerWithDetailsAndPhotosResponse(BaseModel):
+    data: list[PlayerWithDetailsAndPhotosSchema]
+    metadata: PaginationMetadata
+
+
 class PlayerWithFullDetailsSchema(PlayerSchema):
     person: PersonSchema | None = Field(None, description="Person with full details")
     sport: SportSchema | None = Field(None, description="Sport with full details")

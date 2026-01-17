@@ -21,12 +21,14 @@ from .schemas import (
     CareerByTournamentSchema,
     PaginatedPlayerWithDetailsResponse,
     PaginatedPlayerWithFullDetailsResponse,
+    PaginatedPlayerWithDetailsAndPhotosResponse,
     PlayerCareerResponseSchema,
     PlayerDetailInTournamentResponse,
     PlayerSchema,
     PlayerSchemaCreate,
     PlayerSchemaUpdate,
     PlayerWithDetailsSchema,
+    PlayerWithDetailsAndPhotosSchema,
     PlayerWithFullDetailsSchema,
     TeamAssignmentSchema,
     TournamentAssignmentSchema,
@@ -389,6 +391,113 @@ class PlayerServiceDB(BaseServiceDB):
                 data=[
                     PlayerWithFullDetailsSchema.model_validate(p) for p in players_with_full_details
                 ],
+                metadata=PaginationMetadata(
+                    **await self._calculate_pagination_metadata(total_items, skip, limit),
+                ),
+            )
+
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="searching players with pagination and details and photos",
+        return_value_on_not_found=None,
+    )
+    async def search_players_with_pagination_details_and_photos(
+        self,
+        sport_id: int,
+        search_query: str | None = None,
+        team_id: int | None = None,
+        user_id: int | None = None,
+        isprivate: bool | None = None,
+        skip: int = 0,
+        limit: int = 20,
+        order_by: str = "second_name",
+        order_by_two: str = "id",
+        ascending: bool = True,
+    ) -> PaginatedPlayerWithDetailsAndPhotosResponse:
+        self.logger.debug(
+            f"Search players with details and photos: sport_id={sport_id}, query={search_query}, "
+            f"team_id={team_id}, skip={skip}, limit={limit}, "
+            f"order_by={order_by}, order_by_two={order_by_two}"
+        )
+
+        async with self.db.async_session() as session:
+            base_query = (
+                select(PlayerDB)
+                .where(PlayerDB.sport_id == sport_id)
+                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
+                .options(
+                    selectinload(PlayerDB.person),
+                    selectinload(PlayerDB.player_team_tournament).selectinload(
+                        PlayerTeamTournamentDB.team
+                    ),
+                    selectinload(PlayerDB.player_team_tournament).selectinload(
+                        PlayerTeamTournamentDB.position
+                    ),
+                )
+            )
+
+            if user_id is not None:
+                base_query = base_query.where(PlayerDB.user_id == user_id)
+
+            if isprivate is not None:
+                base_query = base_query.where(PlayerDB.isprivate == isprivate)
+
+            if team_id:
+                base_query = base_query.join(
+                    PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id
+                ).where(PlayerTeamTournamentDB.team_id == team_id)
+
+            if search_query:
+                search_pattern = f"%{search_query}%"
+                base_query = base_query.where(
+                    (PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu"))
+                    | (PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu"))
+                )
+
+            count_stmt = select(func.count()).select_from(base_query.subquery())
+            count_result = await session.execute(count_stmt)
+            total_items = count_result.scalar() or 0
+
+            order_expr = PersonDB.second_name.asc() if ascending else PersonDB.second_name.desc()
+            data_query = base_query.order_by(order_expr).offset(skip).limit(limit)
+            result = await session.execute(data_query)
+            players = result.scalars().all()
+
+            players_with_details_and_photos = []
+            for p in players:
+                player_team_tournaments_info = []
+                for ptt in p.player_team_tournament:
+                    player_team_tournaments_info.append(
+                        {
+                            "id": ptt.id,
+                            "player_team_tournament_eesl_id": ptt.player_team_tournament_eesl_id,
+                            "player_number": ptt.player_number,
+                            "team_id": ptt.team_id,
+                            "team_title": ptt.team.title if ptt.team else None,
+                            "position_id": ptt.position_id,
+                            "position_title": ptt.position.title if ptt.position else None,
+                            "tournament_id": ptt.tournament_id,
+                        }
+                    )
+
+                players_with_details_and_photos.append(
+                    {
+                        "id": p.id,
+                        "sport_id": p.sport_id,
+                        "person_id": p.person_id,
+                        "player_eesl_id": p.player_eesl_id,
+                        "isprivate": p.isprivate,
+                        "user_id": p.user_id,
+                        "first_name": p.person.first_name if p.person else None,
+                        "second_name": p.person.second_name if p.person else None,
+                        "person_photo_url": p.person.person_photo_url if p.person else None,
+                        "person_photo_icon_url": p.person.person_photo_icon_url if p.person else None,
+                        "player_team_tournaments": player_team_tournaments_info,
+                    }
+                )
+
+            return PaginatedPlayerWithDetailsAndPhotosResponse(
+                data=[PlayerWithDetailsAndPhotosSchema.model_validate(p) for p in players_with_details_and_photos],
                 metadata=PaginationMetadata(
                     **await self._calculate_pagination_metadata(total_items, skip, limit),
                 ),
