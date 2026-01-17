@@ -1557,18 +1557,105 @@ async def get_all_{entity}s_paginated_endpoint(
    - `has_next`: Whether there is a next page
    - `has_previous`: Whether there is a previous page
 
-3. **Ordering**:
-   - Dual column sorting for consistent pagination
-   - Graceful fallback to default columns if invalid column names provided
-   - Configurable ascending/descending order
+ 3. **Ordering**:
+    - Dual column sorting for consistent pagination
+    - Graceful fallback to default columns if invalid column names provided
+    - Configurable ascending/descending order
 
- 4. **Empty Search Query**:
-    - `search=None` returns all records with pagination
-    - Consistent with existing `get_all_with_pagination()` behavior
+  4. **Empty Search Query**:
+     - `search=None` returns all records with pagination
+     - Consistent with existing `get_all_with_pagination()` behavior
 
-  5. **Error Handling**:
-    - Decorator with `return_value_on_not_found=None` for graceful handling
-    - Returns empty list and zero metadata when no results found
+   5. **Error Handling**:
+     - Decorator with `return_value_on_not_found=None` for graceful handling
+     - Returns empty list and zero metadata when no results found
+
+### Ordering by Joined Table Fields
+
+When implementing search endpoints with joins, ordering by fields from joined tables (e.g., `PersonDB.first_name`, `TeamDB.title`) requires a custom approach since the default `_build_order_expressions` method only looks at the primary model.
+
+#### Problem
+
+The `_build_order_with_fallback` method in `SearchPaginationMixin` uses `getattr(model, column_name)` which only finds columns on the passed model:
+
+```python
+# In SearchPaginationMixin
+async def _get_column_with_fallback(self, model, column_name: str, default_column):
+    try:
+        return getattr(model, column_name)  # ❌ Fails for joined table columns
+    except AttributeError:
+        self.logger.warning(f"Order column {column_name} not found...")
+        return default_column  # ❌ Falls back to default even for valid joined fields
+```
+
+When querying `PlayerTeamTournamentDB` with joins to `PersonDB`, ordering by `second_name` (which exists on `PersonDB`) would fail and fall back to `player_number`.
+
+#### Solution
+
+Create a service-specific method that maps field names to their actual model columns:
+
+```python
+async def _build_order_expressions_with_joins(
+    self,
+    order_by: str,
+    order_by_two: str | None,
+    ascending: bool,
+) -> tuple:
+    """Build order expressions with support for joined table fields."""
+    field_mapping = {
+        "id": PlayerTeamTournamentDB.id,
+        "player_number": PlayerTeamTournamentDB.player_number,
+        "player_team_tournament_eesl_id": PlayerTeamTournamentDB.player_team_tournament_eesl_id,
+        "first_name": PersonDB.first_name,
+        "second_name": PersonDB.second_name,
+        "team_title": TeamDB.title,
+        "position_title": PositionDB.title,
+    }
+
+    order_column = field_mapping.get(order_by, PlayerTeamTournamentDB.player_number)
+    order_expr = order_column.asc() if ascending else order_column.desc()
+
+    order_expr_two = None
+    if order_by_two:
+        order_column_two = field_mapping.get(order_by_two, PlayerTeamTournamentDB.id)
+        order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+    return order_expr, order_expr_two
+```
+
+Then use it in your search method instead of `_build_order_expressions`:
+
+```python
+async def search_tournament_players_with_pagination_details_and_photos(...):
+    base_query = await self._build_base_query_with_search(...)
+
+    order_expr, order_expr_two = await self._build_order_expressions_with_joins(
+        order_by,
+        order_by_two,
+        ascending,
+    )
+
+    data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
+```
+
+#### When to Use This Pattern
+
+Use `_build_order_expressions_with_joins` when:
+
+1. **Search queries include joins** to multiple tables (PersonDB, TeamDB, PositionDB)
+2. **Frontend needs to sort by joined fields** (e.g., `order_by=second_name`)
+3. **Default `_build_order_expressions` is insufficient** for the field mapping needed
+
+Use standard `_build_order_expressions` when:
+
+1. **Only ordering by columns on the primary model** (no joins)
+2. **Simple field-to-model mapping** isn't needed
+
+#### Example: Player Team Tournament
+
+See `src/player_team_tournament/db_services.py:176-198` for a complete implementation supporting ordering by:
+- Primary table: `id`, `player_number`, `player_team_tournament_eesl_id`
+- Joined tables: `first_name`, `second_name` (PersonDB), `team_title` (TeamDB), `position_title` (PositionDB)
 
 ### Common Pitfalls in Paginated Search
 

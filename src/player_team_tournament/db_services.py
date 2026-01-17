@@ -173,6 +173,40 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             "person",
         )
 
+    async def _build_order_expressions_with_joins(
+        self,
+        order_by: str,
+        order_by_two: str | None,
+        ascending: bool,
+    ) -> tuple:
+        """Build order expressions with support for joined table fields.
+
+        TODO: Refactor to be more generic - this pattern could be used for any
+        multi-table query with joins, not just tournament players. Consider:
+        - Moving to SearchPaginationMixin with configurable field mappings
+        - Making field mapping a parameter or class attribute
+        - Creating a helper function that accepts {field: (model, column)} mapping
+        """
+        field_mapping = {
+            "id": PlayerTeamTournamentDB.id,
+            "player_number": PlayerTeamTournamentDB.player_number,
+            "player_team_tournament_eesl_id": PlayerTeamTournamentDB.player_team_tournament_eesl_id,
+            "first_name": PersonDB.first_name,
+            "second_name": PersonDB.second_name,
+            "team_title": TeamDB.title,
+            "position_title": PositionDB.title,
+        }
+
+        order_column = field_mapping.get(order_by, PlayerTeamTournamentDB.player_number)
+        order_expr = order_column.asc() if ascending else order_column.desc()
+
+        order_expr_two = None
+        if order_by_two:
+            order_column_two = field_mapping.get(order_by_two, PlayerTeamTournamentDB.id)
+            order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+        return order_expr, order_expr_two
+
     async def _build_base_query_with_search(
         self,
         tournament_id: int,
@@ -741,13 +775,10 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             count_result = await session.execute(count_stmt)
             total_items = count_result.scalar() or 0
 
-            order_expr, order_expr_two = await self._build_order_expressions(
-                PlayerTeamTournamentDB,
+            order_expr, order_expr_two = await self._build_order_expressions_with_joins(
                 order_by,
                 order_by_two,
                 ascending,
-                PlayerTeamTournamentDB.player_number,
-                PlayerTeamTournamentDB.id,
             )
 
             data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
