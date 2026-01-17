@@ -74,3 +74,43 @@ class PaginatedPlayerWithFullDetailsResponse(BaseModel):
 class PaginatedPlayerWithDetailsResponse(BaseModel):
     data: list["PlayerWithDetailsSchema"]
     metadata: PaginationMetadata
+
+
+class TeamAssignmentSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    team_id: int | None = None
+    team_title: str | None = None
+    position_id: int | None = None
+    position_title: str | None = None
+    player_number: str | None = None
+    tournament_id: int | None = None
+    tournament_title: str | None = None
+    season_id: int | None = None
+    season_year: int | None = None
+
+
+class CareerByTeamSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    team_id: int | None = None
+    team_title: str | None = None
+    assignments: list[TeamAssignmentSchema] = Field(default_factory=list)
+
+
+class CareerByTournamentSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    tournament_id: int | None = None
+    tournament_title: str | None = None
+    season_id: int | None = None
+    season_year: int | None = None
+    assignments: list[TeamAssignmentSchema] = Field(default_factory=list)
+
+
+class PlayerCareerResponseSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    career_by_team: list[CareerByTeamSchema] = Field(default_factory=list)
+    career_by_tournament: list[CareerByTournamentSchema] = Field(default_factory=list)
