@@ -29,3 +29,4 @@ SWALLOWED_EXCEPTIONS_FIX_PROGRESS.md
 .coverage
 .coverage.*
 htmlcov/
+coverage.json
