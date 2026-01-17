@@ -61,7 +61,7 @@ Combined schemas provide full nested objects instead of just foreign key IDs, ma
 |--------|-------------|------------------------|
 | `PlayerSchema` | Basic player with FK IDs | `sport_id`, `person_id` |
 | `PlayerWithDetailsSchema` | Player with person name fields | `first_name`, `second_name`, `player_team_tournaments[]` (flat) |
-| `PlayerWithFullDetailsSchema` | Player with fully nested PTTs | `person`, `sport`, `player_team_tournaments[]` (nested) |
+| `PlayerWithFullDetailsSchema` | Player with fully nested PTTs (uses `Any` type for compatibility) | `person` (Any), `sport` (Any), `player_team_tournaments[]` (nested) |
 
 ### PlayerTeamTournament Schemas
 
@@ -69,7 +69,7 @@ Combined schemas provide full nested objects instead of just foreign key IDs, ma
 |--------|-------------|------------------------|
 | `PlayerTeamTournamentSchema` | Basic PTT with FK IDs | `player_id`, `team_id`, `tournament_id`, `position_id` |
 | `PlayerTeamTournamentWithDetailsSchema` | PTT with flattened fields | `team_title`, `position_title` |
-| `PlayerTeamTournamentWithFullDetailsSchema` | PTT with nested objects | `team`, `tournament`, `position` |
+| `PlayerTeamTournamentWithFullDetailsSchema` | PTT with nested objects (uses `Any` type for compatibility) | `team` (Any), `tournament` (Any), `position` (Any) |
 
 ## API Endpoints
 
@@ -435,6 +435,31 @@ class PaginatedSponsorWithMatchesResponse(BaseModel):
     metadata: PaginationMetadata
 ```
 
+**Note on Forward References vs `Any` Type:**
+
+For schemas that will be used in `/paginated/full-details` endpoints (i.e., paginated responses with OpenAPI generation), consider using `Any` type instead of forward references to avoid Pydantic v2 schema generation errors:
+
+```python
+from typing import Any
+
+class SponsorWithMatchesSchema(SponsorSchema):
+    """Extended sponsor schema with full match details."""
+    matches: list[Any] = Field(
+        default_factory=list,
+        description="Matches sponsored by this sponsor"
+    )
+```
+
+Use `Any` type when:
+- The schema is used in `response_model` for paginated endpoints
+- Forward references cause "class-not-fully-defined" errors in OpenAPI generation
+- The schema is referenced by multiple other schemas creating circular dependencies
+
+Use forward references with `TYPE_CHECKING` when:
+- The schema is only used in CRUD operations (not paginated endpoints)
+- No OpenAPI schema generation issues occur
+- Circular dependencies can be managed with `TYPE_CHECKING`
+
 ### Step 3: Add Service Method with Eager Loading
 
 Add a method to fetch data with appropriate eager loading strategy:
@@ -584,7 +609,7 @@ stmt = select(MatchDB).options(
 
 ### 1. Avoid Circular Imports
 
-Use `TYPE_CHECKING` and string type hints:
+Use `TYPE_CHECKING` and string type hints for most cases:
 
 ```python
 from typing import TYPE_CHECKING
@@ -595,6 +620,23 @@ if TYPE_CHECKING:
 class MySchema(BaseModel):
     related: "OtherSchema" | None = None
 ```
+
+**Alternative for Pydantic v2 OpenAPI compatibility:**
+
+If forward references cause Pydantic v2 schema generation errors (e.g., "class-not-fully-defined"), use `Any` type:
+
+```python
+from typing import Any
+
+class MySchema(BaseModel):
+    related: Any = Field(None, description="Related object with full details")
+```
+
+This is used in schemas where forward references cause OpenAPI generation issues, such as:
+- `PlayerWithFullDetailsSchema` (person, sport, player_team_tournaments fields)
+- `PlayerTeamTournamentWithFullDetailsSchema` (team, tournament, position fields)
+
+The `Any` type allows Pydantic to generate OpenAPI schemas without resolving forward references, while runtime validation still works correctly with actual nested objects.
 
 ### 2. Always Use `from_attributes=True`
 
@@ -935,6 +977,60 @@ stmt = select(TeamDB).options(joinedload(TeamDB.sport))
 2. Verify SQLAlchemy model relationships are correctly defined
 3. Ensure eager loading is applied before `model_validate()`
 4. Check for missing required fields in nested schemas
+
+### Issue: Pydantic Forward Reference Errors
+
+**Error:** `PydanticUserError: TypeAdapter[...] is not fully defined; you should define [...] and all referenced types, then call .rebuild() on the instance.`
+
+**Symptoms:**
+- `/openapi.json` endpoint returns error instead of JSON schema
+- Swagger UI fails to load or display endpoints
+- Error occurs during FastAPI app initialization or when accessing docs
+
+**Root Cause:**
+Pydantic v2 cannot resolve forward references (e.g., `"PersonSchema"`) during OpenAPI schema generation, especially for schemas used in paginated endpoints.
+
+**Solutions:**
+
+**Option 1: Use `Any` type (Recommended for paginated schemas)**
+
+```python
+from typing import Any
+
+class PlayerWithFullDetailsSchema(PlayerSchema):
+    person: Any = Field(None, description="Person with full details")
+    sport: Any = Field(None, description="Sport with full details")
+    player_team_tournaments: list[Any] = Field(
+        default_factory=list,
+        description="Player team tournament associations with nested details"
+    )
+```
+
+**Option 2: Use `model_rebuild()` with types namespace**
+
+```python
+# At the end of schemas file, after all schemas are defined:
+def rebuild_schemas() -> None:
+    from src.person.schemas import PersonSchema
+    from src.sports.schemas import SportSchema
+
+    namespace = {
+        'PersonSchema': PersonSchema,
+        'SportSchema': SportSchema,
+    }
+    PlayerWithFullDetailsSchema.model_rebuild(_types_namespace=namespace)
+    PaginatedPlayerWithFullDetailsResponse.model_rebuild(_types_namespace=namespace)
+
+# Call rebuild in main.py after all routers are registered
+```
+
+**When to use each option:**
+- Use `Any` type for: Schemas used in `/paginated/full-details` endpoints (simpler, no rebuild needed)
+- Use `model_rebuild()` for: Complex schemas where precise type validation is critical
+
+**Examples in codebase:**
+- `src/player/schemas.py` - Uses `Any` for `PlayerWithFullDetailsSchema`
+- `src/player_team_tournament/schemas.py` - Uses `Any` for `PlayerTeamTournamentWithFullDetailsSchema`
 
 ## Related Documentation
 

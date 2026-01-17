@@ -1,14 +1,9 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated, Any
 
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
-
-if TYPE_CHECKING:
-    from src.person.schemas import PersonSchema
-    from src.player_team_tournament.schemas import PlayerTeamTournamentWithFullDetailsSchema
-    from src.sports.schemas import SportSchema
 
 
 class PlayerSchemaBase(BaseModel):
@@ -59,9 +54,9 @@ class PlayerWithDetailsSchema(PlayerSchema):
 
 
 class PlayerWithFullDetailsSchema(PlayerSchema):
-    person: "PersonSchema | None" = Field(None, description="Person with full details")
-    sport: "SportSchema | None" = Field(None, description="Sport with full details")
-    player_team_tournaments: list["PlayerTeamTournamentWithFullDetailsSchema"] = Field(
+    person: Any = Field(None, description="Person with full details")
+    sport: Any = Field(None, description="Sport with full details")
+    player_team_tournaments: list[Any] = Field(
         default_factory=list, description="Player team tournament associations with nested details"
     )
 
@@ -114,3 +109,8 @@ class PlayerCareerResponseSchema(BaseModel):
 
     career_by_team: list[CareerByTeamSchema] = Field(default_factory=list)
     career_by_tournament: list[CareerByTournamentSchema] = Field(default_factory=list)
+
+
+PlayerWithFullDetailsSchema.model_rebuild()
+PaginatedPlayerWithFullDetailsResponse.model_rebuild()
+PaginatedPlayerWithDetailsResponse.model_rebuild()

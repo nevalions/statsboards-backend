@@ -190,6 +190,8 @@ source venv/bin/activate && ruff check src/ tests/
 source venv/bin/activate && ruff check --fix src/ tests/
 ```
 
+**Note:** Ruff is used for linting Python code only (`.py` files). Markdown documentation files (`.md`) are not linted with Ruff. Documentation should follow the project's writing conventions as outlined in this guide.
+
 ### Database
 
 ```bash

@@ -1,14 +1,9 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated, Any
 
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.schema_helpers import PaginationMetadata, make_fields_optional
-
-if TYPE_CHECKING:
-    from src.positions.schemas import PositionSchema
-    from src.teams.schemas import TeamSchema
-    from src.tournaments.schemas import TournamentSchema
 
 
 class PlayerTeamTournamentSchemaBase(BaseModel):
@@ -52,9 +47,9 @@ class PlayerTeamTournamentWithFullDetailsSchema(BaseModel):
     player_team_tournament_eesl_id: int | None = None
     player_id: int
     player_number: Annotated[str, Path(max_length=10)] | None = "0"
-    team: "TeamSchema | None" = Field(None, description="Team with full details")
-    tournament: "TournamentSchema | None" = Field(None, description="Tournament with full details")
-    position: "PositionSchema | None" = Field(None, description="Position with full details")
+    team: Any = Field(None, description="Team with full details")
+    tournament: Any = Field(None, description="Tournament with full details")
+    position: Any = Field(None, description="Position with full details")
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -65,9 +60,9 @@ class PlayerTeamTournamentWithFullDetailsSchemaRef(BaseModel):
     player_team_tournament_eesl_id: int | None = None
     player_id: int
     player_number: Annotated[str, Path(max_length=10)] | None = "0"
-    team: "TeamSchema | None" = Field(None, description="Team with full details")
-    tournament: "TournamentSchema | None" = Field(None, description="Tournament with full details")
-    position: "PositionSchema | None" = Field(None, description="Position with full details")
+    team: Any = Field(None, description="Team with full details")
+    tournament: Any = Field(None, description="Tournament with full details")
+    position: Any = Field(None, description="Position with full details")
     model_config = ConfigDict(from_attributes=True)
 
 
