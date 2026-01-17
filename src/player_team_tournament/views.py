@@ -18,6 +18,7 @@ from ..tournaments.db_services import TournamentServiceDB
 from .db_services import PlayerTeamTournamentServiceDB
 from .schemas import (
     PaginatedPlayerTeamTournamentResponse,
+    PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse,
     PaginatedPlayerTeamTournamentWithDetailsResponse,
     PaginatedPlayerTeamTournamentWithFullDetailsResponse,
     PlayerTeamTournamentSchema,
@@ -233,6 +234,43 @@ class PlayerTeamTournamentAPIRouter(
                 order_by=order_by,
                 order_by_two=order_by_two,
                 ascending=ascending,
+            )
+            return response
+
+        @router.get(
+            "/tournament/{tournament_id}/players/paginated/details-with-photos",
+            response_model=PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse,
+        )
+        async def get_tournament_players_paginated_with_details_and_photos_endpoint(
+            tournament_id: int,
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("player_number", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(
+                None,
+                description="Search query for player first name or second name",
+            ),
+            team_title: str | None = Query(None, description="Filter by team title"),
+        ):
+            self.logger.debug(
+                f"Get tournament players paginated with details and photos: tournament_id={tournament_id}, page={page}, "
+                f"items_per_page={items_per_page}, order_by={order_by}, order_by_two={order_by_two}, "
+                f"ascending={ascending}, search={search}, team_title={team_title}"
+            )
+            skip = (page - 1) * items_per_page
+            response = (
+                await self.service.search_tournament_players_with_pagination_details_and_photos(
+                    tournament_id=tournament_id,
+                    search_query=search,
+                    team_title=team_title,
+                    skip=skip,
+                    limit=items_per_page,
+                    order_by=order_by,
+                    order_by_two=order_by_two,
+                    ascending=ascending,
+                )
             )
             return response
 

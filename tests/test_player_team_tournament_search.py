@@ -3,7 +3,10 @@ import pytest
 from src.person.db_services import PersonServiceDB
 from src.player.db_services import PlayerServiceDB
 from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
-from src.player_team_tournament.schemas import PaginatedPlayerTeamTournamentResponse
+from src.player_team_tournament.schemas import (
+    PaginatedPlayerTeamTournamentResponse,
+    PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse,
+)
 from src.positions.db_services import PositionServiceDB
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
@@ -572,3 +575,64 @@ class TestPlayerTeamTournamentSearch:
         assert len(result.data) == 1
         assert result.data[0].player_id == player1.id
         assert result.data[0].team_id == team1.id
+
+    async def test_search_tournament_players_with_pagination_details_and_photos(self, test_db):
+        """Test that search_tournament_players_with_pagination_details_and_photos returns player data with photo fields."""
+        player_team_tournament_service = PlayerTeamTournamentServiceDB(test_db)
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        position_service = PositionServiceDB(test_db)
+
+        sport = await sport_service.create(SportFactoryAny.build())
+        season = await season_service.create(SeasonFactoryAny.build())
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+        position = await position_service.create(PositionFactory.build(sport_id=sport.id))
+
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id, title="Test Team"))
+
+        person = await person_service.create(
+            PersonFactory.build(
+                first_name="Photo",
+                second_name="Test",
+                person_photo_url="/static/uploads/persons/photos/123.jpg",
+                person_photo_icon_url="/static/uploads/persons/icons/123.jpg",
+            )
+        )
+
+        player = await player_service.create(
+            PlayerFactory.build(person_id=person.id, sport_id=sport.id)
+        )
+
+        await player_team_tournament_service.create(
+            PlayerTeamTournamentFactory.build(
+                player_id=player.id,
+                team_id=team.id,
+                tournament_id=tournament.id,
+                position_id=position.id,
+                player_number="99",
+            )
+        )
+
+        result = await player_team_tournament_service.search_tournament_players_with_pagination_details_and_photos(
+            tournament_id=tournament.id,
+            search_query=None,
+            skip=0,
+            limit=10,
+        )
+
+        assert isinstance(result, PaginatedPlayerTeamTournamentWithDetailsAndPhotosResponse)
+        assert len(result.data) == 1
+        assert result.data[0].first_name == "Photo"
+        assert result.data[0].second_name == "Test"
+        assert result.data[0].team_title == "Test Team"
+        assert result.data[0].position_title == position.title
+        assert result.data[0].player_number == "99"
+        assert result.data[0].person_photo_url == "/static/uploads/persons/photos/123.jpg"
+        assert result.data[0].person_photo_icon_url == "/static/uploads/persons/icons/123.jpg"
+        assert result.metadata.total_items == 1
