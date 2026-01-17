@@ -273,6 +273,52 @@ python validate_config.py
 - Use descriptive endpoint function names with `_endpoint` suffix
 - Return `object.__dict__` for responses to match schemas
 
+### Authorization Pattern
+
+For endpoints requiring role-based access control, use the `require_roles` dependency:
+
+```python
+from src.auth.dependencies import require_roles
+from typing import Annotated
+
+@router.post("/api/roles/")
+async def create_role_endpoint(
+    role_data: RoleSchemaCreate,
+    _: Annotated[RoleDB, Depends(require_roles("admin"))],
+) -> RoleSchema:
+    # User has admin role
+    return await service.create(role_data)
+```
+
+**Key points:**
+- Use `require_roles("role1", "role2")` for dependencies requiring specific roles
+- Accepts multiple roles - user needs at least one of the specified roles
+- Uses service registry database for consistency with other dependencies
+- Returns the authenticated user object with roles loaded
+
+**Example endpoints:**
+```python
+# Admin-only endpoints
+@router.delete("/api/roles/{item_id}/")
+async def delete_role(
+    item_id: int,
+    _: Annotated[RoleDB, Depends(require_roles("admin"))],
+):
+    await service.delete(item_id)
+
+# Multiple roles allowed (admin OR moderator)
+@router.put("/api/content/")
+async def update_content(
+    content_id: int,
+    content: ContentSchemaUpdate,
+    user: Annotated[UserDB, Depends(require_roles("admin", "moderator"))],
+):
+    # User has either admin or moderator role
+    return await service.update(content_id, content, user)
+```
+
+**Note:** The `require_roles` dependency internally fetches user from service registry using `UserServiceDB.get_by_id_with_roles()`, ensuring consistent database access across the application.
+
 ### Schema Patterns
 
 - Inheritance: `TeamSchemaBase` → `TeamSchemaCreate` → `TeamSchema`
