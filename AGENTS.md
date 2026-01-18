@@ -8,6 +8,12 @@ For detailed development guidelines, coding standards, and best practices, see *
 
 This document serves as a quick reference for common operations and links to the comprehensive guidelines.
 
+## Frontend
+
+The main frontend for this project is **[frontend-angular-signals](../frontend-angular-signals/)**, located in the parent directory (`../`).
+
+**Permissions:** You have read access to the frontend folder and can read files from it without asking permission. Edit access is denied.
+
 ## Quick Reference
 
 ### Essential Commands

@@ -1,5 +1,16 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "read": {
+      "../frontend-angular-signals/": "allow"
+    },
+    "edit": {
+      "../frontend-angular-signals/": "deny"
+    },
+    "external_directory": {
+      "../frontend-angular-signals/": "allow"
+    }
+  },
   "command": {
     "plan-back-refactor": {
       "description": "Create a Linear plan for backend refactoring/tech-debt (FastAPI + async SQLAlchemy + Postgres) without changing code",
