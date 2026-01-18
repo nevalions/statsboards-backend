@@ -223,7 +223,7 @@ class CRUDMixin:
                 await session.delete(db_item)
                 await session.commit()
                 self.logger.info(f"Deleted element with ID: {item_id}: {db_item.__dict__}")
-                return db_item
+                return {"id": item_id}
             except HTTPException:
                 await session.rollback()
                 raise

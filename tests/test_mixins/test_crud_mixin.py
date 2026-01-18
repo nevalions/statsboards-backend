@@ -68,9 +68,7 @@ class TestCRUDMixin:
         from src.seasons.schemas import SeasonSchemaUpdate
 
         created = await service.create(season_db_model)
-        update_data = SeasonSchemaUpdate(
-            year=created.year + 1, description="Updated description"
-        )
+        update_data = SeasonSchemaUpdate(year=created.year + 1, description="Updated description")
         updated = await service.update(created.id, update_data)
         assert updated is not None
         assert updated.year == created.year + 1
@@ -92,7 +90,7 @@ class TestCRUDMixin:
         service = SeasonServiceDB(test_db)
         created = await service.create(season_db_model)
         deleted = await service.delete(created.id)
-        assert deleted.id == created.id
+        assert deleted["id"] == created.id
         retrieved = await service.get_by_id(created.id)
         assert retrieved is None
 
