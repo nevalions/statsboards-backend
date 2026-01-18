@@ -482,11 +482,13 @@ class TournamentAPIRouter(
         @router.post("/pars_and_create/season/{eesl_season_id}")
         async def create_parsed_tournament_endpoint(
             eesl_season_id: int,
+            season_id: int | None = Query(None),
+            sport_id: int | None = Query(None),
         ):
             self.logger.debug(
-                f"Get and Save parsed tournaments from season eesl_id:{eesl_season_id} endpoint"
+                f"Get and Save parsed tournaments from season eesl_id:{eesl_season_id} season_id:{season_id} sport_id:{sport_id} endpoint"
             )
-            tournaments_list = await parse_season_and_create_jsons(eesl_season_id)
+            tournaments_list = await parse_season_and_create_jsons(eesl_season_id, season_id=season_id, sport_id=sport_id)
 
             created_tournaments = []
             try:
