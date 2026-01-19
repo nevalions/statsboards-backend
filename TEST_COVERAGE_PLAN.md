@@ -5,10 +5,11 @@
 
 ## Priority 1 - Critical gaps (<30%)
 
-### 1. `src/websocket/match_handler.py` - 11.43% (133/153 missing)
+### ~~1. `src/websocket/match_handler.py` - 11.43% (133/153 missing)~~ ✅ COMPLETED
 - **Impact:** Core WebSocket functionality
 - **Missing lines:** 22-71, 76-85, 90-146, 149-180, 183-215, 220-252, 259-284
 - **Type:** Integration tests for WebSocket message handling
+- **Updated:** 2026-01-19 - Added 22 integration tests (86.29% coverage)
 
 ### 2. `src/player_match/views.py` - 28.98% (150/227 missing)
 - **Impact:** REST endpoint coverage
