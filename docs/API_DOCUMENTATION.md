@@ -528,7 +528,6 @@ Authorization: Bearer <token>
 ```json
 {
   "email": "newemail@example.com",
-  "password": "NewSecurePass456!",
   "is_active": true
 }
 ```
@@ -537,7 +536,6 @@ Authorization: Bearer <token>
 ```typescript
 interface UserUpdate {
   email: string | null; // Optional new email
-  password: string | null; // Optional new password (min 6 characters)
   is_active: boolean | null; // Optional active status
 }
 ```
@@ -630,7 +628,6 @@ Authorization: Bearer <token>
 ```json
 {
   "email": "admin@example.com",
-  "password": "NewAdminPass456!",
   "is_active": false
 }
 ```
@@ -639,7 +636,6 @@ Authorization: Bearer <token>
 ```typescript
 interface UserUpdate {
   email: string | null; // Optional new email
-  password: string | null; // Optional new password (min 6 characters)
   is_active: boolean | null; // Optional active status
 }
 ```

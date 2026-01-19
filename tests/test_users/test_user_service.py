@@ -5,7 +5,7 @@ import pytest
 from src.auth.security import verify_password
 from src.core.models.base import Database
 from src.users.db_services import UserServiceDB
-from src.users.schemas import UserSchemaCreate, UserSchemaUpdate
+from src.users.schemas import UserSchemaCreate
 
 
 class TestUserServiceDB:
@@ -116,24 +116,6 @@ class TestUserServiceDB:
         assert fetched_user is not None
         assert fetched_user.id == created_user.id
         assert fetched_user.email == "test5@example.com"
-
-    @pytest.mark.asyncio
-    async def test_update_user_password(self, test_db: Database):
-        """Test updating user password."""
-        user_data = UserSchemaCreate(
-            username="testuser6",
-            email="test6@example.com",
-            password="SecurePass123!",
-        )
-
-        service = UserServiceDB(test_db)
-        user = await service.create(user_data)
-
-        update_data = UserSchemaUpdate(password="NewSecurePass456!")
-        updated_user = await service.update(user.id, update_data)
-
-        assert verify_password("NewSecurePass456!", updated_user.hashed_password)
-        assert not verify_password("SecurePass123!", updated_user.hashed_password)
 
     @pytest.mark.asyncio
     async def test_change_password(self, test_db: Database):

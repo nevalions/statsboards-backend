@@ -131,9 +131,6 @@ class UserServiceDB(BaseServiceDB):
 
             update_data = item.model_dump(exclude_unset=True)
 
-            if "password" in update_data:
-                update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
-
             for field, value in update_data.items():
                 setattr(user, field, value)
 

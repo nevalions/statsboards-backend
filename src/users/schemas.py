@@ -20,7 +20,6 @@ class UserSchemaUpdate(BaseModel):
     """User update schema."""
 
     email: EmailStr | None = None
-    password: str | None = Field(None, min_length=6)
     is_active: bool | None = None
 
 
