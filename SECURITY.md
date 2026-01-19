@@ -17,6 +17,14 @@ If you discover a security vulnerability, please report it responsibly:
 
 ## Recent Security Updates
 
+### 2026-01-19 - aiohttp Zip Bomb Vulnerability (GHSA-vvjp-jh4p-6p3g)
+- **Severity**: High
+- **Affected**: aiohttp <= 3.13.2
+- **Fixed**: Upgraded to aiohttp 3.13.3
+- **Impact**: Memory exhaustion from malicious compressed requests
+- **CVE**: Pending
+- **Details**: HTTP Parser auto_decompress feature vulnerable to zip bomb DoS attacks
+
 ### 2026-01-17 - pyasn1 DoS Vulnerability (GHSA-7q9g-r576-3hj8)
 - **Severity**: Medium
 - **Affected**: pyasn1 v0.6.1
