@@ -329,6 +329,13 @@ async def update_role(
 ):
     return await service.update(item_id, update_data)
 
+@router.delete("/api/roles/id/{model_id}")
+async def delete_role(
+    model_id: int,
+    _: Annotated[RoleDB, Depends(require_roles("admin"))],
+):
+    return await service.delete(model_id)
+
 # Multiple roles allowed (admin OR moderator)
 @router.put("/api/content/")
 async def update_content(

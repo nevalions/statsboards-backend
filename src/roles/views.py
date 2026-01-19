@@ -23,6 +23,19 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
     def route(self):
         router = super().route()
 
+        # Remove BaseRouter's unauthenticated delete endpoint, replace with authenticated version
+        for route in router.routes[:]:
+            if (
+                hasattr(route, "path")
+                and route.path.endswith("/{model_id}")
+                and hasattr(route, "methods")
+                and "DELETE" in route.methods
+                and hasattr(route, "endpoint")
+                and "BaseRouter" in route.endpoint.__qualname__
+            ):
+                router.routes.remove(route)
+                break
+
         @router.post(
             "/",
             response_model=RoleSchema,
@@ -141,6 +154,27 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
                 ascending=ascending,
             )
             return response
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete role",
+            description="Delete a role. Requires admin role. Cannot delete if role is assigned to users.",
+            responses={
+                200: {"description": "Role deleted successfully"},
+                400: {"description": "Bad request - role is assigned to users"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Role not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_role_endpoint(
+            model_id: int,
+            _: Annotated[RoleDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete role endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"{ITEM} {model_id} deleted successfully"}
 
         return router
 

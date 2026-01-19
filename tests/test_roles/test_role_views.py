@@ -169,19 +169,22 @@ class TestRoleViews:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_delete_role_success(self, client: AsyncClient, test_role: RoleDB):
+    async def test_delete_role_success(
+        self, client: AsyncClient, admin_token: str, test_role: RoleDB
+    ):
         """Test successful role deletion."""
         response = await client.delete(
             f"/api/roles/id/{test_role.id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data is None
+        assert "deleted successfully" in data["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_delete_role_with_users_fails(
-        self, client: AsyncClient, test_role: RoleDB, test_db: Database
+        self, client: AsyncClient, admin_token: str, test_role: RoleDB, test_db: Database
     ):
         """Test delete role fails when role is assigned to users."""
         from sqlalchemy import select
@@ -210,6 +213,7 @@ class TestRoleViews:
 
         response = await client.delete(
             f"/api/roles/id/{test_role.id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
         )
 
         assert response.status_code == 400

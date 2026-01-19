@@ -380,11 +380,16 @@ interface RoleUpdate {
 
 ### DELETE /api/roles/id/{model_id}
 
-Delete a role.
+Delete a role. Requires admin role.
 
 **Endpoint:**
 ```
 DELETE /api/roles/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
 ```
 
 **Path Parameters:**
@@ -394,8 +399,10 @@ DELETE /api/roles/id/{model_id}
 | `model_id` | integer | Yes | Role ID |
 
 **Response (200 OK):**
-```
-null
+```json
+{
+  "detail": "ROLE 1 deleted successfully"
+}
 ```
 
 **Error Responses:**
@@ -403,7 +410,15 @@ null
 | Status | Description |
 |--------|-------------|
 | 400 | Cannot delete role - role is assigned to users |
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
 | 404 | Role not found |
+| 500 | Internal server error |
+
+**Behavior:**
+- Cannot delete roles that have users assigned to them
+- Users must be removed from role first (via user role assignment endpoints)
+- Prevents accidental deletion of roles in use
 
 ---
 
