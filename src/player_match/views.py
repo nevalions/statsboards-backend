@@ -82,6 +82,7 @@ class PlayerMatchAPIRouter(
                     f"Error getting player in match with match eesl_id {eesl_id} {ex}",
                     exc_info=True,
                 )
+                raise HTTPException(status_code=500, detail="Internal server error")
 
         @router.put(
             "/{item_id}/",
@@ -502,8 +503,11 @@ class PlayerMatchAPIRouter(
                     return created_players_match
                 else:
                     return []
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(f"Error parsing eesl match {ex}", exc_info=True)
+                return []
 
         @router.delete(
             "/id/{model_id}",
