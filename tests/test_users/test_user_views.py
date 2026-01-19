@@ -142,10 +142,8 @@ class TestUserViews:
         assert response.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_get_user_by_id_with_roles(
-        self, client: AsyncClient, test_db: Database, test_user
-    ):
-        """Test getting user by ID with roles (admin only)."""
+    async def test_get_user_roles(self, client: AsyncClient, test_db: Database, test_user):
+        """Test getting user roles (admin only)."""
         from sqlalchemy.orm import selectinload
 
         from src.core.models import RoleDB
@@ -182,38 +180,36 @@ class TestUserViews:
         admin_token = create_access_token(data={"sub": str(admin_user.id)})
 
         response = await client.get(
-            f"/api/users/{test_user.id}",
+            f"/api/users/{test_user.id}/roles",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == test_user.id
-        assert data["username"] == test_user.username
         assert "custom_role" in data["roles"]
 
     @pytest.mark.asyncio
-    async def test_get_user_by_id_not_admin(self, client: AsyncClient, test_user):
-        """Test getting user by ID without admin role returns 403."""
+    async def test_get_user_roles_not_admin(self, client: AsyncClient, test_user):
+        """Test getting user roles without admin role returns 403."""
         token = create_access_token(data={"sub": str(test_user.id)})
 
         response = await client.get(
-            f"/api/users/{test_user.id}",
+            f"/api/users/{test_user.id}/roles",
             headers={"Authorization": f"Bearer {token}"},
         )
 
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_get_user_by_id_unauthorized(self, client: AsyncClient, test_user):
-        """Test getting user by ID without token returns 401."""
-        response = await client.get(f"/api/users/{test_user.id}")
+    async def test_get_user_roles_unauthorized(self, client: AsyncClient, test_user):
+        """Test getting user roles without token returns 401."""
+        response = await client.get(f"/api/users/{test_user.id}/roles")
 
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_get_user_by_id_not_found(self, client: AsyncClient, test_db: Database):
-        """Test getting non-existent user returns 404."""
+    async def test_get_user_roles_not_found(self, client: AsyncClient, test_db: Database):
+        """Test getting roles for non-existent user returns 404."""
         from src.core.models import RoleDB
 
         async with test_db.async_session() as db_session:
@@ -235,7 +231,7 @@ class TestUserViews:
         admin_token = create_access_token(data={"sub": str(admin_user.id)})
 
         response = await client.get(
-            "/api/users/99999",
+            "/api/users/99999/roles",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
 

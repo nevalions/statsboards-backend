@@ -203,23 +203,22 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             )
 
         @router.get(
-            "/{user_id}",
-            response_model=UserSchema,
-            summary="Get user by ID with roles",
-            description="Returns user with their roles. Requires admin role.",
+            "/{user_id}/roles",
+            summary="Get user roles",
+            description="Returns the roles for a user. Requires admin role.",
             responses={
-                200: {"description": "User found"},
+                200: {"description": "Roles found"},
                 401: {"description": "Unauthorized"},
                 403: {"description": "Forbidden - requires admin role"},
                 404: {"description": "User not found"},
             },
         )
-        async def get_user_by_id(
+        async def get_user_roles(
             user_id: int,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
-        ) -> UserSchema:
-            """Get user by ID with roles."""
-            self.logger.debug(f"Get user by ID: {user_id}")
+        ):
+            """Get user roles."""
+            self.logger.debug(f"Get roles for user: {user_id}")
 
             user = await self.service.get_by_id_with_roles(user_id)
             if user is None:
@@ -228,15 +227,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                     detail="User not found",
                 )
 
-            roles = [role.name for role in user.roles] if user.roles else []
-            return UserSchema(
-                id=user.id,
-                username=user.username,
-                email=user.email,
-                is_active=user.is_active,
-                person_id=user.person_id,
-                roles=roles,
-            )
+            return {"roles": [role.name for role in user.roles] if user.roles else []}
 
         @router.get(
             "/search",
