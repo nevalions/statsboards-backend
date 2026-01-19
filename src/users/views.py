@@ -278,7 +278,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             "/search",
             response_model=PaginatedUserResponse,
             summary="Search users with pagination",
-            description="Search users by username. Supports pagination, ordering (username, is_online, etc.), and role filtering.",
+            description="Search users by username. Supports pagination, ordering (username, is_online, etc.), role filtering, and online status filtering.",
         )
         async def search_users_endpoint(
             page: int = Query(1, ge=1, description="Page number (1-based)"),
@@ -288,10 +288,11 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
             search: str | None = Query(None, description="Search query for text search"),
             role_names: list[str] | None = Query(None, description="Filter users by role names"),
+            is_online: bool | None = Query(None, description="Filter users by online status"),
         ):
             self.logger.debug(
                 f"Search users: page={page}, items_per_page={items_per_page}, "
-                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}, role_names={role_names}"
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}, role_names={role_names}, is_online={is_online}"
             )
             skip = (page - 1) * items_per_page
             response = await self.service.search_users_with_pagination(
@@ -302,6 +303,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 order_by_two=order_by_two,
                 ascending=ascending,
                 role_names=role_names,
+                is_online=is_online,
             )
             return response
 

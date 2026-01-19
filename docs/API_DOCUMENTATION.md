@@ -1019,7 +1019,7 @@ Authorization: Bearer <token>
 
 ### GET /api/users/search
 
-Search users by username with pagination, ordering, and role filtering.
+Search users by username with pagination, ordering, role filtering, and online status filtering.
 
 **Endpoint:**
 ```
@@ -1037,6 +1037,7 @@ GET /api/users/search
 | `ascending` | boolean | No | true | Sort order (true=asc, false=desc) |
 | `search` | string | No | - | Search query for username |
 | `role_names` | array | No | - | Filter users by role names (e.g., ["admin"]) |
+| `is_online` | boolean | No | - | Filter users by online status (true for online users, false for offline users) |
 
 **Response (200 OK):**
 ```json
@@ -1100,6 +1101,7 @@ interface PaginationMetadata {
 - Searches `username` field
 - Pattern matching: `%query%` (matches anywhere in text)
 - `role_names` can be used as query parameter multiple times (e.g., `?role_names=admin&role_names=user`)
+- `is_online` filters users by their current online status when provided; when omitted, returns all users regardless of status
 
 **Examples:**
 
@@ -1121,6 +1123,16 @@ GET /api/users/search?search=john&role_names=admin&page=1&items_per_page=20
 4. **Custom ordering:**
 ```
 GET /api/users/search?order_by=is_online&order_by_two=username&ascending=false&page=1&items_per_page=20
+```
+
+5. **Filter by online status:**
+```
+GET /api/users/search?is_online=true&page=1&items_per_page=20
+```
+
+6. **Combine filters (online admins):**
+```
+GET /api/users/search?role_names=admin&is_online=true&page=1&items_per_page=20
 ```
 
 **Error Responses:**

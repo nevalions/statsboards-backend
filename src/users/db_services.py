@@ -391,6 +391,7 @@ class UserServiceDB(BaseServiceDB):
         order_by_two: str = "id",
         ascending: bool = True,
         role_names: list[str] | None = None,
+        is_online: bool | None = None,
     ) -> PaginatedUserResponse:
         self.logger.debug(
             f"Search {ITEM}: query={search_query}, skip={skip}, limit={limit}, "
@@ -402,6 +403,9 @@ class UserServiceDB(BaseServiceDB):
 
             if role_names:
                 base_query = base_query.join(UserDB.roles).where(RoleDB.name.in_(role_names))
+
+            if is_online is not None:
+                base_query = base_query.where(UserDB.is_online == is_online)
 
             if search_query:
                 search_pattern = await self._build_search_pattern(search_query)

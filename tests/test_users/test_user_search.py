@@ -803,3 +803,291 @@ class TestUserSearch:
         assert result.data[0].username == "online_user"
         assert result.data[1].is_online is False
         assert result.data[1].username == "offline_user"
+
+    async def test_search_users_filter_by_online_true(self, test_db):
+        """Test search filters users by is_online=true."""
+        from src.core.models import PersonDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=4002, first_name="Test", second_name="User")
+            session.add(person)
+            await session.flush()
+            await session.refresh(person)
+
+        from src.core.models.user import UserDB
+
+        async with test_db.async_session() as session:
+            user1 = UserDB(
+                username="online_user1",
+                email="online1@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+            )
+            user2 = UserDB(
+                username="offline_user1",
+                email="offline1@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=False,
+            )
+            user3 = UserDB(
+                username="online_user2",
+                email="online2@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+            )
+            session.add_all([user1, user2, user3])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            is_online=True,
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 2
+        assert len(result.data) == 2
+        usernames = {user.username for user in result.data}
+        assert usernames == {"online_user1", "online_user2"}
+        assert all(user.is_online for user in result.data)
+
+    async def test_search_users_filter_by_online_false(self, test_db):
+        """Test search filters users by is_online=false."""
+        from src.core.models import PersonDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=4003, first_name="Test", second_name="User")
+            session.add(person)
+            await session.flush()
+            await session.refresh(person)
+
+        from src.core.models.user import UserDB
+
+        async with test_db.async_session() as session:
+            user1 = UserDB(
+                username="online_user",
+                email="online@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+            )
+            user2 = UserDB(
+                username="offline_user1",
+                email="offline1@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=False,
+            )
+            user3 = UserDB(
+                username="offline_user2",
+                email="offline2@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=False,
+            )
+            session.add_all([user1, user2, user3])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            is_online=False,
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 2
+        assert len(result.data) == 2
+        usernames = {user.username for user in result.data}
+        assert usernames == {"offline_user1", "offline_user2"}
+        assert all(not user.is_online for user in result.data)
+
+    async def test_search_users_filter_by_online_none(self, test_db):
+        """Test search with is_online=None returns all users."""
+        from src.core.models import PersonDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=4004, first_name="Test", second_name="User")
+            session.add(person)
+            await session.flush()
+            await session.refresh(person)
+
+        from src.core.models.user import UserDB
+
+        async with test_db.async_session() as session:
+            user1 = UserDB(
+                username="online_user",
+                email="online@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+            )
+            user2 = UserDB(
+                username="offline_user",
+                email="offline@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=False,
+            )
+            session.add_all([user1, user2])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            is_online=None,
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 2
+        assert len(result.data) == 2
+
+    async def test_search_users_filter_by_online_with_role(self, test_db):
+        """Test search filters by is_online combined with role filter."""
+        from src.core.models import PersonDB, RoleDB, UserDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=4005, first_name="Test", second_name="User")
+            admin_role = RoleDB(name="admin", description="Admin role")
+            user_role = RoleDB(name="user", description="User role")
+            session.add_all([person, admin_role, user_role])
+            await session.flush()
+            await session.refresh(person)
+            await session.refresh(admin_role)
+            await session.refresh(user_role)
+
+            online_admin = UserDB(
+                username="online_admin",
+                email="online_admin@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+                roles=[admin_role],
+            )
+            offline_admin = UserDB(
+                username="offline_admin",
+                email="offline_admin@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=False,
+                roles=[admin_role],
+            )
+            online_user = UserDB(
+                username="online_user",
+                email="online_user@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+                roles=[user_role],
+            )
+            session.add_all([online_admin, offline_admin, online_user])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            role_names=["admin"],
+            is_online=True,
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 1
+        assert len(result.data) == 1
+        assert result.data[0].username == "online_admin"
+        assert result.data[0].is_online is True
+        assert "admin" in result.data[0].roles
+
+    async def test_search_users_filter_by_online_with_search(self, test_db):
+        """Test search filters by is_online combined with username search."""
+        from src.core.models import PersonDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=4006, first_name="Test", second_name="User")
+            session.add(person)
+            await session.flush()
+            await session.refresh(person)
+
+        from src.core.models.user import UserDB
+
+        async with test_db.async_session() as session:
+            user1 = UserDB(
+                username="test_online",
+                email="test_online@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+            )
+            user2 = UserDB(
+                username="test_offline",
+                email="test_offline@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=False,
+            )
+            user3 = UserDB(
+                username="other_online",
+                email="other_online@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+            )
+            session.add_all([user1, user2, user3])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query="test",
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            is_online=True,
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 1
+        assert len(result.data) == 1
+        assert result.data[0].username == "test_online"
+        assert result.data[0].is_online is True
