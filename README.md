@@ -277,15 +277,15 @@ docs/                          # Documentation
 
 The API provides comprehensive endpoints for:
 
-- **Sports**: `GET /api/sports/`, `POST /api/sports/`, `PUT /api/sports/{id}/`, `DELETE /api/sports/{id}/`
-- **Seasons**: `GET /api/seasons/`, `POST /api/seasons/`, `PUT /api/seasons/{id}/`, `DELETE /api/seasons/{id}/`
-- **Tournaments**: `GET /api/tournaments/`, `POST /api/tournaments/`, `PUT /api/tournaments/{id}/`, `DELETE /api/tournaments/{id}/`
-- **Teams**: `GET /api/teams/`, `POST /api/teams/`, `PUT /api/teams/{id}/`, `DELETE /api/teams/{id}/`
-- **Players**: `GET /api/players/`, `POST /api/players/`, `PUT /api/players/{id}/`, `DELETE /api/players/{id}/`
-- **Matches**: `GET /api/matches/`, `POST /api/matches/`, `PUT /api/matches/{id}/`, `DELETE /api/matches/{id}/`
-- **Scoreboards**: `GET /api/scoreboards/`, `POST /api/scoreboards/`, `PUT /api/scoreboards/{id}/`, `DELETE /api/scoreboards/{id}/`
-- **Sponsors**: `GET /api/sponsors/`, `POST /api/sponsors/`, `PUT /api/sponsors/{id}/`, `DELETE /api/sponsors/{id}/`
-- **Positions**: `GET /api/positions/`, `POST /api/positions/`, `PUT /api/positions/{id}/`, `DELETE /api/positions/{id}/`
+- **Sports**: `GET /api/sports/`, `POST /api/sports/`, `PUT /api/sports/{id}/`
+- **Seasons**: `GET /api/seasons/`, `POST /api/seasons/`, `PUT /api/seasons/{id}/`
+- **Tournaments**: `GET /api/tournaments/`, `POST /api/tournaments/`, `PUT /api/tournaments/{id}/`
+- **Teams**: `GET /api/teams/`, `POST /api/teams/`, `PUT /api/teams/{id}/`
+- **Players**: `GET /api/players/`, `POST /api/players/`, `PUT /api/players/{id}/`
+- **Matches**: `GET /api/matches/`, `POST /api/matches/`, `PUT /api/matches/{id}/`
+- **Scoreboards**: `GET /api/scoreboards/`, `POST /api/scoreboards/`, `PUT /api/scoreboards/{id}/`
+- **Sponsors**: `GET /api/sponsors/`, `POST /api/sponsors/`, `PUT /api/sponsors/{id}/`
+- **Positions**: `GET /api/positions/`, `POST /api/positions/`, `PUT /api/positions/{id}/`
 - **Gameclocks**: `GET /api/gameclocks/`, `POST /api/gameclocks/`, `PUT /api/gameclocks/{id}/`
 - **Playclocks**: `GET /api/playclocks/`, `POST /api/playclocks/`, `PUT /api/playclocks/{id}/`
 - **Football Events**: `GET /api/football_events/`, `POST /api/football_events/`, `PUT /api/football_events/{id}/`

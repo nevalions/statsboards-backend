@@ -41,7 +41,7 @@ All base CRUD operations follow consistent routing patterns using path parameter
 | **Read All** | `GET /{resource}/` | `GET /api/teams/` | List all resources (supports pagination) |
 | **Read By ID** | `GET /{resource}/{item_id}/` | `GET /api/teams/5/` | Get single resource by ID |
 | **Update** | `PUT /{resource}/{item_id}/` | `PUT /api/teams/5/` | Update resource by ID with request body |
-| **Delete** | `DELETE /{resource}/{item_id}/` | `DELETE /api/teams/5/` | Delete resource by ID |
+| **Delete** | `DELETE /{resource}/{item_id}/` | `DELETE /api/users/456/` | Delete resource by ID (custom implementation, not auto-generated) |
 
 ### Key Conventions
 
@@ -59,7 +59,7 @@ All base CRUD operations follow consistent routing patterns using path parameter
 ```bash
 PUT /api/teams/5/
 GET /api/teams/5/
-DELETE /api/teams/5/
+DELETE /api/users/456/
 ```
 
 **Incorrect:**
@@ -1011,6 +1011,71 @@ GET /api/users/search?order_by=email&ascending=false&page=1&items_per_page=20
 |--------|-------------|
 | 400 | Bad Request - invalid query parameters |
 | 500 | Internal Server Error - server error |
+
+### DELETE /api/users/{user_id}
+
+Delete a user by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/users/{user_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `user_id` | integer | Yes | User ID |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "USER 456 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
+| 404 | User not found |
+| 500 | Internal server error |
+
+### DELETE /api/users/me
+
+Delete currently authenticated user's account.
+
+**Endpoint:**
+```
+DELETE /api/users/me
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "detail": "USER deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 404 | User not found |
+| 500 | Internal server error |
 
 ---
 

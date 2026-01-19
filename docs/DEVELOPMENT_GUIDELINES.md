@@ -329,7 +329,7 @@ async def update_role(
 ):
     return await service.update(item_id, update_data)
 
-@router.delete("/api/roles/id/{model_id}")
+@router.delete("/id/{model_id}")
 async def delete_role(
     model_id: int,
     _: Annotated[RoleDB, Depends(require_roles("admin"))],

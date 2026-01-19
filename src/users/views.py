@@ -394,6 +394,46 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 roles=roles,
             )
 
+        @router.delete(
+            "/{user_id}",
+            summary="Delete user by ID",
+            description="Delete a user by ID. Requires admin role.",
+            responses={
+                200: {"description": "User deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "User not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_user_by_id(
+            user_id: int,
+            _: Annotated[UserDB, Depends(require_roles("admin"))],
+        ):
+            """Delete user by ID."""
+            self.logger.debug(f"Delete user by id: {user_id}")
+
+            await self.service.delete(user_id)
+            return {"detail": f"{ITEM} {user_id} deleted successfully"}
+
+        @router.delete(
+            "/me",
+            summary="Delete current user",
+            description="Delete currently authenticated user's account.",
+            responses={
+                200: {"description": "User deleted successfully"},
+                401: {"description": "Unauthorized"},
+                404: {"description": "User not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_current_user(current_user: CurrentUser):
+            """Delete current user."""
+            self.logger.debug(f"Delete current user: {current_user.id}")
+
+            await self.service.delete(current_user.id)
+            return {"detail": f"{ITEM} deleted successfully"}
+
         return router
 
 

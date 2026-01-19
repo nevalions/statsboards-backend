@@ -23,19 +23,6 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
     def route(self):
         router = super().route()
 
-        # Remove BaseRouter's unauthenticated delete endpoint, replace with authenticated version
-        for route in router.routes[:]:
-            if (
-                hasattr(route, "path")
-                and route.path.endswith("/{model_id}")
-                and hasattr(route, "methods")
-                and "DELETE" in route.methods
-                and hasattr(route, "endpoint")
-                and "BaseRouter" in route.endpoint.__qualname__
-            ):
-                router.routes.remove(route)
-                break
-
         @router.post(
             "/",
             response_model=RoleSchema,

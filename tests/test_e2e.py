@@ -58,9 +58,6 @@ class TestTournamentManagementE2E:
         assert tournament["sport_id"] == sport_id
         assert tournament["season_id"] == season_id
 
-        delete_response = await client.delete(f"/api/tournaments/id/{tournament_id}")
-        assert delete_response.status_code == 200
-
     async def test_tournament_with_teams_workflow(self, client: AsyncClient):
         """Test creating a tournament with multiple teams."""
         sport_data = SportFactoryAny.build()
@@ -290,8 +287,8 @@ class TestSponsorManagementE2E:
 class TestErrorHandlingE2E:
     """End-to-end tests for error handling across the application."""
 
-    async def test_cascade_delete_workflow(self, client: AsyncClient):
-        """Test that deleting a sport cascades to related entities."""
+    async def test_sport_team_relationship(self, client: AsyncClient):
+        """Test that teams are correctly associated with their sport."""
         sport_data = SportFactoryAny.build()
 
         sport_response = await client.post("/api/sports/", json=sport_data.model_dump())
@@ -302,11 +299,11 @@ class TestErrorHandlingE2E:
         team_response = await client.post("/api/teams/", json=team_data.model_dump())
         assert team_response.status_code == 200
 
-        delete_sport_response = await client.delete(f"/api/sports/id/{sport_id}")
-        assert delete_sport_response.status_code == 200
-
-        get_sport_response = await client.get(f"/api/sports/id/{sport_id}")
-        assert get_sport_response.status_code == 404
+        get_team_response = await client.get("/api/teams/")
+        assert get_team_response.status_code == 200
+        teams = get_team_response.json()
+        assert len(teams) > 0
+        assert teams[0]["sport_id"] == sport_id
 
     async def test_duplicate_entity_handling(self, client: AsyncClient):
         """Test that duplicate entities are properly rejected."""

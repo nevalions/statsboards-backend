@@ -147,8 +147,8 @@ registry.register_router(
 
 **BaseRouter**: Generic router with standard CRUD endpoints
 - Inherit from `BaseRouter[SchemaType, CreateSchemaType, UpdateSchemaType]`
-- Auto-generates GET /, GET /id/{id}, POST /, PUT /id/{id}, DELETE /id/{id}
-- Override or add custom endpoints as needed
+- Auto-generates GET /, GET /id/{id}, POST /, PUT /id/{id}
+- Override or add custom endpoints as needed (including DELETE endpoints for authorization)
 
 **BaseServiceDB**: Generic service with CRUD operations
 - Inherit from `BaseServiceDB` and pass database model
