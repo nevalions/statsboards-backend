@@ -183,6 +183,40 @@ class UserServiceDB(BaseServiceDB):
             await session.refresh(user)
             return user
 
+    async def admin_change_password(
+        self,
+        user_id: int,
+        new_password: str,
+    ) -> UserDB:
+        """Admin changes user password (no old password required).
+
+        Args:
+            user_id: User ID.
+            new_password: New password to set.
+
+        Returns:
+            UserDB: Updated user.
+
+        Raises:
+            HTTPException: If user not found.
+        """
+        self.logger.debug(f"Admin change password for {ITEM} id:{user_id}")
+        async with self.db.async_session() as session:
+            stmt = select(UserDB).where(UserDB.id == user_id)
+            results = await session.execute(stmt)
+            user = results.scalar_one_or_none()
+
+            if user is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"{ITEM} with id {user_id} not found",
+                )
+
+            user.hashed_password = get_password_hash(new_password)
+            await session.commit()
+            await session.refresh(user)
+            return user
+
     async def assign_role(
         self,
         user_id: int,

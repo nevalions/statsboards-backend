@@ -50,6 +50,12 @@ class UserAssignRole(BaseModel):
     role_id: int
 
 
+class AdminPasswordChange(BaseModel):
+    """Admin password change schema (no old password required)."""
+
+    new_password: str = Field(..., min_length=6)
+
+
 class PaginatedUserResponse(BaseModel):
     data: list[UserSchema]
     metadata: PaginationMetadata

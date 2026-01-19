@@ -12,7 +12,13 @@ from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
 
 from .db_services import UserServiceDB
-from .schemas import PaginatedUserResponse, UserSchema, UserSchemaCreate, UserSchemaUpdate
+from .schemas import (
+    AdminPasswordChange,
+    PaginatedUserResponse,
+    UserSchema,
+    UserSchemaCreate,
+    UserSchemaUpdate,
+)
 
 ITEM = "USER"
 
@@ -259,6 +265,110 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 role_names=role_names,
             )
             return response
+
+        @router.get(
+            "/{user_id}",
+            response_model=UserSchema,
+            summary="Get user by ID with roles",
+            description="Returns user profile with their roles. Requires admin role.",
+            responses={
+                200: {"description": "User found"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "User not found"},
+            },
+        )
+        async def get_user_by_id(
+            user_id: int,
+            _: Annotated[UserDB, Depends(require_roles("admin"))],
+        ) -> UserSchema:
+            """Get user by ID with roles."""
+            self.logger.debug(f"Get user by id: {user_id}")
+
+            user = await self.service.get_by_id_with_roles(user_id)
+            if user is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found",
+                )
+
+            roles = [role.name for role in user.roles] if user.roles else []
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+            )
+
+        @router.put(
+            "/{user_id}",
+            response_model=UserSchema,
+            summary="Update user by ID",
+            description="Updates user information (email, is_active). Requires admin role.",
+            responses={
+                200: {"description": "User updated successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "User not found"},
+            },
+        )
+        async def update_user_by_id(
+            user_id: int,
+            user_data: UserSchemaUpdate,
+            _: Annotated[UserDB, Depends(require_roles("admin"))],
+        ) -> UserSchema:
+            """Update user by ID."""
+            self.logger.debug(f"Update user by id: {user_id}")
+
+            updated_user = await self.service.update(user_id, user_data)
+            user = await self.service.get_by_id_with_roles(updated_user.id)
+
+            roles = [role.name for role in user.roles] if user.roles else []
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+            )
+
+        @router.post(
+            "/{user_id}/change-password",
+            response_model=UserSchema,
+            summary="Admin change user password",
+            description="Changes a user's password. Does not require old password. Requires admin role.",
+            responses={
+                200: {"description": "Password changed successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "User not found"},
+            },
+        )
+        async def admin_change_password(
+            user_id: int,
+            password_data: AdminPasswordChange,
+            _: Annotated[UserDB, Depends(require_roles("admin"))],
+        ) -> UserSchema:
+            """Admin change user password."""
+            self.logger.debug(f"Admin change password for user: {user_id}")
+
+            updated_user = await self.service.admin_change_password(
+                user_id, password_data.new_password
+            )
+            user = await self.service.get_by_id_with_roles(updated_user.id)
+
+            roles = [role.name for role in user.roles] if user.roles else []
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+            )
 
         return router
 
