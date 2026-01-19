@@ -465,7 +465,7 @@ class TestPlayerMatchViews:
         team_b = await team_service.create(TeamFactory.build(sport_id=sport.id, team_eesl_id=200))
 
         match_service = MatchServiceDB(test_db)
-        match = await match_service.create(
+        await match_service.create(
             MatchFactory.build(
                 tournament_id=tournament.id,
                 team_a_id=team_a.id,
@@ -608,3 +608,117 @@ class TestPlayerMatchViews:
         response = await client.get("/api/players_match/pars_and_create/match/123")
 
         assert response.status_code == 200
+
+    async def test_get_player_in_sport_endpoint(self, client, test_db):
+        """Test get player in sport endpoint."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        position_service = PositionServiceDB(test_db)
+        position = await position_service.create(
+            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        )
+
+        player_service = PlayerServiceDB(test_db)
+        player = await player_service.create_or_update_player(PlayerFactory.build())
+
+        ptt_service = PlayerTeamTournamentServiceDB(test_db)
+        ptt = await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player.id,
+                position_id=position.id,
+                team_id=team.id,
+                tournament_id=tournament.id,
+            )
+        )
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id)
+        )
+
+        player_match_service = PlayerMatchServiceDB(test_db)
+        player_match_data = PlayerMatchSchemaCreate(
+            player_match_eesl_id=100,
+            player_team_tournament_id=ptt.id,
+            match_position_id=position.id,
+            match_id=match.id,
+            team_id=team.id,
+        )
+        created = await player_match_service.create_or_update_player_match(player_match_data)
+
+        response = await client.get(f"/api/players_match/id/{created.id}/player_in_sport/")
+
+        assert response.status_code == 200
+
+    async def test_get_player_in_team_tournament_endpoint(self, client, test_db):
+        """Test get player in team tournament endpoint."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        position_service = PositionServiceDB(test_db)
+        position = await position_service.create(
+            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        )
+
+        player_service = PlayerServiceDB(test_db)
+        player = await player_service.create_or_update_player(PlayerFactory.build())
+
+        ptt_service = PlayerTeamTournamentServiceDB(test_db)
+        ptt = await ptt_service.create(
+            PlayerTeamTournamentSchemaCreate(
+                player_id=player.id,
+                position_id=position.id,
+                team_id=team.id,
+                tournament_id=tournament.id,
+            )
+        )
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(tournament_id=tournament.id, team_a_id=team.id, team_b_id=team.id)
+        )
+
+        player_match_service = PlayerMatchServiceDB(test_db)
+        player_match_data = PlayerMatchSchemaCreate(
+            player_match_eesl_id=100,
+            player_team_tournament_id=ptt.id,
+            match_position_id=position.id,
+            match_id=match.id,
+            team_id=team.id,
+        )
+        created = await player_match_service.create_or_update_player_match(player_match_data)
+
+        response = await client.get(
+            f"/api/players_match/id/{created.id}/player_in_team_tournament/"
+        )
+
+        assert response.status_code == 200
+
+    async def test_delete_player_match_endpoint_unauthorized(self, client, test_db):
+        """Test delete player match endpoint without authentication."""
+        response = await client.delete("/api/players_match/id/1")
+
+        assert response.status_code == 401
