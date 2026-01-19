@@ -355,7 +355,7 @@ class MatchCRUDRouter(
             from src.helpers.fetch_helpers import fetch_match_data
 
             self.logger.debug("Get full_match_data by match endpoint")
-            return await fetch_match_data(match_id)
+            return await fetch_match_data(match_id, database=self.service.db)
 
         @router.get(
             "/id/{match_id}/scoreboard/full_data/scoreboard_settings/",
@@ -365,7 +365,7 @@ class MatchCRUDRouter(
             self.logger.debug("Get full_match_data_with_scoreboard by match endpoint")
             from src.helpers.fetch_helpers import fetch_with_scoreboard_data
 
-            return await fetch_with_scoreboard_data(match_id)
+            return await fetch_with_scoreboard_data(match_id, database=self.service.db)
 
         @router.post("/id/{match_id}/upload_team_logo", response_model=UploadTeamLogoResponse)
         async def upload_team_logo(match_id: int, file: UploadFile = File(...)):
