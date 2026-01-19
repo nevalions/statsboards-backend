@@ -1,7 +1,9 @@
 """User domain database service."""
 
+from datetime import UTC, datetime, timedelta
+
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import selectinload
 
 from src.auth.security import get_password_hash, verify_password
@@ -337,6 +339,44 @@ class UserServiceDB(BaseServiceDB):
 
         return user
 
+    async def heartbeat(self, user_id: int) -> None:
+        """Update user's last_online timestamp and set is_online to True.
+
+        Args:
+            user_id: User ID to update.
+        """
+        self.logger.debug(f"Heartbeat for {ITEM} id:{user_id}")
+        async with self.db.async_session() as session:
+            stmt = (
+                update(UserDB)
+                .where(UserDB.id == user_id)
+                .values(last_online=datetime.now(UTC), is_online=True)
+            )
+            await session.execute(stmt)
+            await session.commit()
+
+    async def mark_stale_users_offline(self, timeout_minutes: int = 2) -> int:
+        """Mark users as offline if they haven't been seen for timeout_minutes.
+
+        Args:
+            timeout_minutes: Minutes of inactivity before marking offline.
+
+        Returns:
+            int: Number of users marked as offline.
+        """
+        self.logger.debug(f"Marking stale users offline (timeout: {timeout_minutes} minutes)")
+        async with self.db.async_session() as session:
+            cutoff_time = datetime.now(UTC) - timedelta(minutes=timeout_minutes)
+            stmt = (
+                update(UserDB)
+                .where(UserDB.last_online < cutoff_time)
+                .where(UserDB.is_online.is_(True))
+                .values(is_online=False)
+            )
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount
+
     @handle_service_exceptions(
         item_name=ITEM,
         operation="searching users with pagination",
@@ -401,6 +441,9 @@ class UserServiceDB(BaseServiceDB):
                         is_active=user.is_active,
                         person_id=user.person_id,
                         roles=[role.name for role in user.roles] if user.roles else [],
+                        created=user.created,
+                        last_online=user.last_online,
+                        is_online=user.is_online,
                     )
                     for user in users
                 ],

@@ -96,7 +96,30 @@ class AuthRouter:
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
+
+        @self.router.post(
+            "/heartbeat",
+            status_code=status.HTTP_204_NO_CONTENT,
+            summary="Heartbeat",
+            description="Update user's last_online timestamp and is_online status.",
+            responses={
+                204: {"description": "Heartbeat successful"},
+                401: {"description": "Not authenticated"},
+            },
+        )
+        async def heartbeat(current_user: CurrentUser) -> None:
+            """Update user's online status."""
+            self.logger.debug(f"Heartbeat for user: {current_user.id}")
+
+            from src.users.db_services import UserServiceDB
+
+            registry = get_service_registry()
+            user_service = UserServiceDB(registry.database)
+            await user_service.heartbeat(current_user.id)
 
         return self.router
 

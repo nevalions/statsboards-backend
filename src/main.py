@@ -1,5 +1,6 @@
 """Main FastAPI application entry point."""
 
+import asyncio
 import logging.config
 import os
 from contextlib import asynccontextmanager
@@ -22,6 +23,28 @@ logger = logging.getLogger("backend_logger_fastapi")
 db_logger = logging.getLogger("backend_logger_base_db")
 setup_logging()
 
+
+async def mark_stale_users_offline_task():
+    """Background task to periodically mark inactive users as offline."""
+    from src.users.db_services import UserServiceDB
+
+    user_service = UserServiceDB(db)
+    logger.info("Starting stale users offline task")
+
+    while True:
+        try:
+            count = await user_service.mark_stale_users_offline(timeout_minutes=2)
+            if count > 0:
+                logger.info(f"Marked {count} users as offline")
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            logger.info("Stale users offline task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Error in stale users offline task: {e}", exc_info=True)
+            await asyncio.sleep(60)
+
+
 log_file_path = logs_dir / "backend.log"
 if os.access(log_file_path, os.W_OK):
     logger.debug("Log file is writable.")
@@ -37,17 +60,25 @@ async def lifespan(_app: FastAPI):
         _app (FastAPI): The FastAPI application instance (unused).
     """
     db_logger.info("Starting application lifespan.")
+    stale_users_task = None
     try:
         settings.validate_all()
         init_service_registry(db)
         register_all_services(db)
         logger.info("Service registry initialized and all services registered")
         await db.validate_database_connection()
+        stale_users_task = asyncio.create_task(mark_stale_users_offline_task())
         yield
     except Exception as ex:
         db_logger.critical(f"Critical error during startup: {ex}", exc_info=True)
         raise ex
     finally:
+        if stale_users_task:
+            stale_users_task.cancel()
+            try:
+                await stale_users_task
+            except asyncio.CancelledError:
+                pass
         db_logger.info("Shutting down application lifespan after test connection.")
         await db.close()
 

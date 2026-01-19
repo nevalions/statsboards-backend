@@ -152,3 +152,90 @@ class TestUserServiceDB:
             await service.change_password(user.id, "WrongPass!", "NewSecurePass456!")
 
         assert exc_info.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_heartbeat_updates_last_online_and_is_online(self, test_db: Database):
+        """Test heartbeat updates last_online timestamp and is_online flag."""
+        from datetime import datetime, UTC
+        from src.core.models import UserDB
+        from src.auth.security import get_password_hash
+
+        async with test_db.async_session() as session:
+            user = UserDB(
+                username="heartbeat_test",
+                email="heartbeat@example.com",
+                hashed_password=get_password_hash("password123"),
+                is_online=False,
+            )
+            session.add(user)
+            await session.flush()
+            user_id = user.id
+
+        service = UserServiceDB(test_db)
+        await service.heartbeat(user_id)
+
+        async with test_db.async_session() as session:
+            from sqlalchemy import select
+
+            stmt = select(UserDB).where(UserDB.id == user_id)
+            result = await session.execute(stmt)
+            updated_user = result.scalar_one()
+
+            assert updated_user.last_online is not None
+            assert updated_user.is_online is True
+
+    @pytest.mark.asyncio
+    async def test_mark_stale_users_offline(self, test_db: Database):
+        """Test marking stale users as offline."""
+        from datetime import datetime, timedelta, UTC
+        from src.core.models import UserDB
+        from src.auth.security import get_password_hash
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            user1 = UserDB(
+                username="stale_user1",
+                email="stale1@example.com",
+                hashed_password=get_password_hash("password123"),
+                is_online=True,
+                last_online=datetime.now(UTC) - timedelta(minutes=5),
+            )
+            user2 = UserDB(
+                username="stale_user2",
+                email="stale2@example.com",
+                hashed_password=get_password_hash("password123"),
+                is_online=True,
+                last_online=datetime.now(UTC) - timedelta(minutes=1),
+            )
+            user3 = UserDB(
+                username="active_user",
+                email="active@example.com",
+                hashed_password=get_password_hash("password123"),
+                is_online=True,
+                last_online=datetime.now(UTC),
+            )
+            session.add_all([user1, user2, user3])
+            await session.flush()
+
+        count = await service.mark_stale_users_offline(timeout_minutes=2)
+
+        assert count == 1
+
+        async with test_db.async_session() as session:
+            from sqlalchemy import select
+
+            stmt = select(UserDB).where(UserDB.username == "stale_user1")
+            result = await session.execute(stmt)
+            stale_user = result.scalar_one()
+            assert stale_user.is_online is False
+
+            stmt = select(UserDB).where(UserDB.username == "stale_user2")
+            result = await session.execute(stmt)
+            recent_user = result.scalar_one()
+            assert recent_user.is_online is True
+
+            stmt = select(UserDB).where(UserDB.username == "active_user")
+            result = await session.execute(stmt)
+            active_user = result.scalar_one()
+            assert active_user.is_online is True

@@ -493,3 +493,24 @@ class TestUserViews:
         )
 
         assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_user_schema_includes_online_status_fields(self, client: AsyncClient, test_user):
+        """Test that user response includes created, last_online, and is_online fields."""
+        from datetime import datetime
+
+        token = create_access_token(data={"sub": str(test_user.id)})
+
+        response = await client.get(
+            "/api/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert "created" in data
+        assert "last_online" in data
+        assert "is_online" in data
+        assert isinstance(data["created"], str)
+        assert data["is_online"] is False

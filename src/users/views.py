@@ -72,6 +72,9 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.get(
@@ -100,6 +103,9 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.put(
@@ -127,6 +133,9 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.post(
@@ -190,6 +199,9 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.delete(
@@ -230,6 +242,9 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.get(
@@ -324,6 +339,22 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
+            )
+
+            roles = [role.name for role in user.roles] if user.roles else []
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.put(
@@ -357,6 +388,9 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.post(
@@ -392,6 +426,9 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 is_active=user.is_active,
                 person_id=user.person_id,
                 roles=roles,
+                created=user.created,
+                last_online=user.last_online,
+                is_online=user.is_online,
             )
 
         @router.delete(

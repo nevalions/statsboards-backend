@@ -95,6 +95,10 @@ class TestAuthViews:
         data = response.json()
         assert data["id"] == test_user_with_role.id
         assert data["username"] == "test_api_user"
+        assert "created" in data
+        assert "last_online" in data
+        assert "is_online" in data
+        assert isinstance(data["created"], str)
 
     @pytest.mark.asyncio
     async def test_me_no_token(self, client: AsyncClient):
@@ -126,3 +130,30 @@ class TestAuthViews:
         )
 
         assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_heartbeat_success(self, client: AsyncClient, test_user_with_role, test_db):
+        """Test heartbeat endpoint updates last_online and is_online."""
+        from datetime import datetime, UTC
+
+        token = create_access_token(data={"sub": str(test_user_with_role.id)})
+
+        response = await client.post(
+            "/api/auth/heartbeat",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 204
+
+        user_service = UserServiceDB(test_db)
+        user = await user_service.get_by_id_with_roles(test_user_with_role.id)
+
+        assert user.last_online is not None
+        assert user.is_online is True
+
+    @pytest.mark.asyncio
+    async def test_heartbeat_no_token(self, client: AsyncClient):
+        """Test heartbeat endpoint without token returns 401."""
+        response = await client.post("/api/auth/heartbeat")
+
+        assert response.status_code == 401

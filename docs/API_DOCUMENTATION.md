@@ -7,6 +7,7 @@ Frontend integration guide for StatsBoards Backend APIs and WebSocket endpoints.
   - [API Routing Conventions](#api-routing-conventions)
   - [Privacy and User Ownership Filtering](#privacy-and-user-ownership-filtering)
   - [Role API](#role-api)
+  - [Auth API](#auth-api)
   - [User API](#user-api)
   - [Person API](#person-api)
  - [Player Search API](#player-search-api)
@@ -422,6 +423,102 @@ Authorization: Bearer <token>
 
 ---
 
+## Auth API
+
+### POST /api/auth/login
+
+Authenticate a user with username and password. Returns JWT access token.
+
+**Endpoint:**
+```
+POST /api/auth/login
+```
+
+**Request Body:**
+```
+username=test_user&password=SecurePass123!
+```
+
+**Response (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Invalid credentials |
+
+### GET /api/auth/me
+
+Get the currently authenticated user's profile (alias for `/api/users/me`).
+
+**Endpoint:**
+```
+GET /api/auth/me
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 456,
+  "username": "john_doe",
+  "email": "john@example.com",
+  "is_active": true,
+  "person_id": 123,
+  "roles": ["user", "admin"],
+  "created": "2024-01-15T10:30:00Z",
+  "last_online": "2024-01-15T14:30:00Z",
+  "is_online": true
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 404 | User not found |
+
+### POST /api/auth/heartbeat
+
+Update user's last_online timestamp and set is_online status to true. Used for tracking user activity.
+
+**Endpoint:**
+```
+POST /api/auth/heartbeat
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response (204 No Content):**
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+
+**Behavior:**
+- Updates `last_online` timestamp to current UTC time
+- Sets `is_online` to `true`
+- Should be called periodically by frontend (every 30-60 seconds)
+- Background task automatically marks users as offline after 2 minutes of inactivity
+
+---
+
 ## User API
 
 ### POST /api/users/register
@@ -461,7 +558,10 @@ interface UserCreate {
   "email": "john@example.com",
   "is_active": true,
   "person_id": 123,
-  "roles": ["user"]
+  "roles": ["user", "admin"],
+  "created": "2024-01-15T10:30:00Z",
+  "last_online": "2024-01-15T14:30:00Z",
+  "is_online": true
 }
 ```
 
@@ -545,10 +645,13 @@ interface UserUpdate {
 {
   "id": 456,
   "username": "john_doe",
-  "email": "newemail@example.com",
+  "email": "john@example.com",
   "is_active": true,
   "person_id": 123,
-  "roles": ["user", "admin"]
+  "roles": ["user"],
+  "created": "2024-01-15T10:30:00Z",
+  "last_online": null,
+  "is_online": false
 }
 ```
 
@@ -645,10 +748,13 @@ interface UserUpdate {
 {
   "id": 456,
   "username": "john_doe",
-  "email": "admin@example.com",
-  "is_active": false,
+  "email": "john@example.com",
+  "is_active": true,
   "person_id": 123,
-  "roles": ["user", "admin"]
+  "roles": ["user", "admin"],
+  "created": "2024-01-15T10:30:00Z",
+  "last_online": "2024-01-15T14:30:00Z",
+  "is_online": true
 }
 ```
 
@@ -815,7 +921,10 @@ interface UserRoleAssign {
   "email": "john@example.com",
   "is_active": true,
   "person_id": 123,
-  "roles": ["user", "admin"]
+  "roles": ["user", "admin"],
+  "created": "2024-01-15T10:30:00Z",
+  "last_online": "2024-01-15T14:30:00Z",
+  "is_online": true
 }
 ```
 
@@ -847,7 +956,7 @@ Authorization: Bearer <token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `user_id` | integer | Yes | User ID |
-| `role_id` | integer | Yes | Role ID to remove |
+ | `role_id` | integer | Yes | Role ID to remove |
 
 **Response (200 OK):**
 ```json
@@ -857,7 +966,10 @@ Authorization: Bearer <token>
   "email": "john@example.com",
   "is_active": true,
   "person_id": 123,
-  "roles": ["user"]
+  "roles": ["user"],
+  "created": "2024-01-15T10:30:00Z",
+  "last_online": null,
+  "is_online": false
 }
 ```
 
@@ -936,7 +1048,10 @@ GET /api/users/search
       "email": "john@example.com",
       "is_active": true,
       "person_id": 123,
-      "roles": ["user", "admin"]
+      "roles": ["user", "admin"],
+      "created": "2024-01-15T10:30:00Z",
+      "last_online": "2024-01-15T14:30:00Z",
+      "is_online": true
     }
   ],
   "metadata": {
@@ -964,6 +1079,9 @@ interface User {
   is_active: boolean;
   person_id: number | null;
   roles: string[];
+  created: string;
+  last_online: string | null;
+  is_online: boolean;
 }
 
 interface PaginationMetadata {

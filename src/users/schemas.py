@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from src.core.schema_helpers import PaginationMetadata
@@ -34,6 +36,9 @@ class UserSchema(BaseModel):
     is_active: bool
     person_id: int | None = None
     roles: list[str] = []
+    created: datetime
+    last_online: datetime | None = None
+    is_online: bool
 
 
 class UserChangePassword(BaseModel):
