@@ -43,7 +43,7 @@ class TestBaseServiceDBIntegration:
         assert updated.year == created.year + 1
 
         deleted = await service.delete(created.id)
-        assert deleted.id == created.id
+        assert deleted["id"] == created.id
 
         retrieved_after_delete = await service.get_by_id(created.id)
         assert retrieved_after_delete is None
@@ -58,19 +58,13 @@ class TestBaseServiceDBIntegration:
         sport = await sport_service.create(SportFactorySample.build())
         season = await season_service.create(SeasonFactorySample.build())
 
-        tournament_data = TournamentFactory.build(
-            sport_id=sport.id, season_id=season.id
-        )
+        tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         tournament = await tournament_service.create(tournament_data)
 
-        retrieved_tournament = await tournament_service.get_related_items(
-            tournament.id, "sport"
-        )
+        retrieved_tournament = await tournament_service.get_related_items(tournament.id, "sport")
         assert retrieved_tournament.sport_id == sport.id
 
-        retrieved_season = await season_service.get_related_items(
-            season.id, "tournaments"
-        )
+        retrieved_season = await season_service.get_related_items(season.id, "tournaments")
         assert retrieved_season is not None
         if hasattr(retrieved_season, "__len__"):
             assert len(retrieved_season) >= 1
