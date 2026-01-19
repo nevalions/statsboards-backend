@@ -397,27 +397,16 @@ class UserServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        from src.core.models.person import PersonDB
-
         async with self.db.async_session() as session:
-            base_query = select(UserDB).options(
-                selectinload(UserDB.person), selectinload(UserDB.roles)
-            )
+            base_query = select(UserDB).options(selectinload(UserDB.roles))
 
             if role_names:
                 base_query = base_query.join(UserDB.roles).where(RoleDB.name.in_(role_names))
 
             if search_query:
                 search_pattern = await self._build_search_pattern(search_query)
-                if role_names:
-                    base_query = base_query.join(PersonDB, UserDB.person_id == PersonDB.id)
-                else:
-                    base_query = base_query.outerjoin(PersonDB, UserDB.person_id == PersonDB.id)
                 base_query = base_query.where(
                     UserDB.username.ilike(search_pattern).collate("en-US-x-icu")
-                    | UserDB.email.ilike(search_pattern).collate("en-US-x-icu")
-                    | PersonDB.first_name.ilike(search_pattern).collate("en-US-x-icu")
-                    | PersonDB.second_name.ilike(search_pattern).collate("en-US-x-icu")
                 )
 
             count_stmt = select(func.count()).select_from(base_query.subquery())

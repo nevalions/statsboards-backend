@@ -1019,7 +1019,7 @@ Authorization: Bearer <token>
 
 ### GET /api/users/search
 
-Search users by username, email, or person name with pagination, ordering, and role filtering.
+Search users by username with pagination, ordering, and role filtering.
 
 **Endpoint:**
 ```
@@ -1035,7 +1035,7 @@ GET /api/users/search
 | `order_by` | string | No | "username" | First sort column |
 | `order_by_two` | string | No | "id" | Second sort column |
 | `ascending` | boolean | No | true | Sort order (true=asc, false=desc) |
-| `search` | string | No | - | Search query for username, email, or person name |
+| `search` | string | No | - | Search query for username |
 | `role_names` | array | No | - | Filter users by role names (e.g., ["admin"]) |
 
 **Response (200 OK):**
@@ -1097,13 +1097,13 @@ interface PaginationMetadata {
 **Search Behavior:**
 
 - Search is case-insensitive and uses ICU collation (`en-US-x-icu`) for international text support
-- Searches `username`, `email`, and person's `first_name`/`second_name` fields with OR logic
+- Searches `username` field
 - Pattern matching: `%query%` (matches anywhere in text)
 - `role_names` can be used as query parameter multiple times (e.g., `?role_names=admin&role_names=user`)
 
 **Examples:**
 
-1. **Search users by name:**
+1. **Search users by username:**
 ```
 GET /api/users/search?search=john&page=1&items_per_page=20
 ```
@@ -1120,7 +1120,7 @@ GET /api/users/search?search=john&role_names=admin&page=1&items_per_page=20
 
 4. **Custom ordering:**
 ```
-GET /api/users/search?order_by=email&ascending=false&page=1&items_per_page=20
+GET /api/users/search?order_by=is_online&order_by_two=username&ascending=false&page=1&items_per_page=20
 ```
 
 **Error Responses:**

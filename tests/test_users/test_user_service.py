@@ -156,9 +156,8 @@ class TestUserServiceDB:
     @pytest.mark.asyncio
     async def test_heartbeat_updates_last_online_and_is_online(self, test_db: Database):
         """Test heartbeat updates last_online timestamp and is_online flag."""
-        from datetime import datetime, UTC
-        from src.core.models import UserDB
         from src.auth.security import get_password_hash
+        from src.core.models import UserDB
 
         async with test_db.async_session() as session:
             user = UserDB(
@@ -187,9 +186,10 @@ class TestUserServiceDB:
     @pytest.mark.asyncio
     async def test_mark_stale_users_offline(self, test_db: Database):
         """Test marking stale users as offline."""
-        from datetime import datetime, timedelta, UTC
-        from src.core.models import UserDB
+        from datetime import UTC, datetime, timedelta
+
         from src.auth.security import get_password_hash
+        from src.core.models import UserDB
 
         service = UserServiceDB(test_db)
 

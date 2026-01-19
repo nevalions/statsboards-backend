@@ -497,7 +497,6 @@ class TestUserViews:
     @pytest.mark.asyncio
     async def test_user_schema_includes_online_status_fields(self, client: AsyncClient, test_user):
         """Test that user response includes created, last_online, and is_online fields."""
-        from datetime import datetime
 
         token = create_access_token(data={"sub": str(test_user.id)})
 

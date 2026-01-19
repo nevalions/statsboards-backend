@@ -278,7 +278,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             "/search",
             response_model=PaginatedUserResponse,
             summary="Search users with pagination",
-            description="Search users by username, email, or person name. Supports pagination, ordering, and role filtering.",
+            description="Search users by username. Supports pagination, ordering (username, is_online, etc.), and role filtering.",
         )
         async def search_users_endpoint(
             page: int = Query(1, ge=1, description="Page number (1-based)"),

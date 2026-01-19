@@ -116,8 +116,8 @@ class TestUserSearch:
         assert len(result.data) == 1
         assert result.data[0].username == "searchable_user"
 
-    async def test_search_users_by_email(self, test_db):
-        """Test search by email."""
+    async def test_search_users_by_email_returns_empty(self, test_db):
+        """Test search by email returns no results (search is username-only)."""
         from src.core.models import PersonDB
 
         service = UserServiceDB(test_db)
@@ -160,13 +160,11 @@ class TestUserSearch:
         )
 
         assert isinstance(result, PaginatedUserResponse)
-        assert result.metadata.total_items == 1
-        assert len(result.data) == 1
-        assert result.data[0].username == "email_user"
-        assert result.data[0].email == "searchable@example.com"
+        assert result.metadata.total_items == 0
+        assert len(result.data) == 0
 
-    async def test_search_users_by_first_name(self, test_db):
-        """Test search by first name."""
+    async def test_search_users_by_first_name_returns_empty(self, test_db):
+        """Test search by first name returns no results (search is username-only)."""
         from src.core.models import PersonDB
 
         service = UserServiceDB(test_db)
@@ -201,11 +199,11 @@ class TestUserSearch:
         )
 
         assert isinstance(result, PaginatedUserResponse)
-        assert result.metadata.total_items == 1
-        assert len(result.data) == 1
+        assert result.metadata.total_items == 0
+        assert len(result.data) == 0
 
-    async def test_search_users_by_second_name(self, test_db):
-        """Test search by second name."""
+    async def test_search_users_by_second_name_returns_empty(self, test_db):
+        """Test search by second name returns no results (search is username-only)."""
         from src.core.models import PersonDB
 
         service = UserServiceDB(test_db)
@@ -240,17 +238,17 @@ class TestUserSearch:
         )
 
         assert isinstance(result, PaginatedUserResponse)
-        assert result.metadata.total_items == 1
-        assert len(result.data) == 1
+        assert result.metadata.total_items == 0
+        assert len(result.data) == 0
 
-    async def test_search_users_cyrillic_characters(self, test_db):
+    async def test_search_users_cyrillic_characters_in_username(self, test_db):
         """Test search with cyrillic characters using ICU collation."""
         from src.core.models import PersonDB
 
         service = UserServiceDB(test_db)
 
         async with test_db.async_session() as session:
-            person = PersonDB(person_eesl_id=2005, first_name="Алексей", second_name="Петров")
+            person = PersonDB(person_eesl_id=2005, first_name="John", second_name="Doe")
             session.add(person)
             await session.flush()
             await session.refresh(person)
@@ -259,7 +257,7 @@ class TestUserSearch:
 
         async with test_db.async_session() as session:
             user = UserDB(
-                username="alexey_user",
+                username="Алексей",
                 email="alexey@example.com",
                 hashed_password="hashed_password",
                 person_id=person.id,
@@ -519,13 +517,13 @@ class TestUserSearch:
         assert result.metadata.has_previous is False
 
     async def test_search_users_partial_substring_match(self, test_db):
-        """Test search matches partial substrings."""
+        """Test search matches partial substrings in username."""
         from src.core.models import PersonDB
 
         service = UserServiceDB(test_db)
 
         async with test_db.async_session() as session:
-            person = PersonDB(person_eesl_id=2010, first_name="PartialMatch", second_name="Test")
+            person = PersonDB(person_eesl_id=2010, first_name="John", second_name="Doe")
             session.add(person)
             await session.flush()
             await session.refresh(person)
@@ -668,14 +666,14 @@ class TestUserSearch:
         assert usernames == {"admin_user", "mod_user"}
 
     async def test_search_users_by_role_with_search(self, test_db):
-        """Test search filters by role combined with text search."""
+        """Test search filters by role combined with username search."""
         from src.core.models import PersonDB, RoleDB, UserDB
 
         service = UserServiceDB(test_db)
 
         async with test_db.async_session() as session:
             person1 = PersonDB(person_eesl_id=3003, first_name="John", second_name="Admin")
-            person2 = PersonDB(person_eesl_id=3004, first_name="Jane", second_name="Admin")
+            person2 = PersonDB(person_eesl_id=3004, first_name="Jane", second_name="User")
             admin_role = RoleDB(name="admin", description="Admin role")
             user_role = RoleDB(name="user", description="User role")
             session.add_all([person1, person2, admin_role, user_role])
@@ -705,7 +703,7 @@ class TestUserSearch:
             await session.flush()
 
         result = await service.search_users_with_pagination(
-            search_query="John",
+            search_query="john",
             skip=0,
             limit=20,
             order_by="username",
@@ -756,3 +754,52 @@ class TestUserSearch:
         assert isinstance(result, PaginatedUserResponse)
         assert result.metadata.total_items == 0
         assert len(result.data) == 0
+
+    async def test_search_users_sort_by_is_online(self, test_db):
+        """Test sorting by is_online field."""
+        from src.core.models import PersonDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=4001, first_name="Test", second_name="User")
+            session.add(person)
+            await session.flush()
+            await session.refresh(person)
+
+        from src.core.models.user import UserDB
+
+        async with test_db.async_session() as session:
+            user1 = UserDB(
+                username="online_user",
+                email="online@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=True,
+            )
+            user2 = UserDB(
+                username="offline_user",
+                email="offline@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                is_online=False,
+            )
+            session.add_all([user1, user2])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="is_online",
+            order_by_two="username",
+            ascending=False,
+        )
+
+        assert len(result.data) == 2
+        assert result.data[0].is_online is True
+        assert result.data[0].username == "online_user"
+        assert result.data[1].is_online is False
+        assert result.data[1].username == "offline_user"
