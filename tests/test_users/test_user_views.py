@@ -2,6 +2,7 @@
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 
 from src.auth.security import create_access_token, get_password_hash
 from src.core.models import UserDB
@@ -139,3 +140,103 @@ class TestUserViews:
         )
 
         assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_id_with_roles(
+        self, client: AsyncClient, test_db: Database, test_user
+    ):
+        """Test getting user by ID with roles (admin only)."""
+        from sqlalchemy.orm import selectinload
+
+        from src.core.models import RoleDB
+
+        async with test_db.async_session() as db_session:
+            admin_role = RoleDB(name="admin", description="Administrator role")
+            db_session.add(admin_role)
+            await db_session.flush()
+            await db_session.refresh(admin_role)
+
+            admin_user = UserDB(
+                username="admin_user",
+                email="admin@example.com",
+                hashed_password=get_password_hash("AdminPass123!"),
+            )
+            admin_user.roles = [admin_role]
+            db_session.add(admin_user)
+            await db_session.flush()
+            await db_session.refresh(admin_user)
+
+            user_role = RoleDB(name="custom_role", description="Custom role")
+            db_session.add(user_role)
+            await db_session.flush()
+            await db_session.refresh(user_role)
+
+            stmt = (
+                select(UserDB).where(UserDB.id == test_user.id).options(selectinload(UserDB.roles))
+            )
+            result = await db_session.execute(stmt)
+            test_user_with_roles = result.scalar_one_or_none()
+            test_user_with_roles.roles.append(user_role)
+            await db_session.flush()
+
+        admin_token = create_access_token(data={"sub": str(admin_user.id)})
+
+        response = await client.get(
+            f"/api/users/{test_user.id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == test_user.id
+        assert data["username"] == test_user.username
+        assert "custom_role" in data["roles"]
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_id_not_admin(self, client: AsyncClient, test_user):
+        """Test getting user by ID without admin role returns 403."""
+        token = create_access_token(data={"sub": str(test_user.id)})
+
+        response = await client.get(
+            f"/api/users/{test_user.id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_id_unauthorized(self, client: AsyncClient, test_user):
+        """Test getting user by ID without token returns 401."""
+        response = await client.get(f"/api/users/{test_user.id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_id_not_found(self, client: AsyncClient, test_db: Database):
+        """Test getting non-existent user returns 404."""
+        from src.core.models import RoleDB
+
+        async with test_db.async_session() as db_session:
+            admin_role = RoleDB(name="admin", description="Administrator role")
+            db_session.add(admin_role)
+            await db_session.flush()
+            await db_session.refresh(admin_role)
+
+            admin_user = UserDB(
+                username="admin_user",
+                email="admin@example.com",
+                hashed_password=get_password_hash("AdminPass123!"),
+            )
+            admin_user.roles = [admin_role]
+            db_session.add(admin_user)
+            await db_session.flush()
+            await db_session.refresh(admin_user)
+
+        admin_token = create_access_token(data={"sub": str(admin_user.id)})
+
+        response = await client.get(
+            "/api/users/99999",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+
+        assert response.status_code == 404

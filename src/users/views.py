@@ -203,6 +203,42 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             )
 
         @router.get(
+            "/{user_id}",
+            response_model=UserSchema,
+            summary="Get user by ID with roles",
+            description="Returns user with their roles. Requires admin role.",
+            responses={
+                200: {"description": "User found"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "User not found"},
+            },
+        )
+        async def get_user_by_id(
+            user_id: int,
+            _: Annotated[UserDB, Depends(require_roles("admin"))],
+        ) -> UserSchema:
+            """Get user by ID with roles."""
+            self.logger.debug(f"Get user by ID: {user_id}")
+
+            user = await self.service.get_by_id_with_roles(user_id)
+            if user is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found",
+                )
+
+            roles = [role.name for role in user.roles] if user.roles else []
+            return UserSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                is_active=user.is_active,
+                person_id=user.person_id,
+                roles=roles,
+            )
+
+        @router.get(
             "/search",
             response_model=PaginatedUserResponse,
             summary="Search users with pagination",
