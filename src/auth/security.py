@@ -3,7 +3,7 @@
 import datetime
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 
 from src.core.config import settings
 
@@ -68,5 +68,5 @@ def decode_access_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         return payload
-    except JWTError:
+    except jwt.exceptions.InvalidTokenError:
         return None
