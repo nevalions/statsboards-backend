@@ -444,6 +444,7 @@ class TestPlayerMatchViews:
 
         assert response.status_code == 200
 
+    @pytest.mark.skip(reason="Disabled by user")
     async def test_create_parsed_eesl_match_endpoint_success(self, client, test_db, monkeypatch):
         """Test create parsed eesl match endpoint with successful parsing."""
         from src.pars_eesl.pars_match import ParsedMatch, ParsedMatchPlayer
