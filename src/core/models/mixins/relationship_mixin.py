@@ -30,8 +30,8 @@ class RelationshipMixin:
             self.logger.debug(f"Starting find_relation for model {self.model.__name__}")
             existing_relation = await session.execute(
                 select(secondary_table).filter(
-                    (getattr(self.model, field_name_one) == fk_item_one)
-                    & (getattr(self.model, field_name_two) == fk_item_two)
+                    (getattr(secondary_table, field_name_one) == fk_item_one)
+                    & (getattr(secondary_table, field_name_two) == fk_item_two)
                 )
             )
             result = existing_relation.scalar()
@@ -103,9 +103,7 @@ class RelationshipMixin:
                 self.logger.debug(
                     f"Parent {parent_model.__name__} found with id: {parent_id} for model {self.model.__name__}"
                 )
-                child = await session.execute(
-                    select(child_model).where(child_model.id == child_id)
-                )
+                child = await session.execute(select(child_model).where(child_model.id == child_id))
                 child_new = child.scalar()
                 if child_new:
                     self.logger.debug(
@@ -222,9 +220,7 @@ class RelationshipMixin:
                     try:
                         order_column = getattr(related_model, order_by)
                     except AttributeError:
-                        self.logger.warning(
-                            f"Order column {order_by} not found, defaulting to id"
-                        )
+                        self.logger.warning(f"Order column {order_by} not found, defaulting to id")
                         order_column = related_model.id
 
                     try:
@@ -235,9 +231,7 @@ class RelationshipMixin:
                         )
                         order_column_two = related_model.id
 
-                    order_expr = (
-                        order_column.asc() if ascending else order_column.desc()
-                    )
+                    order_expr = order_column.asc() if ascending else order_column.desc()
                     order_expr_two = (
                         order_column_two.asc() if ascending else order_column_two.desc()
                     )
@@ -276,9 +270,7 @@ class RelationshipMixin:
 
                     if all_related_items:
                         item_count = (
-                            len(all_related_items)
-                            if hasattr(all_related_items, "__len__")
-                            else 1
+                            len(all_related_items) if hasattr(all_related_items, "__len__") else 1
                         )
                         self.logger.debug(
                             f"Related items ({item_count}) found for property: {related_property} "
@@ -305,9 +297,7 @@ class RelationshipMixin:
         related_property: str,
         nested_related_property: str,
     ):
-        related_item = await self.get_related_item_level_one_by_id(
-            item_id, related_property
-        )
+        related_item = await self.get_related_item_level_one_by_id(item_id, related_property)
 
         if related_item is not None:
             if hasattr(related_item, "id") and related_item.id:  # type: ignore[attr-defined]
@@ -316,9 +306,7 @@ class RelationshipMixin:
                     f"Fetching nested related items for item id: {_id} and property: {related_property} "
                     f"and nested_related_property {nested_related_property} for model {self.model.__name__}"
                 )
-                item = await service.get_related_item_level_one_by_id(
-                    _id, nested_related_property
-                )
+                item = await service.get_related_item_level_one_by_id(_id, nested_related_property)
                 self.logger.debug(
                     f"Related item {item} found for item id: {_id} "
                     f"and nested_related_property: {nested_related_property} for model {self.model.__name__}"
