@@ -131,6 +131,7 @@ class RouterRegistry:
 def configure_routers(registry: RouterRegistry) -> RouterRegistry:
     """Configure router registration with custom priorities and ordering."""
 
+    registry.register_router("src.global_settings", "api_global_setting_router", priority=5)
     registry.register_router("src.sports", "api_sport_router", priority=10)
     registry.register_router("src.seasons", "api_season_router", priority=20)
     registry.register_router("src.tournaments", "api_tournament_router", priority=30)

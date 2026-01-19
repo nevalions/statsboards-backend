@@ -26,6 +26,7 @@ __all__ = (
     "UserDB",
     "UserRoleDB",
     "RoleDB",
+    "GlobalSettingDB",
 )
 
 from src.core.decorators import handle_service_exceptions
@@ -33,6 +34,7 @@ from src.core.decorators import handle_service_exceptions
 from .base import Base, BaseServiceDB, db
 from .football_event import FootballEventDB
 from .gameclock import GameClockDB
+from .global_setting import GlobalSettingDB
 from .match import MatchDB
 from .matchdata import MatchDataDB
 from .mixins import SeasonSportRelationMixin

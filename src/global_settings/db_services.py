@@ -1,0 +1,161 @@
+import json
+from typing import Any
+
+from sqlalchemy import select
+
+from src.core.decorators import handle_service_exceptions
+from src.core.models import BaseServiceDB, GlobalSettingDB
+from src.core.models.base import Database
+
+from ..logging_config import get_logger
+from .schemas import GlobalSettingSchemaCreate, GlobalSettingSchemaUpdate
+
+ITEM = "GLOBAL_SETTING"
+
+
+class GlobalSettingServiceDB(BaseServiceDB):
+    def __init__(self, database: Database) -> None:
+        super().__init__(
+            database,
+            model=GlobalSettingDB,
+        )
+        self.logger = get_logger("backend_logger_GlobalSettingServiceDB", self)
+        self.logger.debug("Initialized GlobalSettingServiceDB")
+
+    @handle_service_exceptions(item_name=ITEM, operation="creating")
+    async def create(self, item: GlobalSettingSchemaCreate) -> GlobalSettingDB:
+        self.logger.debug(f"Create {ITEM}:{item}")
+        return await super().create(item)
+
+    @handle_service_exceptions(item_name=ITEM, operation="updating", reraise_not_found=True)
+    async def update(
+        self,
+        item_id: int,
+        item: GlobalSettingSchemaUpdate,
+        **kwargs,
+    ) -> GlobalSettingDB:
+        self.logger.debug(f"Update {ITEM} with id:{item_id}")
+        return await super().update(
+            item_id,
+            item,
+            **kwargs,
+        )
+
+    async def get_value(self, key: str, default: Any = None) -> Any:
+        """Get setting value with automatic type conversion.
+
+        Args:
+            key: Setting key
+            default: Default value if setting not found
+
+        Returns:
+            Parsed value according to value_type, or default if not found
+        """
+        self.logger.debug(f"Get {ITEM} value for key:{key}")
+        async with self.db.async_session() as session:
+            stmt = select(GlobalSettingDB).where(GlobalSettingDB.key == key)
+            result = await session.execute(stmt)
+            setting = result.scalar_one_or_none()
+
+            if setting is None:
+                self.logger.debug(f"{ITEM} not found for key:{key}, returning default")
+                return default
+
+            return self._parse_value(setting.value, setting.value_type)
+
+    async def get_all_by_category(self, category: str) -> list[GlobalSettingDB]:
+        """Get all settings in a specific category.
+
+        Args:
+            category: Category name
+
+        Returns:
+            List of settings in the category
+        """
+        self.logger.debug(f"Get {ITEM}s by category:{category}")
+        async with self.db.async_session() as session:
+            stmt = (
+                select(GlobalSettingDB)
+                .where(GlobalSettingDB.category == category)
+                .order_by(GlobalSettingDB.key)
+            )
+            result = await session.execute(stmt)
+            return result.scalars().all()
+
+    async def get_all_grouped(self) -> dict[str, list[dict[str, Any]]]:
+        """Get all settings grouped by category for frontend.
+
+        Returns:
+            Dictionary mapping categories to list of setting dicts
+        """
+        self.logger.debug(f"Get all {ITEM}s grouped by category")
+        async with self.db.async_session() as session:
+            stmt = select(GlobalSettingDB).order_by(GlobalSettingDB.category, GlobalSettingDB.key)
+            result = await session.execute(stmt)
+            settings = result.scalars().all()
+
+        grouped = {}
+        for setting in settings:
+            category = setting.category or "general"
+            if category not in grouped:
+                grouped[category] = []
+
+            grouped[category].append(
+                {
+                    "id": setting.id,
+                    "key": setting.key,
+                    "value": setting.value,
+                    "value_type": setting.value_type,
+                    "description": setting.description,
+                    "updated_at": setting.updated_at.isoformat() if setting.updated_at else None,
+                }
+            )
+
+        return grouped
+
+    def _parse_value(self, value: str, value_type: str) -> Any:
+        """Parse string value to appropriate Python type.
+
+        Args:
+            value: String value from database
+            value_type: Type identifier ('string', 'int', 'bool', 'json')
+
+        Returns:
+            Parsed value
+        """
+        try:
+            if value_type == "string":
+                return value
+            elif value_type == "int":
+                return int(value)
+            elif value_type == "bool":
+                return value.lower() in ("true", "1", "yes", "on")
+            elif value_type == "json":
+                return json.loads(value)
+            else:
+                self.logger.warning(f"Unknown value_type:{value_type}, returning as string")
+                return value
+        except (ValueError, json.JSONDecodeError) as e:
+            self.logger.error(f"Failed to parse value '{value}' as type '{value_type}': {e}")
+            return value
+
+    def _serialize_value(self, value: Any, value_type: str) -> str:
+        """Serialize Python value to string for database storage.
+
+        Args:
+            value: Python value
+            value_type: Target type identifier ('string', 'int', 'bool', 'json')
+
+        Returns:
+            String representation for database
+        """
+        if value_type == "string":
+            return str(value)
+        elif value_type == "int":
+            return str(int(value))
+        elif value_type == "bool":
+            return "true" if bool(value) else "false"
+        elif value_type == "json":
+            return json.dumps(value)
+        else:
+            return str(value)

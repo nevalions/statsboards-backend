@@ -3,6 +3,7 @@ import logging
 import pytest
 import pytest_asyncio
 
+from src.global_settings.db_services import GlobalSettingServiceDB
 from src.person.db_services import PersonServiceDB
 from src.positions.db_services import PositionServiceDB
 from src.seasons.db_services import SeasonServiceDB
@@ -145,6 +146,11 @@ async def test_position_service(test_db) -> PositionServiceDB:
 @pytest_asyncio.fixture()
 async def test_sponsor_service(test_db) -> SponsorServiceDB:
     return SponsorServiceDB(test_db)
+
+
+@pytest_asyncio.fixture()
+async def test_global_setting_service(test_db) -> GlobalSettingServiceDB:
+    return GlobalSettingServiceDB(test_db)
 
 
 @pytest_asyncio.fixture()

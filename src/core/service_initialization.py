@@ -131,4 +131,9 @@ def register_all_services(database: Database) -> ServiceRegistry:
 
         register_service("user", lambda db: UserServiceDB(db), singleton=False)
 
+    if not registry.has("global_setting"):
+        from src.global_settings.db_services import GlobalSettingServiceDB
+
+        register_service("global_setting", lambda db: GlobalSettingServiceDB(db), singleton=False)
+
     return registry
