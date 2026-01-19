@@ -1,9 +1,11 @@
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import Depends, File, HTTPException, Path, Query, UploadFile
 from fastapi.responses import JSONResponse
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import TournamentDB
 
 # from src.core.config import templates
 from src.helpers.fetch_helpers import (
@@ -488,7 +490,9 @@ class TournamentAPIRouter(
             self.logger.debug(
                 f"Get and Save parsed tournaments from season eesl_id:{eesl_season_id} season_id:{season_id} sport_id:{sport_id} endpoint"
             )
-            tournaments_list = await parse_season_and_create_jsons(eesl_season_id, season_id=season_id, sport_id=sport_id)
+            tournaments_list = await parse_season_and_create_jsons(
+                eesl_season_id, season_id=season_id, sport_id=sport_id
+            )
 
             created_tournaments = []
             try:
@@ -518,6 +522,26 @@ class TournamentAPIRouter(
                     status_code=500,
                     detail="Internal server error parsing and creating tournaments from season",
                 )
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete tournament",
+            description="Delete a tournament by ID. Requires admin role.",
+            responses={
+                200: {"description": "Tournament deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Tournament not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_tournament_endpoint(
+            model_id: int,
+            _: Annotated[TournamentDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete tournament endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"Tournament {model_id} deleted successfully"}
 
         return router
 

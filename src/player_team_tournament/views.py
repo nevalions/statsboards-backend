@@ -1,6 +1,10 @@
-from fastapi import HTTPException, Query
+from typing import Annotated
 
+from fastapi import Depends, HTTPException, Query
+
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import PlayerTeamTournamentDB
 
 from ..logging_config import get_logger
 from ..pars_eesl.pars_all_players_from_eesl import collect_player_full_data_eesl
@@ -433,6 +437,26 @@ class PlayerTeamTournamentAPIRouter(
                     status_code=500,
                     detail="Internal server error parsing and creating players to team tournament",
                 )
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete player team tournament",
+            description="Delete a player team tournament by ID. Requires admin role.",
+            responses={
+                200: {"description": "PlayerTeamTournament deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "PlayerTeamTournament not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_player_team_tournament_endpoint(
+            model_id: int,
+            _: Annotated[PlayerTeamTournamentDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete player team tournament endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"PlayerTeamTournament {model_id} deleted successfully"}
 
         return router
 

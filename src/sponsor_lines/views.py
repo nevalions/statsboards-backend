@@ -1,7 +1,11 @@
-from fastapi import HTTPException
+from typing import Annotated
+
+from fastapi import Depends, HTTPException
 from fastapi.responses import JSONResponse
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import SponsorLineDB
 
 from ..logging_config import get_logger
 from .db_services import SponsorLineServiceDB
@@ -95,6 +99,26 @@ class SponsorLineAPIRouter(
                     status_code=500,
                     detail="Error retrieving sponsor line",
                 )
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete sponsor line",
+            description="Delete a sponsor line by ID. Requires admin role.",
+            responses={
+                200: {"description": "SponsorLine deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "SponsorLine not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_sponsor_line_endpoint(
+            model_id: int,
+            _: Annotated[SponsorLineDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete sponsor line endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"SponsorLine {model_id} deleted successfully"}
 
         return router
 

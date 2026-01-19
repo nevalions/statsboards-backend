@@ -1,7 +1,11 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import ScoreboardDB
 
 from ..logging_config import get_logger
 from .db_services import ScoreboardServiceDB
@@ -197,6 +201,26 @@ class ScoreboardAPIRouter(
         #             "success": False,
         #             "error": "No logo file provided",
         #         }
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete scoreboard",
+            description="Delete a scoreboard by ID. Requires admin role.",
+            responses={
+                200: {"description": "Scoreboard deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Scoreboard not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_scoreboard_endpoint(
+            model_id: int,
+            _: Annotated[ScoreboardDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete scoreboard endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"Scoreboard {model_id} deleted successfully"}
 
         return router
 

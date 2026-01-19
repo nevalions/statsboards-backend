@@ -1,4 +1,5 @@
 import asyncio
+from typing import Annotated
 
 from fastapi import (
     BackgroundTasks,
@@ -9,7 +10,9 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import MatchDataDB
 
 from ..logging_config import get_logger
 from .db_services import MatchDataServiceDB
@@ -390,6 +393,26 @@ class MatchDataAPIRouter(
         # )
         # async def queue():
         #     return await self.service.get_active_match_ids()
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete matchdata",
+            description="Delete matchdata by ID. Requires admin role.",
+            responses={
+                200: {"description": "MatchData deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "MatchData not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_matchdata_endpoint(
+            model_id: int,
+            _: Annotated[MatchDataDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete matchdata endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"MatchData {model_id} deleted successfully"}
 
         return router
 

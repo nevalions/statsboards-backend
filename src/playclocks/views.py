@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import (
     BackgroundTasks,
     Depends,
@@ -8,7 +10,9 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import PlayClockDB
 
 from ..logging_config import get_logger
 from .db_services import PlayClockServiceDB
@@ -234,9 +238,7 @@ class PlayClockAPIRouter(
             response_class=JSONResponse,
         )
         async def reset_playclock_stopped_endpoint(item_id: int):
-            self.logger.debug(
-                f"Resetting playclock to stopped endpoint with id: {item_id}"
-            )
+            self.logger.debug(f"Resetting playclock to stopped endpoint with id: {item_id}")
             try:
                 updated = await self.service.update_with_none(
                     item_id,
@@ -266,6 +268,26 @@ class PlayClockAPIRouter(
                     status_code=500,
                     detail="Internal server error resetting playclock",
                 )
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete playclock",
+            description="Delete a playclock by ID. Requires admin role.",
+            responses={
+                200: {"description": "Playclock deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Playclock not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_playclock_endpoint(
+            model_id: int,
+            _: Annotated[PlayClockDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete playclock endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"Playclock {model_id} deleted successfully"}
 
         return router
 

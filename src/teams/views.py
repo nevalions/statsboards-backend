@@ -1,6 +1,10 @@
-from fastapi import File, HTTPException, Query, UploadFile
+from typing import Annotated
 
+from fastapi import Depends, File, HTTPException, Query, UploadFile
+
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import TeamDB
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
@@ -392,6 +396,26 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 ascending=ascending,
             )
             return response
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete team",
+            description="Delete a team by ID. Requires admin role.",
+            responses={
+                200: {"description": "Team deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Team not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_team_endpoint(
+            model_id: int,
+            _: Annotated[TeamDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete team endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"Team {model_id} deleted successfully"}
 
         return router
 

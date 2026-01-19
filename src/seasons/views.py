@@ -1,7 +1,11 @@
-from fastapi import HTTPException, Query
+from typing import Annotated
+
+from fastapi import Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import SeasonDB
 
 from ..logging_config import get_logger
 from .db_services import SeasonServiceDB
@@ -194,6 +198,26 @@ class SeasonAPIRouter(
                 ascending=ascending,
             )
             return response
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete season",
+            description="Delete a season by ID. Requires admin role.",
+            responses={
+                200: {"description": "Season deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Season not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_season_endpoint(
+            model_id: int,
+            _: Annotated[SeasonDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete season endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"Season {model_id} deleted successfully"}
 
         return router
 

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import (
     BackgroundTasks,
     Depends,
@@ -7,7 +9,9 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import GameClockDB
 
 from ..logging_config import get_logger
 from .db_services import GameClockServiceDB
@@ -190,6 +194,26 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     f"Error on resetting gameclock with id:{item_id} {ex}",
                     exc_info=True,
                 )
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete gameclock",
+            description="Delete a gameclock by ID. Requires admin role.",
+            responses={
+                200: {"description": "Gameclock deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Gameclock not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_gameclock_endpoint(
+            model_id: int,
+            _: Annotated[GameClockDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete gameclock endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"Gameclock {model_id} deleted successfully"}
 
         return router
 

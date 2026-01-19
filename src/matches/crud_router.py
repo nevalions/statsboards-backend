@@ -1,7 +1,11 @@
+from typing import Annotated
+
 from fastapi import Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter
+from src.core.models import MatchDB
 from src.core.service_registry import get_service_registry
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.helpers.file_service import file_service
@@ -603,5 +607,25 @@ class MatchCRUDRouter(
                 ascending=ascending,
             )
             return response
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete match",
+            description="Delete a match by ID. Requires admin role.",
+            responses={
+                200: {"description": "Match deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Match not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_match_endpoint(
+            model_id: int,
+            _: Annotated[MatchDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete match endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"Match {model_id} deleted successfully"}
 
         return router

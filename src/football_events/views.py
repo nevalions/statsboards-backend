@@ -1,8 +1,13 @@
+from typing import Annotated
+
 from fastapi import (
+    Depends,
     HTTPException,
 )
 
+from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.models import FootballEventDB
 
 from ..logging_config import get_logger
 from .db_services import FootballEventServiceDB
@@ -105,7 +110,26 @@ class FootballEventAPIRouter(
                     f"Error getting events_with_players for match {match_id}: {e}",
                     exc_info=e,
                 )
-                raise
+
+        @router.delete(
+            "/id/{model_id}",
+            summary="Delete football event",
+            description="Delete a football event by ID. Requires admin role.",
+            responses={
+                200: {"description": "FootballEvent deleted successfully"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "FootballEvent not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_football_event_endpoint(
+            model_id: int,
+            _: Annotated[FootballEventDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(f"Delete football event endpoint id:{model_id}")
+            await self.service.delete(model_id)
+            return {"detail": f"FootballEvent {model_id} deleted successfully"}
 
         return router
 
