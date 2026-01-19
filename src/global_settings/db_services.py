@@ -1,10 +1,10 @@
 import json
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import asc, select
 
 from src.core.decorators import handle_service_exceptions
-from src.core.models import BaseServiceDB, GlobalSettingDB
+from src.core.models import BaseServiceDB, GlobalSettingDB, SeasonDB
 from src.core.models.base import Database
 from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
@@ -193,3 +193,12 @@ class GlobalSettingServiceDB(BaseServiceDB):
         """Delete a season through settings API."""
         self.logger.debug(f"Delete season via settings id:{item_id}")
         await self.season_service.delete(item_id)
+
+    async def get_all_seasons(self) -> list[SeasonSchema]:
+        """Get all seasons ordered by year."""
+        self.logger.debug("Get all seasons via settings")
+        async with self.db.async_session() as session:
+            stmt = select(SeasonDB).order_by(asc(SeasonDB.year))
+            result = await session.execute(stmt)
+            seasons = result.scalars().all()
+            return [SeasonSchema.model_validate(s) for s in seasons]

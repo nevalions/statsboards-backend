@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, List
 
 from fastapi import Depends, HTTPException
 
@@ -203,6 +203,21 @@ class GlobalSettingAPIRouter(
             self.logger.debug(f"Delete season endpoint id:{model_id}")
             await self.service.delete_season(model_id)
             return {"detail": f"Season {model_id} deleted successfully"}
+
+        @router.get(
+            "/seasons/",
+            response_model=List[SeasonSchema],
+            summary="Get all seasons",
+            description="Get all seasons ordered by year through settings API.",
+            responses={
+                200: {"description": "Seasons retrieved successfully"},
+            },
+        )
+        async def get_all_seasons_endpoint():
+            """Get all seasons through settings API ordered by year."""
+            self.logger.debug("Get all seasons endpoint")
+            seasons = await self.service.get_all_seasons()
+            return seasons
 
         return router
 
