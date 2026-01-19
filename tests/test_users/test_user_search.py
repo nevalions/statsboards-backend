@@ -555,3 +555,204 @@ class TestUserSearch:
 
         assert result.metadata.total_items == 1
         assert result.data[0].username == "partialuser"
+
+    async def test_search_users_by_role_single(self, test_db):
+        """Test search filters by a single role."""
+        from src.core.models import PersonDB, RoleDB, UserDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=3001, first_name="Test", second_name="User")
+            admin_role = RoleDB(name="admin", description="Admin role")
+            user_role = RoleDB(name="user", description="User role")
+            session.add_all([person, admin_role, user_role])
+            await session.flush()
+            await session.refresh(person)
+            await session.refresh(admin_role)
+            await session.refresh(user_role)
+
+            admin_user = UserDB(
+                username="admin_user",
+                email="admin@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                roles=[admin_role],
+            )
+            regular_user = UserDB(
+                username="regular_user",
+                email="regular@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                roles=[user_role],
+            )
+            session.add_all([admin_user, regular_user])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            role_names=["admin"],
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 1
+        assert len(result.data) == 1
+        assert result.data[0].username == "admin_user"
+        assert "admin" in result.data[0].roles
+
+    async def test_search_users_by_role_multiple(self, test_db):
+        """Test search filters by multiple roles (OR logic)."""
+        from src.core.models import PersonDB, RoleDB, UserDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=3002, first_name="Test", second_name="User")
+            admin_role = RoleDB(name="admin", description="Admin role")
+            moderator_role = RoleDB(name="moderator", description="Moderator role")
+            user_role = RoleDB(name="user", description="User role")
+            session.add_all([person, admin_role, moderator_role, user_role])
+            await session.flush()
+            await session.refresh(person)
+            await session.refresh(admin_role)
+            await session.refresh(moderator_role)
+            await session.refresh(user_role)
+
+            admin_user = UserDB(
+                username="admin_user",
+                email="admin@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                roles=[admin_role],
+            )
+            moderator_user = UserDB(
+                username="mod_user",
+                email="mod@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                roles=[moderator_role],
+            )
+            regular_user = UserDB(
+                username="regular_user",
+                email="regular@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                roles=[user_role],
+            )
+            session.add_all([admin_user, moderator_user, regular_user])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            role_names=["admin", "moderator"],
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 2
+        usernames = {user.username for user in result.data}
+        assert usernames == {"admin_user", "mod_user"}
+
+    async def test_search_users_by_role_with_search(self, test_db):
+        """Test search filters by role combined with text search."""
+        from src.core.models import PersonDB, RoleDB, UserDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person1 = PersonDB(person_eesl_id=3003, first_name="John", second_name="Admin")
+            person2 = PersonDB(person_eesl_id=3004, first_name="Jane", second_name="Admin")
+            admin_role = RoleDB(name="admin", description="Admin role")
+            user_role = RoleDB(name="user", description="User role")
+            session.add_all([person1, person2, admin_role, user_role])
+            await session.flush()
+            await session.refresh(person1)
+            await session.refresh(person2)
+            await session.refresh(admin_role)
+            await session.refresh(user_role)
+
+            admin_user = UserDB(
+                username="john_admin",
+                email="john@example.com",
+                hashed_password="hashed_password",
+                person_id=person1.id,
+                is_active=True,
+                roles=[admin_role],
+            )
+            regular_user = UserDB(
+                username="jane_user",
+                email="jane@example.com",
+                hashed_password="hashed_password",
+                person_id=person2.id,
+                is_active=True,
+                roles=[user_role],
+            )
+            session.add_all([admin_user, regular_user])
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query="John",
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            role_names=["admin"],
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 1
+        assert result.data[0].username == "john_admin"
+
+    async def test_search_users_by_nonexistent_role(self, test_db):
+        """Test search with nonexistent role returns empty results."""
+        from src.core.models import PersonDB, RoleDB, UserDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.async_session() as session:
+            person = PersonDB(person_eesl_id=3005, first_name="Test", second_name="User")
+            user_role = RoleDB(name="user", description="User role")
+            session.add_all([person, user_role])
+            await session.flush()
+            await session.refresh(person)
+            await session.refresh(user_role)
+
+            user = UserDB(
+                username="test_user",
+                email="test@example.com",
+                hashed_password="hashed_password",
+                person_id=person.id,
+                is_active=True,
+                roles=[user_role],
+            )
+            session.add(user)
+            await session.flush()
+
+        result = await service.search_users_with_pagination(
+            search_query=None,
+            skip=0,
+            limit=20,
+            order_by="username",
+            order_by_two="id",
+            ascending=True,
+            role_names=["nonexistent_role"],
+        )
+
+        assert isinstance(result, PaginatedUserResponse)
+        assert result.metadata.total_items == 0
+        assert len(result.data) == 0

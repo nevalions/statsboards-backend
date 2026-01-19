@@ -319,6 +319,7 @@ class UserServiceDB(BaseServiceDB):
         order_by: str = "username",
         order_by_two: str = "id",
         ascending: bool = True,
+        role_names: list[str] | None = None,
     ) -> PaginatedUserResponse:
         self.logger.debug(
             f"Search {ITEM}: query={search_query}, skip={skip}, limit={limit}, "
@@ -332,9 +333,15 @@ class UserServiceDB(BaseServiceDB):
                 selectinload(UserDB.person), selectinload(UserDB.roles)
             )
 
+            if role_names:
+                base_query = base_query.join(UserDB.roles).where(RoleDB.name.in_(role_names))
+
             if search_query:
                 search_pattern = await self._build_search_pattern(search_query)
-                base_query = base_query.join(PersonDB, UserDB.person_id == PersonDB.id)
+                if role_names:
+                    base_query = base_query.join(PersonDB, UserDB.person_id == PersonDB.id)
+                else:
+                    base_query = base_query.outerjoin(PersonDB, UserDB.person_id == PersonDB.id)
                 base_query = base_query.where(
                     UserDB.username.ilike(search_pattern).collate("en-US-x-icu")
                     | UserDB.email.ilike(search_pattern).collate("en-US-x-icu")
