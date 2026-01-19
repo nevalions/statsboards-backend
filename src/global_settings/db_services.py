@@ -6,6 +6,8 @@ from sqlalchemy import select
 from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, GlobalSettingDB
 from src.core.models.base import Database
+from src.seasons.db_services import SeasonServiceDB
+from src.seasons.schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
 
 from ..logging_config import get_logger
 from .schemas import GlobalSettingSchemaCreate, GlobalSettingSchemaUpdate
@@ -19,6 +21,7 @@ class GlobalSettingServiceDB(BaseServiceDB):
             database,
             model=GlobalSettingDB,
         )
+        self.season_service = SeasonServiceDB(database)
         self.logger = get_logger("backend_logger_GlobalSettingServiceDB", self)
         self.logger.debug("Initialized GlobalSettingServiceDB")
 
@@ -159,3 +162,34 @@ class GlobalSettingServiceDB(BaseServiceDB):
             return json.dumps(value)
         else:
             return str(value)
+
+    async def create_season(self, item: SeasonSchemaCreate) -> SeasonSchema:
+        """Create a new season through settings API."""
+        self.logger.debug(f"Create season via settings: {item}")
+        season = await self.season_service.create(item)
+        return SeasonSchema.model_validate(season)
+
+    async def update_season(
+        self,
+        item_id: int,
+        item: SeasonSchemaUpdate,
+    ) -> SeasonSchema | None:
+        """Update a season through settings API."""
+        self.logger.debug(f"Update season via settings id:{item_id} data: {item}")
+        season = await self.season_service.update(item_id, item)
+        if season is None:
+            return None
+        return SeasonSchema.model_validate(season)
+
+    async def get_season_by_id(self, item_id: int) -> SeasonSchema | None:
+        """Get a season by ID through settings API."""
+        self.logger.debug(f"Get season via settings id:{item_id}")
+        season = await self.season_service.get_by_id(item_id)
+        if season is None:
+            return None
+        return SeasonSchema.model_validate(season)
+
+    async def delete_season(self, item_id: int) -> None:
+        """Delete a season through settings API."""
+        self.logger.debug(f"Delete season via settings id:{item_id}")
+        await self.season_service.delete(item_id)

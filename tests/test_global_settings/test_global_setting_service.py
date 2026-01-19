@@ -153,3 +153,81 @@ class TestGlobalSettingServiceDB:
         await test_global_setting_service.delete(global_setting.id)
         got = await test_global_setting_service.get_by_id(global_setting.id)
         assert got is None
+
+    async def test_create_season(
+        self,
+        test_global_setting_service,
+    ):
+        from src.seasons.schemas import SeasonSchemaCreate
+
+        season_data = SeasonSchemaCreate(
+            year=2025,
+            description="Test season via settings",
+            iscurrent=True,
+        )
+        created = await test_global_setting_service.create_season(season_data)
+        assert created.year == 2025
+        assert created.description == "Test season via settings"
+        assert created.iscurrent is True
+
+    async def test_update_season(
+        self,
+        test_global_setting_service,
+    ):
+        from src.seasons.schemas import SeasonSchemaCreate, SeasonSchemaUpdate
+
+        season_data = SeasonSchemaCreate(
+            year=2026,
+            description="Original description",
+            iscurrent=False,
+        )
+        created = await test_global_setting_service.create_season(season_data)
+
+        update_data = SeasonSchemaUpdate(
+            year=2026,
+            description="Updated description",
+            iscurrent=True,
+        )
+        updated = await test_global_setting_service.update_season(created.id, update_data)
+        assert updated.year == 2026
+        assert updated.description == "Updated description"
+        assert updated.iscurrent is True
+
+    async def test_get_season_by_id(
+        self,
+        test_global_setting_service,
+    ):
+        from src.seasons.schemas import SeasonSchemaCreate
+
+        season_data = SeasonSchemaCreate(
+            year=2027,
+            description="Test season",
+            iscurrent=False,
+        )
+        created = await test_global_setting_service.create_season(season_data)
+
+        got = await test_global_setting_service.get_season_by_id(created.id)
+        assert got.id == created.id
+        assert got.year == 2027
+        assert got.description == "Test season"
+
+    async def test_get_season_by_id_not_found(self, test_global_setting_service):
+        got = await test_global_setting_service.get_season_by_id(99999)
+        assert got is None
+
+    async def test_delete_season(
+        self,
+        test_global_setting_service,
+    ):
+        from src.seasons.schemas import SeasonSchemaCreate
+
+        season_data = SeasonSchemaCreate(
+            year=2028,
+            description="Test season to delete",
+            iscurrent=False,
+        )
+        created = await test_global_setting_service.create_season(season_data)
+
+        await test_global_setting_service.delete_season(created.id)
+        got = await test_global_setting_service.get_season_by_id(created.id)
+        assert got is None

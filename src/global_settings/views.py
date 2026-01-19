@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
 from src.core.models import UserDB
+from src.seasons.schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
 
 from ..logging_config import get_logger
 from .db_services import GlobalSettingServiceDB
@@ -130,6 +131,78 @@ class GlobalSettingAPIRouter(
             self.logger.debug(f"Delete setting endpoint id:{model_id}")
             await self.service.delete(model_id)
             return {"detail": f"Setting {model_id} deleted successfully"}
+
+        @router.post(
+            "/seasons/",
+            response_model=SeasonSchema,
+            summary="Create a new season",
+            description="Create a new season through settings API.",
+            responses={
+                200: {"description": "Season created successfully"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def create_season_endpoint(item: SeasonSchemaCreate):
+            """Create a new season through settings API."""
+            self.logger.debug(f"Create season endpoint got data: {item}")
+            new_ = await self.service.create_season(item)
+            return new_
+
+        @router.put(
+            "/seasons/{item_id}/",
+            response_model=SeasonSchema,
+            summary="Update a season",
+            description="Update a season by ID through settings API.",
+            responses={
+                200: {"description": "Season updated successfully"},
+                404: {"description": "Season not found"},
+                422: {"description": "Validation error"},
+            },
+        )
+        async def update_season_endpoint(
+            item_id: int,
+            item: SeasonSchemaUpdate,
+        ):
+            """Update a season through settings API."""
+            self.logger.debug(f"Update season endpoint id:{item_id} data: {item}")
+            update_ = await self.service.update_season(item_id, item)
+            if update_ is None:
+                raise HTTPException(status_code=404, detail=f"Season {item_id} not found")
+            return update_
+
+        @router.get(
+            "/seasons/id/{item_id}/",
+            response_model=SeasonSchema,
+            summary="Get a season by ID",
+            description="Get a season by ID through settings API.",
+            responses={
+                200: {"description": "Season retrieved successfully"},
+                404: {"description": "Season not found"},
+            },
+        )
+        async def get_season_by_id_endpoint(item_id: int):
+            """Get a season by ID through settings API."""
+            self.logger.debug(f"Get season by id endpoint: {item_id}")
+            season = await self.service.get_season_by_id(item_id)
+            if season is None:
+                raise HTTPException(status_code=404, detail=f"Season {item_id} not found")
+            return season
+
+        @router.delete(
+            "/seasons/id/{model_id}",
+            summary="Delete a season",
+            description="Delete a season by ID through settings API.",
+            responses={
+                200: {"description": "Season deleted successfully"},
+                404: {"description": "Season not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def delete_season_endpoint(model_id: int):
+            """Delete a season through settings API."""
+            self.logger.debug(f"Delete season endpoint id:{model_id}")
+            await self.service.delete_season(model_id)
+            return {"detail": f"Season {model_id} deleted successfully"}
 
         return router
 
