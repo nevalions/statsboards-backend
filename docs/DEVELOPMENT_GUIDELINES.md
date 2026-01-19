@@ -84,6 +84,29 @@ Tests in the suite use markers to categorize test types. All 743 tests run by de
   - Require real database connections beyond test fixtures
   - Use production-like endpoints
 
+**Handling External Dependencies**
+
+Integration tests that depend on external websites should include a pre-check to skip the test if the external service is not reachable. This prevents test failures due to network issues or service outages:
+
+```python
+async def is_website_reachable(url: str, timeout: int = 5) -> bool:
+    """Check if website is reachable."""
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+            async with session.head(url, allow_redirects=True) as response:
+                return response.status < 500
+    except Exception:
+        return False
+
+@pytest.mark.asyncio
+async def test_external_service_integration(self):
+    """Test integration with external service."""
+    if not await is_website_reachable("https://example.com"):
+        pytest.skip("External website not reachable, skipping integration test")
+
+    # Test code that depends on external service
+```
+
 **Running Selective Tests:**
 
 ```bash

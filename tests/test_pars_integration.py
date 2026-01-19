@@ -1,6 +1,18 @@
 import pytest
 
+import aiohttp
+
 from src.pars_eesl import pars_all_players_from_eesl, pars_season, pars_tournament
+
+
+async def is_website_reachable(url: str, timeout: int = 5) -> bool:
+    """Check if website is reachable."""
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+            async with session.head(url, allow_redirects=True) as response:
+                return response.status < 500
+    except Exception:
+        return False
 
 
 @pytest.mark.integration
@@ -10,11 +22,12 @@ class TestParsAllPlayersIntegration:
     @pytest.mark.asyncio
     async def test_collect_player_full_data_eesl_real(self, test_uploads_path):
         """Test collecting full player data from real website."""
+        if not await is_website_reachable("https://fafr.su"):
+            pytest.skip("EESL website not reachable, skipping integration test")
+
         player_eesl_id = 1812
 
-        result = await pars_all_players_from_eesl.collect_player_full_data_eesl(
-            player_eesl_id
-        )
+        result = await pars_all_players_from_eesl.collect_player_full_data_eesl(player_eesl_id)
 
         assert result is not None
         assert "person" in result
@@ -34,11 +47,12 @@ class TestParsAllPlayersIntegration:
     @pytest.mark.asyncio
     async def test_collect_players_dob_from_all_eesl_real(self, test_uploads_path):
         """Test collecting player DOB from real website."""
+        if not await is_website_reachable("https://fafr.su"):
+            pytest.skip("EESL website not reachable, skipping integration test")
+
         player_eesl_id = 1812
 
-        result = await pars_all_players_from_eesl.collect_players_dob_from_all_eesl(
-            player_eesl_id
-        )
+        result = await pars_all_players_from_eesl.collect_players_dob_from_all_eesl(player_eesl_id)
 
         assert result is not None
         assert result.year > 1990
@@ -48,6 +62,9 @@ class TestParsAllPlayersIntegration:
         self, test_uploads_path
     ):
         """Test parsing limited number of players from real website."""
+        if not await is_website_reachable("https://fafr.su"):
+            pytest.skip("EESL website not reachable, skipping integration test")
+
         result = await pars_all_players_from_eesl.parse_all_players_from_eesl_index_page_eesl(
             start_page=0, limit=2, season_id=8
         )
@@ -66,11 +83,12 @@ class TestParsTournamentIntegration:
     @pytest.mark.asyncio
     async def test_parse_tournament_teams_index_page_eesl_real(self, test_uploads_path):
         """Test parsing teams from real tournament website."""
+        if not await is_website_reachable("https://fafr.su"):
+            pytest.skip("EESL website not reachable, skipping integration test")
+
         tournament_eesl_id = 28
 
-        result = await pars_tournament.parse_tournament_teams_index_page_eesl(
-            tournament_eesl_id
-        )
+        result = await pars_tournament.parse_tournament_teams_index_page_eesl(tournament_eesl_id)
 
         assert result is not None
         assert isinstance(result, list)
@@ -88,6 +106,9 @@ class TestParsSeasonIntegration:
     @pytest.mark.asyncio
     async def test_parse_season_index_page_eesl_real(self, test_uploads_path):
         """Test parsing season from real website."""
+        if not await is_website_reachable("https://fafr.su"):
+            pytest.skip("EESL website not reachable, skipping integration test")
+
         season_id = 8
 
         result = await pars_season.parse_season_index_page_eesl(season_id)
