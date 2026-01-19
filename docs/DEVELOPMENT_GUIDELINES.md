@@ -322,12 +322,12 @@ async def create_role_endpoint(
 **Example endpoints:**
 ```python
 # Admin-only endpoints
-@router.delete("/api/roles/{item_id}/")
-async def delete_role(
+@router.put("/api/roles/{item_id}/")
+async def update_role(
     item_id: int,
     _: Annotated[RoleDB, Depends(require_roles("admin"))],
 ):
-    await service.delete(item_id)
+    return await service.update(item_id, update_data)
 
 # Multiple roles allowed (admin OR moderator)
 @router.put("/api/content/")

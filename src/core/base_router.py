@@ -19,7 +19,9 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.tags = tags
 
     @staticmethod
-    def create_response(item: object | None, message: str, _type: ResponseType = "text") -> dict[str, object]:
+    def create_response(
+        item: object | None, message: str, _type: ResponseType = "text"
+    ) -> dict[str, object]:
         if item:
             return {
                 "content": item.__dict__,

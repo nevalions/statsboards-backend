@@ -142,27 +142,6 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
             )
             return response
 
-        @router.delete(
-            "/{item_id}/",
-            summary="Delete role",
-            description="Delete a role. Requires admin role. Cannot delete if role is assigned to users.",
-            responses={
-                200: {"description": "Role deleted successfully"},
-                400: {"description": "Bad request - role is assigned to users"},
-                401: {"description": "Unauthorized"},
-                403: {"description": "Forbidden - requires admin role"},
-                404: {"description": "Role not found"},
-                500: {"description": "Internal server error"},
-            },
-        )
-        async def delete_role_endpoint(
-            item_id: int,
-            _: Annotated[RoleDB, Depends(require_roles("admin"))],
-        ):
-            self.logger.debug(f"Delete role endpoint id:{item_id}")
-            await self.service.delete(item_id)
-            return {"detail": f"{ITEM} {item_id} deleted successfully"}
-
         return router
 
 

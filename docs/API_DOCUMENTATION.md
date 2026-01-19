@@ -378,31 +378,24 @@ interface RoleUpdate {
 - Only the `description` field can be updated. Role names are immutable to prevent breaking user associations.
 - The `user_count` is always included in the response.
 
-### DELETE /api/roles/{item_id}/
+### DELETE /api/roles/id/{model_id}
 
-Delete a role. Requires admin role.
+Delete a role.
 
 **Endpoint:**
 ```
-DELETE /api/roles/{item_id}/
-```
-
-**Headers:**
-```
-Authorization: Bearer <token>
+DELETE /api/roles/id/{model_id}
 ```
 
 **Path Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `item_id` | integer | Yes | Role ID |
+| `model_id` | integer | Yes | Role ID |
 
 **Response (200 OK):**
-```json
-{
-  "detail": "ROLE 1 deleted successfully"
-}
+```
+null
 ```
 
 **Error Responses:**
@@ -411,14 +404,6 @@ Authorization: Bearer <token>
 |--------|-------------|
 | 400 | Cannot delete role - role is assigned to users |
 | 404 | Role not found |
-| 401 | Unauthorized - missing or invalid token |
-| 403 | Forbidden - user does not have admin role |
-| 500 | Internal server error |
-
-**Behavior:**
-- Cannot delete roles that have users assigned to them
-- Users must be removed from the role first (via user role assignment endpoints)
-- Prevents accidental deletion of roles in use
 
 ---
 
