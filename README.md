@@ -289,6 +289,9 @@ The API provides comprehensive endpoints for:
 - **Gameclocks**: `GET /api/gameclocks/`, `POST /api/gameclocks/`, `PUT /api/gameclocks/{id}/`
 - **Playclocks**: `GET /api/playclocks/`, `POST /api/playclocks/`, `PUT /api/playclocks/{id}/`
 - **Football Events**: `GET /api/football_events/`, `POST /api/football_events/`, `PUT /api/football_events/{id}/`
+- **Global Settings**: `GET /api/settings/`, `POST /api/settings/`, `PUT /api/settings/{id}/`
+  - Public: `GET /api/settings/grouped`, `GET /api/settings/category/{category}`, `GET /api/settings/value/{key}`
+  - Admin-only: `POST /api/settings/`, `PUT /api/settings/{id}/`, `DELETE /api/settings/id/{id}`
 
 ### Combined Schema Endpoints
 
