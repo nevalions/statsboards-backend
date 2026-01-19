@@ -15,6 +15,7 @@ from .db_services import UserServiceDB
 from .schemas import (
     AdminPasswordChange,
     PaginatedUserResponse,
+    UserChangePassword,
     UserSchema,
     UserSchemaCreate,
     UserSchemaUpdate,
@@ -127,6 +128,29 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 person_id=user.person_id,
                 roles=roles,
             )
+
+        @router.post(
+            "/me/change-password",
+            summary="Change own password",
+            description="Change password for current user. Requires verification of current password.",
+            responses={
+                200: {"description": "Password changed successfully"},
+                400: {"description": "Incorrect current password"},
+                401: {"description": "Unauthorized"},
+            },
+        )
+        async def change_own_password(
+            password_data: UserChangePassword,
+            current_user: CurrentUser,
+        ):
+            """Change own password."""
+            self.logger.debug(f"Change own password for user: {current_user.id}")
+            await self.service.change_password(
+                current_user.id,
+                password_data.old_password,
+                password_data.new_password,
+            )
+            return {"message": "Password changed successfully"}
 
         @router.post(
             "/{user_id}/roles",

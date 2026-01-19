@@ -727,6 +727,55 @@ interface AdminPasswordChange {
 - Does not require old password (admin bypass)
 - Password is hashed before storage
 - Useful for password resets by administrators
+ 
+### POST /api/users/me/change-password
+
+Change the current user's own password. Requires verification of current password.
+
+**Endpoint:**
+```
+POST /api/users/me/change-password
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+{
+  "old_password": "CurrentPassword123!",
+  "new_password": "NewPassword456!"
+}
+```
+
+**Request Schema:**
+```typescript
+interface UserChangePassword {
+  old_password: string; // Current password (must match)
+  new_password: string; // New password (min 6 characters)
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Incorrect password - old password does not match |
+| 401 | Unauthorized - missing or invalid token |
+
+**Behavior:**
+- Requires current password verification (security measure)
+- Password is hashed before storage
+- Any authenticated user can use this endpoint
 
 ### POST /api/users/{user_id}/roles
 

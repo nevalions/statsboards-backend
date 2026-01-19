@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from src.auth.security import create_access_token, get_password_hash
+from src.auth.security import create_access_token, get_password_hash, verify_password
 from src.core.models import UserDB
 from src.core.models.base import Database
 from src.users.schemas import UserSchemaCreate
@@ -436,3 +436,60 @@ class TestUserViews:
         )
 
         assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_change_own_password_success(
+        self, client: AsyncClient, test_db: Database, test_user
+    ):
+        """Test changing own password with correct current password."""
+
+        async with test_db.async_session() as db_session:
+            stmt = select(UserDB).where(UserDB.id == test_user.id)
+            result = await db_session.execute(stmt)
+            user = result.scalar_one_or_none()
+            original_hash = user.hashed_password
+
+        token = create_access_token(data={"sub": str(test_user.id)})
+        password_data = {"old_password": "SecurePass123!", "new_password": "NewPassword123!"}
+        response = await client.post(
+            "/api/users/me/change-password",
+            headers={"Authorization": f"Bearer {token}"},
+            json=password_data,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["message"] == "Password changed successfully"
+
+        async with test_db.async_session() as db_session:
+            stmt = select(UserDB).where(UserDB.id == test_user.id)
+            result = await db_session.execute(stmt)
+            user = result.scalar_one_or_none()
+            assert user.hashed_password != original_hash
+            assert verify_password("NewPassword123!", user.hashed_password)
+
+    @pytest.mark.asyncio
+    async def test_change_own_password_wrong_current_password(self, client: AsyncClient, test_user):
+        """Test changing own password with wrong current password returns 400."""
+        token = create_access_token(data={"sub": str(test_user.id)})
+        password_data = {"old_password": "WrongPassword123!", "new_password": "NewPassword123!"}
+        response = await client.post(
+            "/api/users/me/change-password",
+            headers={"Authorization": f"Bearer {token}"},
+            json=password_data,
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "Incorrect password" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_change_own_password_unauthorized(self, client: AsyncClient, test_user):
+        """Test changing own password without token returns 401."""
+        password_data = {"old_password": "SecurePass123!", "new_password": "NewPassword123!"}
+        response = await client.post(
+            "/api/users/me/change-password",
+            json=password_data,
+        )
+
+        assert response.status_code == 401
