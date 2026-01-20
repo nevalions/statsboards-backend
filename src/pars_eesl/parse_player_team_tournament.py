@@ -17,7 +17,7 @@ class ParsedPlayerTeamTournament(TypedDict):
     eesl_tournament_id: int
     eesl_team_id: int
     player_eesl_id: int
-    player_number: int
+    player_number: str
     player_position: str
 
 
@@ -26,9 +26,7 @@ async def parse_players_from_team_tournament_eesl_and_create_jsons(
 ):
     try:
         logger.debug("Parse and create json players from team_tournament eesl")
-        players = await parse_players_from_team_tournament_eesl(
-            eesl_tournament_id, eesl_team_id
-        )
+        players = await parse_players_from_team_tournament_eesl(eesl_tournament_id, eesl_team_id)
         logger.debug(f"Parse number of players from team_tournament {len(players)}")
         return players
     except Exception as ex:
@@ -63,9 +61,7 @@ async def parse_players_from_team_tournament_eesl(
 
         return players_in_eesl
     except Exception as ex:
-        logger.error(
-            f"Error on parsing players from team_tournament eesl: {ex}", exc_info=True
-        )
+        logger.error(f"Error on parsing players from team_tournament eesl: {ex}", exc_info=True)
         raise
 
 
@@ -77,9 +73,7 @@ async def get_player_from_team_tournament_eesl(
             for ppp in all_eesl_players:
                 try:
                     player_eesl_id = int(
-                        re.findall(
-                            r"\d+", ppp.find("a", class_="table__player").get("href")
-                        )[0]
+                        re.findall(r"\d+", ppp.find("a", class_="table__player").get("href"))[0]
                     )
                     logger.debug(f"Got player eesl id: {player_eesl_id}")
                     player_number = (
@@ -91,8 +85,7 @@ async def get_player_from_team_tournament_eesl(
                     player_position = (
                         ppp.find(
                             "td",
-                            class_="table__cell table__cell--amplua "
-                            "table__cell--amplua",
+                            class_="table__cell table__cell--amplua table__cell--amplua",
                         )
                         .text.strip()
                         .lower()
@@ -116,9 +109,7 @@ async def get_player_from_team_tournament_eesl(
         else:
             raise HTTPException(status_code=404, detail="Parsed eesl players empty")
     except Exception as ex:
-        logger.error(
-            f"Error on parsing player from team_tournament eesl: {ex}", exc_info=True
-        )
+        logger.error(f"Error on parsing player from team_tournament eesl: {ex}", exc_info=True)
         return None
 
 
