@@ -12,9 +12,9 @@ from src.person.schemas import PersonSchemaCreate
 from ..logging_config import get_logger
 from .db_services import PlayerServiceDB
 from .schemas import (
+    PaginatedPlayerWithDetailsAndPhotosResponse,
     PaginatedPlayerWithDetailsResponse,
     PaginatedPlayerWithFullDetailsResponse,
-    PaginatedPlayerWithDetailsAndPhotosResponse,
     PlayerAddToSportSchema,
     PlayerCareerResponseSchema,
     PlayerDetailInTournamentResponse,

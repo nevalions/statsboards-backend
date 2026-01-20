@@ -340,3 +340,108 @@ class TestSeasonServiceDB:
         assert result.metadata.total_pages == 0
         assert result.metadata.has_next is False
         assert result.metadata.has_previous is False
+
+    async def test_get_current_season_from_db(
+        self,
+        test_season_service,
+    ):
+        """Test get_current_season returns season with iscurrent=True."""
+        await test_season_service.create(SeasonFactorySample.build(year=2023))
+        season2 = await test_season_service.create(
+            SeasonFactorySample.build(year=2024, iscurrent=True)
+        )
+        await test_season_service.create(SeasonFactorySample.build(year=2025))
+
+        current_season = await test_season_service.get_current_season()
+        assert current_season is not None
+        assert current_season.id == season2.id
+        assert current_season.year == 2024
+        assert current_season.iscurrent is True
+
+    async def test_get_current_season_fallback_to_config_id(
+        self,
+        test_season_service,
+        monkeypatch,
+    ):
+        """Test get_current_season falls back to config by ID."""
+        await test_season_service.create(SeasonFactorySample.build(year=2023))
+        season2 = await test_season_service.create(SeasonFactorySample.build(year=2024))
+        await test_season_service.create(SeasonFactorySample.build(year=2025))
+
+        monkeypatch.setattr("src.core.config.settings.current_season_id", str(season2.id))
+        current_season = await test_season_service.get_current_season()
+        assert current_season is not None
+        assert current_season.id == season2.id
+
+    async def test_get_current_season_fallback_to_config_year(
+        self,
+        test_season_service,
+        monkeypatch,
+    ):
+        """Test get_current_season falls back to config by year."""
+        await test_season_service.create(SeasonFactorySample.build(year=2023))
+        await test_season_service.create(SeasonFactorySample.build(year=2024))
+        await test_season_service.create(SeasonFactorySample.build(year=2025))
+
+        monkeypatch.setattr("src.core.config.settings.current_season_id", "2024")
+        current_season = await test_season_service.get_current_season()
+        assert current_season is not None
+        assert current_season.year == 2024
+
+    async def test_get_current_season_none(
+        self,
+        test_season_service,
+        monkeypatch,
+    ):
+        """Test get_current_season returns None when no current season found."""
+        await test_season_service.create(SeasonFactorySample.build(year=2023))
+        await test_season_service.create(SeasonFactorySample.build(year=2024))
+        monkeypatch.setattr("src.core.config.settings.current_season_id", None)
+        current_season = await test_season_service.get_current_season()
+        assert current_season is None
+
+    async def test_create_season_as_current_sets_others_false(
+        self,
+        test_season_service,
+    ):
+        """Test creating a season with iscurrent=True sets others to False."""
+        season1 = await test_season_service.create(
+            SeasonFactorySample.build(year=2023, iscurrent=True)
+        )
+        season2 = await test_season_service.create(SeasonFactorySample.build(year=2024))
+
+        season1 = await test_season_service.get_by_id(season1.id)
+        assert season1.iscurrent is True
+
+        season2_with_current = await test_season_service.create(
+            SeasonFactorySample.build(year=2025, iscurrent=True)
+        )
+
+        season1 = await test_season_service.get_by_id(season1.id)
+        season2 = await test_season_service.get_by_id(season2.id)
+        assert season1.iscurrent is False
+        assert season2.iscurrent is False
+        assert season2_with_current.iscurrent is True
+
+    async def test_update_season_to_current_sets_others_false(
+        self,
+        test_season_service,
+    ):
+        """Test updating a season to iscurrent=True sets others to False."""
+        season1 = await test_season_service.create(
+            SeasonFactorySample.build(year=2023, iscurrent=True)
+        )
+        season2 = await test_season_service.create(SeasonFactorySample.build(year=2024))
+        season3 = await test_season_service.create(SeasonFactorySample.build(year=2025))
+
+        season1 = await test_season_service.get_by_id(season1.id)
+        assert season1.iscurrent is True
+
+        await test_season_service.update(season3.id, SeasonSchemaUpdate(year=2025, iscurrent=True))
+
+        season1 = await test_season_service.get_by_id(season1.id)
+        season2 = await test_season_service.get_by_id(season2.id)
+        season3 = await test_season_service.get_by_id(season3.id)
+        assert season1.iscurrent is False
+        assert season2.iscurrent is False
+        assert season3.iscurrent is True

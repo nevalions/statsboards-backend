@@ -1,8 +1,6 @@
+
 import pytest
 import pytest_asyncio
-from fastapi import HTTPException
-from httpx import AsyncClient
-from io import BytesIO
 
 from src.auth.security import create_access_token, get_password_hash
 from src.core.models import RoleDB, UserDB
@@ -12,14 +10,7 @@ from src.matches.schemas import MatchSchemaCreate, MatchSchemaUpdate
 from src.person.db_services import PersonServiceDB
 from src.player.db_services import PlayerServiceDB
 from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
-from src.sponsors.db_services import SponsorServiceDB
 from src.users.schemas import UserSchemaCreate
-from tests.factories import (
-    SponsorFactory,
-    SportFactorySample,
-    TeamFactory,
-    TournamentFactory,
-)
 
 
 @pytest.fixture

@@ -134,7 +134,6 @@ class TestAuthViews:
     @pytest.mark.asyncio
     async def test_heartbeat_success(self, client: AsyncClient, test_user_with_role, test_db):
         """Test heartbeat endpoint updates last_online and is_online."""
-        from datetime import datetime, UTC
 
         token = create_access_token(data={"sub": str(test_user_with_role.id)})
 

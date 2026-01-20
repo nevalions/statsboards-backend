@@ -1,7 +1,8 @@
 from fastapi import HTTPException
-from sqlalchemy import and_, asc, select
+from sqlalchemy import and_, asc, select, update
 from sqlalchemy.sql import func
 
+from src.core.config import settings
 from src.core.decorators import handle_service_exceptions
 from src.core.models import (
     BaseServiceDB,
@@ -35,10 +36,26 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
         self.logger = get_logger("backend_logger_SeasonServiceDB", self)
         self.logger.debug("Initialized SeasonServiceDB")
 
+    async def _set_other_seasons_to_not_current(self, season_id: int) -> None:
+        """Set iscurrent=False on all seasons except the specified one.
+
+        Args:
+            season_id: ID of the season to keep as current
+        """
+        self.logger.debug(f"Set other seasons to not current except season_id={season_id}")
+
+        async with self.db.async_session() as session:
+            stmt = update(SeasonDB).where(SeasonDB.id != season_id).values(iscurrent=False)
+            await session.execute(stmt)
+            await session.flush()
+
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: SeasonSchemaCreate) -> SeasonDB:
         self.logger.debug(f"Creat {ITEM}:{item}")
-        return await super().create(item)
+        created_season = await super().create(item)
+        if item.iscurrent:
+            await self._set_other_seasons_to_not_current(created_season.id)
+        return created_season
 
     @handle_service_exceptions(item_name=ITEM, operation="updating", return_value_on_not_found=None)
     async def update(
@@ -53,6 +70,8 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
                 status_code=409,
                 detail=f"Error updating {self.model.__name__}. Check input data. {ITEM}",
             )
+        if item.iscurrent is True:
+            await self._set_other_seasons_to_not_current(item_id)
         return await super().update(
             item_id,
             item,
@@ -156,6 +175,58 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
             related_property="tournaments",
             second_level_property="matches",
         )
+
+    async def get_current_season(self) -> SeasonDB | None:
+        """Get the current season from database or fall back to config.
+
+        First checks if any season has iscurrent=True in the database.
+        If not found and settings.current_season_id is set, tries to find by ID.
+        If still not found, tries to find by year.
+
+        Returns:
+            SeasonDB object if found, None otherwise
+        """
+        self.logger.debug("Get current season")
+        async with self.db.async_session() as session:
+            stmt = select(SeasonDB).where(SeasonDB.iscurrent)
+            result = await session.execute(stmt)
+            current_season = result.scalar_one_or_none()
+            if current_season:
+                self.logger.debug(
+                    f"Current season found with iscurrent=True: id={current_season.id}, year={current_season.year}"
+                )
+                return current_season
+
+            if settings.current_season_id:
+                self.logger.debug(
+                    f"No current season in DB, trying config.current_season_id: {settings.current_season_id}"
+                )
+                try:
+                    season_id = int(settings.current_season_id)
+                    stmt = select(SeasonDB).where(SeasonDB.id == season_id)
+                    result = await session.execute(stmt)
+                    current_season = result.scalar_one_or_none()
+                    if current_season:
+                        self.logger.debug(
+                            f"Current season found from config: id={current_season.id}, year={current_season.year}"
+                        )
+                        return current_season
+                    season_year = int(settings.current_season_id)
+                    stmt = select(SeasonDB).where(SeasonDB.year == season_year)
+                    result = await session.execute(stmt)
+                    current_season = result.scalar_one_or_none()
+                    if current_season:
+                        self.logger.debug(
+                            f"Current season found from config by year: id={current_season.id}, year={current_season.year}"
+                        )
+                        return current_season
+                except (ValueError, TypeError):
+                    self.logger.warning(
+                        f"Invalid current_season_id in config: {settings.current_season_id}"
+                    )
+
+            self.logger.debug("No current season found")
+            return None
 
     @handle_service_exceptions(
         item_name=ITEM,

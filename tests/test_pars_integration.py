@@ -1,6 +1,5 @@
-import pytest
-
 import aiohttp
+import pytest
 
 from src.pars_eesl import pars_all_players_from_eesl, pars_season, pars_tournament
 
