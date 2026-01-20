@@ -801,10 +801,10 @@ class MatchServiceDB(BaseServiceDB):
                     selectinload(MatchDB.match_scoreboard),
                     selectinload(MatchDB.match_playclock),
                     selectinload(MatchDB.match_gameclock),
+                    selectinload(MatchDB.match_players).selectinload(PlayerMatchDB.team),
                     selectinload(MatchDB.match_players)
                     .selectinload(PlayerMatchDB.player_team_tournament)
-                    .selectinload(PlayerTeamTournamentDB.player)
-                    .selectinload(PlayerMatchDB.team),
+                    .selectinload(PlayerTeamTournamentDB.player),
                     selectinload(MatchDB.match_events),
                 )
             )
