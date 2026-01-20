@@ -189,8 +189,9 @@ class MatchDataWebSocketManager:
         )
 
     async def event_listener(self, connection, pid, channel, payload):
+        invalidate_func = self._cache_service.invalidate_event_data if self._cache_service else None
         await self._base_listener(
-            connection, pid, channel, payload, "event-update", self.event_queues
+            connection, pid, channel, payload, "event-update", self.event_queues, invalidate_func
         )
 
     async def shutdown(self):

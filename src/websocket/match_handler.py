@@ -222,10 +222,10 @@ class MatchWebSocketHandler:
 
         try:
             if websocket.application_state != WebSocketState.CONNECTED:
-                websocket_logger.warning("WebSocket not connected, skipping event data send")
+                self.logger.debug("WebSocket not connected, skipping event data send")
                 return
 
-            event_data = await fetch_event(match_id)
+            event_data = await fetch_event(match_id, cache_service=self.cache_service)
             event_data["type"] = "event-update"
 
             if websocket.application_state == WebSocketState.CONNECTED:

@@ -273,7 +273,12 @@ async def fetch_playclock(
         }
 
 
-async def fetch_event(event_id: int, database=None) -> dict[str, Any] | None:
+async def fetch_event(event_id: int, database=None, cache_service=None) -> dict[str, Any] | None:
+    if cache_service:
+        result = await cache_service.get_or_fetch_event_data(event_id)
+        if result:
+            return result
+
     from src.football_events.db_services import FootballEventServiceDB
     from src.matches.db_services import MatchServiceDB
 

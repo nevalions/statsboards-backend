@@ -81,3 +81,25 @@ class MatchDataCacheService:
         if cache_key in self._cache:
             del self._cache[cache_key]
             self.logger.debug(f"Invalidated playclock cache for match {match_id}")
+
+    async def get_or_fetch_event_data(self, match_id: int) -> dict | None:
+        cache_key = f"event-update:{match_id}"
+        if cache_key in self._cache:
+            self.logger.debug(f"Returning cached event data for match {match_id}")
+            return self._cache[cache_key]
+
+        self.logger.debug(f"Fetching event data for match {match_id}")
+        from src.helpers.fetch_helpers import fetch_event
+
+        result = await fetch_event(match_id, database=self.db)
+        if result and result.get("status_code") == 200:
+            self._cache[cache_key] = result
+            self.logger.debug(f"Cached event data for match {match_id}")
+            return result
+        return None
+
+    def invalidate_event_data(self, match_id: int) -> None:
+        cache_key = f"event-update:{match_id}"
+        if cache_key in self._cache:
+            del self._cache[cache_key]
+            self.logger.debug(f"Invalidated event data cache for match {match_id}")
