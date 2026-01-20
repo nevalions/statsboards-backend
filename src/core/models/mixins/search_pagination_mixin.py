@@ -2,7 +2,8 @@ import logging
 from math import ceil
 from typing import TYPE_CHECKING
 
-from sqlalchemy import or_
+from sqlalchemy import Integer as SAInteger
+from sqlalchemy import String, cast, or_
 
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database
@@ -26,15 +27,18 @@ class SearchPaginationMixin:
         search_fields: list,
         search_query: str | None,
     ):
-        """Apply ILIKE search to multiple fields with ICU collation"""
+        """Apply ILIKE search to multiple fields with ICU collation. Supports both string and integer fields (integers are cast to strings for search)."""
         if not search_query:
             return base_query
 
         search_pattern = await self._build_search_pattern(search_query)
-        conditions = [
-            getattr(model, model_field).ilike(search_pattern).collate("en-US-x-icu")
-            for model, model_field in search_fields
-        ]
+        conditions = []
+        for model, model_field in search_fields:
+            column = getattr(model, model_field)
+
+            if isinstance(column.type, SAInteger):
+                column = cast(column, String)
+            conditions.append(column.ilike(search_pattern).collate("en-US-x-icu"))
         return base_query.where(or_(*conditions))
 
     async def _get_column_with_fallback(
