@@ -126,6 +126,11 @@ def register_all_services(database: Database) -> ServiceRegistry:
 
         register_service("match_stats", lambda db: MatchStatsServiceDB(db), singleton=False)
 
+    if not registry.has("match_data_cache"):
+        from src.matches.match_data_cache_service import MatchDataCacheService
+
+        register_service("match_data_cache", lambda db: MatchDataCacheService(db), singleton=True)
+
     if not registry.has("user"):
         from src.users.db_services import UserServiceDB
 

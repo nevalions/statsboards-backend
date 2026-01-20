@@ -291,5 +291,9 @@ Current registered service names:
 - `gameclock`
 - `scoreboard`
 - `football_event`
+- `match_stats`
+- `match_data_cache` (singleton)
+- `user`
+- `global_setting`
 
-Use these names when accessing services through the registry.
+Use these names when accessing services through registry.

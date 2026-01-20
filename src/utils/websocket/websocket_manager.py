@@ -23,6 +23,7 @@ class MatchDataWebSocketManager:
         self.logger.info("MatchDataWebSocketManager initialized")
         self.is_connected = False
         self._connection_retry_task = None
+        self._cache_service = None
 
     async def maintain_connection(self):
         while True:
@@ -104,6 +105,10 @@ class MatchDataWebSocketManager:
                 )
                 raise
 
+    def set_cache_service(self, cache_service):
+        self._cache_service = cache_service
+        self.logger.info("Cache service set for WebSocket manager")
+
     async def startup(self):
         try:
             await self.connect_to_db()
@@ -113,7 +118,9 @@ class MatchDataWebSocketManager:
             self.logger.error(f"Startup error: {str(e)}", exc_info=True)
             raise
 
-    async def _base_listener(self, connection, pid, channel, payload, update_type, queue_dict):
+    async def _base_listener(
+        self, connection, pid, channel, payload, update_type, queue_dict, invalidate_func=None
+    ):
         self.logger.debug(f"{update_type} notification received on channel {channel}")
 
         if not payload or not payload.strip():
@@ -126,6 +133,9 @@ class MatchDataWebSocketManager:
             data["type"] = update_type
 
             self.logger.debug(f"Processing {update_type} for match {match_id}")
+
+            if invalidate_func and self._cache_service:
+                invalidate_func(match_id)
 
             clients = await connection_manager.get_match_subscriptions(match_id)
             for client_id in clients:
@@ -143,18 +153,39 @@ class MatchDataWebSocketManager:
             self.logger.error(f"Error in {update_type} listener: {str(e)}", exc_info=True)
 
     async def playclock_listener(self, connection, pid, channel, payload):
+        invalidate_func = self._cache_service.invalidate_playclock if self._cache_service else None
         await self._base_listener(
-            connection, pid, channel, payload, "playclock-update", self.playclock_queues
+            connection,
+            pid,
+            channel,
+            payload,
+            "playclock-update",
+            self.playclock_queues,
+            invalidate_func,
         )
 
     async def match_data_listener(self, connection, pid, channel, payload):
+        invalidate_func = self._cache_service.invalidate_match_data if self._cache_service else None
         await self._base_listener(
-            connection, pid, channel, payload, "match-update", self.match_data_queues
+            connection,
+            pid,
+            channel,
+            payload,
+            "match-update",
+            self.match_data_queues,
+            invalidate_func,
         )
 
     async def gameclock_listener(self, connection, pid, channel, payload):
+        invalidate_func = self._cache_service.invalidate_gameclock if self._cache_service else None
         await self._base_listener(
-            connection, pid, channel, payload, "gameclock-update", self.gameclock_queues
+            connection,
+            pid,
+            channel,
+            payload,
+            "gameclock-update",
+            self.gameclock_queues,
+            invalidate_func,
         )
 
     async def event_listener(self, connection, pid, channel, payload):

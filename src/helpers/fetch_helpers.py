@@ -114,7 +114,14 @@ async def fetch_match_data(match_id: int, database=None) -> dict[str, Any] | Non
         fetch_data_logger.error(f"Error while fetching matchdata: {e}", exc_info=True)
 
 
-async def fetch_with_scoreboard_data(match_id: int, database=None) -> dict[str, Any] | None:
+async def fetch_with_scoreboard_data(
+    match_id: int, database=None, cache_service=None
+) -> dict[str, Any] | None:
+    if cache_service:
+        result = await cache_service.get_or_fetch_match_data(match_id)
+        if result:
+            return result
+
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Starting fetching match data with match_id {match_id}")
@@ -156,9 +163,9 @@ async def fetch_with_scoreboard_data(match_id: int, database=None) -> dict[str, 
                     "id": match_id,
                     "status_code": status.HTTP_200_OK,
                     "match": deep_dict_convert(match.__dict__),
-                    "scoreboard_data": instance_to_dict(scoreboard_data.__dict__),
+                    "scoreboard_data": instance_to_dict(dict(scoreboard_data.__dict__)),
                     "teams_data": deep_dict_convert(match_teams_data),
-                    "match_data": instance_to_dict(match_data.__dict__),
+                    "match_data": instance_to_dict(dict(match_data.__dict__)),
                 }
             }
             fetch_data_logger.debug(
@@ -181,7 +188,14 @@ async def fetch_with_scoreboard_data(match_id: int, database=None) -> dict[str, 
         }
 
 
-async def fetch_gameclock(match_id: int, database=None) -> dict[str, Any] | None:
+async def fetch_gameclock(
+    match_id: int, database=None, cache_service=None
+) -> dict[str, Any] | None:
+    if cache_service:
+        result = await cache_service.get_or_fetch_gameclock(match_id)
+        if result:
+            return result
+
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Starting fetching gemeclock with match_id:{match_id}")
@@ -203,7 +217,7 @@ async def fetch_gameclock(match_id: int, database=None) -> dict[str, Any] | None
                 "match_id": match_id,
                 "id": match_id,
                 "status_code": status.HTTP_200_OK,
-                "gameclock": instance_to_dict(gameclock.__dict__),
+                "gameclock": instance_to_dict(dict(gameclock.__dict__)),
             }
         else:
             return {
@@ -217,7 +231,14 @@ async def fetch_gameclock(match_id: int, database=None) -> dict[str, Any] | None
         }
 
 
-async def fetch_playclock(match_id: int, database=None) -> dict[str, Any] | None:
+async def fetch_playclock(
+    match_id: int, database=None, cache_service=None
+) -> dict[str, Any] | None:
+    if cache_service:
+        result = await cache_service.get_or_fetch_playclock(match_id)
+        if result:
+            return result
+
     from src.matches.db_services import MatchServiceDB
 
     fetch_data_logger.debug(f"Starting fetching playclock with match_id:{match_id}")
@@ -238,7 +259,7 @@ async def fetch_playclock(match_id: int, database=None) -> dict[str, Any] | None
                 "match_id": match_id,
                 "id": match_id,
                 "status_code": status.HTTP_200_OK,
-                "playclock": instance_to_dict(playclock.__dict__),
+                "playclock": instance_to_dict(dict(playclock.__dict__)),
             }
         else:
             return {

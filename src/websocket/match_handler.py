@@ -12,7 +12,8 @@ connection_socket_logger = logging.getLogger("backend_logger_ConnectionManager")
 
 
 class MatchWebSocketHandler:
-    def __init__(self):
+    def __init__(self, cache_service=None):
+        self.cache_service = cache_service
         self.logger = get_logger("backend_logger_MatchWebSocketHandler", self)
         self.logger.debug("Initialized MatchWebSocketHandler")
 
@@ -23,17 +24,17 @@ class MatchWebSocketHandler:
             fetch_with_scoreboard_data,
         )
 
-        initial_data = await fetch_with_scoreboard_data(match_id)
+        initial_data = await fetch_with_scoreboard_data(match_id, cache_service=self.cache_service)
         initial_data["type"] = "message-update"
         websocket_logger.debug("WebSocket Connection initial_data for type: message-update")
         websocket_logger.info(f"WebSocket Connection initial_data: {initial_data}")
 
-        initial_playclock_data = await fetch_playclock(match_id)
+        initial_playclock_data = await fetch_playclock(match_id, cache_service=self.cache_service)
         initial_playclock_data["type"] = "playclock-update"
         websocket_logger.debug("WebSocket Connection initial_data for type: playclock-update")
         websocket_logger.info(f"WebSocket Connection initial_data: {initial_playclock_data}")
 
-        initial_gameclock_data = await fetch_gameclock(match_id)
+        initial_gameclock_data = await fetch_gameclock(match_id, cache_service=self.cache_service)
         initial_gameclock_data["type"] = "gameclock-update"
         websocket_logger.debug("WebSocket Connection initial_data for type: gameclock-update")
         websocket_logger.info(f"WebSocket Connection initial_data: {initial_gameclock_data}")
@@ -136,7 +137,9 @@ class MatchWebSocketHandler:
                 websocket_logger.warning("WebSocket not connected, skipping data send")
                 return
 
-            full_match_data = await fetch_with_scoreboard_data(match_id)
+            full_match_data = await fetch_with_scoreboard_data(
+                match_id, cache_service=self.cache_service
+            )
             full_match_data["type"] = "match-update"
 
             if websocket.application_state == WebSocketState.CONNECTED:
@@ -164,7 +167,7 @@ class MatchWebSocketHandler:
                 websocket_logger.warning("WebSocket not connected, skipping gameclock data send")
                 return
 
-            gameclock_data = await fetch_gameclock(match_id)
+            gameclock_data = await fetch_gameclock(match_id, cache_service=self.cache_service)
             gameclock_data["type"] = "gameclock-update"
 
             if websocket.application_state == WebSocketState.CONNECTED:
@@ -193,7 +196,7 @@ class MatchWebSocketHandler:
                 websocket_logger.warning("WebSocket not connected, skipping playclock data send")
                 return
 
-            playclock_data = await fetch_playclock(match_id)
+            playclock_data = await fetch_playclock(match_id, cache_service=self.cache_service)
             playclock_data["type"] = "playclock-update"
 
             if websocket.application_state == WebSocketState.CONNECTED:

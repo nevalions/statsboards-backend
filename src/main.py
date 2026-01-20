@@ -15,9 +15,10 @@ from src.core.exception_handler import register_exception_handlers
 from src.core.models.base import db
 from src.core.router_registry import RouterRegistry, configure_routers
 from src.core.service_initialization import register_all_services
-from src.core.service_registry import init_service_registry
+from src.core.service_registry import get_service_registry, init_service_registry
 from src.logging_config import logs_dir, setup_logging
 from src.utils.websocket.websocket_manager import ws_manager
+from src.websocket.match_handler import match_websocket_handler
 
 logger = logging.getLogger("backend_logger_fastapi")
 db_logger = logging.getLogger("backend_logger_base_db")
@@ -66,6 +67,14 @@ async def lifespan(_app: FastAPI):
         init_service_registry(db)
         register_all_services(db)
         logger.info("Service registry initialized and all services registered")
+
+        registry = get_service_registry()
+        cache_service = registry.get("match_data_cache")
+        if cache_service:
+            ws_manager.set_cache_service(cache_service)
+            match_websocket_handler.cache_service = cache_service
+            logger.info("Match data cache service initialized and set on WebSocket components")
+
         await db.validate_database_connection()
         stale_users_task = asyncio.create_task(mark_stale_users_offline_task())
         yield
