@@ -33,9 +33,7 @@ def season(test_db: Database):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def tournament_data(
-    test_db: Database, sport: SportSchemaCreate, season: SeasonSchemaCreate
-):
+async def tournament_data(test_db: Database, sport: SportSchemaCreate, season: SeasonSchemaCreate):
     sport_service = SportServiceDB(test_db)
     created_sport = await sport_service.create(sport)
 
@@ -54,12 +52,8 @@ async def teams_data(test_db: Database, sport: SportSchemaCreate):
 
     team_service = TeamServiceDB(test_db)
 
-    team1 = TeamFactory.build(
-        sport_id=created_sport.id, team_eesl_id=801, title="Team A"
-    )
-    team2 = TeamFactory.build(
-        sport_id=created_sport.id, team_eesl_id=802, title="Team B"
-    )
+    team1 = TeamFactory.build(sport_id=created_sport.id, team_eesl_id=801, title="Team A")
+    team2 = TeamFactory.build(sport_id=created_sport.id, team_eesl_id=802, title="Team B")
 
     created_team1 = await team_service.create_or_update_team(team1)
     created_team2 = await team_service.create_or_update_team(team2)
@@ -76,9 +70,7 @@ class TestMatchServiceDBCreateOrUpdate:
     ):
         """Test creating a match with eesl_id."""
         tournament_service = TournamentServiceDB(test_db)
-        created_tournament = await tournament_service.create_or_update_tournament(
-            tournament_data
-        )
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
 
         team_a, team_b = teams_data
 
@@ -103,9 +95,7 @@ class TestMatchServiceDBCreateOrUpdate:
     ):
         """Test creating a match without eesl_id."""
         tournament_service = TournamentServiceDB(test_db)
-        created_tournament = await tournament_service.create_or_update_tournament(
-            tournament_data
-        )
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
 
         team_a, team_b = teams_data
 
@@ -129,9 +119,7 @@ class TestMatchServiceDBCreateOrUpdate:
     ):
         """Test updating an existing match by eesl_id."""
         tournament_service = TournamentServiceDB(test_db)
-        created_tournament = await tournament_service.create_or_update_tournament(
-            tournament_data
-        )
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
 
         team_a, team_b = teams_data
 
@@ -147,7 +135,14 @@ class TestMatchServiceDBCreateOrUpdate:
         )
         created = await match_service.create_or_update_match(match_data)
 
-        update_data = MatchSchemaUpdate(match_eesl_id=200, week=2)
+        update_data = MatchFactory.build(
+            match_eesl_id=200,
+            week=2,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
 
         updated = await match_service.create_or_update_match(update_data)
 
@@ -159,9 +154,7 @@ class TestMatchServiceDBCreateOrUpdate:
     ):
         """Test creating multiple matches."""
         tournament_service = TournamentServiceDB(test_db)
-        created_tournament = await tournament_service.create_or_update_tournament(
-            tournament_data
-        )
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
 
         team_a, team_b = teams_data
 
@@ -194,9 +187,7 @@ class TestMatchServiceDBCreateOrUpdate:
     ):
         """Test retrieving match by eesl_id."""
         tournament_service = TournamentServiceDB(test_db)
-        created_tournament = await tournament_service.create_or_update_tournament(
-            tournament_data
-        )
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
 
         team_a, team_b = teams_data
 
@@ -215,3 +206,233 @@ class TestMatchServiceDBCreateOrUpdate:
 
         assert retrieved is not None
         assert retrieved.id == created.id
+
+    async def test_get_match_by_eesl_id_not_found(self, test_db: Database):
+        """Test retrieving non-existent match by eesl_id returns None."""
+        match_service = MatchServiceDB(test_db)
+        result = await match_service.get_match_by_eesl_id(99999)
+        assert result is None
+
+    async def test_get_match_with_details(self, test_db: Database, tournament_data, teams_data):
+        """Test retrieving match with all related details."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=500,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        result = await match_service.get_match_with_details(created.id)
+
+        assert result is not None
+        assert result.id == created.id
+        assert result.team_a is not None
+        assert result.team_b is not None
+        assert result.tournaments is not None
+
+    async def test_get_match_with_details_not_found(self, test_db: Database):
+        """Test retrieving non-existent match with details returns None."""
+        match_service = MatchServiceDB(test_db)
+        result = await match_service.get_match_with_details(99999)
+        assert result is None
+
+    async def test_get_sport_by_match_id(self, test_db: Database, tournament_data, teams_data):
+        """Test retrieving sport by match_id."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=600,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        result = await match_service.get_sport_by_match_id(created.id)
+
+        assert result is not None
+        assert result.id == created_tournament.sport_id
+
+    async def test_get_sport_by_match_id_not_found(self, test_db: Database):
+        """Test retrieving sport for non-existent match returns None."""
+        match_service = MatchServiceDB(test_db)
+        result = await match_service.get_sport_by_match_id(99999)
+        assert result is None
+
+    async def test_get_teams_by_match_id(self, test_db: Database, tournament_data, teams_data):
+        """Test retrieving teams by match_id."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=700,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        result = await match_service.get_teams_by_match_id(created.id)
+
+        assert result is not None
+        assert "home_team" in result
+        assert "away_team" in result
+        assert result["home_team"].id == team_a.id
+        assert result["away_team"].id == team_b.id
+
+    async def test_get_teams_by_match_not_found(self, test_db: Database):
+        """Test retrieving teams for non-existent match returns None."""
+        match_service = MatchServiceDB(test_db)
+        result = await match_service.get_teams_by_match_id(99999)
+        assert result is None
+
+    async def test_get_teams_by_match_v2(self, test_db: Database, tournament_data, teams_data):
+        """Test retrieving teams v2 by match_id."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=800,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        result = await match_service.get_teams_by_match(created.id)
+
+        assert result is not None
+        assert "team_a" in result
+        assert "team_b" in result
+
+    async def test_get_players_by_match_empty(self, test_db: Database, tournament_data, teams_data):
+        """Test retrieving players for match with no players returns empty list."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=900,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        result = await match_service.get_players_by_match(created.id)
+
+        assert result == []
+
+    async def test_get_player_by_match_full_data_empty(
+        self, test_db: Database, tournament_data, teams_data
+    ):
+        """Test retrieving full player data for match with no players returns empty list."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=1000,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        result = await match_service.get_player_by_match_full_data(created.id)
+
+        assert result == []
+
+    async def test_get_players_with_full_data_optimized_empty(
+        self, test_db: Database, tournament_data, teams_data
+    ):
+        """Test retrieving optimized full player data for match with no players returns empty list."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=1100,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        result = await match_service.get_players_with_full_data_optimized(created.id)
+
+        assert result == []
+
+    async def test_get_scoreboard_by_match_not_found(self, test_db: Database):
+        """Test retrieving scoreboard for non-existent match returns None."""
+        match_service = MatchServiceDB(test_db)
+        result = await match_service.get_scoreboard_by_match(99999)
+        assert result is None
+
+    async def test_get_match_full_context_not_found(self, test_db: Database):
+        """Test retrieving full context for non-existent match returns None."""
+        match_service = MatchServiceDB(test_db)
+        result = await match_service.get_match_full_context(99999)
+        assert result is None
+
+    async def test_get_available_players_for_team_in_match_not_found(self, test_db: Database):
+        """Test retrieving available players for non-existent match returns empty list."""
+        match_service = MatchServiceDB(test_db)
+        result = await match_service.get_available_players_for_team_in_match(
+            match_id=99999, team_id=1
+        )
+        assert result == []
+
+    async def test_update_match(self, test_db: Database, tournament_data, teams_data):
+        """Test updating an existing match."""
+        tournament_service = TournamentServiceDB(test_db)
+        created_tournament = await tournament_service.create_or_update_tournament(tournament_data)
+
+        team_a, team_b = teams_data
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchFactory.build(
+            match_eesl_id=1200,
+            tournament_id=created_tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            week=1,
+            match_date=datetime.now(),
+        )
+        created = await match_service.create(match_data)
+
+        update_data = MatchSchemaUpdate(week=5, match_eesl_id=1200)
+        updated = await match_service.update(created.id, update_data)
+
+        assert updated.id == created.id
+        assert updated.week == 5
