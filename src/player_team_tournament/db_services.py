@@ -808,6 +808,33 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     )
                 )
 
+            # For DISTINCT queries with ORDER BY on joined table columns,
+            # we need to add those columns to the SELECT list
+            if search_query or team_title:
+                columns_to_add = []
+                if order_by == "first_name":
+                    columns_to_add.append(PersonDB.first_name)
+                elif order_by == "second_name":
+                    columns_to_add.append(PersonDB.second_name)
+                elif order_by == "team_title":
+                    columns_to_add.append(TeamDB.title)
+                elif order_by == "position_title":
+                    columns_to_add.append(PositionDB.title)
+
+                if order_by_two:
+                    if order_by_two == "first_name" and order_by != "first_name":
+                        columns_to_add.append(PersonDB.first_name)
+                    elif order_by_two == "second_name" and order_by != "second_name":
+                        columns_to_add.append(PersonDB.second_name)
+                    elif order_by_two == "team_title" and order_by != "team_title":
+                        columns_to_add.append(TeamDB.title)
+                    elif order_by_two == "position_title" and order_by != "position_title":
+                        columns_to_add.append(PositionDB.title)
+
+                if columns_to_add:
+                    # Add columns to the select statement while keeping the existing ones
+                    base_query = base_query.add_columns(*columns_to_add)
+
             data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
             result = await session.execute(data_query)
             players = result.scalars().all()
