@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from src.pars_eesl import parse_player_team_tournament
 from src.pars_eesl.parse_player_team_tournament import ParsedPlayerTeamTournament

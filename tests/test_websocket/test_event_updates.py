@@ -1,5 +1,4 @@
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -16,7 +15,6 @@ class TestEventUpdates:
 
     @pytest.fixture
     def ws_manager(self):
-        mock_db = MagicMock()
         manager = MatchDataWebSocketManager(db_url="postgresql://test")
         manager.set_cache_service(cache_service=self.cache_service)
         return manager

@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -77,8 +76,6 @@ class TestWebSocketCaching:
         assert cache_service._cache["match-update:1"] == mock_match_data["data"]
 
     async def test_cache_service_invalidate_match_data(self, cache_service):
-        handler = MatchWebSocketHandler(cache_service=cache_service)
-
         mock_match_data = {
             "data": {
                 "match_id": 1,
@@ -99,8 +96,6 @@ class TestWebSocketCaching:
         assert "match-update:1" not in cache_service._cache
 
     async def test_cache_service_invalidate_gameclock(self, cache_service):
-        handler = MatchWebSocketHandler(cache_service=cache_service)
-
         mock_gameclock = {"match_id": 1, "id": 1, "status_code": 200}
 
         cache_service._cache["gameclock-update:1"] = mock_gameclock
@@ -112,8 +107,6 @@ class TestWebSocketCaching:
         assert "gameclock-update:1" not in cache_service._cache
 
     async def test_cache_service_invalidate_playclock(self, cache_service):
-        handler = MatchWebSocketHandler(cache_service=cache_service)
-
         mock_playclock = {"match_id": 1, "id": 1, "status_code": 200}
 
         cache_service._cache["playclock-update:1"] = mock_playclock
@@ -125,8 +118,6 @@ class TestWebSocketCaching:
         assert "playclock-update:1" not in cache_service._cache
 
     async def test_cache_service_invalidate_event_data(self, cache_service):
-        handler = MatchWebSocketHandler(cache_service=cache_service)
-
         mock_event_data = {"match_id": 1, "id": 1, "status_code": 200}
 
         cache_service._cache["event-update:1"] = mock_event_data
