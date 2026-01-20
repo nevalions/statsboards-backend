@@ -89,6 +89,7 @@ class TestGlobalSettingViews:
 
         assert response.status_code == 401
 
+    @pytest.mark.slow
     async def test_get_setting_value_not_found(self, client):
         response = await client.get("/api/settings/value/nonexistent.key")
 
