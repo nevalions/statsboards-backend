@@ -212,6 +212,7 @@ async def test_app(test_db):
     from src.tournaments.db_services import TournamentServiceDB
     from src.tournaments.views import TournamentAPIRouter
     from src.users.views import get_user_router
+    from src.core import health
 
     app = FastAPI()
     match_service = MatchServiceDB(test_db)
@@ -239,6 +240,7 @@ async def test_app(test_db):
     app.include_router(api_auth_router)
     app.include_router(api_global_setting_router)
     app.include_router(get_user_router())
+    app.include_router(health.router)
     try:
         role_router = RoleAPIRouter(RoleServiceDB(test_db)).route()
         app.include_router(role_router)
