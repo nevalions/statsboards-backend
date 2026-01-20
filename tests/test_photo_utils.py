@@ -2,10 +2,7 @@
 
 import pytest
 
-from pathlib import Path
-
 from src.helpers.photo_utils import photo_files_exist
-from src.core.config import settings
 
 
 @pytest.fixture

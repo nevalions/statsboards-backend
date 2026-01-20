@@ -1,6 +1,5 @@
 """Test schema helpers module."""
 
-import pytest
 from pydantic import BaseModel, Field
 
 from src.core.schema_helpers import (
