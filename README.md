@@ -268,7 +268,7 @@ docs/                          # Documentation
 ### Code Quality
 - Consistent service layer pattern with `BaseServiceDB`
 - Service registry pattern for dependency injection and decoupling
-- Comprehensive test coverage (758 tests, passing in ~44s with 4 parallel workers)
+- Comprehensive test coverage (814 tests, passing in ~50s with 4 parallel workers)
 - Type hints throughout codebase
 - Async/await for all database operations
 - Mixin-based CRUD, query, and relationship operations
@@ -425,6 +425,18 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 
 ## Recent Improvements
 
+### Test Coverage Enhancements (January 2026)
+- Added parser tests for EESL player-team-tournament parsing (STAB-85)
+  - 10 new tests covering multiple players, single player, no players, malformed HTML
+  - Fixed TypedDict bug: `player_number` changed from `int` to `str`
+- Added service layer tests for matches (STAB-82)
+  - 20 new tests covering match details, sport/teams retrieval, player data, scoreboard
+- Added service layer tests for player_match (STAB-87)
+  - 11 new tests covering create/update, retrieval by eesl_id, person/team lookup
+- Added service layer tests for teams (STAB-86)
+  - 15 new tests covering team details, search with pagination, player queries
+- Total: 56 new tests added to improve coverage
+
 ### Test Suite Fixes
 - Fixed 33 previously failing tests across multiple test suites
   - **test_player_match_views_helpers.py**: Fixed photo file handling tests (9 tests passing)
@@ -437,9 +449,9 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
   - **test_views/test_websocket_views.py**: Fixed WebSocket functionality tests (47 tests passing)
     - Corrected import path for MatchDataWebSocketManager
     - Marked integration test requiring real database connections
-   - **test_pars_integration.py**: Integration tests working with proper markers (5 tests passing)
+    - **test_pars_integration.py**: Integration tests working with proper markers (5 tests passing)
      - Tests run correctly with `-m integration` flag
-- All 758 tests now passing when excluding integration tests (in ~44s with 4 parallel workers)
+   - All 814 tests now passing when excluding integration tests (in ~50s with 4 parallel workers)
 - Integration tests pass when run with appropriate markers
 
 ### Exception Handling Refactoring
@@ -465,11 +477,12 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 - Improved query performance in service layer
 
 ### Testing Improvements
-- 758 comprehensive tests passing (in ~44s with 4 parallel workers across 2 databases)
+- 814 comprehensive tests passing (in ~50s with 4 parallel workers across 2 databases)
 - Test database optimization with Docker (creates test_db and test_db2)
 - PostgreSQL requirement for tests (not SQLite)
 - Factory pattern for test data generation
 - Comprehensive test coverage across all services
+- Added 56 new tests for parser and service layer coverage (STAB-85, STAB-82, STAB-87, STAB-86)
 
 ### Service Layer Decoupling
 - Implemented service registry pattern for dependency injection
