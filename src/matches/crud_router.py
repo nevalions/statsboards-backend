@@ -534,7 +534,7 @@ class MatchCRUDRouter(
             "/paginated",
             response_model=PaginatedMatchResponse,
             summary="Search matches with pagination",
-            description="Search matches by week, tournament_id, or match_eesl_id with pagination support",
+            description="Search matches by week, tournament_id, match_eesl_id, or team titles with pagination support",
         )
         async def get_matches_paginated_endpoint(
             page: int = Query(1, ge=1, description="Page number (1-based)"),
@@ -542,7 +542,7 @@ class MatchCRUDRouter(
             order_by: str = Query("match_date", description="First sort column"),
             order_by_two: str = Query("id", description="Second sort column"),
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
-            search: str | None = Query(None, description="Search query for match_eesl_id"),
+            search: str | None = Query(None, description="Search query for match_eesl_id or team titles"),
             week: int | None = Query(None, ge=1, description="Filter by week number"),
             tournament_id: int | None = Query(None, ge=1, description="Filter by tournament_id"),
             user_id: int | None = Query(None, description="Filter by user_id"),
@@ -573,7 +573,7 @@ class MatchCRUDRouter(
             "/with-details/paginated",
             response_model=PaginatedMatchWithDetailsResponse,
             summary="Search matches with pagination and full details",
-            description="Search matches by week, tournament_id, or match_eesl_id with pagination and nested team, tournament, sponsor objects",
+            description="Search matches by week, tournament_id, match_eesl_id, or team titles with pagination and nested team, tournament, sponsor objects",
         )
         async def get_matches_with_details_paginated_endpoint(
             page: int = Query(1, ge=1, description="Page number (1-based)"),
@@ -581,7 +581,7 @@ class MatchCRUDRouter(
             order_by: str = Query("match_date", description="First sort column"),
             order_by_two: str = Query("id", description="Second sort column"),
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
-            search: str | None = Query(None, description="Search query for match_eesl_id"),
+            search: str | None = Query(None, description="Search query for match_eesl_id or team titles"),
             week: int | None = Query(None, ge=1, description="Filter by week number"),
             tournament_id: int | None = Query(None, ge=1, description="Filter by tournament_id"),
             user_id: int | None = Query(None, description="Filter by user_id"),

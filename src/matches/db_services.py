@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.models import (
@@ -672,10 +672,20 @@ class MatchServiceDB(BaseServiceDB):
                 base_query = base_query.where(MatchDB.isprivate == isprivate)
 
             if search_query:
-                base_query = await self._apply_search_filters(
-                    base_query,
-                    [(MatchDB, "match_eesl_id")],
-                    search_query,
+                from sqlalchemy import cast, String
+                search_pattern = f"%{search_query}%"
+                base_query = base_query.where(
+                    or_(
+                        cast(MatchDB.match_eesl_id, String).ilike(search_pattern).collate("en-US-x-icu"),
+                        select(TeamDB)
+                        .where(TeamDB.id == MatchDB.team_a_id)
+                        .where(TeamDB.title.ilike(search_pattern).collate("en-US-x-icu"))
+                        .exists(),
+                        select(TeamDB)
+                        .where(TeamDB.id == MatchDB.team_b_id)
+                        .where(TeamDB.title.ilike(search_pattern).collate("en-US-x-icu"))
+                        .exists(),
+                    )
                 )
 
             if week is not None:
@@ -742,10 +752,20 @@ class MatchServiceDB(BaseServiceDB):
                 base_query = base_query.where(MatchDB.isprivate == isprivate)
 
             if search_query:
-                base_query = await self._apply_search_filters(
-                    base_query,
-                    [(MatchDB, "match_eesl_id")],
-                    search_query,
+                from sqlalchemy import cast, String
+                search_pattern = f"%{search_query}%"
+                base_query = base_query.where(
+                    or_(
+                        cast(MatchDB.match_eesl_id, String).ilike(search_pattern).collate("en-US-x-icu"),
+                        select(TeamDB)
+                        .where(TeamDB.id == MatchDB.team_a_id)
+                        .where(TeamDB.title.ilike(search_pattern).collate("en-US-x-icu"))
+                        .exists(),
+                        select(TeamDB)
+                        .where(TeamDB.id == MatchDB.team_b_id)
+                        .where(TeamDB.title.ilike(search_pattern).collate("en-US-x-icu"))
+                        .exists(),
+                    )
                 )
 
             if week is not None:
