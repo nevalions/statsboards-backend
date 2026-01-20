@@ -673,10 +673,13 @@ class MatchServiceDB(BaseServiceDB):
 
             if search_query:
                 from sqlalchemy import cast, String
+
                 search_pattern = f"%{search_query}%"
                 base_query = base_query.where(
                     or_(
-                        cast(MatchDB.match_eesl_id, String).ilike(search_pattern).collate("en-US-x-icu"),
+                        cast(MatchDB.match_eesl_id, String)
+                        .ilike(search_pattern)
+                        .collate("en-US-x-icu"),
                         select(TeamDB)
                         .where(TeamDB.id == MatchDB.team_a_id)
                         .where(TeamDB.title.ilike(search_pattern).collate("en-US-x-icu"))
@@ -753,10 +756,13 @@ class MatchServiceDB(BaseServiceDB):
 
             if search_query:
                 from sqlalchemy import cast, String
+
                 search_pattern = f"%{search_query}%"
                 base_query = base_query.where(
                     or_(
-                        cast(MatchDB.match_eesl_id, String).ilike(search_pattern).collate("en-US-x-icu"),
+                        cast(MatchDB.match_eesl_id, String)
+                        .ilike(search_pattern)
+                        .collate("en-US-x-icu"),
                         select(TeamDB)
                         .where(TeamDB.id == MatchDB.team_a_id)
                         .where(TeamDB.title.ilike(search_pattern).collate("en-US-x-icu"))
@@ -861,6 +867,9 @@ class MatchServiceDB(BaseServiceDB):
                 players_with_data.append(
                     {
                         "id": player.id,
+                        "team_id": player.team_id,
+                        "match_id": player.match_id,
+                        "player_team_tournament_id": player.player_team_tournament_id,
                         "player_id": (
                             player.player_team_tournament.player_id
                             if player.player_team_tournament

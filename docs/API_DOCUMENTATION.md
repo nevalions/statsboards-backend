@@ -3938,6 +3938,9 @@ interface PlayerMatchFullData {
 
 interface PlayerMatchDetail {
   id: number;
+  team_id: number;
+  match_id: number;
+  player_team_tournament_id: number;
   player_id: number | null;
   player: {
     id: number;
@@ -3982,6 +3985,9 @@ interface PlayerMatchDetail {
 
 | Field | Type | Description | Values |
 | -- | -- | -- | -- |
+| `team_id` | number | Team ID for the player match | integer |
+| `match_id` | number | Match ID for the player match | integer |
+| `player_team_tournament_id` | number | PlayerTeamTournament record ID | integer |
 | `position.category` | string | Position category (offense/defense/special/other) | 'offense', 'defense', 'special', 'other' |
 | `is_starting` | boolean | Whether player is in starting lineup | true, false |
 | `starting_type` | string | Starting lineup type | 'offense', 'defense', 'special', null |
@@ -4672,6 +4678,9 @@ GET /api/matches/id/{match_id}/comprehensive/
   "players": [
     {
       "id": 456,
+      "team_id": 1,
+      "match_id": 123,
+      "player_team_tournament_id": 789,
       "player_id": 789,
       "player": {
         "id": 789,
