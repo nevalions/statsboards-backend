@@ -252,6 +252,38 @@ async def fetch_playclock(match_id: int, database=None) -> dict[str, Any] | None
         }
 
 
+async def fetch_event(event_id: int, database=None) -> dict[str, Any] | None:
+    from src.football_events.db_services import FootballEventServiceDB
+    from src.matches.db_services import MatchServiceDB
+
+    fetch_data_logger.debug(f"Starting fetching event with event_id:{event_id}")
+    _db = database or db
+    football_event_service = FootballEventServiceDB(_db)
+    match_service_db = MatchServiceDB(_db)
+
+    try:
+        match = await match_service_db.get_by_id(event_id)
+
+        if match:
+            event_data_list = await football_event_service.get_events_with_players(event_id)
+            return {
+                "match_id": event_id,
+                "id": event_id,
+                "status_code": status.HTTP_200_OK,
+                "events": event_data_list,
+            }
+        else:
+            return {
+                "status_code": status.HTTP_404_NOT_FOUND,
+            }
+    except Exception as e:
+        fetch_data_logger.error(f"Error while fetching event: {e}", exc_info=True)
+        return {
+            "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }
+
+
 async def fetch_matches_with_data_by_tournament_paginated(
     tournament_id: int,
     skip: int = 0,

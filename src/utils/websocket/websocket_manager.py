@@ -18,6 +18,7 @@ class MatchDataWebSocketManager:
         self.match_data_queues = {}
         self.playclock_queues = {}
         self.gameclock_queues = {}
+        self.event_queues = {}
         self.logger = logging.getLogger("backend_logger_MatchDataWebSocketManager")
         self.logger.info("MatchDataWebSocketManager initialized")
         self.is_connected = False
@@ -30,9 +31,7 @@ class MatchDataWebSocketManager:
                     await self.connect_to_db()
                 await asyncio.sleep(5)
             except Exception as e:
-                self.logger.error(
-                    f"Connection maintenance error: {str(e)}", exc_info=True
-                )
+                self.logger.error(f"Connection maintenance error: {str(e)}", exc_info=True)
                 self.is_connected = False
                 await asyncio.sleep(5)
 
@@ -76,6 +75,12 @@ class MatchDataWebSocketManager:
         except KeyError:
             self.logger.warning(f"No gameclock queue found for client {client_id}")
 
+        try:
+            self.event_queues.pop(client_id)
+            self.logger.info(f"Deleted event queue for client {client_id}")
+        except KeyError:
+            self.logger.warning(f"No event queue found for client {client_id}")
+
     async def setup_listeners(self):
         if self.connection is None:
             raise RuntimeError("Database connection not established")
@@ -86,6 +91,7 @@ class MatchDataWebSocketManager:
             "scoreboard_change": self.match_data_listener,
             "playclock_change": self.playclock_listener,
             "gameclock_change": self.gameclock_listener,
+            "football_event_change": self.event_listener,
         }
 
         for channel, listener in listeners.items():
@@ -101,17 +107,13 @@ class MatchDataWebSocketManager:
     async def startup(self):
         try:
             await self.connect_to_db()
-            self._connection_retry_task = asyncio.create_task(
-                self.maintain_connection()
-            )
+            self._connection_retry_task = asyncio.create_task(self.maintain_connection())
             self.logger.info("WebSocket manager startup complete")
         except Exception as e:
             self.logger.error(f"Startup error: {str(e)}", exc_info=True)
             raise
 
-    async def _base_listener(
-        self, connection, pid, channel, payload, update_type, queue_dict
-    ):
+    async def _base_listener(self, connection, pid, channel, payload, update_type, queue_dict):
         self.logger.debug(f"{update_type} notification received on channel {channel}")
 
         if not payload or not payload.strip():
@@ -129,9 +131,7 @@ class MatchDataWebSocketManager:
             for client_id in clients:
                 if client_id in queue_dict:
                     await queue_dict[client_id].put(data)
-                    self.logger.debug(
-                        f"Added {update_type} to queue for client {client_id}"
-                    )
+                    self.logger.debug(f"Added {update_type} to queue for client {client_id}")
 
             await connection_manager.send_to_all(data, match_id=match_id)
 
@@ -140,9 +140,7 @@ class MatchDataWebSocketManager:
                 f"JSON decode error in {update_type} listener: {str(e)}", exc_info=True
             )
         except Exception as e:
-            self.logger.error(
-                f"Error in {update_type} listener: {str(e)}", exc_info=True
-            )
+            self.logger.error(f"Error in {update_type} listener: {str(e)}", exc_info=True)
 
     async def playclock_listener(self, connection, pid, channel, payload):
         await self._base_listener(
@@ -157,6 +155,11 @@ class MatchDataWebSocketManager:
     async def gameclock_listener(self, connection, pid, channel, payload):
         await self._base_listener(
             connection, pid, channel, payload, "gameclock-update", self.gameclock_queues
+        )
+
+    async def event_listener(self, connection, pid, channel, payload):
+        await self._base_listener(
+            connection, pid, channel, payload, "event-update", self.event_queues
         )
 
     async def shutdown(self):
@@ -189,9 +192,7 @@ class ConnectionManager:
         self.logger = logging.getLogger("backend_logger_ConnectionManager")
         self.logger.info("ConnectionManager initialized")
 
-    async def connect(
-        self, websocket: WebSocket, client_id: str, match_id: int | None = None
-    ):
+    async def connect(self, websocket: WebSocket, client_id: str, match_id: int | None = None):
         self.logger.info(f"Active Connections len: {len(self.active_connections)}")
         self.logger.info(f"Active Connections {self.active_connections}")
         self.logger.info(
@@ -206,14 +207,10 @@ class ConnectionManager:
             await self.active_connections[client_id].close()
             self.logger.debug(f"Active connections: {self.active_connections}")
 
-        self.logger.debug(
-            f"Adding new connection for client with client_id: {client_id}"
-        )
+        self.logger.debug(f"Adding new connection for client with client_id: {client_id}")
         self.active_connections[client_id] = websocket
         self.queues[client_id] = asyncio.Queue()
-        self.logger.info(
-            f"New connection created: {self.active_connections[client_id]}"
-        )
+        self.logger.info(f"New connection created: {self.active_connections[client_id]}")
         self.logger.info(f"New queue created: {self.queues[client_id]}")
 
         if match_id:
@@ -225,18 +222,14 @@ class ConnectionManager:
                     f"Adding client with client_id: {client_id} to match_subscription {self.match_subscriptions[match_id]}"
                 )
                 self.match_subscriptions[match_id].append(client_id)
-                self.logger.debug(
-                    f"Match subscription added {self.match_subscriptions[match_id]}"
-                )
+                self.logger.debug(f"Match subscription added {self.match_subscriptions[match_id]}")
 
             else:
                 self.logger.debug(
                     f"Match with match_id: {match_id} not in match subscriptions {self.match_subscriptions}"
                 )
                 self.match_subscriptions[match_id] = [client_id]
-                self.logger.debug(
-                    f"Match subscription added {self.match_subscriptions[match_id]}"
-                )
+                self.logger.debug(f"Match subscription added {self.match_subscriptions[match_id]}")
 
     async def cleanup_connection_resources(self, client_id: str):
         if client_id in self.queues:
@@ -301,9 +294,7 @@ class ConnectionManager:
 connection_manager = ConnectionManager()
 
 
-async def process_client_queue(
-    client_id: str | int, handlers: dict[str | int, Callable[[], None]]
-):
+async def process_client_queue(client_id: str | int, handlers: dict[str | int, Callable[[], None]]):
     client_id_str = str(client_id)
     if client_id_str in connection_manager.queues:
         queue = connection_manager.queues[client_id_str]
