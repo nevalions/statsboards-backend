@@ -608,6 +608,34 @@ class MatchCRUDRouter(
             )
             return response
 
+        @router.get(
+            "/id/{match_id}/comprehensive/",
+            summary="Get comprehensive match data",
+            description="Get all match data including match info, match data, teams, players with person data, events, and scoreboard",
+            responses={
+                200: {"description": "Comprehensive match data retrieved successfully"},
+                404: {"description": "Match not found"},
+                500: {"description": "Internal server error"},
+            },
+        )
+        async def get_comprehensive_match_data_endpoint(match_id: int):
+            self.logger.debug(f"Get comprehensive match data endpoint for match_id:{match_id}")
+            try:
+                data = await self.service.get_comprehensive_match_data(match_id)
+                if not data:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Match {match_id} not found",
+                    )
+                return data
+            except HTTPException:
+                raise
+            except Exception as ex:
+                self.logger.error(
+                    f"Error fetching comprehensive data for match {match_id}: {ex}", exc_info=True
+                )
+                raise HTTPException(status_code=500, detail="Internal server error")
+
         @router.delete(
             "/id/{model_id}",
             summary="Delete match",

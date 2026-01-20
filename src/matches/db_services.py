@@ -775,6 +775,114 @@ class MatchServiceDB(BaseServiceDB):
                 ),
             )
 
+    @handle_service_exceptions(
+        item_name=ITEM,
+        operation="getting comprehensive match data",
+        return_value_on_not_found=None,
+    )
+    async def get_comprehensive_match_data(
+        self,
+        match_id: int,
+    ) -> dict | None:
+        self.logger.debug(f"Get comprehensive data for {ITEM} id:{match_id}")
+        from src.core.models.football_event import FootballEventDB
+
+        async with self.db.async_session() as session:
+            stmt = (
+                select(MatchDB)
+                .where(MatchDB.id == match_id)
+                .options(
+                    selectinload(MatchDB.team_a),
+                    selectinload(MatchDB.team_b),
+                    selectinload(MatchDB.tournaments),
+                    selectinload(MatchDB.main_sponsor),
+                    selectinload(MatchDB.sponsor_line),
+                    selectinload(MatchDB.match_data),
+                    selectinload(MatchDB.match_scoreboard),
+                    selectinload(MatchDB.match_playclock),
+                    selectinload(MatchDB.match_gameclock),
+                    selectinload(MatchDB.match_players)
+                    .selectinload(PlayerMatchDB.player_team_tournament)
+                    .selectinload(PlayerTeamTournamentDB.player)
+                    .selectinload(PlayerMatchDB.team),
+                    selectinload(MatchDB.match_events),
+                )
+            )
+
+            result = await session.execute(stmt)
+            match = result.scalar_one_or_none()
+
+            if not match:
+                return None
+
+            from src.core.models.player import PlayerDB
+
+            stmt_players = (
+                select(PlayerMatchDB)
+                .where(PlayerMatchDB.match_id == match_id)
+                .options(
+                    selectinload(PlayerMatchDB.player_team_tournament)
+                    .selectinload(PlayerTeamTournamentDB.player)
+                    .selectinload(PlayerDB.person),
+                    selectinload(PlayerMatchDB.match_position),
+                    selectinload(PlayerMatchDB.team),
+                )
+            )
+
+            result_players = await session.execute(stmt_players)
+            player_matches = result_players.scalars().all()
+
+            players_with_data = []
+            for player in player_matches:
+                person = None
+                if player.player_team_tournament and player.player_team_tournament.player:
+                    person = player.player_team_tournament.player.person
+
+                players_with_data.append(
+                    {
+                        "id": player.id,
+                        "player_id": (
+                            player.player_team_tournament.player_id
+                            if player.player_team_tournament
+                            else None
+                        ),
+                        "player": (
+                            player.player_team_tournament.player
+                            if player.player_team_tournament
+                            else None
+                        ),
+                        "team": player.team,
+                        "position": (
+                            {
+                                **player.match_position.__dict__,
+                                "category": player.match_position.category,
+                            }
+                            if player.match_position
+                            else None
+                        ),
+                        "player_team_tournament": player.player_team_tournament,
+                        "person": person,
+                        "is_starting": player.is_starting,
+                        "starting_type": player.starting_type,
+                    }
+                )
+
+            stmt_events = select(FootballEventDB).where(FootballEventDB.match_id == match_id)
+            result_events = await session.execute(stmt_events)
+            events = result_events.scalars().all()
+
+            return {
+                "match": match,
+                "match_data": match.match_data,
+                "teams": {
+                    "team_a": match.team_a,
+                    "team_b": match.team_b,
+                },
+                "players": players_with_data,
+                "events": events,
+                "scoreboard": match.match_scoreboard,
+            }
+
     # async def get_scoreboard_by_match(
     #     self,
     #     match_id: int,

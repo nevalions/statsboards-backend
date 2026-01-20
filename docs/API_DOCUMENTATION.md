@@ -4607,6 +4607,169 @@ GET /api/matches/id/{match_id}/full-context/
 | 404 | Match not found |
 | 500 | Internal server error |
 
+### GET /api/matches/id/{match_id}/comprehensive/
+
+Get all match data including match info, match data, teams, players with person data, events, and scoreboard. This is the maximum data endpoint for scoreboard control.
+
+**Endpoint:**
+```
+GET /api/matches/id/{match_id}/comprehensive/
+```
+
+**Path Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `match_id` | integer | Yes | Match ID |
+
+**Response (200 OK):**
+
+```json
+{
+  "match": {
+    "id": 123,
+    "match_eesl_id": 100,
+    "team_a_id": 1,
+    "team_b_id": 2,
+    "tournament_id": 5,
+    "match_date": "2025-01-03T10:00:00",
+    "week": 1,
+    "isprivate": false
+  },
+  "match_data": {
+    "id": 1,
+    "match_id": 123,
+    "score_team_a": 14,
+    "score_team_b": 10,
+    "game_status": "in-progress",
+    "qtr": "3rd",
+    "ball_on": 35,
+    "down": "2nd",
+    "distance": "7",
+    "timeout_team_a": "●●",
+    "timeout_team_b": "●●●",
+    "field_length": 92
+  },
+  "teams": {
+    "team_a": {
+      "id": 1,
+      "title": "Team A",
+      "city": "City A",
+      "team_color": "#ff0000",
+      "team_logo_url": "https://...",
+      "team_logo_icon_url": "https://...",
+      "team_logo_web_url": "https://..."
+    },
+    "team_b": {
+      "id": 2,
+      "title": "Team B",
+      "city": "City B",
+      "team_color": "#0000ff",
+      "team_logo_url": "https://...",
+      "team_logo_icon_url": "https://...",
+      "team_logo_web_url": "https://..."
+    }
+  },
+  "players": [
+    {
+      "id": 456,
+      "player_id": 789,
+      "player": {
+        "id": 789,
+        "player_eesl_id": 12345,
+        "person_id": 123
+      },
+      "team": {
+        "id": 1,
+        "title": "Team A",
+        "team_color": "#FF0000"
+      },
+      "position": {
+        "id": 10,
+        "title": "Quarterback",
+        "category": "offense",
+        "sport_id": 1
+      },
+      "player_team_tournament": {
+        "id": 789,
+        "player_team_tournament_eesl_id": 12345,
+        "player_id": 789,
+        "team_id": 1,
+        "tournament_id": 5,
+        "position_id": 10,
+        "player_number": 12
+      },
+      "person": {
+        "id": 123,
+        "first_name": "John",
+        "second_name": "Doe",
+        "person_photo_url": "https://..."
+      },
+      "is_starting": true,
+      "starting_type": "offense"
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "match_id": 123,
+      "event_number": 1,
+      "event_qtr": 1,
+      "ball_on": 20,
+      "play_type": "pass",
+      "play_result": "complete",
+      "score_result": "touchdown",
+      "event_qb": 456,
+      "pass_received_player": 457,
+      "run_player": null,
+      "kick_player": null,
+      "offense_team": 1
+    }
+  ],
+  "scoreboard": {
+    "id": 1,
+    "match_id": 123,
+    "is_qtr": true,
+    "is_time": true,
+    "is_playclock": true,
+    "is_downdistance": true,
+    "is_tournament_logo": true,
+    "is_main_sponsor": true,
+    "is_sponsor_line": true,
+    "team_a_game_color": "#ff0000",
+    "team_b_game_color": "#0000ff",
+    "team_a_game_title": "Team A",
+    "team_b_game_title": "Team B",
+    "scale_tournament_logo": 2.0,
+    "scale_main_sponsor": 2.0,
+    "scale_logo_a": 2.0,
+    "scale_logo_b": 2.0,
+    "is_flag": false,
+    "is_goal_team_a": false,
+    "is_goal_team_b": false,
+    "is_timeout_team_a": false,
+    "is_timeout_team_b": false
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Match not found |
+| 500 | Internal server error |
+
+**Use Cases:**
+- Scoreboard control interface needs all match data
+- Real-time statistics display
+- Match replay systems
+- Analytics and reporting
+
+**Notes:**
+- This endpoint provides the maximum amount of match data in a single request
+- Uses optimized loading strategies (selectinload) for performance
+- All data fetched in minimal number of queries
+
 ---
 
 ## Integration Examples
