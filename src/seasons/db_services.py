@@ -47,7 +47,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
         async with self.db.async_session() as session:
             stmt = update(SeasonDB).where(SeasonDB.id != season_id).values(iscurrent=False)
             await session.execute(stmt)
-            await session.flush()
+            await session.commit()
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: SeasonSchemaCreate) -> SeasonDB:
