@@ -138,13 +138,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
     async def get_match_sponsor_line(self, match_id: int) -> SponsorLineDB | None:
         self.logger.debug(f"Get sponsor_line by {ITEM} id:{match_id}")
         result = await self.get_related_item_level_one_by_id(match_id, "sponsor_line")
-        if result:
-            if hasattr(result, "__len__"):
-                if len(result) > 0:
-                    return result[0]  # type: ignore[return-value]
-                return None
-            return result  # type: ignore[return-value]
-        return None
+        return self.first_or_none(result)
 
     async def get_matchdata_by_match(
         self,
@@ -155,13 +149,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             match_id,
             "match_data",
         )
-        if result:
-            if hasattr(result, "__len__"):
-                if len(result) > 0:
-                    return result[0]  # type: ignore[return-value]
-                return None
-            return result  # type: ignore[return-value]
-        return None
+        return self.first_or_none(result)
 
     async def get_playclock_by_match(
         self,
@@ -172,13 +160,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             match_id,
             "match_playclock",
         )
-        if result:
-            if hasattr(result, "__len__"):
-                if len(result) > 0:
-                    return result[0]  # type: ignore[return-value]
-                return None
-            return result  # type: ignore[return-value]
-        return None
+        return self.first_or_none(result)
 
     async def get_gameclock_by_match(
         self,
@@ -189,13 +171,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             match_id,
             "match_gameclock",
         )
-        if result:
-            if hasattr(result, "__len__"):
-                if len(result) > 0:
-                    return result[0]  # type: ignore[return-value]
-                return None
-            return result  # type: ignore[return-value]
-        return None
+        return self.first_or_none(result)
 
     @handle_service_exceptions(
         item_name=ITEM,
@@ -387,13 +363,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             "match_scoreboard",
         )
         self.logger.debug(f"Got scoreboard successfully. Result: {result}")
-        if result:
-            if hasattr(result, "__len__"):
-                if len(result) > 0:
-                    return result[0]  # type: ignore[return-value]
-                return None
-            return result  # type: ignore[return-value]
-        return None
+        return self.first_or_none(result)
 
     async def _get_available_players(
         self, session, team_id: int, tournament_id: int, match_id: int

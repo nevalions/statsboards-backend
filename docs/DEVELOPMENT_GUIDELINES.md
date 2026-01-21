@@ -1445,6 +1445,7 @@ Key utility methods provided by base class:
 | `find_relation(...)` | Check if relation exists in junction table |
 | `get_related_items(...)` | Fetch related items with optional property loading |
 | `get_related_items_by_two(...)` | Fetch 2-level relationships using `joinedload()` |
+| `first_or_none(result)` | Normalize relationship query results (return first item if list, or None) |
 
 #### Key Patterns Summary
 

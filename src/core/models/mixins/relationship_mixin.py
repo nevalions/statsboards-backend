@@ -18,6 +18,28 @@ class RelationshipMixin:
     logger: "LoggerAdapter"
     model: type["Base"]
 
+    @staticmethod
+    def first_or_none(result: Any) -> Any:
+        """Return first item if result is a list, else return result/None.
+
+        Normalizes results from relationship queries that may return either
+        a single object, a list of objects, or None.
+
+        Args:
+            result: Query result (single object, list, or None)
+
+        Returns:
+            First item if list with elements, the result itself if not a list,
+            or None if result is None or empty list
+        """
+        if result:
+            if hasattr(result, "__len__"):
+                if len(result) > 0:
+                    return result[0]
+                return None
+            return result
+        return None
+
     async def find_relation(
         self,
         secondary_table,
