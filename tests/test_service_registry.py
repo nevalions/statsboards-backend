@@ -3,12 +3,12 @@
 import pytest
 
 from src.core.service_registry import (
-    get_service_registry,
-    init_service_registry,
-    register_service,
     ServiceRegistry,
     get_service,
+    get_service_registry,
     get_service_singleton,
+    init_service_registry,
+    register_service,
 )
 
 

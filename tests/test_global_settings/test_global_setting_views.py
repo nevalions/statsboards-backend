@@ -11,7 +11,6 @@ from src.users.schemas import UserSchemaCreate
 @pytest.fixture
 async def admin_user(test_db):
     """Create a test admin user."""
-    from src.core.models.base import Database
 
     async with test_db.async_session() as db_session:
         role = RoleDB(name="admin", description="Admin role")

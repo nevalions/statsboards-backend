@@ -172,6 +172,7 @@ async def test_app(test_db):
     init_service_registry(test_db)
 
     from src.auth.views import api_auth_router
+    from src.core import health
     from src.football_events.db_services import FootballEventServiceDB
     from src.football_events.views import FootballEventAPIRouter
     from src.gameclocks.db_services import GameClockServiceDB
@@ -213,7 +214,6 @@ async def test_app(test_db):
     from src.tournaments.db_services import TournamentServiceDB
     from src.tournaments.views import TournamentAPIRouter
     from src.users.views import get_user_router
-    from src.core import health
 
     app = FastAPI()
     match_service = MatchServiceDB(test_db)

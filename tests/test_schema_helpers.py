@@ -3,9 +3,9 @@
 from pydantic import BaseModel, Field
 
 from src.core.schema_helpers import (
+    PaginationMetadata,
     has_none_in_annotation,
     make_fields_optional,
-    PaginationMetadata,
 )
 
 
