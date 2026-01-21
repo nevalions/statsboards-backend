@@ -77,6 +77,38 @@ class SearchPaginationMixin:
 
         return order_expr, order_expr_two
 
+    async def _build_order_expressions_with_mapping(
+        self,
+        field_mapping: dict[str, object],
+        order_by: str,
+        order_by_two: str | None,
+        ascending: bool,
+        default_column,
+        default_column_two,
+    ):
+        """Build order expressions using field mapping for joined table columns.
+
+        Args:
+            field_mapping: Dictionary mapping field names to SQLAlchemy column expressions
+            order_by: Primary order by field name
+            order_by_two: Secondary order by field name (optional)
+            ascending: Sort direction (True for ascending)
+            default_column: Default column for order_by if not in mapping
+            default_column_two: Default column for order_by_two if not in mapping
+
+        Returns:
+            Tuple of (order_expr, order_expr_two or None)
+        """
+        order_column = field_mapping.get(order_by, default_column)
+        order_expr = order_column.asc() if ascending else order_column.desc()
+
+        order_expr_two = None
+        if order_by_two:
+            order_column_two = field_mapping.get(order_by_two, default_column_two)
+            order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
+
+        return order_expr, order_expr_two
+
     async def _calculate_pagination_metadata(
         self,
         total_items: int,

@@ -179,14 +179,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         order_by_two: str | None,
         ascending: bool,
     ) -> tuple:
-        """Build order expressions with support for joined table fields.
-
-        TODO: Refactor to be more generic - this pattern could be used for any
-        multi-table query with joins, not just tournament players. Consider:
-        - Moving to SearchPaginationMixin with configurable field mappings
-        - Making field mapping a parameter or class attribute
-        - Creating a helper function that accepts {field: (model, column)} mapping
-        """
+        """Build order expressions with support for joined table fields."""
         field_mapping = {
             "id": PlayerTeamTournamentDB.id,
             "player_number": PlayerTeamTournamentDB.player_number,
@@ -197,15 +190,14 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             "position_title": PositionDB.title,
         }
 
-        order_column = field_mapping.get(order_by, PlayerTeamTournamentDB.player_number)
-        order_expr = order_column.asc() if ascending else order_column.desc()
-
-        order_expr_two = None
-        if order_by_two:
-            order_column_two = field_mapping.get(order_by_two, PlayerTeamTournamentDB.id)
-            order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
-
-        return order_expr, order_expr_two
+        return await self._build_order_expressions_with_mapping(
+            field_mapping=field_mapping,
+            order_by=order_by,
+            order_by_two=order_by_two,
+            ascending=ascending,
+            default_column=PlayerTeamTournamentDB.player_number,
+            default_column_two=PlayerTeamTournamentDB.id,
+        )
 
     async def _build_base_query_with_search(
         self,

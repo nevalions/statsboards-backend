@@ -1690,7 +1690,7 @@ When querying `PlayerTeamTournamentDB` with joins to `PersonDB`, ordering by `se
 
 #### Solution
 
-Create a service-specific method that maps field names to their actual model columns:
+Use the `_build_order_expressions_with_mapping` method from `SearchPaginationMixin` which accepts a field mapping dictionary:
 
 ```python
 async def _build_order_expressions_with_joins(
@@ -1710,15 +1710,14 @@ async def _build_order_expressions_with_joins(
         "position_title": PositionDB.title,
     }
 
-    order_column = field_mapping.get(order_by, PlayerTeamTournamentDB.player_number)
-    order_expr = order_column.asc() if ascending else order_column.desc()
-
-    order_expr_two = None
-    if order_by_two:
-        order_column_two = field_mapping.get(order_by_two, PlayerTeamTournamentDB.id)
-        order_expr_two = order_column_two.asc() if ascending else order_column_two.desc()
-
-    return order_expr, order_expr_two
+    return await self._build_order_expressions_with_mapping(
+        field_mapping=field_mapping,
+        order_by=order_by,
+        order_by_two=order_by_two,
+        ascending=ascending,
+        default_column=PlayerTeamTournamentDB.player_number,
+        default_column_two=PlayerTeamTournamentDB.id,
+    )
 ```
 
 Then use it in your search method instead of `_build_order_expressions`:
@@ -1736,13 +1735,15 @@ async def search_tournament_players_with_pagination_details_and_photos(...):
     data_query = base_query.order_by(order_expr, order_expr_two).offset(skip).limit(limit)
 ```
 
+The `_build_order_expressions_with_mapping` method in `SearchPaginationMixin` provides the generalized logic for handling field mappings and defaults.
+
 #### When to Use This Pattern
 
-Use `_build_order_expressions_with_joins` when:
+Use `_build_order_expressions_with_mapping` (via a service-specific wrapper) when:
 
 1. **Search queries include joins** to multiple tables (PersonDB, TeamDB, PositionDB)
 2. **Frontend needs to sort by joined fields** (e.g., `order_by=second_name`)
-3. **Default `_build_order_expressions` is insufficient** for the field mapping needed
+3. **Default `_build_order_expressions` is insufficient** for field mapping needed
 
 Use standard `_build_order_expressions` when:
 
