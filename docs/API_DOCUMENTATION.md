@@ -14,8 +14,9 @@ Frontend integration guide for StatsBoards Backend APIs and WebSocket endpoints.
  - [Player Search API](#player-search-api)
   - [Player Sport Management API](#player-sport-management-api)
   - [Player Career API](#player-career-api)
-  - [Player Detail Context API](#player-detail-context-api)
-- [Teams in Tournament API](#teams-in-tournament-api)
+ - [Player Detail Context API](#player-detail-context-api)
+ - [Sponsors API](#sponsors-api)
+ - [Teams in Tournament API](#teams-in-tournament-api)
 - [Available Teams for Tournament API](#available-teams-for-tournament-api)
 - [Available Players for Tournament API](#available-players-for-tournament-api)
 - [Players in Tournament API](#get-apitournamentsidtournament_idplayerspaginated)
@@ -2687,6 +2688,718 @@ async function loadPlayerDetailInTournament(playerId: number, tournamentId: numb
  
 ---
 
+## Sponsors API
+
+Manage sponsors for tournaments and matches. Sponsors can be linked to sponsor lines and displayed on various tournament views.
+
+### Sponsor Schema
+
+Base schema for all sponsor-related operations.
+
+```typescript
+interface SponsorSchema {
+  id: number;
+  title: string; // Max 50 characters
+  logo_url: string | null; // URL to sponsor logo image
+  scale_logo: number | null; // Scale factor for logo display (default: 1.0)
+}
+```
+
+### POST /api/sponsors/
+
+Create a new sponsor.
+
+**Endpoint:**
+```
+POST /api/sponsors/
+```
+
+**Request Body:**
+```json
+{
+  "title": "Acme Corp",
+  "logo_url": "/static/uploads/sponsors/logos/acme.png",
+  "scale_logo": 1.5
+}
+```
+
+**Request Schema:**
+```typescript
+interface SponsorSchemaCreate {
+  title: string; // Max 50 characters
+  logo_url: string | null; // Optional - logo URL (default: empty string)
+  scale_logo: number | null; // Optional - scale factor (default: 1.0)
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Acme Corp",
+  "logo_url": "/static/uploads/sponsors/logos/acme.png",
+  "scale_logo": 1.5
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 409 | Conflict - Failed to create sponsor, check input data |
+| 500 | Internal Server Error - server error |
+
+### PUT /api/sponsors/{item_id}/
+
+Update a sponsor by ID.
+
+**Endpoint:**
+```
+PUT /api/sponsors/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Sponsor ID to update |
+
+**Request Body:**
+```json
+{
+  "title": "Updated Acme Corp",
+  "logo_url": "/static/uploads/sponsors/logos/acme-updated.png",
+  "scale_logo": 2.0
+}
+```
+
+**Request Schema:**
+```typescript
+interface SponsorSchemaUpdate {
+  title: string | null; // Optional - Max 50 characters
+  logo_url: string | null; // Optional
+  scale_logo: number | null; // Optional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Updated Acme Corp",
+  "logo_url": "/static/uploads/sponsors/logos/acme-updated.png",
+  "scale_logo": 2.0
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Not Found - Sponsor with specified ID not found |
+| 500 | Internal Server Error - server error |
+
+### GET /api/sponsors/id/{item_id}/
+
+Get a single sponsor by ID.
+
+**Endpoint:**
+```
+GET /api/sponsors/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Sponsor ID to retrieve |
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Acme Corp",
+      "logo_url": "/static/uploads/sponsors/logos/acme.png",
+      "scale_logo": 1.5
+    }
+  ],
+  "title": "Sponsor ID: 1",
+  "item_type": "Sponsor"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Not Found - Sponsor with specified ID not found |
+| 500 | Internal Server Error - server error |
+
+### POST /api/sponsors/upload_logo
+
+Upload a sponsor logo image. Returns the URL of the uploaded file.
+
+**Endpoint:**
+```
+POST /api/sponsors/upload_logo
+```
+
+**Request:**
+- **Content-Type:** `multipart/form-data`
+- **Body:** `file` (UploadFile) - The logo image file to upload
+
+**Supported File Types:** Image files (validated by file service)
+- Storage location: `/static/uploads/sponsors/logos/`
+
+**Response (200 OK):**
+```json
+{
+  "logoUrl": "/static/uploads/sponsors/logos/acme.png"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal Server Error - Error uploading sponsor logo |
+
+**Usage Example:**
+
+```typescript
+async function uploadSponsorLogo(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch('/api/sponsors/upload_logo', {
+    method: 'POST',
+    body: formData,
+  });
+
+  const result = await response.json();
+  return result.logoUrl;
+}
+```
+
+### GET /api/sponsors/paginated
+
+Search sponsors with pagination and sorting.
+
+**Endpoint:**
+```
+GET /api/sponsors/paginated
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|----------|-------------|
+| `page` | integer | No | 1 | Page number (1-based) |
+| `items_per_page` | integer | No | 20 | Items per page (max 100) |
+| `order_by` | string | No | "title" | First sort column |
+| `order_by_two` | string | No | "id" | Second sort column |
+| `ascending` | boolean | No | true | Sort order (true=asc, false=desc) |
+| `search` | string | No | - | Search query for title search |
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Acme Corp",
+      "logo_url": "/static/uploads/sponsors/logos/acme.png",
+      "scale_logo": 1.5
+    },
+    {
+      "id": 2,
+      "title": "Beta Industries",
+      "logo_url": "/static/uploads/sponsors/logos/beta.png",
+      "scale_logo": 1.0
+    }
+  ],
+  "metadata": {
+    "page": 1,
+    "items_per_page": 20,
+    "total_items": 2,
+    "total_pages": 1,
+    "has_next": false,
+    "has_previous": false
+  }
+}
+```
+
+**Response Schema:**
+```typescript
+interface PaginatedSponsorResponse {
+  data: SponsorSchema[];
+  metadata: PaginationMetadata;
+}
+
+interface PaginationMetadata {
+  page: number;
+  items_per_page: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+```
+
+**Search Behavior:**
+
+- Search is case-insensitive and matches anywhere in title
+- Empty `search` parameter returns all sponsors
+- Default sorting: by `title` ascending, then by `id`
+
+**Examples:**
+
+1. **Get all sponsors with pagination:**
+```
+GET /api/sponsors/paginated?page=1&items_per_page=20
+```
+
+2. **Search sponsors by title:**
+```
+GET /api/sponsors/paginated?search=Acme&page=1&items_per_page=20
+```
+
+3. **Custom ordering:**
+```
+GET /api/sponsors/paginated?order_by=title&order_by_two=id&ascending=false
+```
+
+### DELETE /api/sponsors/id/{model_id}
+
+Delete a sponsor by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/sponsors/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | Sponsor ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "Sponsor 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - requires admin role |
+| 500 | Internal Server Error - server error |
+
+---
+
+## Sponsor Lines API
+
+Manage sponsor lines for organizing and grouping sponsors. Sponsor lines can contain multiple sponsors and are used for display organization.
+
+### Sponsor Line Schema
+
+Base schema for all sponsor line operations.
+
+```typescript
+interface SponsorLineSchema {
+  id: number;
+  title: string; // Max 50 characters (default: "Sponsor Line")
+  is_visible: boolean | null; // Visibility flag (default: false)
+}
+```
+
+### POST /api/sponsor_lines/
+
+Create a new sponsor line.
+
+**Endpoint:**
+```
+POST /api/sponsor_lines/
+```
+
+**Request Body:**
+```json
+{
+  "title": "Premier Sponsors",
+  "is_visible": true
+}
+```
+
+**Request Schema:**
+```typescript
+interface SponsorLineSchemaCreate {
+  title: string; // Max 50 characters (default: "Sponsor Line")
+  is_visible: boolean | null; // Optional (default: false)
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Premier Sponsors",
+  "is_visible": true
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 409 | Conflict - Error creating sponsor line |
+| 500 | Internal Server Error - server error |
+
+### PUT /api/sponsor_lines/{item_id}/
+
+Update a sponsor line by ID.
+
+**Endpoint:**
+```
+PUT /api/sponsor_lines/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Sponsor line ID to update |
+
+**Request Body:**
+```json
+{
+  "title": "Updated Premier Sponsors",
+  "is_visible": false
+}
+```
+
+**Request Schema:**
+```typescript
+interface SponsorLineSchemaUpdate {
+  title: string | null; // Optional - Max 50 characters
+  is_visible: boolean | null; // Optional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Updated Premier Sponsors",
+  "is_visible": false
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Not Found - Sponsor line with specified ID not found |
+| 409 | Conflict - Error updating sponsor line |
+| 500 | Internal Server Error - server error |
+
+### GET /api/sponsor_lines/id/{item_id}/
+
+Get a single sponsor line by ID.
+
+**Endpoint:**
+```
+GET /api/sponsor_lines/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Sponsor line ID to retrieve |
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Premier Sponsors",
+      "is_visible": true
+    }
+  ],
+  "title": "SponsorLine ID: 1",
+  "item_type": "SponsorLine"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Not Found - Sponsor line with specified ID not found |
+| 500 | Internal Server Error - server error |
+
+### DELETE /api/sponsor_lines/id/{model_id}
+
+Delete a sponsor line by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/sponsor_lines/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | Sponsor line ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "SponsorLine 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - requires admin role |
+| 500 | Internal Server Error - server error |
+
+---
+
+## Sponsor-Sponsor Line Connection API
+
+Manage many-to-many relationships between sponsors and sponsor lines. Each sponsor can be associated with multiple sponsor lines, and each line can contain multiple sponsors.
+
+### Sponsor-Sponsor Line Schema
+
+Base schema for connection operations.
+
+```typescript
+interface SponsorSponsorLineSchema {
+  id: number;
+  sponsor_id: number; // Sponsor ID
+  sponsor_line_id: number; // Sponsor line ID
+  position: number | null; // Display position within the line (default: 1)
+}
+```
+
+### POST /api/sponsor_in_sponsor_line/{sponsor_id}in{sponsor_line_id}
+
+Create a connection between a sponsor and a sponsor line.
+
+**Endpoint:**
+```
+POST /api/sponsor_in_sponsor_line/{sponsor_id}in{sponsor_line_id}
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sponsor_id` | integer | Yes | Sponsor ID to connect |
+| `sponsor_line_id` | integer | Yes | Sponsor line ID to connect to |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "sponsor_id": 1,
+  "sponsor_line_id": 1,
+  "position": 1
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 409 | Conflict - Relation already exists or failed to create |
+| 500 | Internal Server Error - server error |
+
+**Note:**
+- If the relation already exists, the endpoint returns a 409 status
+- Default position is 1 if not specified in the service layer
+
+### PUT /api/sponsor_in_sponsor_line/{item_id}/
+
+Update a sponsor-sponsor line connection by ID.
+
+**Endpoint:**
+```
+PUT /api/sponsor_in_sponsor_line/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Connection ID to update |
+
+**Request Body:**
+```json
+{
+  "sponsor_id": 2,
+  "sponsor_line_id": 1,
+  "position": 3
+}
+```
+
+**Request Schema:**
+```typescript
+interface SponsorSponsorLineSchemaUpdate {
+  sponsor_id: number | null; // Optional
+  sponsor_line_id: number | null; // Optional
+  position: number | null; // Optional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "sponsor_id": 2,
+  "sponsor_line_id": 1,
+  "position": 3
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Not Found - Connection with specified ID not found |
+| 409 | Conflict - Error updating connection |
+| 500 | Internal Server Error - server error |
+
+### GET /api/sponsor_in_sponsor_line/{sponsor_id}in{sponsor_line_id}
+
+Get a specific sponsor-sponsor line connection.
+
+**Endpoint:**
+```
+GET /api/sponsor_in_sponsor_line/{sponsor_id}in{sponsor_line_id}
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sponsor_id` | integer | Yes | Sponsor ID |
+| `sponsor_line_id` | integer | Yes | Sponsor line ID |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "sponsor_id": 1,
+  "sponsor_line_id": 1,
+  "position": 1
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Not Found - Connection not found |
+| 500 | Internal Server Error - server error |
+
+### GET /api/sponsor_in_sponsor_line/sponsor_line/id/{sponsor_line_id}/sponsors
+
+Get all sponsors associated with a specific sponsor line.
+
+**Endpoint:**
+```
+GET /api/sponsor_in_sponsor_line/sponsor_line/id/{sponsor_line_id}/sponsors
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sponsor_line_id` | integer | Yes | Sponsor line ID to get sponsors for |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Acme Corp",
+    "logo_url": "/static/uploads/sponsors/logos/acme.png",
+    "scale_logo": 1.5
+  },
+  {
+    "id": 2,
+    "title": "Beta Industries",
+    "logo_url": "/static/uploads/sponsors/logos/beta.png",
+    "scale_logo": 1.0
+  }
+]
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal Server Error - server error |
+
+**Usage Example:**
+
+```typescript
+async function getSponsorsInLine(sponsorLineId: number): Promise<Sponsor[]> {
+  const response = await fetch(
+    `/api/sponsor_in_sponsor_line/sponsor_line/id/${sponsorLineId}/sponsors`
+  );
+  return await response.json();
+}
+```
+
+### DELETE /api/sponsor_in_sponsor_line/{sponsor_id}in{sponsor_line_id}
+
+Delete a specific sponsor-sponsor line connection.
+
+**Endpoint:**
+```
+DELETE /api/sponsor_in_sponsor_line/{sponsor_id}in{sponsor_line_id}
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sponsor_id` | integer | Yes | Sponsor ID in the connection |
+| `sponsor_line_id` | integer | Yes | Sponsor line ID in the connection |
+
+**Response (204 No Content):**
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal Server Error - server error |
+
+---
 
 ## Teams in Tournament API
 
