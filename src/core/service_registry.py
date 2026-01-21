@@ -17,7 +17,7 @@ class ServiceRegistry:
 
     def __init__(self, database: Database):
         self.database = database
-        self._services: dict[str, Callable[[], Any]] = {}
+        self._services: dict[str, Callable[[Database], Any]] = {}
         self._singletons: dict[str, Any] = {}
         self._logger = get_logger("backend_logger_service_registry", self)
         self._logger.debug("Initialized ServiceRegistry")
@@ -25,7 +25,7 @@ class ServiceRegistry:
     def register(
         self,
         service_name: str,
-        factory: Callable[..., T],
+        factory: Callable[[Database], T],
         singleton: bool = False,
     ) -> None:
         """Register a service factory.
@@ -102,6 +102,16 @@ class ServiceRegistry:
         self.database = database
         self._logger.debug("Updated registry database instance")
         self.clear_singletons()
+
+
+class ServiceRegistryAccessorMixin:
+    _service_registry: ServiceRegistry | None = None
+
+    @property
+    def service_registry(self) -> ServiceRegistry:
+        if self._service_registry is None:
+            self._service_registry = get_service_registry()
+        return self._service_registry
 
 
 _global_registry: ServiceRegistry | None = None

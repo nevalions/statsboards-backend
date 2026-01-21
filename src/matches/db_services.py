@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.models import (
@@ -17,7 +17,7 @@ from src.core.models import (
 )
 from src.core.models.base import Database
 from src.core.schema_helpers import PaginationMetadata
-from src.core.service_registry import get_service_registry
+from src.core.service_registry import ServiceRegistryAccessorMixin
 from src.logging_config import get_logger
 
 from .schemas import (
@@ -31,18 +31,11 @@ from .schemas import (
 ITEM = "MATCH"
 
 
-class MatchServiceDB(BaseServiceDB):
+class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(database, MatchDB)
         self.logger = get_logger("backend_logger_MatchServiceDB", self)
         self.logger.debug("Initialized MatchServiceDB")
-        self._service_registry = None
-
-    @property
-    def service_registry(self):
-        if self._service_registry is None:
-            self._service_registry = get_service_registry()
-        return self._service_registry
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(
@@ -672,7 +665,7 @@ class MatchServiceDB(BaseServiceDB):
                 base_query = base_query.where(MatchDB.isprivate == isprivate)
 
             if search_query:
-                from sqlalchemy import cast, String
+                from sqlalchemy import String, cast
 
                 search_pattern = f"%{search_query}%"
                 base_query = base_query.where(
@@ -755,7 +748,7 @@ class MatchServiceDB(BaseServiceDB):
                 base_query = base_query.where(MatchDB.isprivate == isprivate)
 
             if search_query:
-                from sqlalchemy import cast, String
+                from sqlalchemy import String, cast
 
                 search_pattern = f"%{search_query}%"
                 base_query = base_query.where(

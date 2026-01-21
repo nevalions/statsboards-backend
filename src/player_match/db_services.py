@@ -9,7 +9,7 @@ from src.core.models import (
     PlayerTeamTournamentDB,
 )
 from src.core.models.base import Database
-from src.core.service_registry import get_service_registry
+from src.core.service_registry import ServiceRegistryAccessorMixin
 
 from ..logging_config import get_logger
 from ..player.schemas import PlayerSchema
@@ -18,7 +18,7 @@ from .schemas import PlayerMatchSchemaCreate, PlayerMatchSchemaUpdate
 ITEM = "PLAYER_MATCH"
 
 
-class PlayerMatchServiceDB(BaseServiceDB):
+class PlayerMatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
     def __init__(
         self,
         database: Database,
@@ -26,13 +26,6 @@ class PlayerMatchServiceDB(BaseServiceDB):
         super().__init__(database, PlayerMatchDB)
         self.logger = get_logger("backend_logger_PlayerMatchServiceDB", self)
         self.logger.debug("Initialized PlayerMatchServiceDB")
-        self._service_registry = None
-
-    @property
-    def service_registry(self):
-        if self._service_registry is None:
-            self._service_registry = get_service_registry()
-        return self._service_registry
 
     @handle_service_exceptions(
         item_name=ITEM, operation="creating or updating", return_value_on_not_found=None

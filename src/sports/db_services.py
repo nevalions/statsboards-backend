@@ -10,7 +10,7 @@ from src.core.models import (
     TournamentDB,
 )
 from src.core.models.base import Database
-from src.core.service_registry import get_service_registry
+from src.core.service_registry import ServiceRegistryAccessorMixin
 
 from ..logging_config import get_logger
 from .schemas import SportSchemaCreate, SportSchemaUpdate
@@ -18,7 +18,7 @@ from .schemas import SportSchemaCreate, SportSchemaUpdate
 ITEM = "SPORT"
 
 
-class SportServiceDB(BaseServiceDB):
+class SportServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(
             database,
@@ -26,13 +26,6 @@ class SportServiceDB(BaseServiceDB):
         )
         self.logger = get_logger("backend_logger_SportServiceDB", self)
         self.logger.debug("Initialized SportServiceDB")
-        self._service_registry = None
-
-    @property
-    def service_registry(self):
-        if self._service_registry is None:
-            self._service_registry = get_service_registry()
-        return self._service_registry
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: SportSchemaCreate) -> SportDB:

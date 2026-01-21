@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
 from src.core.models import MatchDB
-from src.core.service_registry import get_service_registry
+from src.core.service_registry import ServiceRegistryAccessorMixin
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.helpers.file_service import file_service
 from src.logging_config import get_logger
@@ -28,11 +28,12 @@ from .schemas import (
 
 
 class MatchCRUDRouter(
+    ServiceRegistryAccessorMixin,
     BaseRouter[
         MatchSchema,
         MatchSchemaCreate,
         MatchSchemaUpdate,
-    ]
+    ],
 ):
     def __init__(self, service: MatchServiceDB):
         super().__init__(
@@ -42,13 +43,6 @@ class MatchCRUDRouter(
         )
         self.logger = get_logger("backend_logger_MatchCRUDRouter", self)
         self.logger.debug("Initialized MatchCRUDRouter")
-        self._service_registry = None
-
-    @property
-    def service_registry(self):
-        if self._service_registry is None:
-            self._service_registry = get_service_registry()
-        return self._service_registry
 
     def get_match_stats_service(self):
         """Get match stats service using this router's database."""
