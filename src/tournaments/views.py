@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
-from src.core.models import TournamentDB
+from src.core.models import TournamentDB, handle_view_exceptions
 
 # from src.core.config import templates
 from src.helpers.fetch_helpers import (
@@ -429,47 +429,35 @@ class TournamentAPIRouter(
             )
 
         @router.post("/upload_logo", response_model=UploadTournamentLogoResponse)
+        @handle_view_exceptions(
+            error_message="Error uploading tournament logo",
+            status_code=500,
+        )
         async def upload_tournament_logo_endpoint(file: UploadFile = File(...)):
-            try:
-                file_location = await file_service.save_upload_image(
-                    file, sub_folder="tournaments/logos"
-                )
-                self.logger.debug(f"Upload tournament logo endpoint file location: {file_location}")
-                return {"logoUrl": file_location}
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(f"Error uploading tournament logo: {ex}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error uploading tournament logo",
-                )
+            file_location = await file_service.save_upload_image(
+                file, sub_folder="tournaments/logos"
+            )
+            self.logger.debug(f"Upload tournament logo endpoint file location: {file_location}")
+            return {"logoUrl": file_location}
 
         @router.post("/upload_resize_logo", response_model=UploadResizeTournamentLogoResponse)
+        @handle_view_exceptions(
+            error_message="Error uploading and resizing tournament logo",
+            status_code=500,
+        )
         async def upload_and_resize_tournament_logo_endpoint(
             file: UploadFile = File(...),
         ):
-            try:
-                uploaded_paths = await file_service.save_and_resize_upload_image(
-                    file,
-                    sub_folder="tournaments/logos",
-                    icon_height=100,
-                    web_view_height=400,
-                )
-                self.logger.debug(
-                    f"Upload and resize tournament logo endpoint file location: {uploaded_paths}"
-                )
-                return uploaded_paths
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error uploading and resizing tournament logo: {ex}", exc_info=True
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error uploading and resizing tournament logo",
-                )
+            uploaded_paths = await file_service.save_and_resize_upload_image(
+                file,
+                sub_folder="tournaments/logos",
+                icon_height=100,
+                web_view_height=400,
+            )
+            self.logger.debug(
+                f"Upload and resize tournament logo endpoint file location: {uploaded_paths}"
+            )
+            return uploaded_paths
 
         @router.get(
             "/pars/season/{eesl_season_id}",
@@ -482,6 +470,10 @@ class TournamentAPIRouter(
             return await parse_season_and_create_jsons(eesl_season_id)
 
         @router.post("/pars_and_create/season/{eesl_season_id}")
+        @handle_view_exceptions(
+            error_message="Internal server error parsing and creating tournaments from season",
+            status_code=500,
+        )
         async def create_parsed_tournament_endpoint(
             eesl_season_id: int,
             season_id: int | None = Query(None),
@@ -495,33 +487,19 @@ class TournamentAPIRouter(
             )
 
             created_tournaments = []
-            try:
-                if tournaments_list:
-                    for t in tournaments_list:
-                        tournament = TournamentSchemaCreate(**t)
-                        created_tournament = await self.service.create_or_update_tournament(
-                            tournament
-                        )
-                        self.logger.debug(
-                            f"Created or updated tournament after parse {created_tournament}"
-                        )
-                        created_tournaments.append(created_tournament)
-                    self.logger.info(f"Created tournaments after parsing: {created_tournaments}")
-                    return created_tournaments
-                else:
-                    self.logger.warning("Teams list is empty")
-                    return []
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error on parse and tournaments from season: {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Internal server error parsing and creating tournaments from season",
-                )
+            if tournaments_list:
+                for t in tournaments_list:
+                    tournament = TournamentSchemaCreate(**t)
+                    created_tournament = await self.service.create_or_update_tournament(tournament)
+                    self.logger.debug(
+                        f"Created or updated tournament after parse {created_tournament}"
+                    )
+                    created_tournaments.append(created_tournament)
+                self.logger.info(f"Created tournaments after parsing: {created_tournaments}")
+                return created_tournaments
+            else:
+                self.logger.warning("Teams list is empty")
+                return []
 
         @router.delete(
             "/id/{model_id}",

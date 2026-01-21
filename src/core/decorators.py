@@ -152,3 +152,51 @@ def handle_service_exceptions(
         return async_wrapper if asyncio.iscoroutinefunction(method) else sync_wrapper
 
     return decorator
+
+
+def handle_view_exceptions(
+    error_message: str = "Internal server error",
+    status_code: int = 500,
+):
+    """
+    Decorator for view endpoints to handle exceptions with consistent logging and error responses.
+
+    This decorator catches exceptions in view endpoints, logs them, and converts them to
+    HTTPException with specified error message and status code. HTTPException is
+    re-raised as-is to preserve its status code and message.
+
+    Args:
+        error_message: The error detail to use for non-HTTPException errors
+        status_code: The HTTP status code to use for non-HTTPException errors
+
+    Example:
+        @handle_view_exceptions(error_message="Error uploading file", status_code=500)
+        async def upload_endpoint(file: UploadFile):
+            return await file_service.save(file)
+    """
+
+    def decorator(method: Callable[..., Any]) -> Callable[..., Any]:
+        @functools.wraps(method)
+        async def async_wrapper(*args: object, **kwargs: object) -> Any:
+            logger = None
+            if args and hasattr(args[0], "logger"):
+                logger = getattr(args[0], "logger", None)
+
+            try:
+                return await method(*args, **kwargs)
+            except HTTPException:
+                raise
+            except Exception as ex:
+                if logger:
+                    logger.error(
+                        f"{error_message}: {ex}",
+                        exc_info=True,
+                    )
+                raise HTTPException(
+                    status_code=status_code,
+                    detail=error_message,
+                ) from ex
+
+        return async_wrapper
+
+    return decorator

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
-from src.core.models import SponsorDB
+from src.core.models import SponsorDB, handle_view_exceptions
 from src.helpers.file_service import file_service
 
 from ..logging_config import get_logger
@@ -91,21 +91,14 @@ class SponsorAPIRouter(
             )
 
         @router.post("/upload_logo", response_model=UploadSponsorLogoResponse)
+        @handle_view_exceptions(
+            error_message="Error uploading sponsor logo",
+            status_code=500,
+        )
         async def upload_sponsor_logo_endpoint(file: UploadFile = File(...)):
-            try:
-                self.logger.debug("Uploading sponsor logo endpoint")
-                file_location = await file_service.save_upload_image(
-                    file, sub_folder="sponsors/logos"
-                )
-                return {"logoUrl": file_location}
-            except HTTPException:
-                raise
-            except Exception as e:
-                self.logger.error(f"Error saving sponsor logo: {e}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error uploading sponsor logo",
-                )
+            self.logger.debug("Uploading sponsor logo endpoint")
+            file_location = await file_service.save_upload_image(file, sub_folder="sponsors/logos")
+            return {"logoUrl": file_location}
 
         @router.get(
             "/paginated",

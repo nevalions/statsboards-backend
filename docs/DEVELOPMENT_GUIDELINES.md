@@ -850,6 +850,37 @@ async def get_by_id(self, item_id: int) -> TeamDB:
     return await super().get_by_id(item_id)
 ```
 
+**For view endpoints (FastAPI routers):** Use `@handle_view_exceptions` decorator:
+
+```python
+from src.core.models import handle_view_exceptions
+
+# Upload endpoints with file operations
+@router.post("/upload_logo", response_model=UploadTeamLogoResponse)
+@handle_view_exceptions(
+    error_message="Error uploading team logo",
+    status_code=500,
+)
+async def upload_team_logo_endpoint(file: UploadFile = File(...)):
+    file_location = await file_service.save_upload_image(file, sub_folder="teams/logos")
+    return {"logoUrl": file_location}
+
+# Complex endpoints with service calls
+@router.get("/id/{team_id}/matches/")
+@handle_view_exceptions(
+    error_message="Internal server error fetching matches for team",
+    status_code=500,
+)
+async def get_matches_by_team_endpoint(team_id: int):
+    return await self.service.get_matches_by_team_id(team_id)
+```
+
+The `@handle_view_exceptions` decorator:
+- Catches `HTTPException` and re-raises as-is to preserve status codes and messages
+- Catches other exceptions, logs them with error level, and converts to `HTTPException`
+- Supports custom error messages and status codes
+- Automatically extracts logger from `self.logger` for consistent logging
+
 - **MANUAL** try/except blocks should only be used for special cases:
   - Custom error handling that doesn't fit decorator pattern
   - Methods with complex exception handling logic

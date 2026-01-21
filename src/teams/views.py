@@ -4,7 +4,7 @@ from fastapi import Depends, File, HTTPException, Query, UploadFile
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
-from src.core.models import TeamDB
+from src.core.models import TeamDB, handle_view_exceptions
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
@@ -148,102 +148,66 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             return TeamSchema.model_validate(update_)
 
         @router.get("/id/{team_id}/matches/")
+        @handle_view_exceptions(
+            error_message="Internal server error fetching matches for team",
+            status_code=500,
+        )
         async def get_matches_by_team_endpoint(team_id: int):
             self.logger.debug(f"Get matches by team id:{team_id} endpoint")
-            try:
-                return await self.service.get_matches_by_team_id(team_id)
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error getting matches by team id:{team_id} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Internal server error fetching matches for team",
-                )
+            return await self.service.get_matches_by_team_id(team_id)
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players/")
+        @handle_view_exceptions(
+            error_message="Internal server error fetching players for team and tournament",
+            status_code=500,
+        )
         async def get_players_by_team_and_tournament_endpoint(team_id: int, tournament_id: int):
             self.logger.debug(
                 f"Get players by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
-            try:
-                return await self.service.get_players_by_team_id_tournament_id(
-                    team_id, tournament_id
-                )
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error getting players by team id:{team_id} and tournament id:{tournament_id} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Internal server error fetching players for team and tournament",
-                )
+            return await self.service.get_players_by_team_id_tournament_id(team_id, tournament_id)
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players_with_persons/")
+        @handle_view_exceptions(
+            error_message="Internal server error fetching players with persons for team and tournament",
+            status_code=500,
+        )
         async def get_players_by_team_id_tournament_id_with_person_endpoint(
             team_id: int, tournament_id: int
         ):
             self.logger.debug(
                 f"Get players with persons by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
-            try:
-                return await self.service.get_players_by_team_id_tournament_id_with_person(
-                    team_id, tournament_id
-                )
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error getting players with persons by team id:{team_id} and tournament id:{tournament_id} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Internal server error fetching players with persons for team and tournament",
-                )
+            return await self.service.get_players_by_team_id_tournament_id_with_person(
+                team_id, tournament_id
+            )
 
         @router.post("/upload_logo", response_model=UploadTeamLogoResponse)
+        @handle_view_exceptions(
+            error_message="Error uploading team logo",
+            status_code=500,
+        )
         async def upload_team_logo_endpoint(file: UploadFile = File(...)):
-            try:
-                file_location = await file_service.save_upload_image(file, sub_folder="teams/logos")
-                self.logger.debug(f"Upload team logo endpoint file location: {file_location}")
-                return {"logoUrl": file_location}
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(f"Error saving team logo file: {ex}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error uploading team logo",
-                )
+            file_location = await file_service.save_upload_image(file, sub_folder="teams/logos")
+            self.logger.debug(f"Upload team logo endpoint file location: {file_location}")
+            return {"logoUrl": file_location}
 
         @router.post("/upload_resize_logo", response_model=UploadResizeTeamLogoResponse)
+        @handle_view_exceptions(
+            error_message="Error uploading and resizing team logo",
+            status_code=500,
+        )
         async def upload_and_resize_team_logo_endpoint(file: UploadFile = File(...)):
-            try:
-                uploaded_paths = await file_service.save_and_resize_upload_image(
-                    file,
-                    sub_folder="teams/logos",
-                    icon_height=100,
-                    web_view_height=400,
-                )
-                self.logger.debug(
-                    f"Upload and resize team logo endpoint file location: {uploaded_paths}"
-                )
-                return uploaded_paths
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(f"Error saving and resizing team logo file: {ex}", exc_info=True)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error uploading and resizing team logo",
-                )
+            uploaded_paths = await file_service.save_and_resize_upload_image(
+                file,
+                sub_folder="teams/logos",
+                icon_height=100,
+                web_view_height=400,
+            )
+            self.logger.debug(
+                f"Upload and resize team logo endpoint file location: {uploaded_paths}"
+            )
+            return uploaded_paths
 
         @router.get(
             "/pars/tournament/{eesl_tournament_id}",
@@ -256,6 +220,10 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             return await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
 
         @router.post("/pars_and_create/tournament/{eesl_tournament_id}")
+        @handle_view_exceptions(
+            error_message="Internal server error parsing and creating teams from tournament",
+            status_code=500,
+        )
         async def create_parsed_teams_endpoint(
             eesl_tournament_id: int,
         ):
@@ -264,70 +232,46 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             )
             tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
             self.logger.debug(f"Tournament: {tournament}")
-            try:
-                teams_list = await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
-                self.logger.debug(f"Teams after parse: {teams_list}")
+            teams_list = await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
+            self.logger.debug(f"Teams after parse: {teams_list}")
 
-                created_teams = []
-                created_team_tournament_ids = []
-                try:
-                    if teams_list:
-                        for t in teams_list:
-                            team = TeamSchemaCreate(**t)
-                            created_team = await self.service.create_or_update_team(team)
-                            self.logger.debug(f"Created or updated team after parse {created_team}")
-                            created_teams.append(created_team)
-                            if created_team and tournament:
-                                dict_conv = TeamTournamentSchemaCreate(
-                                    **{
-                                        "team_id": created_team.id,
-                                        "tournament_id": tournament.id,
-                                    }
-                                )
-                                try:
-                                    self.logger.debug(
-                                        "Trying to create team and tournament connection after parse"
-                                    )
-                                    team_tournament_connection = await TeamTournamentServiceDB(
-                                        db
-                                    ).create(dict_conv)
-                                    created_team_tournament_ids.append(team_tournament_connection)
-                                except Exception as ex:
-                                    self.logger.error(
-                                        f"Error create team and tournament connection after parse {ex}",
-                                        exc_info=True,
-                                    )
-                        self.logger.info(f"Created teams after parsing: {created_teams}")
-                        self.logger.info(
-                            f"Created team tournament connections after parsing: {created_team_tournament_ids}"
+            created_teams = []
+            created_team_tournament_ids = []
+            if teams_list:
+                for t in teams_list:
+                    team = TeamSchemaCreate(**t)
+                    created_team = await self.service.create_or_update_team(team)
+                    self.logger.debug(f"Created or updated team after parse {created_team}")
+                    created_teams.append(created_team)
+                    if created_team and tournament:
+                        dict_conv = TeamTournamentSchemaCreate(
+                            **{
+                                "team_id": created_team.id,
+                                "tournament_id": tournament.id,
+                            }
                         )
+                        try:
+                            self.logger.debug(
+                                "Trying to create team and tournament connection after parse"
+                            )
+                            team_tournament_connection = await TeamTournamentServiceDB(db).create(
+                                dict_conv
+                            )
+                            created_team_tournament_ids.append(team_tournament_connection)
+                        except Exception as ex:
+                            self.logger.error(
+                                f"Error create team and tournament connection after parse {ex}",
+                                exc_info=True,
+                            )
+                self.logger.info(f"Created teams after parsing: {created_teams}")
+                self.logger.info(
+                    f"Created team tournament connections after parsing: {created_team_tournament_ids}"
+                )
 
-                        return created_teams, created_team_tournament_ids
-                    else:
-                        self.logger.warning("Team list is empty")
-                        return []
-                except HTTPException:
-                    raise
-                except Exception as ex:
-                    self.logger.error(
-                        f"Error on parse and create teams from tournament: {ex}",
-                        exc_info=True,
-                    )
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Internal server error parsing and creating teams from tournament",
-                    )
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error on parse and create teams from tournament: {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Internal server error parsing and creating teams from tournament",
-                )
+                return created_teams, created_team_tournament_ids
+            else:
+                self.logger.warning("Team list is empty")
+                return []
 
         @router.get(
             "/paginated",

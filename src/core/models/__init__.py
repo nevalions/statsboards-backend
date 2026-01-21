@@ -3,6 +3,7 @@ __all__ = (
     "Base",
     "BaseServiceDB",
     "handle_service_exceptions",
+    "handle_view_exceptions",
     "SportDB",
     "SeasonDB",
     "SeasonSportRelationMixin",
@@ -29,7 +30,7 @@ __all__ = (
     "GlobalSettingDB",
 )
 
-from src.core.decorators import handle_service_exceptions
+from src.core.decorators import handle_service_exceptions, handle_view_exceptions
 
 from .base import Base, BaseServiceDB, db
 from .football_event import FootballEventDB

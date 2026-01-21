@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
-from src.core.models import ScoreboardDB
+from src.core.models import ScoreboardDB, handle_view_exceptions
 
 from ..logging_config import get_logger
 from .db_services import ScoreboardServiceDB
@@ -31,45 +31,35 @@ class ScoreboardAPIRouter(
             "/",
             response_model=ScoreboardSchema,
         )
+        @handle_view_exceptions(
+            error_message="Error creating scoreboard",
+            status_code=500,
+        )
         async def create_scoreboard(scoreboard_data: ScoreboardSchemaCreate):
             self.logger.debug(f"Create scoreboard endpoint got data: {scoreboard_data}")
-            try:
-                new_scoreboard = await self.service.create(scoreboard_data)
-                return ScoreboardSchema.model_validate(new_scoreboard)
-            except Exception as ex:
-                self.logger.error(
-                    f"Error creating scoreboard with data: {scoreboard_data} {ex}",
-                    exc_info=True,
-                )
+            new_scoreboard = await self.service.create(scoreboard_data)
+            return ScoreboardSchema.model_validate(new_scoreboard)
 
         @router.put(
             "/{item_id}/",
             response_model=ScoreboardSchema,
+        )
+        @handle_view_exceptions(
+            error_message="Error updating scoreboard with data",
+            status_code=409,
         )
         async def update_scoreboard_(
             item_id: int,
             item: ScoreboardSchemaUpdate,
         ):
             self.logger.debug(f"Update scoreboard endpoint id:{item_id} data: {item}")
-            try:
-                scoreboard_update = await self.service.update(
-                    item_id,
-                    item,
-                )
-                if scoreboard_update is None:
-                    raise HTTPException(status_code=404, detail=f"Scoreboard {item_id} not found")
-                return scoreboard_update
-            except HTTPException:
-                raise
-            except Exception as ex:
-                self.logger.error(
-                    f"Error updating scoreboard with data: {item} {ex}",
-                    exc_info=True,
-                )
-                raise HTTPException(
-                    status_code=409,
-                    detail="Error updating scoreboard with data",
-                )
+            scoreboard_update = await self.service.update(
+                item_id,
+                item,
+            )
+            if scoreboard_update is None:
+                raise HTTPException(status_code=404, detail=f"Scoreboard {item_id} not found")
+            return scoreboard_update
 
         @router.put(
             "/id/{item_id}/",
