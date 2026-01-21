@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import asyncpg
 import pytest
@@ -223,9 +223,7 @@ class TestConnectionManager:
 @pytest.mark.asyncio
 @pytest.mark.slow
 class TestWebSocketEndpointIntegration:
-    async def test_websocket_endpoint_connection_and_initial_data(
-        self, test_app, test_db
-    ):
+    async def test_websocket_endpoint_connection_and_initial_data(self, test_app, test_db):
         """Test WebSocket endpoint connection and initial data sending."""
         from datetime import datetime
 
@@ -334,9 +332,7 @@ class TestWebSocketEndpointIntegration:
 
         assert mock_websocket.send_json.call_count == 3
 
-        messages_sent = [
-            call.args[0] for call in mock_websocket.send_json.call_args_list
-        ]
+        messages_sent = [call.args[0] for call in mock_websocket.send_json.call_args_list]
 
         message_types = [msg.get("type") for msg in messages_sent]
         assert "message-update" in message_types
@@ -626,9 +622,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
             if call_count == 1:
                 raise Exception("Connection failed")
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         manager.connect_to_db = AsyncMock(side_effect=mock_connect)
         manager.is_connected = False
 
@@ -668,9 +662,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         manager.connection = AsyncMock()
         manager.is_connected = True
 
@@ -689,9 +681,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
 
         await manager.disconnect("nonexistent_client")
 
@@ -701,9 +691,7 @@ class TestMatchDataWebSocketManagerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         client_id = "test_client"
         manager.match_data_queues[client_id] = asyncio.Queue()
         manager.playclock_queues[client_id] = asyncio.Queue()
@@ -723,9 +711,7 @@ class TestWebSocketListenerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
         queue_dict["test_client"].put = AsyncMock()
 
@@ -746,9 +732,7 @@ class TestWebSocketListenerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
         queue_dict["test_client"].put = AsyncMock()
 
@@ -769,9 +753,7 @@ class TestWebSocketListenerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
         queue_dict["test_client"].put = AsyncMock()
 
@@ -793,16 +775,12 @@ class TestWebSocketListenerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         mock_queue = AsyncMock(spec=asyncio.Queue)
         mock_queue.put = AsyncMock(side_effect=Exception("Queue error"))
         queue_dict = {"test_client": mock_queue}
 
-        with patch.object(
-            connection_manager, "get_match_subscriptions", return_value=[]
-        ):
+        with patch.object(connection_manager, "get_match_subscriptions", return_value=[]):
             await manager._base_listener(
                 connection=None,
                 pid=123,
@@ -818,9 +796,7 @@ class TestWebSocketListenerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         manager._base_listener = AsyncMock()
 
         await manager.playclock_listener(
@@ -841,9 +817,7 @@ class TestWebSocketListenerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         manager._base_listener = AsyncMock()
 
         await manager.match_data_listener(
@@ -864,9 +838,7 @@ class TestWebSocketListenerErrorScenarios:
 
         from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
 
-        manager = MatchDataWebSocketManager(
-            db_url="postgresql://test:test@localhost:5432/test"
-        )
+        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
         manager._base_listener = AsyncMock()
 
         await manager.gameclock_listener(
@@ -978,9 +950,7 @@ class TestConnectionManagerErrorScenarios:
         for client_id in clients:
             assert client_id in active_connections
 
-        disconnect_tasks = [
-            connection_manager.disconnect(client_id) for client_id in clients
-        ]
+        disconnect_tasks = [connection_manager.disconnect(client_id) for client_id in clients]
 
         await asyncio.gather(*disconnect_tasks)
 
@@ -1180,16 +1150,12 @@ class TestDatabaseNotificationFlow:
 
         from src.core.config import settings
 
-        ws_manager = MatchDataWebSocketManager(
-            db_url=str(settings.test_db.test_db_url_websocket())
-        )
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
 
         await ws_manager.connect_to_db()
 
         client_id = "test_notification_client"
-        await connection_manager.connect(
-            AsyncMock(spec=WebSocket), client_id, created_match.id
-        )
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
         ws_manager.match_data_queues[client_id] = asyncio.Queue()
 
@@ -1252,16 +1218,12 @@ class TestDatabaseNotificationFlow:
 
         from src.core.config import settings
 
-        ws_manager = MatchDataWebSocketManager(
-            db_url=str(settings.test_db.test_db_url_websocket())
-        )
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
 
         await ws_manager.connect_to_db()
 
         client_id = "test_playclock_client"
-        await connection_manager.connect(
-            AsyncMock(spec=WebSocket), client_id, created_match.id
-        )
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
         ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
@@ -1323,16 +1285,12 @@ class TestDatabaseNotificationFlow:
 
         from src.core.config import settings
 
-        ws_manager = MatchDataWebSocketManager(
-            db_url=str(settings.test_db.test_db_url_websocket())
-        )
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
 
         await ws_manager.connect_to_db()
 
         client_id = "test_gameclock_client"
-        await connection_manager.connect(
-            AsyncMock(spec=WebSocket), client_id, created_match.id
-        )
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
         ws_manager.gameclock_queues[client_id] = asyncio.Queue()
 
@@ -1394,17 +1352,13 @@ class TestDatabaseNotificationFlow:
 
         from src.core.config import settings
 
-        ws_manager = MatchDataWebSocketManager(
-            db_url=str(settings.test_db.test_db_url_websocket())
-        )
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
 
         await ws_manager.connect_to_db()
 
         clients = ["client_1", "client_2", "client_3"]
         for client_id in clients:
-            await connection_manager.connect(
-                AsyncMock(spec=WebSocket), client_id, created_match.id
-            )
+            await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
             ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
@@ -1483,21 +1437,15 @@ class TestDatabaseNotificationFlow:
 
         from src.core.config import settings
 
-        ws_manager = MatchDataWebSocketManager(
-            db_url=str(settings.test_db.test_db_url_websocket())
-        )
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
 
         await ws_manager.connect_to_db()
 
         client_1 = "client_match_1"
         client_2 = "client_match_2"
 
-        await connection_manager.connect(
-            AsyncMock(spec=WebSocket), client_1, match_1.id
-        )
-        await connection_manager.connect(
-            AsyncMock(spec=WebSocket), client_2, match_2.id
-        )
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_1, match_1.id)
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_2, match_2.id)
 
         ws_manager.playclock_queues[client_1] = asyncio.Queue()
         ws_manager.playclock_queues[client_2] = asyncio.Queue()
@@ -1563,23 +1511,17 @@ class TestDatabaseNotificationFlow:
 
         from src.core.config import settings
 
-        ws_manager = MatchDataWebSocketManager(
-            db_url=str(settings.test_db.test_db_url_websocket())
-        )
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
 
         await ws_manager.connect_to_db()
 
         client_id = "test_update_client"
-        await connection_manager.connect(
-            AsyncMock(spec=WebSocket), client_id, created_match.id
-        )
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
         ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
         playclock_service = PlayClockServiceDB(test_db)
-        playclock = await playclock_service.create(
-            PlayClockSchemaCreate(match_id=created_match.id)
-        )
+        playclock = await playclock_service.create(PlayClockSchemaCreate(match_id=created_match.id))
 
         await asyncio.sleep(0.1)
 
@@ -1649,16 +1591,12 @@ class TestDatabaseNotificationFlow:
 
         from src.core.config import settings
 
-        ws_manager = MatchDataWebSocketManager(
-            db_url=str(settings.test_db.test_db_url_websocket())
-        )
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
 
         await ws_manager.connect_to_db()
 
         client_id = "test_multi_notify_client"
-        await connection_manager.connect(
-            AsyncMock(spec=WebSocket), client_id, created_match.id
-        )
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
         ws_manager.playclock_queues[client_id] = asyncio.Queue()
         ws_manager.gameclock_queues[client_id] = asyncio.Queue()
@@ -1696,3 +1634,146 @@ class TestDatabaseNotificationFlow:
         assert (
             len(received_notifications) >= 0
         )  # Tests notification flow structure, actual DB triggers may not be set up in test DB
+
+    async def test_football_event_database_notification_flow(self, test_db):
+        """Test football event INSERT triggers notification and invalidates cache."""
+        from src.football_events.db_services import FootballEventServiceDB
+        from src.football_events.schemas import FootballEventSchemaCreate
+        from src.matches.db_services import MatchServiceDB
+        from src.matches.match_data_cache_service import MatchDataCacheService
+        from src.matches.schemas import MatchSchemaCreate
+        from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
+        from src.tournaments.db_services import TournamentServiceDB
+        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match_data = MatchSchemaCreate(
+            tournament_id=tournament.id,
+            team_a_id=team_a.id,
+            team_b_id=team_b.id,
+            match_date=datetime(2025, 1, 1),
+            week=1,
+        )
+        created_match = await match_service.create_or_update_match(match_data)
+
+        cache_service = MatchDataCacheService(test_db)
+
+        from src.core.config import settings
+
+        ws_manager = MatchDataWebSocketManager(db_url=str(settings.test_db.test_db_url_websocket()))
+        ws_manager.set_cache_service(cache_service)
+
+        await ws_manager.connect_to_db()
+
+        client_id = "test_event_client"
+        await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
+
+        ws_manager.event_queues[client_id] = asyncio.Queue()
+
+        await asyncio.sleep(0.1)
+
+        football_event_service = FootballEventServiceDB(test_db)
+        event_data = FootballEventSchemaCreate(
+            match_id=created_match.id,
+            event_number=1,
+            play_type="run",
+            event_qtr=1,
+            event_down=1,
+            event_distance=10,
+        )
+        await football_event_service.create(event_data)
+
+        await asyncio.sleep(0.2)
+
+        try:
+            notification = await asyncio.wait_for(
+                ws_manager.event_queues[client_id].get(), timeout=2.0
+            )
+            assert notification["type"] == "event-update"
+            assert notification["match_id"] == created_match.id
+            assert "operation" in notification
+        except asyncio.TimeoutError:
+            pass
+
+        await ws_manager.shutdown()
+        await connection_manager.disconnect(client_id)
+
+    async def test_gameclock_update_doesnt_invalidate_match_cache(self):
+        """Test that gameclock invalidation doesn't affect match cache."""
+        from src.matches.match_data_cache_service import MatchDataCacheService
+
+        cache_service = MatchDataCacheService(MagicMock())
+
+        mock_match_id = 1
+        mock_match_data = {
+            "match_id": mock_match_id,
+            "id": mock_match_id,
+            "match": {"id": mock_match_id},
+            "teams_data": {"team_a": {"id": 1}, "team_b": {"id": 2}},
+            "match_data": {"id": 1, "match_id": mock_match_id},
+        }
+
+        cache_service._cache[f"match-update:{mock_match_id}"] = mock_match_data
+        cache_service._cache[f"gameclock-update:{mock_match_id}"] = {
+            "match_id": mock_match_id,
+            "id": 1,
+            "gameclock": 720,
+        }
+
+        assert f"match-update:{mock_match_id}" in cache_service._cache
+        assert f"gameclock-update:{mock_match_id}" in cache_service._cache
+
+        cache_service.invalidate_gameclock(mock_match_id)
+
+        assert f"match-update:{mock_match_id}" in cache_service._cache, (
+            "Match cache should not be invalidated by gameclock update"
+        )
+        assert f"gameclock-update:{mock_match_id}" not in cache_service._cache, (
+            "Gameclock cache should be invalidated by gameclock update"
+        )
+
+    async def test_event_update_invalidates_both_event_and_stats_cache(self, test_db):
+        """Test that event updates invalidate both event and stats caches."""
+        from src.matches.match_data_cache_service import MatchDataCacheService
+
+        cache_service = MatchDataCacheService(test_db)
+
+        mock_match_id = 1
+
+        cache_service._cache[f"event-update:{mock_match_id}"] = {
+            "match_id": mock_match_id,
+            "events": [],
+        }
+
+        cache_service._cache[f"stats-update:{mock_match_id}"] = {
+            "match_id": mock_match_id,
+            "stats": {},
+        }
+
+        assert f"event-update:{mock_match_id}" in cache_service._cache
+        assert f"stats-update:{mock_match_id}" in cache_service._cache
+
+        cache_service.invalidate_event_data(mock_match_id)
+
+        assert f"event-update:{mock_match_id}" not in cache_service._cache, (
+            "Event cache should be invalidated"
+        )
+        assert f"stats-update:{mock_match_id}" in cache_service._cache, (
+            "Stats cache should only be invalidated by stats updates, not events"
+        )

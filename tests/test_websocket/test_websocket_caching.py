@@ -138,3 +138,48 @@ class TestWebSocketCaching:
         assert "match-update:1" in cache_service._cache
         assert "gameclock-update:1" in cache_service._cache
         assert cache_service._cache["match-update:1"] != cache_service._cache["gameclock-update:1"]
+
+    async def test_second_client_gets_cached_data(self, cache_service):
+        """Test that cached data is returned for second request."""
+        mock_match_data = {
+            "match_id": 1,
+            "id": 1,
+            "status_code": 200,
+            "match": {"id": 1},
+            "teams_data": {"team_a": {"id": 1}, "team_b": {"id": 2}},
+            "match_data": {"id": 1, "match_id": 1},
+        }
+
+        cache_service._cache["match-update:1"] = mock_match_data
+
+        with patch(
+            "src.helpers.fetch_helpers.fetch_with_scoreboard_data",
+            return_value=mock_match_data,
+        ):
+            result1 = await cache_service.get_or_fetch_match_data(1)
+            assert result1 is not None
+            assert result1 == mock_match_data
+
+            result2 = await cache_service.get_or_fetch_match_data(1)
+            assert result2 is not None
+            assert result2 == mock_match_data
+            assert result1 == result2
+
+    async def test_database_update_invalidates_cache(self, cache_service):
+        """Test that cache is cleared after invalidation."""
+        mock_match_data = {
+            "match_id": 1,
+            "id": 1,
+            "status_code": 200,
+            "match": {"id": 1},
+            "teams_data": {"team_a": {"id": 1}, "team_b": {"id": 2}},
+            "match_data": {"id": 1, "match_id": 1},
+        }
+
+        cache_service._cache["match-update:1"] = mock_match_data
+
+        assert "match-update:1" in cache_service._cache
+
+        cache_service.invalidate_match_data(1)
+
+        assert "match-update:1" not in cache_service._cache
