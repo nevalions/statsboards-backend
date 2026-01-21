@@ -1,11 +1,12 @@
 from io import BytesIO
 
 import pytest
+
 from PIL import Image
 
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
-from tests.factories import SportFactorySample, TeamFactory
+from tests.factories import SportFactorySample, TeamFactory, TournamentFactory
 
 
 def create_test_image():
@@ -129,3 +130,90 @@ class TestTeamViews:
         response = await client.post("/api/teams/upload_resize_logo", files=files)
 
         assert response.status_code == 400
+
+    async def test_get_team_with_details_endpoint(self, client, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        team_data = TeamFactory.build(sport_id=sport.id)
+        created = await team_service.create_or_update_team(team_data)
+
+        response = await client.get(f"/api/teams/id/{created.id}/with-details/")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == created.id
+        assert "sport" in data
+
+    async def test_get_team_with_details_not_found(self, client):
+        response = await client.get("/api/teams/id/99999/with-details/")
+
+        assert response.status_code == 404
+
+    async def test_get_matches_by_team_endpoint(self, client, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        team_data = TeamFactory.build(sport_id=sport.id)
+        created = await team_service.create_or_update_team(team_data)
+
+        response = await client.get(f"/api/teams/id/{created.id}/matches/")
+
+        assert response.status_code == 200
+
+    async def test_get_teams_paginated_endpoint(self, client, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team A"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team B"))
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team C"))
+
+        response = await client.get("/api/teams/paginated?page=1&items_per_page=2")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) == 2
+        assert data["metadata"]["total_items"] >= 3
+
+    async def test_get_teams_with_details_paginated_endpoint(self, client, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team A"))
+
+        response = await client.get("/api/teams/with-details/paginated")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "metadata" in data
+        assert len(data["data"]) >= 1
+        assert data["data"][0]["sport"]["id"] == sport.id
+
+    @pytest.mark.skip("Requires proper tournament setup with seasons")
+    async def test_create_team_with_tournament_endpoint(self, client, test_db):
+        from src.tournaments.db_services import TournamentServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament_data = TournamentFactory.build(sport_id=sport.id)
+        tournament = await tournament_service.create(tournament_data)
+
+        team_service = TeamServiceDB(test_db)
+        team_data = TeamFactory.build(sport_id=sport.id, title="New Team")
+
+        response = await client.post(
+            f"/api/teams/?tour_id={tournament.id}", json=team_data.model_dump()
+        )
+
+        assert response.status_code == 200
+        assert response.json()["title"] == "New Team"
