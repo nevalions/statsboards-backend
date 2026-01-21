@@ -30,3 +30,4 @@ SWALLOWED_EXCEPTIONS_FIX_PROGRESS.md
 .coverage.*
 htmlcov/
 coverage.json
+tests/test_downloads/
