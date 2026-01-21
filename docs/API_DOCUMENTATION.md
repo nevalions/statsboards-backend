@@ -26,9 +26,14 @@ Frontend integration guide for StatsBoards Backend APIs and WebSocket endpoints.
  - [Match Stats API](#match-stats-api)
  - [WebSocket Message Formats](#websocket-message-formats)
  - [Player Match API](#player-match-api)
- - [Team Rosters API](#team-rosters-api)
- - [Football Events API](#football-events-api)
- - [Error Responses](#error-responses)
+  - [Team Rosters API](#team-rosters-api)
+  - [Sports API](#sports-api)
+  - [Positions API](#positions-api)
+  - [Scoreboards API](#scoreboards-api)
+  - [Playclocks API](#playclocks-api)
+  - [Gameclocks API](#gameclocks-api)
+  - [Football Events API](#football-events-api)
+  - [Error Responses](#error-responses)
  - [Integration Examples](#integration-examples)
 
 ---
@@ -6766,6 +6771,1791 @@ GET /api/matches/id/{match_id}/team-rosters/
 
 ---
 
+## Sports API
+
+Manage sports categories and their associated data (teams, players, positions, tournaments). Sports are the top-level categorization for all athletic activities in the system.
+
+### Response Schemas
+
+```typescript
+interface SportSchema {
+  id: number;
+  title: string; // Max 255 characters
+  description: string | null;
+}
+
+interface SportSchemaCreate {
+  title: string; // Max 255 characters
+  description: string | null; // Optional
+}
+
+interface SportSchemaUpdate {
+  title: string | null; // Optional - Max 255 characters
+  description: string | null; // Optional
+}
+```
+
+---
+
+### POST /api/sports/
+
+Create a new sport.
+
+**Endpoint:**
+```
+POST /api/sports/
+```
+
+**Request Body:**
+```json
+{
+  "title": "American Football",
+  "description": "American football rules and gameplay"
+}
+```
+
+**Request Schema:**
+```typescript
+interface SportSchemaCreate {
+  title: string; // Max 255 characters
+  description: string | null; // Optional description
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "American Football",
+  "description": "American football rules and gameplay"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Bad request - validation error |
+| 409 | Conflict - sport with this title already exists |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/sports/{item_id}/
+
+Update a sport by ID.
+
+**Endpoint:**
+```
+PUT /api/sports/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Sport ID to update |
+
+**Request Body:**
+```json
+{
+  "title": "American Football",
+  "description": "Updated description"
+}
+```
+
+**Request Schema:**
+```typescript
+interface SportSchemaUpdate {
+  title: string | null; // Optional - Max 255 characters
+  description: string | null; // Optional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "American Football",
+  "description": "Updated description"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Sport not found |
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/id/{item_id}/
+
+Get a sport by ID.
+
+**Endpoint:**
+```
+GET /api/sports/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Sport ID to retrieve |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "title": "American Football",
+    "description": "American football rules and gameplay"
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Sport not found |
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/
+
+Get all sports without pagination. Returns a simple list.
+
+**Endpoint:**
+```
+GET /api/sports/
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "American Football",
+    "description": "American football rules"
+  },
+  {
+    "id": 2,
+    "title": "Basketball",
+    "description": "Basketball rules"
+  }
+]
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/paginated
+
+Search sports by title with pagination, sorting, and filtering.
+
+**Endpoint:**
+```
+GET /api/sports/paginated
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | integer | No | 1 | Page number (1-based) |
+| `items_per_page` | integer | No | 20 | Items per page (max 100) |
+| `order_by` | string | No | "title" | First sort column |
+| `order_by_two` | string | No | "id" | Second sort column |
+| `ascending` | boolean | No | true | Sort order (true=asc, false=desc) |
+| `search` | string | No | - | Search query for title (case-insensitive) |
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "American Football",
+      "description": "American football rules"
+    }
+  ],
+  "metadata": {
+    "page": 1,
+    "items_per_page": 20,
+    "total_items": 1,
+    "total_pages": 1,
+    "has_next": false,
+    "has_previous": false
+  }
+}
+```
+
+**Behavior:**
+- Search is case-insensitive and uses partial matching on `title` field
+- Uses ICU collation for consistent international character handling
+- Defaults to ordering by `title` ascending, then by `id`
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 422 | Validation error - invalid query parameters |
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/id/{sport_id}/tournaments
+
+Get all tournaments for a specific sport.
+
+**Endpoint:**
+```
+GET /api/sports/id/{sport_id}/tournaments
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sport_id` | integer | Yes | Sport ID |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 5,
+    "title": "Super Bowl 2024",
+    "season_id": 2,
+    "sport_id": 1
+  },
+  {
+    "id": 6,
+    "title": "NFL Regular Season 2024",
+    "season_id": 2,
+    "sport_id": 1
+  }
+]
+```
+
+**Behavior:**
+- Returns all tournaments belonging to the specified sport
+- Ordered by tournament title in ascending order
+- Returns empty array if no tournaments found
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/id/{sport_id}/teams
+
+Get all teams for a specific sport.
+
+**Endpoint:**
+```
+GET /api/sports/id/{sport_id}/teams
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sport_id` | integer | Yes | Sport ID |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 10,
+    "title": "Patriots",
+    "sport_id": 1
+  },
+  {
+    "id": 11,
+    "title": "Chiefs",
+    "sport_id": 1
+  }
+]
+```
+
+**Behavior:**
+- Returns all teams belonging to the specified sport
+- Returns empty array if no teams found
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/id/{sport_id}/players
+
+Get all players for a specific sport.
+
+**Endpoint:**
+```
+GET /api/sports/id/{sport_id}/players
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sport_id` | integer | Yes | Sport ID |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 100,
+    "first_name": "Tom",
+    "second_name": "Brady",
+    "sport_id": 1
+  },
+  {
+    "id": 101,
+    "first_name": "Patrick",
+    "second_name": "Mahomes",
+    "sport_id": 1
+  }
+]
+```
+
+**Behavior:**
+- Returns all players associated with the specified sport
+- Returns empty array if no players found
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/id/{sport_id}/positions
+
+Get all positions for a specific sport.
+
+**Endpoint:**
+```
+GET /api/sports/id/{sport_id}/positions
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sport_id` | integer | Yes | Sport ID |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Quarterback",
+    "sport_id": 1
+  },
+  {
+    "id": 2,
+    "title": "Wide Receiver",
+    "sport_id": 1
+  }
+]
+```
+
+**Behavior:**
+- Returns all positions belonging to the specified sport
+- Returns empty array if no positions found
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### GET /api/sports/id/{sport_id}/teams/paginated
+
+Get teams for a specific sport with pagination, sorting, and search.
+
+**Endpoint:**
+```
+GET /api/sports/id/{sport_id}/teams/paginated
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sport_id` | integer | Yes | Sport ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | integer | No | 1 | Page number (1-based) |
+| `items_per_page` | integer | No | 20 | Items per page (max 100) |
+| `order_by` | string | No | "title" | First sort column |
+| `order_by_two` | string | No | "id" | Second sort column |
+| `ascending` | boolean | No | true | Sort order (true=asc, false=desc) |
+| `search` | string | No | - | Search query for team title (case-insensitive) |
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 10,
+      "title": "Patriots",
+      "sport_id": 1
+    }
+  ],
+  "metadata": {
+    "page": 1,
+    "items_per_page": 20,
+    "total_items": 1,
+    "total_pages": 1,
+    "has_next": false,
+    "has_previous": false
+  }
+}
+```
+
+**Behavior:**
+- Search is case-insensitive and uses partial matching on `title` field
+- Filters teams by the specified sport_id
+- Uses ICU collation for consistent international character handling
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 422 | Validation error - invalid query parameters |
+| 500 | Internal server error |
+
+---
+
+### DELETE /api/sports/id/{model_id}
+
+Delete a sport by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/sports/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | Sport ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "Sport 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
+| 404 | Sport not found |
+| 500 | Internal server error |
+
+---
+
+## Positions API
+
+Manage player positions within sports. Positions define the roles players can take during gameplay (e.g., Quarterback, Wide Receiver in football).
+
+### Response Schemas
+
+```typescript
+interface PositionSchema {
+  id: number;
+  title: string; // Max 30 characters
+  sport_id: number; // Reference to sport
+}
+
+interface PositionSchemaCreate {
+  title: string; // Max 30 characters
+  sport_id: number; // Required - Reference to sport
+}
+
+interface PositionSchemaUpdate {
+  title: string | null; // Optional - Max 30 characters
+  sport_id: number | null; // Optional
+}
+```
+
+---
+
+### POST /api/positions/
+
+Create a new position.
+
+**Endpoint:**
+```
+POST /api/positions/
+```
+
+**Request Body:**
+```json
+{
+  "title": "Quarterback",
+  "sport_id": 1
+}
+```
+
+**Request Schema:**
+```typescript
+interface PositionSchemaCreate {
+  title: string; // Max 30 characters, defaults to "Position"
+  sport_id: number; // Required - ID of the sport this position belongs to
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Quarterback",
+  "sport_id": 1
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Bad request - validation error |
+| 409 | Conflict - position creation failed |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/positions/{item_id}/
+
+Update a position by ID.
+
+**Endpoint:**
+```
+PUT /api/positions/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Position ID to update |
+
+**Request Body:**
+```json
+{
+  "title": "Wide Receiver",
+  "sport_id": 1
+}
+```
+
+**Request Schema:**
+```typescript
+interface PositionSchemaUpdate {
+  title: string | null; // Optional - Max 30 characters
+  sport_id: number | null; // Optional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Wide Receiver",
+  "sport_id": 1
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Position not found |
+| 500 | Internal server error |
+
+---
+
+### GET /api/positions/title/{item_title}/
+
+Get a position by title.
+
+**Endpoint:**
+```
+GET /api/positions/title/{item_title}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_title` | string | Yes | Position title to search |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Quarterback",
+  "sport_id": 1
+}
+```
+
+**Behavior:**
+- Case-sensitive exact match on position title
+- Returns 404 if position not found
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Position not found |
+| 500 | Internal server error |
+
+---
+
+### DELETE /api/positions/id/{model_id}
+
+Delete a position by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/positions/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | Position ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "Position 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
+| 404 | Position not found |
+| 500 | Internal server error |
+
+---
+
+## Scoreboards API
+
+Manage scoreboard display settings for matches. Scoreboards control what elements are shown during game broadcasts (quarters, time, play clock, down/distance, logos, sponsors, etc.).
+
+### Response Schemas
+
+```typescript
+interface ScoreboardSchema {
+  id: number;
+  is_qtr: boolean; // Show quarter display
+  is_time: boolean; // Show game time display
+  is_playclock: boolean; // Show play clock display
+  is_downdistance: boolean; // Show down & distance display
+  is_tournament_logo: boolean; // Show tournament logo
+  is_main_sponsor: boolean; // Show main sponsor
+  is_sponsor_line: boolean; // Show sponsor line
+  is_match_sponsor_line: boolean; // Show match-specific sponsor line
+
+  is_team_a_start_offense: boolean; // Team A starting offense indicator
+  is_team_b_start_offense: boolean; // Team B starting offense indicator
+  is_team_a_start_defense: boolean; // Team A starting defense indicator
+  is_team_b_start_defense: boolean; // Team B starting defense indicator
+
+  is_home_match_team_lower: boolean; // Lower home team display
+  is_away_match_team_lower: boolean; // Lower away team display
+
+  is_football_qb_full_stats_lower: boolean; // Show QB stats lower panel
+  football_qb_full_stats_match_lower_id: number | null; // QB stats match ID reference
+  is_match_player_lower: boolean; // Show player lower panel
+  player_match_lower_id: number | null; // Player match ID reference
+
+  team_a_game_color: string; // Team A hex color code (max 10 chars)
+  team_b_game_color: string; // Team B hex color code (max 10 chars)
+  use_team_a_game_color: boolean; // Use custom Team A color
+  use_team_b_game_color: boolean; // Use custom Team B color
+
+  team_a_game_title: string | null; // Custom Team A title (max 50 chars)
+  team_b_game_title: string | null; // Custom Team B title (max 50 chars)
+  use_team_a_game_title: boolean; // Use custom Team A title
+  use_team_b_game_title: boolean; // Use custom Team B title
+
+  team_a_game_logo: string | null; // Custom Team A logo path
+  team_b_game_logo: string | null; // Custom Team B logo path
+  use_team_a_game_logo: boolean; // Use custom Team A logo
+  use_team_b_game_logo: boolean; // Use custom Team B logo
+
+  scale_tournament_logo: number | null; // Tournament logo scale factor
+  scale_main_sponsor: number | null; // Main sponsor scale factor
+  scale_logo_a: number | null; // Team A logo scale factor
+  scale_logo_b: number | null; // Team B logo scale factor
+
+  is_flag: boolean | null; // Show flag indicator
+  is_goal_team_a: boolean | null; // Team A goal indicator
+  is_goal_team_b: boolean | null; // Team B goal indicator
+  is_timeout_team_a: boolean | null; // Team A timeout indicator
+  is_timeout_team_b: boolean | null; // Team B timeout indicator
+
+  match_id: number | null; // Associated match ID
+}
+```
+
+---
+
+### POST /api/scoreboards/
+
+Create a new scoreboard configuration.
+
+**Endpoint:**
+```
+POST /api/scoreboards/
+```
+
+**Request Body:**
+```json
+{
+  "is_qtr": true,
+  "is_time": true,
+  "is_playclock": true,
+  "is_downdistance": true,
+  "is_tournament_logo": true,
+  "is_main_sponsor": true,
+  "is_sponsor_line": true,
+  "team_a_game_color": "#c01c28",
+  "team_b_game_color": "#1c71d8",
+  "match_id": 123
+}
+```
+
+**Request Schema:**
+```typescript
+interface ScoreboardSchemaCreate extends ScoreboardSchema {
+  // All scoreboard fields, id is not required
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "is_qtr": true,
+  "is_time": true,
+  "is_playclock": true,
+  "is_downdistance": true,
+  "is_tournament_logo": true,
+  "is_main_sponsor": true,
+  "is_sponsor_line": true,
+  "is_match_sponsor_line": false,
+  "team_a_game_color": "#c01c28",
+  "team_b_game_color": "#1c71d8",
+  "use_team_a_game_color": false,
+  "use_team_b_game_color": false,
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Bad request - validation error |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/scoreboards/{item_id}/
+
+Update a scoreboard by ID.
+
+**Endpoint:**
+```
+PUT /api/scoreboards/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Scoreboard ID to update |
+
+**Request Body:**
+```json
+{
+  "is_qtr": false,
+  "use_team_a_game_color": true
+}
+```
+
+**Request Schema:**
+```typescript
+interface ScoreboardSchemaUpdate {
+  // All scoreboard fields are optional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "is_qtr": false,
+  "is_time": true,
+  "use_team_a_game_color": true,
+  "team_a_game_color": "#c01c28"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Scoreboard not found |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/scoreboards/id/{item_id}/
+
+Update a scoreboard by ID with JSONResponse format.
+
+**Endpoint:**
+```
+PUT /api/scoreboards/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Scoreboard ID to update |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "is_qtr": true,
+    "is_time": true
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Scoreboard not found |
+| 500 | Internal server error |
+
+---
+
+### GET /api/scoreboards/match/id/{match_id}
+
+Get scoreboard by match ID.
+
+**Endpoint:**
+```
+GET /api/scoreboards/match/id/{match_id}
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `match_id` | integer | Yes | Match ID |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "is_qtr": true,
+  "is_time": true,
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Scoreboard not found for this match |
+| 500 | Internal server error |
+
+---
+
+### GET /api/scoreboards/id/{item_id}/
+
+Get a scoreboard by ID.
+
+**Endpoint:**
+```
+GET /api/scoreboards/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Scoreboard ID to retrieve |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "is_qtr": true,
+  "is_time": true,
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Scoreboard not found |
+| 500 | Internal server error |
+
+---
+
+### GET /api/scoreboards/matchdata/id/{matchdata_id}
+
+Get scoreboard by matchdata ID.
+
+**Endpoint:**
+```
+GET /api/scoreboards/matchdata/id/{matchdata_id}
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `matchdata_id` | integer | Yes | MatchData ID |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "is_qtr": true,
+  "is_time": true,
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Scoreboard not found for this matchdata |
+| 500 | Internal server error |
+
+---
+
+### DELETE /api/scoreboards/id/{model_id}
+
+Delete a scoreboard by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/scoreboards/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | Scoreboard ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "Scoreboard 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
+| 404 | Scoreboard not found |
+| 500 | Internal server error |
+
+---
+
+## Playclocks API
+
+Manage play clocks for matches. The play clock counts down the time between plays in American football.
+
+### Response Schemas
+
+```typescript
+interface PlayClockSchema {
+  id: number;
+  playclock: number | null; // Current time in seconds (max 10000)
+  playclock_status: string; // Status: "stopped", "running", "paused" (max 50 chars)
+  match_id: number | null; // Associated match ID
+}
+
+interface PlayClockSchemaCreate {
+  playclock: number | null; // Optional time in seconds (max 10000)
+  playclock_status: string; // Status, defaults to "stopped" (max 50 chars)
+  match_id: number | null; // Optional match ID
+}
+
+interface PlayClockSchemaUpdate {
+  playclock: number | null; // Optional time in seconds
+  playclock_status: string | null; // Optional status
+  match_id: number | null; // Optional match ID
+}
+```
+
+---
+
+### POST /api/playclock/
+
+Create a new play clock.
+
+**Endpoint:**
+```
+POST /api/playclock/
+```
+
+**Request Body:**
+```json
+{
+  "playclock": 40,
+  "playclock_status": "stopped",
+  "match_id": 123
+}
+```
+
+**Request Schema:**
+```typescript
+interface PlayClockSchemaCreate {
+  playclock: number | null; // Optional time in seconds (max 10000)
+  playclock_status: string; // Status, defaults to "stopped" (max 50 chars)
+  match_id: number | null; // Optional associated match ID
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "playclock": 40,
+  "playclock_status": "stopped",
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Bad request - validation error |
+| 500 | Internal server error - database error |
+
+---
+
+### PUT /api/playclock/{item_id}/
+
+Update a play clock by ID.
+
+**Endpoint:**
+```
+PUT /api/playclock/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | PlayClock ID to update |
+
+**Request Body:**
+```json
+{
+  "playclock": 35,
+  "playclock_status": "running"
+}
+```
+
+**Request Schema:**
+```typescript
+interface PlayClockSchemaUpdate {
+  playclock: number | null; // Optional time in seconds
+  playclock_status: string | null; // Optional status
+  match_id: number | null; // Optional match ID
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "playclock": 35,
+  "playclock_status": "running",
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Playclock not found |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/playclock/id/{item_id}/
+
+Update a play clock by ID with JSONResponse format.
+
+**Endpoint:**
+```
+PUT /api/playclock/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | PlayClock ID to update |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "playclock": 35,
+    "playclock_status": "running",
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Playclock not found |
+| 500 | Internal server error |
+
+---
+
+### GET /api/playclock/id/{item_id}/
+
+Get a play clock by ID.
+
+**Endpoint:**
+```
+GET /api/playclock/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | PlayClock ID to retrieve |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "title": "Playclock",
+    "description": "Match playclock"
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Playclock not found |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/playclock/id/{item_id}/running/{sec}/
+
+Start the play clock and begin countdown.
+
+**Endpoint:**
+```
+PUT /api/playclock/id/{item_id}/running/{sec}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | PlayClock ID |
+| `sec` | integer | Yes | Starting time in seconds |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "playclock": 40,
+    "playclock_status": "running",
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Behavior:**
+- Enables match data clock queues for SSE
+- If playclock was not already running, updates to specified time and status "running"
+- Starts background task for decrementing the clock if background tasks are enabled
+- Background task decrements playclock every second until stopped
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Playclock not found |
+| 500 | Internal server error - database error |
+
+---
+
+### PUT /api/playclock/id/{item_id}/{item_status}/{sec}/
+
+Reset the play clock to a specific time and status.
+
+**Endpoint:**
+```
+PUT /api/playclock/id/{item_id}/{item_status}/{sec}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description | Examples |
+|-----------|------|----------|-------------|------------|
+| `item_id` | integer | Yes | PlayClock ID | - |
+| `item_status` | string | Yes | New status | "stopped", "running", "paused" |
+| `sec` | integer | Yes | Time in seconds | 25, 40, 25 |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "playclock": 25,
+    "playclock_status": "stopped",
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Behavior:**
+- Updates playclock to specified time and status
+- Commonly used to reset to 40 seconds (stopped) for new play
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Playclock not found |
+| 500 | Internal server error - database error |
+
+---
+
+### PUT /api/playclock/id/{item_id}/stopped/
+
+Stop the play clock and clear time.
+
+**Endpoint:**
+```
+PUT /api/playclock/id/{item_id}/stopped/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | PlayClock ID |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "playclock": null,
+    "playclock_status": "stopped",
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Behavior:**
+- Sets playclock to `null` and status to "stopped"
+- Used to clear clock display between plays
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Playclock not found |
+| 500 | Internal server error - database error |
+
+---
+
+### DELETE /api/playclock/id/{model_id}
+
+Delete a play clock by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/playclock/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | PlayClock ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "Playclock 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
+| 404 | Playclock not found |
+| 500 | Internal server error |
+
+---
+
+## Gameclocks API
+
+Manage game clocks for matches. The game clock counts down the total game time for quarters and halves in American football.
+
+### Response Schemas
+
+```typescript
+interface GameClockSchema {
+  id: number;
+  gameclock: number; // Total time in seconds (max 10000), default 720 (12 minutes)
+  gameclock_max: number | null; // Maximum time in seconds, default 720
+  gameclock_status: string; // Status: "stopped", "running", "paused" (max 50 chars)
+  gameclock_time_remaining: number | null; // Remaining time during countdown
+  match_id: number | null; // Associated match ID
+}
+
+interface GameClockSchemaCreate {
+  gameclock: number; // Total time in seconds (max 10000), default 720
+  gameclock_max: number | null; // Optional max time
+  gameclock_status: string; // Status, defaults to "stopped" (max 50 chars)
+  gameclock_time_remaining: number | null; // Optional remaining time
+  match_id: number | null; // Optional match ID
+}
+
+interface GameClockSchemaUpdate {
+  gameclock: number | null; // Optional time in seconds
+  gameclock_max: number | null; // Optional max time
+  gameclock_status: string | null; // Optional status
+  gameclock_time_remaining: number | null; // Optional remaining time
+  match_id: number | null; // Optional match ID
+}
+```
+
+---
+
+### POST /api/gameclock/
+
+Create a new game clock.
+
+**Endpoint:**
+```
+POST /api/gameclock/
+```
+
+**Request Body:**
+```json
+{
+  "gameclock": 720,
+  "gameclock_max": 720,
+  "gameclock_status": "stopped",
+  "match_id": 123
+}
+```
+
+**Request Schema:**
+```typescript
+interface GameClockSchemaCreate {
+  gameclock: number; // Total time in seconds (max 10000), default 720
+  gameclock_max: number | null; // Optional maximum time
+  gameclock_status: string; // Status, defaults to "stopped" (max 50 chars)
+  gameclock_time_remaining: number | null; // Optional remaining time
+  match_id: number | null; // Optional associated match ID
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "gameclock": 720,
+  "gameclock_max": 720,
+  "gameclock_status": "stopped",
+  "gameclock_time_remaining": null,
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Bad request - validation error |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/gameclock/{item_id}/
+
+Update a game clock by ID.
+
+**Endpoint:**
+```
+PUT /api/gameclock/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | GameClock ID to update |
+
+**Request Body:**
+```json
+{
+  "gameclock_status": "running"
+}
+```
+
+**Request Schema:**
+```typescript
+interface GameClockSchemaUpdate {
+  gameclock: number | null; // Optional time in seconds
+  gameclock_max: number | null; // Optional max time
+  gameclock_status: string | null; // Optional status
+  gameclock_time_remaining: number | null; // Optional remaining time
+  match_id: number | null; // Optional match ID
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "gameclock": 720,
+  "gameclock_max": 720,
+  "gameclock_status": "running",
+  "gameclock_time_remaining": 720,
+  "match_id": 123
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Gameclock not found |
+| 409 | Error updating gameclock |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/gameclock/id/{item_id}/
+
+Update a game clock by ID with JSONResponse format.
+
+**Endpoint:**
+```
+PUT /api/gameclock/id/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | GameClock ID to update |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "gameclock": 720,
+    "gameclock_status": "running",
+    "gameclock_time_remaining": 720,
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Gameclock not found |
+| 500 | Internal server error |
+
+---
+
+### PUT /api/gameclock/id/{gameclock_id}/running/
+
+Start the game clock and begin countdown.
+
+**Endpoint:**
+```
+PUT /api/gameclock/id/{gameclock_id}/running/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gameclock_id` | integer | Yes | GameClock ID |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "gameclock": 720,
+    "gameclock_max": 720,
+    "gameclock_status": "running",
+    "gameclock_time_remaining": 720,
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Behavior:**
+- If gameclock was not running, updates status to "running" and sets `gameclock_time_remaining` to current `gameclock` value
+- Starts background task for decrementing the game clock
+- Background task decrements `gameclock_time_remaining` every second
+- If gameclock was already running, returns current state with message
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### PUT /api/gameclock/id/{item_id}/paused/
+
+Pause the game clock.
+
+**Endpoint:**
+```
+PUT /api/gameclock/id/{item_id}/paused/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | GameClock ID |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "gameclock": 720,
+    "gameclock_status": "paused",
+    "gameclock_time_remaining": 650,
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Behavior:**
+- Pauses the countdown timer
+- Keeps `gameclock_time_remaining` at current value
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/
+
+Reset the game clock to a specific time and status.
+
+**Endpoint:**
+```
+PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description | Examples |
+|-----------|------|----------|-------------|------------|
+| `item_id` | integer | Yes | GameClock ID | - |
+| `item_status` | string | Yes | New status | "stopped", "running", "paused" |
+| `sec` | integer | Yes | Time in seconds | 720, 900, 1800 |
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "gameclock": 900,
+    "gameclock_max": 720,
+    "gameclock_status": "stopped",
+    "gameclock_time_remaining": null,
+    "match_id": 123
+  },
+  "status_code": 200,
+  "success": true
+}
+```
+
+**Behavior:**
+- Updates gameclock to specified time and status
+- Commonly used to reset quarter/half times (900s = 15 min, 1800s = 30 min)
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### DELETE /api/gameclock/id/{model_id}
+
+Delete a game clock by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/gameclock/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | GameClock ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "Gameclock 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
+| 404 | Gameclock not found |
+| 500 | Internal server error |
+
+---
+
 ## Football Events API
 
 ### GET /api/football_event/matches/{match_id}/events-with-players/
@@ -6984,12 +8774,252 @@ This endpoint provides significant performance improvements over frontend-only j
 
 **Use Case:**
 
-Use this endpoint when displaying football plays in the scoreboard or play-by-play view where player information (name, photo, position, team) is needed for each event.
+Use this endpoint when displaying football plays in scoreboard or play-by-play view where player information (name, photo, position, team) is needed for each event.
+
+---
+
+### POST /api/football_event/
+
+Create a new football event.
+
+**Endpoint:**
+```
+POST /api/football_event/
+```
+
+**Request Body:**
+```json
+{
+  "match_id": 123,
+  "event_number": 1,
+  "event_qtr": 1,
+  "ball_on": 25,
+  "ball_moved_to": 37,
+  "offense_team": 1,
+  "event_qb": 456,
+  "event_down": 1,
+  "event_distance": 10,
+  "play_type": "pass",
+  "play_result": "pass_completed"
+}
+```
+
+**Request Schema:**
+```typescript
+interface FootballEventSchemaCreate {
+  match_id: number | null; // Optional associated match ID
+
+  event_number: number | null; // Event sequence number
+  event_qtr: number | null; // Quarter (1, 2, 3, 4)
+  ball_on: number | null; // Ball position (yard line)
+  ball_moved_to: number | null; // Ball moved to position
+  ball_picked_on: number | null; // Ball picked up position
+  ball_kicked_to: number | null; // Kick destination
+  ball_returned_to: number | null; // Return destination
+  ball_picked_on_fumble: number | null; // Fumble pickup position
+  ball_returned_to_on_fumble: number | null; // Fumble return position
+  offense_team: number | null; // Team ID on offense
+
+  event_qb: number | null; // Quarterback player ID
+  event_down: number | null; // Down (1, 2, 3, 4)
+  event_distance: number | null; // Distance to gain
+  distance_on_offence: number | null; // Distance gained on offense
+
+  event_hash: string | null; // Event hash (max 150 chars)
+  play_direction: string | null; // "left", "right", "middle" (max 150 chars)
+  event_strong_side: string | null; // "left", "right" (max 150 chars)
+  play_type: string | null; // "run", "pass", "kick", "punt" (max 150 chars)
+  play_result: string | null; // "gain", "loss", "incomplete", "interception" (max 150 chars)
+  score_result: string | null; // "touchdown", "field_goal", "none" (max 150 chars)
+
+  is_fumble: boolean | null; // Fumble occurred
+  is_fumble_recovered: boolean | null; // Fumble recovered
+
+  // Player references (all optional)
+  run_player: number | null; // Running back player ID
+  pass_received_player: number | null; // Receiver player ID
+  pass_dropped_player: number | null; // Dropped pass player ID
+  pass_deflected_player: number | null; // Deflected pass player ID
+  pass_intercepted_player: number | null; // Interception player ID
+  fumble_player: number | null; // Fumble player ID
+  fumble_recovered_player: number | null; // Fumble recovery player ID
+  tackle_player: number | null; // Tackle player ID
+  assist_tackle_player: number | null; // Assist tackle player ID
+  sack_player: number | null; // Sack player ID
+  score_player: number | null; // Scoring player ID
+  defence_score_player: number | null; // Defensive score player ID
+  kickoff_player: number | null; // Kickoff player ID
+  return_player: number | null; // Return player ID
+  pat_one_player: number | null; // PAT kicker player ID
+  flagged_player: number | null; // Flagged player ID
+  kick_player: number | null; // Kick player ID
+  punt_player: number | null; // Punt player ID
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "match_id": 123,
+  "event_number": 1,
+  "event_qtr": 1,
+  "ball_on": 25,
+  "ball_moved_to": 37,
+  "play_type": "pass",
+  "play_result": "pass_completed"
+}
+```
 
 **Error Responses:**
 
-- **404 Not Found** - Match doesn't exist
-- **500 Internal Server Error** - Server error
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### PUT /api/football_event/{item_id}/
+
+Update a football event by ID.
+
+**Endpoint:**
+```
+PUT /api/football_event/{item_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `item_id` | integer | Yes | Football Event ID to update |
+
+**Request Body:**
+```json
+{
+  "event_down": 2,
+  "ball_moved_to": 42,
+  "play_result": "incomplete"
+}
+```
+
+**Request Schema:**
+```typescript
+interface FootballEventSchemaUpdate {
+  // All fields from FootballEventSchemaCreate are optional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "match_id": 123,
+  "event_number": 1,
+  "event_qtr": 1,
+  "ball_on": 25,
+  "ball_moved_to": 42,
+  "event_down": 2,
+  "play_result": "incomplete"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Football event not found |
+| 500 | Internal server error |
+
+---
+
+### GET /api/football_event/match_id/{match_id}/
+
+Get all football events for a specific match.
+
+**Endpoint:**
+```
+GET /api/football_event/match_id/{match_id}/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `match_id` | integer | Yes | Match ID |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "match_id": 123,
+    "event_number": 1,
+    "event_qtr": 1,
+    "ball_on": 25,
+    "play_type": "pass",
+    "play_result": "pass_completed"
+  },
+  {
+    "id": 2,
+    "match_id": 123,
+    "event_number": 2,
+    "event_qtr": 1,
+    "ball_on": 37,
+    "play_type": "run",
+    "play_result": "gain"
+  }
+]
+```
+
+**Behavior:**
+- Returns all football events for the specified match
+- Ordered by event number ascending
+- Returns empty array if no events found
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal server error |
+
+---
+
+### DELETE /api/football_event/id/{model_id}
+
+Delete a football event by ID. Requires admin role.
+
+**Endpoint:**
+```
+DELETE /api/football_event/id/{model_id}
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model_id` | integer | Yes | Football Event ID to delete |
+
+**Response (200 OK):**
+```json
+{
+  "detail": "FootballEvent 1 deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 401 | Unauthorized - missing or invalid token |
+| 403 | Forbidden - user does not have admin role |
+| 404 | Football Event not found |
+| 500 | Internal server error |
 
 ---
 
