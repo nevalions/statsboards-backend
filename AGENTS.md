@@ -71,7 +71,24 @@ All 1207 tests pass in parallel (~91s with pytest-xdist using 4 workers). Tests 
 - gw0, gw2 → test_db
 - gw1, gw3 → test_db2
 
-**Coverage:** ~69% overall, with comprehensive coverage of core utilities, error handling, router registry, Redis services, SSE queues, and match parser.
+**Coverage:** ~76% overall (76.32% as of 2026-01-21), with comprehensive coverage of core utilities, error handling, router registry, Redis services, SSE queues, and match parser.
+
+**Modules with low coverage (<50%):**
+- `src/websocket/match_handler.py` (20.50%) - WebSocket match data handler
+- `src/pars_eesl/pars_tournament.py` (42.29%) - EESL tournament parser
+- `src/player_team_tournament/views.py` (44.32%) - Player-team-tournament API endpoints
+- `src/playclocks/views.py` (46.22%) - Play clock API endpoints
+- `src/player/views.py` (50.94%) - Player API endpoints
+- `src/player_match/views.py` (50.34%) - Player-match API endpoints
+
+**Modules with high coverage (>90%):**
+- Most schema files have 100% coverage
+- `src/helpers/file_service.py` (97.46%)
+- `src/helpers/download_service.py` (95.05%)
+- `src/helpers/upload_service.py` (96.34%)
+- `src/seasons/db_services.py` (94.74%)
+- `src/sports/views.py` (95.77%)
+- Many core utilities and database services
 
 **Important:** When writing test fixtures, use `flush()` instead of `commit()` to avoid deadlocks during parallel test execution. The outer test fixture handles rollback automatically.
 

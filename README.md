@@ -268,7 +268,7 @@ docs/                          # Documentation
 ### Code Quality
 - Consistent service layer pattern with `BaseServiceDB`
 - Service registry pattern for dependency injection and decoupling
-- Comprehensive test coverage (1207 tests, passing in ~91s with 4 parallel workers)
+- Comprehensive test coverage (~76% overall, 1207 tests passing in ~91s with 4 parallel workers)
 - Type hints throughout codebase
 - Async/await for all database operations
 - Mixin-based CRUD, query, and relationship operations
