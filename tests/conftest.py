@@ -176,7 +176,8 @@ async def test_app(test_db):
     from src.football_events.views import FootballEventAPIRouter
     from src.gameclocks.db_services import GameClockServiceDB
     from src.gameclocks.views import GameClockAPIRouter
-    from src.global_settings.views import api_global_setting_router
+    from src.global_settings.db_services import GlobalSettingServiceDB
+    from src.global_settings.views import GlobalSettingAPIRouter
     from src.matchdata.db_services import MatchDataServiceDB
     from src.matchdata.views import MatchDataAPIRouter
     from src.matches.crud_router import MatchCRUDRouter
@@ -238,7 +239,7 @@ async def test_app(test_db):
     app.include_router(TeamAPIRouter(TeamServiceDB(test_db)).route())
     app.include_router(TournamentAPIRouter(TournamentServiceDB(test_db)).route())
     app.include_router(api_auth_router)
-    app.include_router(api_global_setting_router)
+    app.include_router(GlobalSettingAPIRouter(GlobalSettingServiceDB(test_db)).route())
     app.include_router(get_user_router())
     app.include_router(health.router)
     try:

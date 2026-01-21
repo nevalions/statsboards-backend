@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
@@ -18,31 +19,60 @@ class CRUDMixin:
         db: "Database"
 
     async def create(self, item):
-        async with self.db.async_session() as session:
-            self.logger.debug(
-                f"Starting to create {self.model.__name__} with data: {item.__dict__}"
-            )
-            try:
-                if isinstance(item, BaseModel):
-                    item = self.model(**item.model_dump())
-                session.add(item)
-                if hasattr(self.db, "test_mode") and self.db.test_mode:
-                    await session.flush()
-                else:
-                    await session.commit()
-                await session.refresh(item)
-                self.logger.info(f"{self.model.__name__} created successfully: {item.__dict__}")
-                return item
-            except IntegrityError as ex:
-                self.logger.error(
-                    f"Integrity error creating {self.model.__name__}: {ex}",
-                    exc_info=True,
+        max_retries = 2 if hasattr(self.db, "test_mode") and self.db.test_mode else 0
+        attempt = 0
+
+        while True:
+            async with self.db.async_session() as session:
+                self.logger.debug(
+                    f"Starting to create {self.model.__name__} with data: {item.__dict__}"
                 )
-                await session.rollback()
-                raise
-            except Exception:
-                await session.rollback()
-                raise
+                try:
+                    if isinstance(item, BaseModel):
+                        item_to_add = self.model(**item.model_dump())
+                    elif attempt > 0:
+                        item_to_add = self.model(
+                            **{
+                                key: value
+                                for key, value in item.__dict__.items()
+                                if not key.startswith("_sa_")
+                            }
+                        )
+                    else:
+                        item_to_add = item
+
+                    session.add(item_to_add)
+                    if hasattr(self.db, "test_mode") and self.db.test_mode:
+                        await session.flush()
+                    else:
+                        await session.commit()
+                    await session.refresh(item_to_add)
+                    self.logger.info(
+                        f"{self.model.__name__} created successfully: {item_to_add.__dict__}"
+                    )
+                    return item_to_add
+                except IntegrityError as ex:
+                    self.logger.error(
+                        f"Integrity error creating {self.model.__name__}: {ex}",
+                        exc_info=True,
+                    )
+                    await session.rollback()
+                    raise
+                except SQLAlchemyError as ex:
+                    await session.rollback()
+                    if (
+                        attempt < max_retries
+                        and "deadlock detected" in str(ex).lower()
+                        and hasattr(self.db, "test_mode")
+                        and self.db.test_mode
+                    ):
+                        attempt += 1
+                        await asyncio.sleep(0.05 * attempt)
+                        continue
+                    raise
+                except Exception:
+                    await session.rollback()
+                    raise
 
     async def get_all_elements(self):
         async with self.db.async_session() as session:

@@ -5,12 +5,146 @@ global service registry, enabling dependency injection and decoupling
 services from each other.
 """
 
+from typing import Any, Callable
+
+from src.core.models import BaseServiceDB
 from src.core.models.base import Database
-from src.core.service_registry import (
-    ServiceRegistry,
-    get_service_registry,
-    register_service,
-)
+from src.core.service_registry import ServiceRegistry, get_service_registry, register_service
+
+ServiceFactory = Callable[[Database], Any]
+ServiceDefinition = tuple[str, ServiceFactory, bool]
+
+
+def _sport_factory(database: Database) -> BaseServiceDB:
+    from src.sports.db_services import SportServiceDB
+
+    return SportServiceDB(database)
+
+
+def _season_factory(database: Database) -> BaseServiceDB:
+    from src.seasons.db_services import SeasonServiceDB
+
+    return SeasonServiceDB(database)
+
+
+def _tournament_factory(database: Database) -> BaseServiceDB:
+    from src.tournaments.db_services import TournamentServiceDB
+
+    return TournamentServiceDB(database)
+
+
+def _team_factory(database: Database) -> BaseServiceDB:
+    from src.teams.db_services import TeamServiceDB
+
+    return TeamServiceDB(database)
+
+
+def _match_factory(database: Database) -> BaseServiceDB:
+    from src.matches.db_services import MatchServiceDB
+
+    return MatchServiceDB(database)
+
+
+def _player_factory(database: Database) -> BaseServiceDB:
+    from src.player.db_services import PlayerServiceDB
+
+    return PlayerServiceDB(database)
+
+
+def _person_factory(database: Database) -> BaseServiceDB:
+    from src.person.db_services import PersonServiceDB
+
+    return PersonServiceDB(database)
+
+
+def _player_match_factory(database: Database) -> BaseServiceDB:
+    from src.player_match.db_services import PlayerMatchServiceDB
+
+    return PlayerMatchServiceDB(database)
+
+
+def _player_team_tournament_factory(database: Database) -> BaseServiceDB:
+    from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
+
+    return PlayerTeamTournamentServiceDB(database)
+
+
+def _position_factory(database: Database) -> BaseServiceDB:
+    from src.positions.db_services import PositionServiceDB
+
+    return PositionServiceDB(database)
+
+
+def _sponsor_factory(database: Database) -> BaseServiceDB:
+    from src.sponsors.db_services import SponsorServiceDB
+
+    return SponsorServiceDB(database)
+
+
+def _sponsor_line_factory(database: Database) -> BaseServiceDB:
+    from src.sponsor_lines.db_services import SponsorLineServiceDB
+
+    return SponsorLineServiceDB(database)
+
+
+def _sponsor_sponsor_line_factory(database: Database) -> BaseServiceDB:
+    from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
+
+    return SponsorSponsorLineServiceDB(database)
+
+
+def _matchdata_factory(database: Database) -> BaseServiceDB:
+    from src.matchdata.db_services import MatchDataServiceDB
+
+    return MatchDataServiceDB(database)
+
+
+def _playclock_factory(database: Database) -> BaseServiceDB:
+    from src.playclocks.db_services import PlayClockServiceDB
+
+    return PlayClockServiceDB(database)
+
+
+def _gameclock_factory(database: Database) -> BaseServiceDB:
+    from src.gameclocks.db_services import GameClockServiceDB
+
+    return GameClockServiceDB(database)
+
+
+def _scoreboard_factory(database: Database) -> BaseServiceDB:
+    from src.scoreboards.db_services import ScoreboardServiceDB
+
+    return ScoreboardServiceDB(database)
+
+
+def _football_event_factory(database: Database) -> BaseServiceDB:
+    from src.football_events.db_services import FootballEventServiceDB
+
+    return FootballEventServiceDB(database)
+
+
+def _match_stats_factory(database: Database) -> BaseServiceDB:
+    from src.matches.stats_service import MatchStatsServiceDB
+
+    return MatchStatsServiceDB(database)
+
+
+def _match_data_cache_factory(database: Database) -> Any:
+    from src.matches.match_data_cache_service import MatchDataCacheService
+
+    return MatchDataCacheService(database)
+
+
+def _user_factory(database: Database) -> BaseServiceDB:
+    from src.users.db_services import UserServiceDB
+
+    return UserServiceDB(database)
+
+
+def _global_setting_factory(database: Database) -> BaseServiceDB:
+    from src.global_settings.db_services import GlobalSettingServiceDB
+
+    return GlobalSettingServiceDB(database)
 
 
 def register_all_services(database: Database) -> ServiceRegistry:
@@ -27,118 +161,33 @@ def register_all_services(database: Database) -> ServiceRegistry:
     """
     registry = get_service_registry()
 
-    if not registry.has("sport"):
-        from src.sports.db_services import SportServiceDB
+    services: tuple[ServiceDefinition, ...] = (
+        ("sport", _sport_factory, False),
+        ("season", _season_factory, False),
+        ("tournament", _tournament_factory, False),
+        ("team", _team_factory, False),
+        ("match", _match_factory, False),
+        ("player", _player_factory, False),
+        ("person", _person_factory, False),
+        ("player_match", _player_match_factory, False),
+        ("player_team_tournament", _player_team_tournament_factory, False),
+        ("position", _position_factory, False),
+        ("sponsor", _sponsor_factory, False),
+        ("sponsor_line", _sponsor_line_factory, False),
+        ("sponsor_sponsor_line", _sponsor_sponsor_line_factory, False),
+        ("matchdata", _matchdata_factory, False),
+        ("playclock", _playclock_factory, False),
+        ("gameclock", _gameclock_factory, False),
+        ("scoreboard", _scoreboard_factory, False),
+        ("football_event", _football_event_factory, False),
+        ("match_stats", _match_stats_factory, False),
+        ("match_data_cache", _match_data_cache_factory, True),
+        ("user", _user_factory, False),
+        ("global_setting", _global_setting_factory, False),
+    )
 
-        register_service("sport", lambda db: SportServiceDB(db), singleton=False)
-
-    if not registry.has("season"):
-        from src.seasons.db_services import SeasonServiceDB
-
-        register_service("season", lambda db: SeasonServiceDB(db), singleton=False)
-
-    if not registry.has("tournament"):
-        from src.tournaments.db_services import TournamentServiceDB
-
-        register_service("tournament", lambda db: TournamentServiceDB(db), singleton=False)
-
-    if not registry.has("team"):
-        from src.teams.db_services import TeamServiceDB
-
-        register_service("team", lambda db: TeamServiceDB(db), singleton=False)
-
-    if not registry.has("match"):
-        from src.matches.db_services import MatchServiceDB
-
-        register_service("match", lambda db: MatchServiceDB(db), singleton=False)
-
-    if not registry.has("player"):
-        from src.player.db_services import PlayerServiceDB
-
-        register_service("player", lambda db: PlayerServiceDB(db), singleton=False)
-
-    if not registry.has("person"):
-        from src.person.db_services import PersonServiceDB
-
-        register_service("person", lambda db: PersonServiceDB(db), singleton=False)
-
-    if not registry.has("player_match"):
-        from src.player_match.db_services import PlayerMatchServiceDB
-
-        register_service("player_match", lambda db: PlayerMatchServiceDB(db), singleton=False)
-
-    if not registry.has("player_team_tournament"):
-        from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
-
-        register_service(
-            "player_team_tournament", lambda db: PlayerTeamTournamentServiceDB(db), singleton=False
-        )
-
-    if not registry.has("position"):
-        from src.positions.db_services import PositionServiceDB
-
-        register_service("position", lambda db: PositionServiceDB(db), singleton=False)
-
-    if not registry.has("sponsor"):
-        from src.sponsors.db_services import SponsorServiceDB
-
-        register_service("sponsor", lambda db: SponsorServiceDB(db), singleton=False)
-
-    if not registry.has("sponsor_line"):
-        from src.sponsor_lines.db_services import SponsorLineServiceDB
-
-        register_service("sponsor_line", lambda db: SponsorLineServiceDB(db), singleton=False)
-
-    if not registry.has("sponsor_sponsor_line"):
-        from src.sponsor_sponsor_line_connection.db_services import SponsorSponsorLineServiceDB
-
-        register_service(
-            "sponsor_sponsor_line", lambda db: SponsorSponsorLineServiceDB(db), singleton=False
-        )
-
-    if not registry.has("matchdata"):
-        from src.matchdata.db_services import MatchDataServiceDB
-
-        register_service("matchdata", lambda db: MatchDataServiceDB(db), singleton=False)
-
-    if not registry.has("playclock"):
-        from src.playclocks.db_services import PlayClockServiceDB
-
-        register_service("playclock", lambda db: PlayClockServiceDB(db), singleton=False)
-
-    if not registry.has("gameclock"):
-        from src.gameclocks.db_services import GameClockServiceDB
-
-        register_service("gameclock", lambda db: GameClockServiceDB(db), singleton=False)
-
-    if not registry.has("scoreboard"):
-        from src.scoreboards.db_services import ScoreboardServiceDB
-
-        register_service("scoreboard", lambda db: ScoreboardServiceDB(db), singleton=False)
-
-    if not registry.has("football_event"):
-        from src.football_events.db_services import FootballEventServiceDB
-
-        register_service("football_event", lambda db: FootballEventServiceDB(db), singleton=False)
-
-    if not registry.has("match_stats"):
-        from src.matches.stats_service import MatchStatsServiceDB
-
-        register_service("match_stats", lambda db: MatchStatsServiceDB(db), singleton=False)
-
-    if not registry.has("match_data_cache"):
-        from src.matches.match_data_cache_service import MatchDataCacheService
-
-        register_service("match_data_cache", lambda db: MatchDataCacheService(db), singleton=True)
-
-    if not registry.has("user"):
-        from src.users.db_services import UserServiceDB
-
-        register_service("user", lambda db: UserServiceDB(db), singleton=False)
-
-    if not registry.has("global_setting"):
-        from src.global_settings.db_services import GlobalSettingServiceDB
-
-        register_service("global_setting", lambda db: GlobalSettingServiceDB(db), singleton=False)
+    for service_name, factory, singleton in services:
+        if not registry.has(service_name):
+            register_service(service_name, factory, singleton=singleton)
 
     return registry
