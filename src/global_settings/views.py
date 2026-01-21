@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
 from src.core.models import UserDB
+from src.core.service_registry import get_service_registry
 from src.seasons.schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
 
 from ..logging_config import get_logger
@@ -54,7 +55,10 @@ class GlobalSettingAPIRouter(
         async def get_setting_value(key: str):
             """Get a specific setting value with type conversion."""
             self.logger.debug(f"Get setting value for key:{key}")
-            value = await self.service.get_value(key)
+            # Use service registry to get fresh service instance with correct database
+            registry = get_service_registry()
+            service = registry.get("global_setting")
+            value = await service.get_value(key)
             if value is None:
                 raise HTTPException(
                     status_code=404,

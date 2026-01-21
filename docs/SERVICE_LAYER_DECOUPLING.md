@@ -142,6 +142,58 @@ async def lifespan(_app: FastAPI):
         await db.close()
 ```
 
+## Usage in Router Endpoints
+
+When creating router endpoints that need database access, especially for operations that create their own sessions (like `get_value()` calls that use `async with self.db.async_session()`), use the service registry to ensure the correct database connection is used:
+
+```python
+# src/my_module/views.py
+
+from src.core.service_registry import get_service_registry
+
+class MyAPIRouter(BaseRouter):
+    def route(self):
+        router = super().route()
+
+        @router.get("/value/{key}")
+        async def get_value_endpoint(key: str):
+            # Get fresh service instance with correct database for current event loop
+            registry = get_service_registry()
+            service = registry.get("my_service")
+            return await service.get_value(key)
+
+        @router.get("/complex-operation/{id}")
+        async def complex_operation_endpoint(id: int):
+            # Get database from registry for multiple service instantiation
+            registry = get_service_registry()
+            database = registry.database
+
+            service_a = ServiceA(database)
+            service_b = ServiceB(database)
+            # ... use services
+```
+
+### Why This Matters
+
+The global `db` object is created at module load time and bound to the initial event loop. During parallel test execution (with pytest-xdist), different test workers run in different event loops. Using the global `db` directly in endpoints can cause "Task got Future attached to a different loop" errors.
+
+By using `get_service_registry().database`, you get the database instance that was registered during application/test startup for the current event loop context.
+
+### When to Use the Registry in Endpoints
+
+Use the service registry pattern when:
+1. The endpoint needs to create new service instances dynamically
+2. The endpoint calls service methods that create their own sessions
+3. The router is created at module load time with a global `db` reference
+
+The router initialization itself can still use the global `db`:
+```python
+# This is fine - router is re-initialized per test
+api_router = MyAPIRouter(MyServiceDB(db)).route()
+```
+
+But endpoint code should use the registry for runtime database access.
+
 ## Benefits
 
 1. **Loose Coupling**: Services no longer directly import each other
@@ -150,6 +202,7 @@ async def lifespan(_app: FastAPI):
 4. **Centralized Configuration**: All service registration in one place
 5. **Lazy Initialization**: Registry only accessed when needed
 6. **No Circular Imports**: Dependencies resolved through names, not imports
+7. **Event Loop Safety**: Registry ensures correct database for current async context
 
 ## Migration Guide
 

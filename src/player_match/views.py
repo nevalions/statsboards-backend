@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
 from src.core.models import PlayerMatchDB
+from src.core.service_registry import get_service_registry
 from src.helpers.photo_utils import photo_files_exist
 
 from ..logging_config import get_logger
@@ -151,14 +152,18 @@ class PlayerMatchAPIRouter(
             from ..teams.db_services import TeamServiceDB
 
             try:
+                # Get database from service registry for correct event loop context
+                registry = get_service_registry()
+                database = registry.database
+
                 parsed_match: ParsedMatch = await parse_match_and_create_jsons(eesl_match_id)
-                match_service = MatchServiceDB(db)
-                position_service = PositionServiceDB(db)
+                match_service = MatchServiceDB(database)
+                position_service = PositionServiceDB(database)
                 match: MatchSchemaBase = await match_service.get_match_by_eesl_id(eesl_match_id)
-                team_a: TeamSchemaBase = await TeamServiceDB(db).get_team_by_eesl_id(
+                team_a: TeamSchemaBase = await TeamServiceDB(database).get_team_by_eesl_id(
                     parsed_match["team_a_eesl_id"]
                 )
-                team_b: TeamSchemaBase = await TeamServiceDB(db).get_team_by_eesl_id(
+                team_b: TeamSchemaBase = await TeamServiceDB(database).get_team_by_eesl_id(
                     parsed_match["team_b_eesl_id"]
                 )
 
@@ -186,10 +191,10 @@ class PlayerMatchAPIRouter(
                                 "sport_id": 1,
                             }
                             self.logger.debug("Creating new position for home player")
-                            position = await PositionServiceDB(db).create(
+                            position = await PositionServiceDB(database).create(
                                 PositionSchemaCreate(**position_schema)
                             )
-                        person = await PersonServiceDB(db).get_person_by_eesl_id(
+                        person = await PersonServiceDB(database).get_person_by_eesl_id(
                             home_player["player_eesl_id"]
                         )
                         needs_photo_download = (
@@ -217,11 +222,11 @@ class PlayerMatchAPIRouter(
                                 continue
                             person_schema = PersonSchemaCreate(**player_in_team["person"])
                             self.logger.debug("Creating/updating person for home player")
-                            person = await PersonServiceDB(db).create_or_update_person(
+                            person = await PersonServiceDB(database).create_or_update_person(
                                 person_schema
                             )
 
-                        player = await PlayerServiceDB(db).get_player_by_eesl_id(
+                        player = await PlayerServiceDB(database).get_player_by_eesl_id(
                             home_player["player_eesl_id"]
                         )
                         if player is None:
@@ -234,12 +239,12 @@ class PlayerMatchAPIRouter(
                                 }
                             )
                             self.logger.debug("Creating new player for home player")
-                            player = await PlayerServiceDB(db).create_or_update_player(
+                            player = await PlayerServiceDB(database).create_or_update_player(
                                 player_schema
                             )
 
                         player_in_team = await PlayerTeamTournamentServiceDB(
-                            db
+                            database
                         ).get_player_team_tournament_by_eesl_id(home_player["player_eesl_id"])
 
                         if player_in_team is None:
@@ -256,7 +261,7 @@ class PlayerMatchAPIRouter(
                             )
                             self.logger.debug("Creating new player in team for home player")
                             player_in_team = await PlayerTeamTournamentServiceDB(
-                                db
+                                database
                             ).create_or_update_player_team_tournament(created_player_in_team_schema)
                         else:
                             self.logger.debug("Player exists in team for home player, updating")
@@ -271,7 +276,7 @@ class PlayerMatchAPIRouter(
                                 }
                             )
                             player_in_team = await PlayerTeamTournamentServiceDB(
-                                db
+                                database
                             ).create_or_update_player_team_tournament(updated_player_in_team_schema)
 
                         if team_a is None or player_in_team is None:
@@ -318,7 +323,7 @@ class PlayerMatchAPIRouter(
                                 player_schema["match_number"] = exist_player_in_match.match_number
                                 player_schema["team_id"] = exist_player_in_match.team_id
                                 player_schema["is_start"] = True
-                                position = await PositionServiceDB(db).get_by_id(
+                                position = await PositionServiceDB(database).get_by_id(
                                     exist_player_in_match.match_position_id
                                 )
 
@@ -350,10 +355,10 @@ class PlayerMatchAPIRouter(
                                 "sport_id": 1,
                             }
                             self.logger.debug("Creating new position for away player")
-                            position = await PositionServiceDB(db).create(
+                            position = await PositionServiceDB(database).create(
                                 PositionSchemaCreate(**position_schema)
                             )
-                        person = await PersonServiceDB(db).get_person_by_eesl_id(
+                        person = await PersonServiceDB(database).get_person_by_eesl_id(
                             away_player["player_eesl_id"]
                         )
                         needs_photo_download = (
@@ -381,11 +386,11 @@ class PlayerMatchAPIRouter(
                                 continue
                             person_schema = PersonSchemaCreate(**player_in_team["person"])
                             self.logger.debug("Creating/updating person for away player")
-                            person = await PersonServiceDB(db).create_or_update_person(
+                            person = await PersonServiceDB(database).create_or_update_person(
                                 person_schema
                             )
 
-                        player = await PlayerServiceDB(db).get_player_by_eesl_id(
+                        player = await PlayerServiceDB(database).get_player_by_eesl_id(
                             away_player["player_eesl_id"]
                         )
                         if player is None:
@@ -398,12 +403,12 @@ class PlayerMatchAPIRouter(
                                 }
                             )
                             self.logger.debug("Creating new player for away player")
-                            player = await PlayerServiceDB(db).create_or_update_player(
+                            player = await PlayerServiceDB(database).create_or_update_player(
                                 player_schema
                             )
 
                         player_in_team = await PlayerTeamTournamentServiceDB(
-                            db
+                            database
                         ).get_player_team_tournament_by_eesl_id(away_player["player_eesl_id"])
 
                         if player_in_team is None:
@@ -419,7 +424,7 @@ class PlayerMatchAPIRouter(
                             )
                             logger.debug("Creating new player in team for away player")
                             player_in_team = await PlayerTeamTournamentServiceDB(
-                                db
+                                database
                             ).create_or_update_player_team_tournament(created_player_in_team_schema)
                         else:
                             logger.debug("Player in team exists, updating player")
@@ -434,7 +439,7 @@ class PlayerMatchAPIRouter(
                                 }
                             )
                             player_in_team = await PlayerTeamTournamentServiceDB(
-                                db
+                                database
                             ).create_or_update_player_team_tournament(updated_player_in_team_schema)
 
                         # player_in_team = await PlayerTeamTournamentServiceDB(db).get_player_team_tournament_by_eesl_id(
@@ -484,7 +489,7 @@ class PlayerMatchAPIRouter(
                                 player_schema["match_number"] = exist_player_in_match.match_number
                                 player_schema["team_id"] = exist_player_in_match.team_id
                                 player_schema["is_start"] = True
-                                position = await PositionServiceDB(db).get_by_id(
+                                position = await PositionServiceDB(database).get_by_id(
                                     exist_player_in_match.match_position_id
                                 )
 
