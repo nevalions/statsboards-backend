@@ -321,8 +321,15 @@ Each domain module follows the standard CRUD pattern with additional custom endp
 
 ## WebSocket Endpoints
 
-- **Match Data**: `ws://localhost:9000/ws/matchdata/{match_id}`
-- **Scoreboard**: `ws://localhost:9000/ws/scoreboard/{scoreboard_id}`
+For comprehensive WebSocket documentation including message formats, connection examples, and troubleshooting guide, see **[WebSocket Endpoints section in API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md#websocket-endpoints)**.
+
+**Note:** The following URLs are deprecated and no longer exist:
+- ❌ `ws://localhost:9000/ws/matchdata/{match_id}` (does not exist)
+- ❌ `ws://localhost:9000/ws/scoreboard/{scoreboard_id}` (does not exist)
+
+**Actual WebSocket endpoints:**
+- ✅ **Match Data**: `/api/matches/ws/id/{match_id}/{client_id}/` - Real-time match data, scores, clocks, events
+- ✅ **Match Statistics**: `/api/matches/ws/matches/{match_id}/stats` - Real-time match statistics with conflict resolution
 
 ## Development Guidelines
 
