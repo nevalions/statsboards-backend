@@ -484,3 +484,56 @@ class TestGameClockViews:
 
         await ws_manager.shutdown()
         await connection_manager.disconnect(client_id)
+
+
+    async def test_multiple_rapid_updates_increment_version_correctly(self, client, test_db):
+        """Test that multiple rapid updates increment version correctly."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        gameclock_service = GameClockServiceDB(test_db)
+        gameclock_data = GameClockSchemaCreate(
+            match_id=match.id, gameclock=600, gameclock_status="stopped"
+        )
+        created = await gameclock_service.create(gameclock_data)
+        initial_version = created.version
+
+        updated1 = await gameclock_service.update(
+            created.id, GameClockSchemaUpdate(gameclock=500)
+        )
+        assert updated1.version == initial_version + 1
+
+        updated2 = await gameclock_service.update(
+            created.id, GameClockSchemaUpdate(gameclock=400)
+        )
+        assert updated2.version == initial_version + 2
+
+        updated3 = await gameclock_service.update(
+            created.id, GameClockSchemaUpdate(gameclock=300)
+        )
+        assert updated3.version == initial_version + 3
+
+        final = await gameclock_service.get_by_id(created.id)
+        assert final is not None
+        assert final.version == initial_version + 3
+        assert final.gameclock == 300
+        assert final.gameclock_status == "stopped"

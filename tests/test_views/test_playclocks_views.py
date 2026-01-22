@@ -365,3 +365,48 @@ class TestPlayClockViews:
 
         await ws_manager.shutdown()
         await connection_manager.disconnect(client_id)
+
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        playclock_service = PlayClockServiceDB(test_db)
+        playclock_data = PlayClockSchemaCreate(
+            match_id=match.id, playclock=60, playclock_status="stopped"
+        )
+        created = await playclock_service.create(playclock_data)
+        initial_version = created.version
+
+        updated1 = await playclock_service.update(
+            created.id, PlayClockSchemaUpdate(playclock=45)
+        )
+        assert updated1.version == initial_version + 1
+
+        updated2 = await playclock_service.update(
+            created.id, PlayClockSchemaUpdate(playclock=30)
+        )
+        assert updated2.version == initial_version + 2
+
+        updated3 = await playclock_service.update(
+            created.id, PlayClockSchemaUpdate(playclock=15)
+        )
+        assert updated3.version == initial_version + 3
+
+        final = await playclock_service.get_by_id(created.id)
+        assert final is not None
+        assert final.version == initial_version + 3
+        assert final.playclock == 15
+        assert final.playclock_status == "stopped"
