@@ -215,8 +215,6 @@ async def fetch_gameclock(
                 gameclock = await gameclock_service.create(gameclock_schema)
             return {
                 "match_id": match_id,
-                "id": match_id,
-                "status_code": status.HTTP_200_OK,
                 "gameclock": instance_to_dict(dict(gameclock.__dict__)),
             }
         else:
@@ -257,8 +255,6 @@ async def fetch_playclock(
                 playclock = await playclock_service.create(playclock_schema)
             return {
                 "match_id": match_id,
-                "id": match_id,
-                "status_code": status.HTTP_200_OK,
                 "playclock": instance_to_dict(dict(playclock.__dict__)),
             }
         else:

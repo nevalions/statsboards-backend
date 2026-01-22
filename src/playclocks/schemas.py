@@ -15,6 +15,20 @@ class PlayClockSchemaBase(BaseModel):
     version: Annotated[int, Path(ge=1)] = 1
 
 
+# WebSocket Message Format for playclock-update:
+# {
+#   "type": "playclock-update",
+#   "match_id": int,
+#   "playclock": {
+#     "id": int,
+#     "match_id": int,
+#     "version": int,
+#     "playclock": int | None,
+#     "playclock_status": str
+#   }
+# }
+
+
 PlayClockSchemaUpdate = make_fields_optional(PlayClockSchemaBase)
 
 

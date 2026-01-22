@@ -17,6 +17,22 @@ class GameClockSchemaBase(BaseModel):
     version: Annotated[int, Path(ge=1)] = 1
 
 
+# WebSocket Message Format for gameclock-update:
+# {
+#   "type": "gameclock-update",
+#   "match_id": int,
+#   "gameclock": {
+#     "id": int,
+#     "match_id": int,
+#     "version": int,
+#     "gameclock": int,
+#     "gameclock_max": int | None,
+#     "gameclock_status": str,
+#     "gameclock_time_remaining": int | None
+#   }
+# }
+
+
 GameClockSchemaUpdate = make_fields_optional(GameClockSchemaBase)
 
 

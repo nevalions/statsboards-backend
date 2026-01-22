@@ -42,7 +42,7 @@ class MatchDataCacheService:
         from src.helpers.fetch_helpers import fetch_gameclock
 
         result = await fetch_gameclock(match_id, database=self.db)
-        if result and result.get("status_code") == 200:
+        if result and "gameclock" in result:
             self._cache[cache_key] = result
             self.logger.debug(f"Cached gameclock for match {match_id}")
             return result
@@ -58,7 +58,7 @@ class MatchDataCacheService:
         from src.helpers.fetch_helpers import fetch_playclock
 
         result = await fetch_playclock(match_id, database=self.db)
-        if result and result.get("status_code") == 200:
+        if result and "playclock" in result:
             self._cache[cache_key] = result
             self.logger.debug(f"Cached playclock for match {match_id}")
             return result
