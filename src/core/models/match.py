@@ -105,14 +105,12 @@ class MatchDB(Base):
     team_a: Mapped["TeamDB"] = relationship(
         "TeamDB",
         foreign_keys=[team_a_id],
-        back_populates="matches_as_team_a",
         viewonly=True,
     )
 
     team_b: Mapped["TeamDB"] = relationship(
         "TeamDB",
         foreign_keys=[team_b_id],
-        back_populates="matches_as_team_b",
         viewonly=True,
     )
 

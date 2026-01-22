@@ -377,7 +377,6 @@ async def search_{entity_lower}_with_details_pagination(
 **joinedload**: Use for single relationships (1:1, many:1)
 ```python
 stmt = select(TeamDB).options(
-    joinedload(TeamDB.sport),  # Team has one sport
     joinedload(TeamDB.main_sponsor),  # Team has one main sponsor
 )
 ```

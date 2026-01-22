@@ -586,7 +586,6 @@ Choosing the right eager loading strategy is critical for performance:
 
 ```python
 stmt = select(TeamDB).options(
-    joinedload(TeamDB.sport),  # Team has one sport
     joinedload(TeamDB.main_sponsor),  # Team has one main sponsor
 )
 ```
@@ -618,10 +617,9 @@ For complex nested relationships:
 
 ```python
 stmt = select(MatchDB).options(
-    # Load team_a and its nested sport (single relationships)
-    joinedload(MatchDB.team_a).joinedload(TeamDB.sport),
-    # Load team_b and its nested sport (single relationships)
-    joinedload(MatchDB.team_b).joinedload(TeamDB.sport),
+    # Load team_a and team_b (single relationships)
+    joinedload(MatchDB.team_a),
+    joinedload(MatchDB.team_b),
     # Load tournament and its teams (collection relationship)
     selectinload(MatchDB.tournaments).selectinload(TournamentDB.teams),
 )
@@ -976,7 +974,7 @@ class MySchema(BaseModel):
 
 ```python
 # Check that options are applied
-stmt = select(TeamDB).options(joinedload(TeamDB.sport))
+stmt = select(TeamDB).options(joinedload(TeamDB.main_sponsor))
 ```
 
 ### Issue: Response Too Slow

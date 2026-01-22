@@ -113,6 +113,12 @@ class TeamDB(Base):
         viewonly=True,
     )
 
+    matches: Mapped["MatchDB"] = relationship(
+        "MatchDB",
+        back_populates="teams",
+        primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+    )
+
     sponsor_line_id: Mapped[int] = mapped_column(
         ForeignKey("sponsor_line.id"),
         nullable=True,
@@ -135,84 +141,6 @@ class TeamDB(Base):
 
     user: Mapped["UserDB"] = relationship(
         "UserDB",
-        back_populates="teams",
-    )
-
-    players_team_tournament: Mapped["PlayerTeamTournamentDB"] = relationship(
-        "PlayerTeamTournamentDB", cascade="all", back_populates="team"
-    )
-
-    match_players: Mapped["PlayerMatchDB"] = relationship(
-        "PlayerMatchDB",
-        cascade="all, delete-orphan",
-        back_populates="team",
-        passive_deletes=True,
-    )
-
-    sport_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey(
-            "sport.id",
-            ondelete="CASCADE",
-        ),
-        nullable=True,
-    )
-
-    sport: Mapped["SportDB"] = relationship(
-        "SportDB",
-        back_populates="teams",
-    )
-
-    tournaments: Mapped[list["TournamentDB"]] = relationship(
-        secondary="team_tournament",
-        back_populates="teams",
-        cascade="save-update, merge",
-    )
-
-    matches: Mapped["MatchDB"] = relationship(
-        "MatchDB",
-        primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
-        back_populates="teams",
-    )
-
-    matches: Mapped["MatchDB"] = relationship(
-        "MatchDB",
-        primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
-        back_populates="teams",
-        viewonly=True,
-    )
-
-    matches_as_team_a: Mapped[list["MatchDB"]] = relationship(
-        "MatchDB",
-        foreign_keys="MatchDB.team_a_id",
-        back_populates="team_a",
-        viewonly=True,
-    )
-
-    matches_as_team_b: Mapped[list["MatchDB"]] = relationship(
-        "MatchDB",
-        foreign_keys="MatchDB.team_b_id",
-        back_populates="team_b",
-        viewonly=True,
-    )
-
-    sponsor_line_id: Mapped[int] = mapped_column(
-        ForeignKey("sponsor_line.id"),
-        nullable=True,
-    )
-
-    main_sponsor_id: Mapped[int] = mapped_column(
-        ForeignKey("sponsor.id"),
-        nullable=True,
-    )
-
-    main_sponsor: Mapped["SponsorDB"] = relationship(
-        "SponsorDB",
-        back_populates="teams",
-    )
-
-    sponsor_line: Mapped["SponsorLineDB"] = relationship(
-        "SponsorLineDB",
         back_populates="teams",
     )
 
