@@ -5,7 +5,7 @@ import time
 from collections.abc import Callable
 
 import asyncpg
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketState
 
 from src.core.config import settings
 
@@ -286,11 +286,52 @@ class ConnectionManager:
                 clients.remove(client_id)
 
     async def disconnect(self, client_id: str):
+        """
+        Disconnect a client WebSocket connection safely.
+
+        Checks WebSocket state before closing to avoid double-close errors.
+        Handles RuntimeError for already-closed connections gracefully while
+        propagating other unexpected errors.
+
+        Args:
+            client_id: Unique identifier for the client connection
+        """
         if client_id in self.active_connections:
             self.logger.info(
                 f"Disconnecting from connections for client with client_id:{client_id}"
             )
-            await self.active_connections[client_id].close()
+            websocket = self.active_connections[client_id]
+            if hasattr(websocket, "application_state") and websocket.application_state == WebSocketState.CONNECTED:
+                try:
+                    await websocket.close()
+                    self.logger.debug(f"Closed WebSocket connection for client {client_id}")
+                except RuntimeError as e:
+                    if "websocket.close" in str(e):
+                        self.logger.debug(
+                            f"WebSocket already closed for client {client_id}: {e}"
+                        )
+                    else:
+                        self.logger.warning(
+                            f"WebSocket close error for client {client_id}: {e}"
+                        )
+                        raise
+            elif hasattr(websocket, "application_state"):
+                self.logger.debug(
+                    f"WebSocket already disconnected (state: {websocket.application_state}), skipping close for client {client_id}"
+                )
+            else:
+                self.logger.debug(
+                    f"WebSocket has no application_state attribute, attempting close for client {client_id}"
+                )
+                try:
+                    await websocket.close()
+                except RuntimeError as e:
+                    if "websocket.close" in str(e):
+                        self.logger.debug(
+                            f"WebSocket already closed for client {client_id}: {e}"
+                        )
+                    else:
+                        raise
             del self.active_connections[client_id]
             del self.queues[client_id]
 
