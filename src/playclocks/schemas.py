@@ -12,6 +12,7 @@ class PlayClockSchemaBase(BaseModel):
     playclock: Annotated[int, Path(max=10000)] | None = None
     playclock_status: Annotated[str, Path(max_length=50)] = "stopped"
     match_id: int | None = None
+    version: Annotated[int, Path(ge=1)] = 1
 
 
 PlayClockSchemaUpdate = make_fields_optional(PlayClockSchemaBase)

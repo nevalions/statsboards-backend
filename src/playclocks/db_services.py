@@ -75,6 +75,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 )
 
             update_data = item.model_dump(exclude_unset=True)
+            update_data["version"] = (updated_item.version or 0) + 1
 
             for key, value in update_data.items():
                 if value is not None:
@@ -109,6 +110,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 )
 
             update_data = item.model_dump(exclude_unset=True)
+            update_data["version"] = (updated_item.version or 0) + 1
 
             for key, value in update_data.items():
                 if key != "match_id" or value is not None:

@@ -58,7 +58,7 @@ class GameClockServiceDB(BaseServiceDB):
         item_id: int,
     ) -> asyncio.Queue:
         self.logger.debug(f"Enable matchdata gameclock queues match id:{item_id}")
-        gameclock: GameClockSchemaBase = await self.get_by_id(item_id)
+        gameclock: GameClockSchemaBase | None = await self.get_by_id(item_id)
 
         if not gameclock:
             self.logger.warning(f"Gameclock not found: {item_id}")
@@ -80,16 +80,30 @@ class GameClockServiceDB(BaseServiceDB):
         item_id: int,
         item: GameClockSchemaUpdate,
         **kwargs,
-    ) -> GameClockDB:
+    ) -> GameClockDB | None:
         self.logger.debug(f"Update gameclock endpoint id:{item_id} data: {item}")
-        updated_ = await super().update(
-            item_id,
-            item,
-            **kwargs,
-        )
-        self.logger.debug(f"Updated gameclock: {updated_}")
-        await self.trigger_update_gameclock(item_id)
-        return updated_
+        async with self.db.async_session() as session:
+            result = await session.execute(select(GameClockDB).where(GameClockDB.id == item_id))
+            updated_item = result.scalars().one_or_none()
+
+            if not updated_item:
+                self.logger.warning(f"GameClock not found: {item_id}")
+                return None
+
+            update_data = item.model_dump(exclude_unset=True, exclude_none=True)
+            update_data["version"] = (updated_item.version or 0) + 1
+
+            for key, value in update_data.items():
+                setattr(updated_item, key, value)
+
+            await session.flush()
+            await session.commit()
+            await session.refresh(updated_item)
+
+            self.logger.debug(f"Updated gameclock: {updated_item}")
+            await self.trigger_update_gameclock(item_id)
+
+            return updated_item
 
     async def get_gameclock_status(
         self,
@@ -137,7 +151,7 @@ class GameClockServiceDB(BaseServiceDB):
         else:
             self.logger.warning(f"Gameclock not found by id:{gameclock_id}")
 
-    async def loop_decrement_gameclock(self, gameclock_id: int) -> GameClockDB:
+    async def loop_decrement_gameclock(self, gameclock_id: int) -> GameClockDB | None:
         self.logger.debug(f"Loop decrement gameclock by id:{gameclock_id}")
         next_time = time.monotonic()
         while True:
@@ -152,7 +166,10 @@ class GameClockServiceDB(BaseServiceDB):
             if gameclock_status != "running":
                 break
 
-            gameclock_obj: GameClockSchemaBase = await self.get_by_id(gameclock_id)
+            gameclock_obj: GameClockSchemaBase | None = await self.get_by_id(gameclock_id)
+            if gameclock_obj is None:
+                self.logger.warning(f"Gameclock not found during decrement: {gameclock_id}")
+                break
             updated_gameclock = max(0, gameclock_obj.gameclock - 1)
             self.logger.debug(f"Updated gameclock: {updated_gameclock}")
 
@@ -178,7 +195,7 @@ class GameClockServiceDB(BaseServiceDB):
         gameclock_id: int,
     ) -> None:
         self.logger.debug(f"Trigger update gameclock for gameclock id:{gameclock_id}")
-        gameclock: GameClockSchemaBase = await self.get_by_id(gameclock_id)
+        gameclock: GameClockSchemaBase | None = await self.get_by_id(gameclock_id)
 
         active_clock_matches = self.clock_manager.active_gameclock_matches
 

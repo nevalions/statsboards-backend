@@ -14,6 +14,7 @@ class GameClockSchemaBase(BaseModel):
     gameclock_status: Annotated[str, Path(max_length=50)] = "stopped"
     gameclock_time_remaining: int | None = None
     match_id: int | None = None
+    version: Annotated[int, Path(ge=1)] = 1
 
 
 GameClockSchemaUpdate = make_fields_optional(GameClockSchemaBase)

@@ -9133,12 +9133,14 @@ interface PlayClockSchema {
   playclock: number | null; // Current time in seconds (max 10000)
   playclock_status: string; // Status: "stopped", "running", "paused" (max 50 chars)
   match_id: number | null; // Associated match ID
+  version: number; // Version number, starts at 1, increments on each update
 }
 
 interface PlayClockSchemaCreate {
   playclock: number | null; // Optional time in seconds (max 10000)
   playclock_status: string; // Status, defaults to "stopped" (max 50 chars)
   match_id: number | null; // Optional match ID
+  version?: number; // Version number, defaults to 1
 }
 
 interface PlayClockSchemaUpdate {
@@ -9174,6 +9176,7 @@ interface PlayClockSchemaCreate {
   playclock: number | null; // Optional time in seconds (max 10000)
   playclock_status: string; // Status, defaults to "stopped" (max 50 chars)
   match_id: number | null; // Optional associated match ID
+  version?: number; // Version number, defaults to 1
 }
 ```
 
@@ -9183,7 +9186,8 @@ interface PlayClockSchemaCreate {
   "id": 1,
   "playclock": 40,
   "playclock_status": "stopped",
-  "match_id": 123
+  "match_id": 123,
+  "version": 1
 }
 ```
 
@@ -9225,6 +9229,7 @@ interface PlayClockSchemaUpdate {
   playclock: number | null; // Optional time in seconds
   playclock_status: string | null; // Optional status
   match_id: number | null; // Optional match ID
+  version?: number; // Optional version number (auto-incremented on update)
 }
 ```
 
@@ -9234,7 +9239,8 @@ interface PlayClockSchemaUpdate {
   "id": 1,
   "playclock": 35,
   "playclock_status": "running",
-  "match_id": 123
+  "match_id": 123,
+  "version": 2
 }
 ```
 
@@ -9269,7 +9275,8 @@ PUT /api/playclock/id/{item_id}/
     "id": 1,
     "playclock": 35,
     "playclock_status": "running",
-    "match_id": 123
+    "match_id": 123,
+    "version": 2
   },
   "status_code": 200,
   "success": true
@@ -9345,7 +9352,8 @@ PUT /api/playclock/id/{item_id}/running/{sec}/
     "id": 1,
     "playclock": 40,
     "playclock_status": "running",
-    "match_id": 123
+    "match_id": 123,
+    "version": 2
   },
   "status_code": 200,
   "success": true
@@ -9505,6 +9513,7 @@ interface GameClockSchema {
   gameclock_status: string; // Status: "stopped", "running", "paused" (max 50 chars)
   gameclock_time_remaining: number | null; // Remaining time during countdown
   match_id: number | null; // Associated match ID
+  version: number; // Version number, starts at 1, increments on each update
 }
 
 interface GameClockSchemaCreate {
@@ -9513,6 +9522,7 @@ interface GameClockSchemaCreate {
   gameclock_status: string; // Status, defaults to "stopped" (max 50 chars)
   gameclock_time_remaining: number | null; // Optional remaining time
   match_id: number | null; // Optional match ID
+  version?: number; // Version number, defaults to 1
 }
 
 interface GameClockSchemaUpdate {
@@ -9553,6 +9563,7 @@ interface GameClockSchemaCreate {
   gameclock_status: string; // Status, defaults to "stopped" (max 50 chars)
   gameclock_time_remaining: number | null; // Optional remaining time
   match_id: number | null; // Optional associated match ID
+  version?: number; // Version number, defaults to 1
 }
 ```
 
@@ -9564,7 +9575,8 @@ interface GameClockSchemaCreate {
   "gameclock_max": 720,
   "gameclock_status": "stopped",
   "gameclock_time_remaining": null,
-  "match_id": 123
+  "match_id": 123,
+  "version": 1
 }
 ```
 
@@ -9618,7 +9630,8 @@ interface GameClockSchemaUpdate {
   "gameclock_max": 720,
   "gameclock_status": "running",
   "gameclock_time_remaining": 720,
-  "match_id": 123
+  "match_id": 123,
+  "version": 2
 }
 ```
 
@@ -9655,7 +9668,8 @@ PUT /api/gameclock/id/{item_id}/
     "gameclock": 720,
     "gameclock_status": "running",
     "gameclock_time_remaining": 720,
-    "match_id": 123
+    "match_id": 123,
+    "version": 2
   },
   "status_code": 200,
   "success": true

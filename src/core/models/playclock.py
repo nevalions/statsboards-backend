@@ -25,6 +25,12 @@ class PlayClockDB(Base):
         default="stopped",
     )
 
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+    )
+
     match_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey(
