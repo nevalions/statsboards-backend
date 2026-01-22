@@ -112,7 +112,7 @@ class MatchWebSocketHandler:
                         continue
 
                     if websocket.application_state == WebSocketState.CONNECTED:
-                        await handlers[message_type](websocket, match_id)
+                        await handlers[message_type](websocket, match_id, data)
                     else:
                         websocket_logger.warning(
                             "WebSocket disconnected, stopping message processing"
@@ -129,7 +129,7 @@ class MatchWebSocketHandler:
                 websocket_logger.error(f"Error in processing loop: {e}", exc_info=True)
                 break
 
-    async def process_match_data(self, websocket: WebSocket, match_id: int):
+    async def process_match_data(self, websocket: WebSocket, match_id: int, data: dict | None = None):
         from src.helpers.fetch_helpers import fetch_with_scoreboard_data
 
         try:
@@ -137,10 +137,13 @@ class MatchWebSocketHandler:
                 websocket_logger.warning("WebSocket not connected, skipping data send")
                 return
 
-            full_match_data = await fetch_with_scoreboard_data(
-                match_id, cache_service=self.cache_service
-            )
-            full_match_data["type"] = "match-update"
+            if data is None:
+                full_match_data = await fetch_with_scoreboard_data(
+                    match_id, cache_service=self.cache_service
+                )
+                full_match_data["type"] = "match-update"
+            else:
+                full_match_data = data
 
             if websocket.application_state == WebSocketState.CONNECTED:
                 websocket_logger.debug(f"Processing match data type: {full_match_data['type']}")
@@ -159,16 +162,23 @@ class MatchWebSocketHandler:
         except Exception as e:
             websocket_logger.error(f"Error processing match data: {e}", exc_info=True)
 
-    async def process_gameclock_data(self, websocket: WebSocket, match_id: int):
-        from src.helpers.fetch_helpers import fetch_gameclock
-
+    async def process_gameclock_data(self, websocket: WebSocket, match_id: int, data: dict | None = None):
         try:
             if websocket.application_state != WebSocketState.CONNECTED:
                 websocket_logger.warning("WebSocket not connected, skipping gameclock data send")
                 return
 
-            gameclock_data = await fetch_gameclock(match_id, cache_service=self.cache_service)
-            gameclock_data["type"] = "gameclock-update"
+            if data is None or "data" not in data:
+                from src.helpers.fetch_helpers import fetch_gameclock
+
+                gameclock_data = await fetch_gameclock(match_id, cache_service=self.cache_service)
+                gameclock_data["type"] = "gameclock-update"
+            else:
+                gameclock_data = {
+                    "match_id": match_id,
+                    "gameclock": data.get("data"),
+                    "type": "gameclock-update"
+                }
 
             if websocket.application_state == WebSocketState.CONNECTED:
                 websocket_logger.debug(f"Processing match data type: {gameclock_data['type']}")
@@ -188,16 +198,23 @@ class MatchWebSocketHandler:
         except Exception as e:
             websocket_logger.error(f"Error processing gameclock data: {e}", exc_info=True)
 
-    async def process_playclock_data(self, websocket: WebSocket, match_id: int):
-        from src.helpers.fetch_helpers import fetch_playclock
-
+    async def process_playclock_data(self, websocket: WebSocket, match_id: int, data: dict | None = None):
         try:
             if websocket.application_state != WebSocketState.CONNECTED:
                 websocket_logger.warning("WebSocket not connected, skipping playclock data send")
                 return
 
-            playclock_data = await fetch_playclock(match_id, cache_service=self.cache_service)
-            playclock_data["type"] = "playclock-update"
+            if data is None or "data" not in data:
+                from src.helpers.fetch_helpers import fetch_playclock
+
+                playclock_data = await fetch_playclock(match_id, cache_service=self.cache_service)
+                playclock_data["type"] = "playclock-update"
+            else:
+                playclock_data = {
+                    "match_id": match_id,
+                    "playclock": data.get("data"),
+                    "type": "playclock-update"
+                }
 
             if websocket.application_state == WebSocketState.CONNECTED:
                 websocket_logger.debug(f"Processing match data type: {playclock_data['type']}")
@@ -217,16 +234,19 @@ class MatchWebSocketHandler:
         except Exception as e:
             websocket_logger.error(f"Error processing playclock data: {e}", exc_info=True)
 
-    async def process_event_data(self, websocket: WebSocket, match_id: int):
-        from src.helpers.fetch_helpers import fetch_event
-
+    async def process_event_data(self, websocket: WebSocket, match_id: int, data: dict | None = None):
         try:
             if websocket.application_state != WebSocketState.CONNECTED:
                 self.logger.debug("WebSocket not connected, skipping event data send")
                 return
 
-            event_data = await fetch_event(match_id, cache_service=self.cache_service)
-            event_data["type"] = "event-update"
+            if data is None:
+                from src.helpers.fetch_helpers import fetch_event
+
+                event_data = await fetch_event(match_id, cache_service=self.cache_service)
+                event_data["type"] = "event-update"
+            else:
+                event_data = data
 
             if websocket.application_state == WebSocketState.CONNECTED:
                 websocket_logger.debug(f"Processing match data type: {event_data['type']}")
