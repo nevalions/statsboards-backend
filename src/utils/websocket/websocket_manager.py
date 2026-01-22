@@ -25,6 +25,7 @@ class MatchDataWebSocketManager:
         self.is_connected = False
         self._connection_retry_task = None
         self._cache_service = None
+        self._connection_lock = asyncio.Lock()
 
     async def maintain_connection(self):
         while True:
@@ -38,23 +39,24 @@ class MatchDataWebSocketManager:
                 await asyncio.sleep(5)
 
     async def connect_to_db(self):
-        try:
-            if self.connection:
-                try:
-                    await self.connection.close()
-                except (asyncpg.PostgresConnectionError, OSError):
-                    pass
+        async with self._connection_lock:
+            try:
+                if self.connection:
+                    try:
+                        await self.connection.close()
+                    except (asyncpg.PostgresConnectionError, OSError):
+                        pass
 
-            self.connection = await asyncpg.connect(self.db_url)
-            self.logger.info("Successfully connected to database")
+                self.connection = await asyncpg.connect(self.db_url)
+                self.logger.info("Successfully connected to database")
 
-            await self.setup_listeners()
-            self.is_connected = True
+                await self.setup_listeners()
+                self.is_connected = True
 
-        except (asyncpg.PostgresConnectionError, OSError) as e:
-            self.logger.error(f"Database connection error: {str(e)}", exc_info=True)
-            self.is_connected = False
-            raise
+            except (asyncpg.PostgresConnectionError, OSError) as e:
+                self.logger.error(f"Database connection error: {str(e)}", exc_info=True)
+                self.is_connected = False
+                raise
 
     async def disconnect(self, client_id: str):
         self.logger.debug(f"Disconnecting from WebSocket with client_id: {client_id}")
@@ -196,22 +198,23 @@ class MatchDataWebSocketManager:
         )
 
     async def shutdown(self):
-        try:
-            if self._connection_retry_task:
-                self._connection_retry_task.cancel()
-                try:
-                    await self._connection_retry_task
-                except asyncio.CancelledError:
-                    pass
+        async with self._connection_lock:
+            try:
+                if self._connection_retry_task:
+                    self._connection_retry_task.cancel()
+                    try:
+                        await self._connection_retry_task
+                    except asyncio.CancelledError:
+                        pass
 
-            if self.connection:
-                await self.connection.close()
-                self.logger.info("Database connection closed")
+                if self.connection:
+                    await self.connection.close()
+                    self.logger.info("Database connection closed")
 
-            self.is_connected = False
-            self.logger.info("WebSocket manager shutdown complete")
-        except Exception as e:
-            self.logger.error(f"Error during shutdown: {str(e)}", exc_info=True)
+                self.is_connected = False
+                self.logger.info("WebSocket manager shutdown complete")
+            except Exception as e:
+                self.logger.error(f"Error during shutdown: {str(e)}", exc_info=True)
 
 
 ws_manager = MatchDataWebSocketManager(db_url=settings.db.db_url_websocket())
