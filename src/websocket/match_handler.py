@@ -162,6 +162,12 @@ class MatchWebSocketHandler:
                     websocket_logger.debug("WebSocket closed normally while sending data")
                 except ConnectionClosedError as e:
                     websocket_logger.error(f"WebSocket closed with error while sending data: {e}")
+                except RuntimeError as e:
+                    if "websocket.close" in str(e) or "websocket.send" in str(e):
+                        websocket_logger.debug("WebSocket already closed, skipping send")
+                    else:
+                        websocket_logger.error(f"Unexpected RuntimeError: {e}")
+                        raise
             else:
                 websocket_logger.warning(
                     f"WebSocket no longer connected (state: {websocket.application_state}), skipping data send"
@@ -199,6 +205,12 @@ class MatchWebSocketHandler:
                     websocket_logger.error(
                         f"WebSocket closed with error while sending gameclock data: {e}"
                     )
+                except RuntimeError as e:
+                    if "websocket.close" in str(e) or "websocket.send" in str(e):
+                        websocket_logger.debug("WebSocket already closed, skipping send")
+                    else:
+                        websocket_logger.error(f"Unexpected RuntimeError: {e}")
+                        raise
             else:
                 websocket_logger.warning(
                     f"WebSocket no longer connected (state: {websocket.application_state}), skipping gameclock data send"
@@ -235,6 +247,12 @@ class MatchWebSocketHandler:
                     websocket_logger.error(
                         f"WebSocket closed with error while sending playclock data: {e}"
                     )
+                except RuntimeError as e:
+                    if "websocket.close" in str(e) or "websocket.send" in str(e):
+                        websocket_logger.debug("WebSocket already closed, skipping send")
+                    else:
+                        websocket_logger.error(f"Unexpected RuntimeError: {e}")
+                        raise
             else:
                 websocket_logger.warning(
                     f"WebSocket no longer connected (state: {websocket.application_state}), skipping playclock data send"
@@ -267,6 +285,12 @@ class MatchWebSocketHandler:
                     websocket_logger.error(
                         f"WebSocket closed with error while sending event data: {e}"
                     )
+                except RuntimeError as e:
+                    if "websocket.close" in str(e) or "websocket.send" in str(e):
+                        websocket_logger.debug("WebSocket already closed, skipping send")
+                    else:
+                        websocket_logger.error(f"Unexpected RuntimeError: {e}")
+                        raise
             else:
                 websocket_logger.warning(
                     f"WebSocket no longer connected (state: {websocket.application_state}), skipping event data send"
