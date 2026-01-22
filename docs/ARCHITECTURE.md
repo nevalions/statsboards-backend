@@ -334,9 +334,13 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 ```
 1. Background Task: ClockManager.loop_decrement_gameclock()
    - Runs in asyncio task
-   - Decrements clock every second
+   - Uses ClockStateMachine for in-memory state tracking
+   - Calculates current value from elapsed time (no DB read)
 2. Database Update: Updates gameclock in PostgreSQL
+   - Only writes every 5 seconds (configurable via clock_db_sync_interval)
+   - Immediately persists on state changes (stop/pause)
 3. WebSocket Manager: Broadcasts to all connected clients
+   - Broadcasts every second with calculated value (no DB round-trip)
 4. Clients: Receive real-time clock updates via WebSocket
 ```
 

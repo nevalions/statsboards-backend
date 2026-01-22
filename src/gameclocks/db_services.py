@@ -4,35 +4,47 @@ import time
 from fastapi import BackgroundTasks
 from sqlalchemy import select
 
+from src.core.config import settings
 from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, GameClockDB
 from src.core.models.base import Database
 
 from ..logging_config import get_logger
+from .clock_state_machine import ClockStateMachine
 from .schemas import GameClockSchemaBase, GameClockSchemaCreate, GameClockSchemaUpdate
 
 
 class ClockManager:
     def __init__(self) -> None:
         self.active_gameclock_matches: dict[int, asyncio.Queue] = {}
+        self.clock_state_machines: dict[int, ClockStateMachine] = {}
         self.logger = get_logger("backend_logger_ClockManager", self)
         self.logger.debug("Initialized ClockManager")
 
-    async def start_clock(self, match_id: int) -> None:
+    async def start_clock(self, match_id: int, initial_value: int = 0) -> None:
         self.logger.debug("Start clock in clock manager")
         if match_id not in self.active_gameclock_matches:
             self.active_gameclock_matches[match_id] = asyncio.Queue()
+        if match_id not in self.clock_state_machines:
+            self.clock_state_machines[match_id] = ClockStateMachine(
+                match_id, initial_value
+            )
 
     async def end_clock(self, match_id: int) -> None:
         self.logger.debug("Stop clock in clock manager")
         if match_id in self.active_gameclock_matches:
             del self.active_gameclock_matches[match_id]
+        if match_id in self.clock_state_machines:
+            del self.clock_state_machines[match_id]
 
     async def update_queue_clock(self, match_id: int, message: GameClockDB) -> None:
         if match_id in self.active_gameclock_matches:
             self.logger.debug("Update clock in clock manager")
             queue = self.active_gameclock_matches[match_id]
             await queue.put(message)
+
+    def get_clock_state_machine(self, match_id: int) -> ClockStateMachine | None:
+        return self.clock_state_machines.get(match_id)
 
 
 class GameClockServiceDB(BaseServiceDB):
@@ -58,7 +70,7 @@ class GameClockServiceDB(BaseServiceDB):
         item_id: int,
     ) -> asyncio.Queue:
         self.logger.debug(f"Enable matchdata gameclock queues match id:{item_id}")
-        gameclock: GameClockSchemaBase | None = await self.get_by_id(item_id)
+        gameclock = await self.get_by_id(item_id)
 
         if not gameclock:
             self.logger.warning(f"Gameclock not found: {item_id}")
@@ -68,10 +80,21 @@ class GameClockServiceDB(BaseServiceDB):
 
         if item_id not in active_clock_matches:
             self.logger.debug(f"Gameclock not in active gameclock matches: {item_id}")
-            await self.clock_manager.start_clock(item_id)
+            initial_value = gameclock.gameclock if gameclock and gameclock.gameclock else 0
+            await self.clock_manager.start_clock(item_id, initial_value)
+
+            state_machine = self.clock_manager.get_clock_state_machine(item_id)
+            if (
+                state_machine
+                and gameclock
+                and gameclock.gameclock_status == "running"
+            ):
+                state_machine.start()
+
             self.logger.debug(f"Gameclock added to active gameclock matches: {item_id}")
         match_queue = active_clock_matches[item_id]
-        await match_queue.put(gameclock)
+        if gameclock:
+            await match_queue.put(gameclock)
         self.logger.info(f"Gameclock enabled successfully {gameclock}")
         return match_queue
 
@@ -154,6 +177,12 @@ class GameClockServiceDB(BaseServiceDB):
     async def loop_decrement_gameclock(self, gameclock_id: int) -> GameClockDB | None:
         self.logger.debug(f"Loop decrement gameclock by id:{gameclock_id}")
         next_time = time.monotonic()
+
+        state_machine = self.clock_manager.get_clock_state_machine(gameclock_id)
+        if not state_machine:
+            self.logger.warning(f"State machine not found for gameclock: {gameclock_id}")
+            return await self.get_by_id(gameclock_id)
+
         while True:
             next_time += 1
             sleep_time = next_time - time.monotonic()
@@ -164,22 +193,15 @@ class GameClockServiceDB(BaseServiceDB):
             self.logger.debug(f"Gameclock status: {gameclock_status}")
 
             if gameclock_status != "running":
+                state_machine.stop()
                 break
 
-            gameclock_obj: GameClockSchemaBase | None = await self.get_by_id(gameclock_id)
-            if gameclock_obj is None:
-                self.logger.warning(f"Gameclock not found during decrement: {gameclock_id}")
-                break
-            updated_gameclock = max(0, gameclock_obj.gameclock - 1)
-            self.logger.debug(f"Updated gameclock: {updated_gameclock}")
+            current_value = state_machine.get_current_value()
+            self.logger.debug(f"Current gameclock value: {current_value}")
 
-            if updated_gameclock != 0:
-                await self.update(
-                    gameclock_id,
-                    GameClockSchemaUpdate(gameclock=updated_gameclock),
-                )
-            else:
+            if current_value == 0:
                 self.logger.debug("Stopping gameclock")
+                state_machine.stop()
                 await self.update(
                     gameclock_id,
                     GameClockSchemaUpdate(
@@ -187,6 +209,23 @@ class GameClockServiceDB(BaseServiceDB):
                         gameclock_status="stopped",
                     ),
                 )
+            else:
+                gameclock_obj = await self.get_by_id(gameclock_id)
+                if gameclock_obj:
+                    gameclock_obj.gameclock = current_value
+                    await self.clock_manager.update_queue_clock(
+                        gameclock_id,
+                        gameclock_obj,
+                    )
+
+                if state_machine.needs_db_sync(settings.clock_db_sync_interval):
+                    self.logger.debug(f"Syncing gameclock to DB: {current_value}")
+                    await self.update(
+                        gameclock_id,
+                        GameClockSchemaUpdate(gameclock=current_value),
+                    )
+                    state_machine.mark_db_synced()
+
         self.logger.debug("Returning gameclock")
         return await self.get_by_id(gameclock_id)
 

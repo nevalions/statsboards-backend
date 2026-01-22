@@ -273,6 +273,10 @@ class Settings(BaseSettings):
         default=60 * 24,
         description="Access token expiration time in minutes (default 1 day)",
     )
+    clock_db_sync_interval: int = Field(
+        default=5,
+        description="Clock database sync interval in seconds",
+    )
 
     @property
     def static_main_path(self) -> Path:
