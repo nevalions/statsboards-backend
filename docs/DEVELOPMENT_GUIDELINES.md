@@ -2302,6 +2302,8 @@ async def test_get_player_career_not_found():
 - Test connection handling and reconnection scenarios
 - Use Redis pub/sub for scalable event distribution
 - Always clean up connections on disconnect
+- WebSocket compression (permessage-deflate) is enabled for 10-20% bandwidth reduction
+- Compression status is logged for each WebSocket connection for monitoring
 
 ## User Ownership and Privacy
 

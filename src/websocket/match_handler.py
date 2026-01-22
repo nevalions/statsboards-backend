@@ -279,6 +279,13 @@ class MatchWebSocketHandler:
     ):
         websocket_logger.debug(f"Websocket endpoint /ws/id/{match_id}/{client_id} {websocket} ")
 
+        extensions = websocket.headers.get("sec-websocket-extensions", "")
+        compression_enabled = "permessage-deflate" in extensions
+        websocket_logger.info(
+            f"WebSocket connection from client {client_id} for match {match_id}: "
+            f"compression={compression_enabled}, extensions={extensions}"
+        )
+
         await websocket.accept()
         await connection_manager.connect(websocket, client_id, match_id)
         await ws_manager.startup()

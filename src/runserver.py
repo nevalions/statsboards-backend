@@ -18,6 +18,7 @@ if __name__ == "__main__":
             log_level="debug",
             timeout_graceful_shutdown=5,
             timeout_keep_alive=5,
+            ws_per_message_deflate=True,
         )
     except Exception as e:
         logger.critical(f"Server encountered an error: {e}", exc_info=True)

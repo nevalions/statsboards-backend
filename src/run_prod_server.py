@@ -1,9 +1,14 @@
 import logging
 
 from gunicorn.app.base import BaseApplication
+from uvicorn.workers import UvicornWorker
 
 from src.core.config import settings
 from src.logging_config import setup_logging
+
+
+class StatsboardUvicornWorker(UvicornWorker):
+    CONFIG_KWARGS = {"ws_per_message_deflate": True}
 
 
 class Application(BaseApplication):
@@ -36,7 +41,7 @@ if __name__ == "__main__":
     options = {
         "bind": "0.0.0.0:9000",
         "workers": 4,
-        "worker_class": "uvicorn.workers.UvicornWorker",
+        "worker_class": "run_prod_server.StatsboardUvicornWorker",
         "timeout": 120,
         "loglevel": "info",
         "errorlog": "-",
