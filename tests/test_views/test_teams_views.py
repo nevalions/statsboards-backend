@@ -1,7 +1,6 @@
 from io import BytesIO
 
 import pytest
-
 from PIL import Image
 
 from src.sports.db_services import SportServiceDB

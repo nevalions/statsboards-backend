@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 
 from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 from websockets import ConnectionClosedError, ConnectionClosedOK
@@ -73,6 +74,15 @@ class MatchWebSocketHandler:
         )
         await ws_manager.shutdown()
 
+    async def receive_messages(self, websocket: WebSocket, client_id: str):
+        async for message in websocket.iter_json():
+            message_type = message.get("type")
+            if message_type == "pong":
+                connection_manager.update_client_activity(client_id)
+                websocket_logger.debug(f"Received pong from client {client_id}")
+            else:
+                websocket_logger.debug(f"Received non-pong message: {message_type}")
+
     async def process_data_websocket(self, websocket: WebSocket, client_id: str, match_id: int):
         websocket_logger.debug(f"WebSocketState: {websocket.application_state}")
         handlers = {
@@ -97,7 +107,7 @@ class MatchWebSocketHandler:
 
             try:
                 queue = await connection_manager.get_queue_for_client(client_id)
-                timeout_ = 60.0 * 60 * 12
+                timeout_ = 60.0
 
                 try:
                     data = await asyncio.wait_for(queue.get(), timeout=timeout_)
@@ -120,9 +130,7 @@ class MatchWebSocketHandler:
                         break
 
                 except asyncio.TimeoutError:
-                    websocket_logger.debug(
-                        f"Queue get operation timed out after {timeout_ / 60 / 60} hours"
-                    )
+                    websocket_logger.debug(f"Queue get operation timed out after {timeout_} seconds")
                     break
 
             except Exception as e:
@@ -275,6 +283,20 @@ class MatchWebSocketHandler:
         await connection_manager.connect(websocket, client_id, match_id)
         await ws_manager.startup()
 
+        async def ping_task():
+            while True:
+                await asyncio.sleep(30)
+                try:
+                    ping_message = {"type": "ping", "timestamp": time.time()}
+                    await websocket.send_json(ping_message)
+                    websocket_logger.debug(f"Sent ping to client {client_id}")
+                except Exception as e:
+                    websocket_logger.error(f"Error sending ping to client {client_id}: {e}")
+                    break
+
+        ping_handle = asyncio.create_task(ping_task())
+        receive_handle = asyncio.create_task(self.receive_messages(websocket, client_id))
+
         try:
             await self.send_initial_data(websocket, client_id, match_id)
             await self.process_data_websocket(websocket, client_id, match_id)
@@ -290,6 +312,16 @@ class MatchWebSocketHandler:
         except Exception as e:
             websocket_logger.error(f"Unexpected error:{str(e)}", exc_info=True)
         finally:
+            ping_handle.cancel()
+            receive_handle.cancel()
+            try:
+                await ping_handle
+            except asyncio.CancelledError:
+                pass
+            try:
+                await receive_handle
+            except asyncio.CancelledError:
+                pass
             await self.cleanup_websocket(client_id)
 
 

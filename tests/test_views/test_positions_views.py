@@ -87,7 +87,7 @@ class TestPositionViews:
 
     @pytest.mark.skip("Auth test setup is complex")
     async def test_delete_position_endpoint_as_admin(self, client, test_db):
-        from src.auth.security import create_access_token, get_password_hash
+        from src.auth.security import get_password_hash
         from src.core.models import RoleDB, UserDB
 
         sport_service = SportServiceDB(test_db)

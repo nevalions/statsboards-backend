@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from collections.abc import Callable
 
 import asyncpg
@@ -221,6 +222,7 @@ class ConnectionManager:
         self.active_connections: dict[str, WebSocket] = {}
         self.queues: dict[str, asyncio.Queue] = {}
         self.match_subscriptions: dict[str | int, list[str]] = {}
+        self.last_activity: dict[str, float] = {}
         self.logger = logging.getLogger("backend_logger_ConnectionManager")
         self.logger.info("ConnectionManager initialized")
 
@@ -242,6 +244,7 @@ class ConnectionManager:
         self.logger.debug(f"Adding new connection for client with client_id: {client_id}")
         self.active_connections[client_id] = websocket
         self.queues[client_id] = asyncio.Queue()
+        self.update_client_activity(client_id)
         self.logger.info(f"New connection created: {self.active_connections[client_id]}")
         self.logger.info(f"New queue created: {self.queues[client_id]}")
 
@@ -275,6 +278,9 @@ class ConnectionManager:
         if client_id in self.active_connections:
             del self.active_connections[client_id]
 
+        if client_id in self.last_activity:
+            del self.last_activity[client_id]
+
         for _match_id, clients in self.match_subscriptions.items():
             if client_id in clients:
                 clients.remove(client_id)
@@ -287,6 +293,9 @@ class ConnectionManager:
             await self.active_connections[client_id].close()
             del self.active_connections[client_id]
             del self.queues[client_id]
+
+            if client_id in self.last_activity:
+                del self.last_activity[client_id]
 
             for match_id in self.match_subscriptions:
                 if client_id in self.match_subscriptions[match_id]:
@@ -302,6 +311,23 @@ class ConnectionManager:
         self.logger.debug(f"Getting queue for client_id: {client_id}")
         queue = self.queues[client_id]
         return queue
+
+    def update_client_activity(self, client_id: str):
+        self.last_activity[client_id] = time.time()
+        self.logger.debug(f"Updated activity for client {client_id}: {self.last_activity[client_id]}")
+
+    async def cleanup_stale_connections(self, timeout_seconds: float = 90.0):
+        now = time.time()
+        stale_clients = [
+            client_id
+            for client_id, last_seen in self.last_activity.items()
+            if now - last_seen > timeout_seconds
+        ]
+        for client_id in stale_clients:
+            self.logger.warning(
+                f"Cleaning up stale connection for client {client_id} (inactive for {now - self.last_activity[client_id]:.1f}s)"
+            )
+            await self.disconnect(client_id)
 
     async def send_to_all(self, data: str, match_id: str | None = None):
         self.logger.debug(f"Sending data: {data} with match_id: {match_id}")

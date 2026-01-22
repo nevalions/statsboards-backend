@@ -6419,6 +6419,7 @@ The following message types are sent from server to client when data changes:
 | `gameclock-update` | Game clock changes | Updated game clock time or status |
 | `playclock-update` | Play clock changes | Updated play clock time or status |
 | `event-update` | Football events occur | New or updated football events |
+| `ping` | Every 30 seconds | Heartbeat message for connection health check |
 
 ##### Match Update Message
 
@@ -6530,6 +6531,37 @@ interface FootballEvent {
 }
 ```
 
+##### Ping Message (Heartbeat)
+
+The server sends ping messages every 30 seconds to check connection health:
+
+```typescript
+interface PingMessage {
+  type: "ping";
+  timestamp: number;  // Unix timestamp in seconds
+}
+```
+
+**Client should respond with pong:**
+
+```typescript
+interface PongMessage {
+  type: "pong";
+  timestamp: number;  // Echoed ping timestamp
+}
+```
+
+**Important:**
+- Client must respond to ping with pong to keep connection active
+- Connections without pong response for 90 seconds are automatically cleaned up
+- Timestamp can be used to calculate round-trip latency
+
+#### Client-Sent Messages
+
+| Message Type | Direction | Description |
+|--------------|-----------|-------------|
+| `pong` | Client → Server | Response to server ping for connection health check |
+
 #### PostgreSQL NOTIFY/LISTEN Mechanism
 
 The backend uses PostgreSQL's `NOTIFY`/`LISTEN` mechanism for real-time updates:
@@ -6558,6 +6590,9 @@ Client                              Server
   |<---- playclock-update ----------|
   |<---- gameclock-update ---------|
   |                                   |
+  |<---- ping (every 30s) ----------|  Heartbeat check
+  |----- pong ----------------------->|  Response to keep connection alive
+  |                                   |
   |<---- match-update --------------|  When match data changes (via NOTIFY)
   |<---- gameclock-update ---------|  When game clock changes
   |<---- playclock-update ----------|  When play clock changes
@@ -6576,7 +6611,10 @@ Each client has:
 
 #### Timeout Configuration
 
-- Queue get timeout: 12 hours (43200 seconds)
+- Queue get timeout: 60 seconds
+- Ping interval: 30 seconds (server → client)
+- Pong response: Client should respond with pong message
+- Connection cleanup: 90 seconds without pong response
 - If no messages received within timeout, connection closes gracefully
 
 ---
@@ -7097,6 +7135,8 @@ interface WebSocketMessage {
 | `stats_update` | Server → Client | Incremental stats update (broadcast) |
 | `stats_update` | Client → Server | Stats update request with conflict resolution |
 | `stats_sync` | Server → Client | Server rejects client update, sends current stats |
+| `ping` | Server → Client | Heartbeat message sent every 30 seconds |
+| `pong` | Client → Server | Response to ping for connection health check |
 
 ### Connection Lifecycle
 
@@ -7111,6 +7151,8 @@ Client                              Server
   |<---- stats_sync (if conflict) -----|
   |                                   |
   |<---- stats_update (broadcast) -----|
+  |<---- ping (every 30s) ----------|  Heartbeat check
+  |----- pong ----------------------->|  Response to keep connection alive
   |                                   |
   |----- stats_update --------------->|
   |                                   |
@@ -7118,7 +7160,7 @@ Client                              Server
   |                                   |
   |----- DISCONNECT ------------------->|
   |                                   |
-  ```
+```
 
 ### HTTP Endpoint: Match Statistics
 
@@ -7273,13 +7315,15 @@ python src/runserver.py
 - Network instability
 - Database connection drops
 - WebSocket manager issues
-- Client timeout (12-hour queue timeout)
+- Client timeout (60s queue timeout)
+- Missing pong responses (stale connection cleanup after 90s)
 
 **Solutions:**
 - Implement exponential backoff reconnection strategy
 - Check database connection stability
 - Review server logs for errors
-- Consider reducing queue timeout if needed
+- Ensure client responds to ping messages with pong
+- Check connection health logs for stale connection warnings
 
 #### 4. No Messages Received
 
