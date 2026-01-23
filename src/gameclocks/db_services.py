@@ -186,8 +186,11 @@ class GameClockServiceDB(BaseServiceDB):
             gameclock_status = await self.get_gameclock_status(gameclock_id)
             self.logger.debug(f"Gameclock status: {gameclock_status}")
 
-            if gameclock_status != "running":
+            if gameclock_status == "stopped":
                 state_machine.stop()
+                break
+            elif gameclock_status == "paused":
+                # Don't call stop() - pause endpoint already set the correct state
                 break
 
             current_value = state_machine.get_current_value()
