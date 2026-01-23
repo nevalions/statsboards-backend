@@ -56,12 +56,15 @@ class TestServerRestartConfiguration:
 
     def test_websocket_connections_closed_on_shutdown(self):
         """Test that WebSocket connections are properly closed during shutdown."""
+        from starlette.websockets import WebSocketState
         from unittest.mock import AsyncMock
 
         from src.utils.websocket.websocket_manager import connection_manager
 
         mock_ws1 = AsyncMock()
         mock_ws2 = AsyncMock()
+        mock_ws1.application_state = WebSocketState.CONNECTED
+        mock_ws2.application_state = WebSocketState.CONNECTED
 
         async def test_closure():
             await connection_manager.connect(mock_ws1, "client1", 1)

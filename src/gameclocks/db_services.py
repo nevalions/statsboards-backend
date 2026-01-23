@@ -21,30 +21,28 @@ class ClockManager:
         self.logger = get_logger("backend_logger_ClockManager", self)
         self.logger.debug("Initialized ClockManager")
 
-    async def start_clock(self, match_id: int, initial_value: int = 0) -> None:
+    async def start_clock(self, gameclock_id: int, initial_value: int = 0) -> None:
         self.logger.debug("Start clock in clock manager")
-        if match_id not in self.active_gameclock_matches:
-            self.active_gameclock_matches[match_id] = asyncio.Queue()
-        if match_id not in self.clock_state_machines:
-            self.clock_state_machines[match_id] = ClockStateMachine(
-                match_id, initial_value
-            )
+        if gameclock_id not in self.active_gameclock_matches:
+            self.active_gameclock_matches[gameclock_id] = asyncio.Queue()
+        if gameclock_id not in self.clock_state_machines:
+            self.clock_state_machines[gameclock_id] = ClockStateMachine(gameclock_id, initial_value)
 
-    async def end_clock(self, match_id: int) -> None:
+    async def end_clock(self, gameclock_id: int) -> None:
         self.logger.debug("Stop clock in clock manager")
-        if match_id in self.active_gameclock_matches:
-            del self.active_gameclock_matches[match_id]
-        if match_id in self.clock_state_machines:
-            del self.clock_state_machines[match_id]
+        if gameclock_id in self.active_gameclock_matches:
+            del self.active_gameclock_matches[gameclock_id]
+        if gameclock_id in self.clock_state_machines:
+            del self.clock_state_machines[gameclock_id]
 
-    async def update_queue_clock(self, match_id: int, message: GameClockDB) -> None:
-        if match_id in self.active_gameclock_matches:
+    async def update_queue_clock(self, gameclock_id: int, message: GameClockDB) -> None:
+        if gameclock_id in self.active_gameclock_matches:
             self.logger.debug("Update clock in clock manager")
-            queue = self.active_gameclock_matches[match_id]
+            queue = self.active_gameclock_matches[gameclock_id]
             await queue.put(message)
 
-    def get_clock_state_machine(self, match_id: int) -> ClockStateMachine | None:
-        return self.clock_state_machines.get(match_id)
+    def get_clock_state_machine(self, gameclock_id: int) -> ClockStateMachine | None:
+        return self.clock_state_machines.get(gameclock_id)
 
 
 class GameClockServiceDB(BaseServiceDB):
@@ -84,11 +82,7 @@ class GameClockServiceDB(BaseServiceDB):
             await self.clock_manager.start_clock(item_id, initial_value)
 
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
-            if (
-                state_machine
-                and gameclock
-                and gameclock.gameclock_status == "running"
-            ):
+            if state_machine and gameclock and gameclock.gameclock_status == "running":
                 state_machine.start()
 
             self.logger.debug(f"Gameclock added to active gameclock matches: {item_id}")
