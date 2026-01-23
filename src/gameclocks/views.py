@@ -39,6 +39,16 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             "message": message,
         }
 
+    def create_error_response(
+        self, message: str, status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR
+    ):
+        return {
+            "content": None,
+            "status_code": status_code,
+            "success": False,
+            "message": message,
+        }
+
     def route(self):
         router = super().route()
 
@@ -56,6 +66,10 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                 self.logger.error(
                     f"Error creating gameclock with data: {gameclock_data} {ex}",
                     exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error creating gameclock: {str(ex)}",
                 )
 
         @router.put(
@@ -142,7 +156,8 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                             self.service.loop_decrement_gameclock, gameclock_id
                         )
 
-                    self.service.cache_service.invalidate_gameclock(gameclock_id)
+                    if hasattr(self.service, "cache_service") and self.service.cache_service:
+                        self.service.cache_service.invalidate_gameclock(gameclock_id)
 
                     return self.create_response_with_server_time(
                         updated,
@@ -157,6 +172,10 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                 self.logger.error(
                     f"Error on starting gameclock with id:{gameclock_id} {ex}",
                     exc_info=True,
+                )
+                return self.create_error_response(
+                    f"Error starting gameclock: {str(ex)}",
+                    status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         @router.put(
@@ -207,14 +226,24 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     update_data,
                 )
                 if updated_:
-                    self.service.cache_service.invalidate_gameclock(item_id)
+                    if hasattr(self.service, "cache_service") and self.service.cache_service:
+                        self.service.cache_service.invalidate_gameclock(item_id)
                     return self.create_response_with_server_time(
                         updated_,
                         f"Game clock ID:{item_id} {item_status}",
                     )
+                else:
+                    return self.create_error_response(
+                        f"Game clock ID:{item_id} not found",
+                        status.HTTP_404_NOT_FOUND,
+                    )
             except Exception as ex:
                 self.logger.error(
                     f"Error on pausing gameclock with id:{item_id} {ex}", exc_info=True
+                )
+                return self.create_error_response(
+                    f"Error pausing gameclock: {str(ex)}",
+                    status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         @router.put(
@@ -240,7 +269,14 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     GameClockSchemaUpdate(gameclock=sec, gameclock_status=item_status),
                 )
 
-                self.service.cache_service.invalidate_gameclock(item_id)
+                if not updated:
+                    return self.create_error_response(
+                        f"Game clock ID:{item_id} not found",
+                        status.HTTP_404_NOT_FOUND,
+                    )
+
+                if hasattr(self.service, "cache_service") and self.service.cache_service:
+                    self.service.cache_service.invalidate_gameclock(item_id)
 
                 return self.create_response(
                     updated,
@@ -250,6 +286,10 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                 self.logger.error(
                     f"Error on resetting gameclock with id:{item_id} {ex}",
                     exc_info=True,
+                )
+                return self.create_error_response(
+                    f"Error resetting gameclock: {str(ex)}",
+                    status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         @router.delete(

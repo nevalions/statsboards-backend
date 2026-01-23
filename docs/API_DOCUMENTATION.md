@@ -9786,6 +9786,16 @@ PUT /api/gameclock/id/{gameclock_id}/running/
 |--------|-------------|
 | 500 | Internal server error |
 
+**Error Response (500):**
+```json
+{
+  "content": null,
+  "status_code": 500,
+  "success": false,
+  "message": "Error starting gameclock: <error details>"
+}
+```
+
 ---
 
 ### PUT /api/gameclock/id/{item_id}/paused/
@@ -9837,7 +9847,28 @@ PUT /api/gameclock/id/{item_id}/paused/
 
 | Status | Description |
 |--------|-------------|
+| 404 | Game clock not found |
 | 500 | Internal server error |
+
+**Error Response (404):**
+```json
+{
+  "content": null,
+  "status_code": 404,
+  "success": false,
+  "message": "Game clock ID:{id} not found"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "content": null,
+  "status_code": 500,
+  "success": false,
+  "message": "Error pausing gameclock: <error details>"
+}
+```
 
 ---
 
@@ -9883,7 +9914,28 @@ PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/
 
 | Status | Description |
 |--------|-------------|
+| 404 | Game clock not found |
 | 500 | Internal server error |
+
+**Error Response (404):**
+```json
+{
+  "content": null,
+  "status_code": 404,
+  "success": false,
+  "message": "Game clock ID:{id} not found"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "content": null,
+  "status_code": 500,
+  "success": false,
+  "message": "Error resetting gameclock: <error details>"
+}
+```
 
 ---
 
