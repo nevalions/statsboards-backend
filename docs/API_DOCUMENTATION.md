@@ -6485,6 +6485,8 @@ interface GameclockUpdateMessage {
     gameclock_max?: number;
     gameclock_status: string;  // "stopped", "running", "paused"
     gameclock_time_remaining?: number;
+    started_at_ms?: number | null; // Unix timestamp (ms) when clock started
+    server_time_ms?: number | null; // Server time (ms) when message sent
   };
 }
 ```
@@ -9558,6 +9560,8 @@ interface GameClockSchema {
   gameclock_time_remaining: number | null; // Remaining time during countdown
   match_id: number | null; // Associated match ID
   version: number; // Version number, starts at 1, increments on each update
+  started_at_ms: number | null; // Unix timestamp (ms) when clock started, null if paused/stopped
+  server_time_ms: number | null; // Server time (ms) when response generated
 }
 
 interface GameClockSchemaCreate {
@@ -9567,6 +9571,7 @@ interface GameClockSchemaCreate {
   gameclock_time_remaining: number | null; // Optional remaining time
   match_id: number | null; // Optional match ID
   version?: number; // Version number, defaults to 1
+  started_at_ms?: number | null; // Optional start timestamp (ms)
 }
 
 interface GameClockSchemaUpdate {
@@ -9575,6 +9580,7 @@ interface GameClockSchemaUpdate {
   gameclock_status: string | null; // Optional status
   gameclock_time_remaining: number | null; // Optional remaining time
   match_id: number | null; // Optional match ID
+  started_at_ms?: number | null; // Optional start timestamp (ms)
 }
 ```
 
@@ -9753,17 +9759,24 @@ PUT /api/gameclock/id/{gameclock_id}/running/
     "gameclock_max": 720,
     "gameclock_status": "running",
     "gameclock_time_remaining": 720,
-    "match_id": 123
+    "match_id": 123,
+    "version": 1,
+    "started_at_ms": 1737648000000,
+    "server_time_ms": 1737648000050
   },
   "status_code": 200,
-  "success": true
+  "success": true,
+  "message": "Game clock ID:1 running"
 }
 ```
 
 **Behavior:**
 - If gameclock was not running, updates status to "running" and sets `gameclock_time_remaining` to current `gameclock` value
-- Starts background task for decrementing the game clock
-- Background task decrements `gameclock_time_remaining` every second
+- Sets `started_at_ms` to current server time in milliseconds (Unix timestamp)
+- Updates state machine with `started_at_ms` for accurate time calculation
+- Starts background task for decrementing game clock
+- Background task decrements `gameclock_time_remaining` every second based on elapsed time from `started_at_ms`
+- Includes `server_time_ms` in response for frontend time synchronization
 - If gameclock was already running, returns current state with message
 
 **Error Responses:**
@@ -9794,20 +9807,29 @@ PUT /api/gameclock/id/{item_id}/paused/
 {
   "content": {
     "id": 1,
-    "gameclock": 720,
+    "gameclock": 650,
+    "gameclock_max": 720,
     "gameclock_status": "paused",
     "gameclock_time_remaining": 650,
-    "match_id": 123
+    "match_id": 123,
+    "version": 2,
+    "started_at_ms": null,
+    "server_time_ms": 1737648070000
   },
   "status_code": 200,
-  "success": true
+  "success": true,
+  "message": "Game clock ID:1 paused"
 }
 ```
 
 **Behavior:**
 - Pauses the countdown timer by pausing the state machine
+- Calculates current value from state machine using `started_at_ms` elapsed time
 - Updates `gameclock` field with the current remaining time from the state machine
+- Updates `gameclock_time_remaining` with the current value
+- Sets `started_at_ms` to `null` (cleared when clock is paused)
 - Sets `gameclock_status` to "paused"
+- Includes `server_time_ms` in response for frontend time synchronization
 
 **Error Responses:**
 

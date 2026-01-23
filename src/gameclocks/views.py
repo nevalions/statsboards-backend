@@ -1,3 +1,4 @@
+import time
 from typing import Annotated
 
 from fastapi import (
@@ -27,6 +28,16 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
         )
         self.logger = get_logger("backend_logger_GameClockAPIRouter", self)
         self.logger.debug("Initialized GameClockAPIRouter")
+
+    def create_response_with_server_time(self, item, message: str):
+        response_data = GameClockSchema.model_validate(item).model_dump()
+        response_data["server_time_ms"] = int(time.time() * 1000)
+        return {
+            "content": response_data,
+            "status_code": status.HTTP_200_OK,
+            "success": True,
+            "message": message,
+        }
 
     def route(self):
         router = super().route()
@@ -106,14 +117,23 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
 
                 # If the gameclock was not running, then start it
                 if present_gameclock_status != "running":
+                    started_at_ms = int(time.time() * 1000)
+
                     # Update the gameclock status to running
                     updated = await self.service.update(
                         gameclock_id,
                         GameClockSchemaUpdate(
                             gameclock_status="running",
                             gameclock_time_remaining=gameclock.gameclock,
+                            started_at_ms=started_at_ms,
                         ),
                     )
+
+                    # Also update state machine
+                    state_machine = self.service.clock_manager.get_clock_state_machine(gameclock_id)
+                    if state_machine:
+                        state_machine.started_at_ms = started_at_ms
+                        state_machine.status = "running"
 
                     # Start background task for decrementing the game clock
                     if not self.service.disable_background_tasks:
@@ -122,12 +142,12 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                             self.service.loop_decrement_gameclock, gameclock_id
                         )
 
-                    return self.create_response(
+                    return self.create_response_with_server_time(
                         updated,
                         f"Game clock ID:{gameclock_id} {updated.gameclock_status}",
                     )
                 else:
-                    return self.create_response(
+                    return self.create_response_with_server_time(
                         gameclock,
                         f"Game clock ID:{gameclock_id} already {present_gameclock_status}",
                     )
@@ -164,12 +184,17 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     update_data = GameClockSchemaUpdate(
                         gameclock_status=item_status,
                         gameclock=current_value,
+                        gameclock_time_remaining=current_value,
+                        started_at_ms=None,
                     )
                     self.logger.debug(
                         f"Updating gameclock {item_id} with status={item_status}, value={current_value}"
                     )
                 else:
-                    update_data = GameClockSchemaUpdate(gameclock_status=item_status)
+                    update_data = GameClockSchemaUpdate(
+                        gameclock_status=item_status,
+                        started_at_ms=None,
+                    )
                     self.logger.debug(
                         f"Updating gameclock {item_id} with status={item_status} only"
                     )
@@ -179,7 +204,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     update_data,
                 )
                 if updated_:
-                    return self.create_response(
+                    return self.create_response_with_server_time(
                         updated_,
                         f"Game clock ID:{item_id} {item_status}",
                     )

@@ -15,6 +15,7 @@ class GameClockSchemaBase(BaseModel):
     gameclock_time_remaining: int | None = None
     match_id: int | None = None
     version: Annotated[int, Path(ge=1)] = 1
+    started_at_ms: int | None = None
 
 
 # WebSocket Message Format for gameclock-update:
@@ -44,3 +45,4 @@ class GameClockSchema(GameClockSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    server_time_ms: int | None = None
