@@ -9805,8 +9805,9 @@ PUT /api/gameclock/id/{item_id}/paused/
 ```
 
 **Behavior:**
-- Pauses the countdown timer
-- Keeps `gameclock_time_remaining` at current value
+- Pauses the countdown timer by pausing the state machine
+- Updates `gameclock` field with the current remaining time from the state machine
+- Sets `gameclock_status` to "paused"
 
 **Error Responses:**
 

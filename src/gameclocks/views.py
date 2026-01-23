@@ -148,9 +148,35 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             item_status = "paused"
 
             try:
+                state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
+                current_value = None
+
+                if state_machine:
+                    self.logger.debug(f"Found state machine for gameclock {item_id}")
+                    current_value = state_machine.get_current_value()
+                    self.logger.debug(f"Current value from state machine: {current_value}")
+                    state_machine.pause()
+                    self.logger.debug(f"Paused state machine for gameclock {item_id}")
+                else:
+                    self.logger.warning(f"No state machine found for gameclock {item_id}")
+
+                if current_value is not None:
+                    update_data = GameClockSchemaUpdate(
+                        gameclock_status=item_status,
+                        gameclock=current_value,
+                    )
+                    self.logger.debug(
+                        f"Updating gameclock {item_id} with status={item_status}, value={current_value}"
+                    )
+                else:
+                    update_data = GameClockSchemaUpdate(gameclock_status=item_status)
+                    self.logger.debug(
+                        f"Updating gameclock {item_id} with status={item_status} only"
+                    )
+
                 updated_ = await self.service.update(
                     item_id,
-                    GameClockSchemaUpdate(gameclock_status=item_status),
+                    update_data,
                 )
                 if updated_:
                     return self.create_response(
