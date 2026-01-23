@@ -143,8 +143,20 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                         ),
                     )
 
-                    # Also update state machine
+                    # Ensure state machine exists
                     state_machine = self.service.clock_manager.get_clock_state_machine(gameclock_id)
+                    if not state_machine:
+                        self.logger.debug(
+                            f"State machine not found, creating new one for gameclock {gameclock_id}"
+                        )
+                        await self.service.clock_manager.start_clock(
+                            gameclock_id, gameclock.gameclock
+                        )
+                        state_machine = self.service.clock_manager.get_clock_state_machine(
+                            gameclock_id
+                        )
+
+                    # Update state machine
                     if state_machine:
                         state_machine.started_at_ms = started_at_ms
                         state_machine.status = "running"
