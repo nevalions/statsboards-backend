@@ -9777,6 +9777,7 @@ PUT /api/gameclock/id/{gameclock_id}/running/
 - Starts background task for decrementing game clock
 - Background task decrements `gameclock_time_remaining` every second based on elapsed time from `started_at_ms`
 - Includes `server_time_ms` in response for frontend time synchronization
+- Invalidates gameclock cache to trigger immediate WebSocket updates to all connected clients
 - If gameclock was already running, returns current state with message
 
 **Error Responses:**
@@ -9827,9 +9828,10 @@ PUT /api/gameclock/id/{item_id}/paused/
 - Calculates current value from state machine using `started_at_ms` elapsed time
 - Updates `gameclock` field with the current remaining time from the state machine
 - Updates `gameclock_time_remaining` with the current value
-- Sets `started_at_ms` to `null` (cleared when clock is paused)
-- Sets `gameclock_status` to "paused"
-- Includes `server_time_ms` in response for frontend time synchronization
+ - Sets `started_at_ms` to `null` (cleared when clock is paused)
+ - Sets `gameclock_status` to "paused"
+ - Includes `server_time_ms` in response for frontend time synchronization
+ - Invalidates gameclock cache to trigger immediate WebSocket updates to all connected clients
 
 **Error Responses:**
 
@@ -9875,6 +9877,7 @@ PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/
 **Behavior:**
 - Updates gameclock to specified time and status
 - Commonly used to reset quarter/half times (900s = 15 min, 1800s = 30 min)
+- Invalidates gameclock cache to trigger immediate WebSocket updates to all connected clients
 
 **Error Responses:**
 
