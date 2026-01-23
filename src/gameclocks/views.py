@@ -175,8 +175,10 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     self.logger.debug(f"Found state machine for gameclock {item_id}")
                     current_value = state_machine.get_current_value()
                     self.logger.debug(f"Current value from state machine: {current_value}")
+                    self.logger.debug(f"Current status from state machine: {state_machine.status}")
                     state_machine.pause()
                     self.logger.debug(f"Paused state machine for gameclock {item_id}")
+                    self.logger.debug(f"State machine value after pause: {state_machine.value}")
                 else:
                     self.logger.warning(f"No state machine found for gameclock {item_id}")
 
@@ -187,6 +189,33 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                         gameclock_time_remaining=current_value,
                         started_at_ms=None,
                     )
+                    self.logger.debug(
+                        f"Updating gameclock {item_id} with status={item_status}, value={current_value}"
+                    )
+                else:
+                    update_data = GameClockSchemaUpdate(
+                        gameclock_status=item_status,
+                        started_at_ms=None,
+                    )
+                    self.logger.debug(
+                        f"Updating gameclock {item_id} with status={item_status} only"
+                    )
+
+                updated_ = await self.service.update(
+                    item_id,
+                    update_data,
+                )
+                if updated_:
+                    from src.matches.match_data_cache_service import MatchDataCacheService
+                    self.service.cache_service.invalidate_gameclock(item_id)
+                    return self.create_response_with_server_time(
+                        updated_,
+                        f"Game clock ID:{item_id} {item_status}",
+                    )
+            except Exception as ex:
+                self.logger.error(
+                    f"Error on pausing gameclock with id:{item_id} {ex}", exc_info=True
+                )
                     self.logger.debug(
                         f"Updating gameclock {item_id} with status={item_status}, value={current_value}"
                     )
