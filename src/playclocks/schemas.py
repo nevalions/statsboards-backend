@@ -13,6 +13,7 @@ class PlayClockSchemaBase(BaseModel):
     playclock_status: Annotated[str, Path(max_length=50)] = "stopped"
     match_id: int | None = None
     version: Annotated[int, Path(ge=1)] = 1
+    started_at_ms: int | None = None
 
 
 # WebSocket Message Format for playclock-update:
@@ -24,10 +25,10 @@ class PlayClockSchemaBase(BaseModel):
 #     "match_id": int,
 #     "version": int,
 #     "playclock": int | None,
-#     "playclock_status": str
+#     "playclock_status": str,
+#     "started_at_ms": int | None
 #   }
 # }
-
 
 PlayClockSchemaUpdate = make_fields_optional(PlayClockSchemaBase)
 
@@ -40,3 +41,4 @@ class PlayClockSchema(PlayClockSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    server_time_ms: int | None = None

@@ -1,3 +1,4 @@
+import time
 from typing import Annotated
 
 from fastapi import (
@@ -34,6 +35,16 @@ class PlayClockAPIRouter(
         )
         self.logger = get_logger("backend_logger_PlayClockAPIRouter", self)
         self.logger.debug("Initialized PlayClockAPIRouter")
+
+    def create_response_with_server_time(self, item, message: str):
+        response_data = PlayClockSchema.model_validate(item).model_dump()
+        response_data["server_time_ms"] = int(time.time() * 1000)
+        return {
+            "content": response_data,
+            "status_code": status.HTTP_200_OK,
+            "success": True,
+            "message": message,
+        }
 
     def route(self):
         router = super().route()
@@ -150,13 +161,20 @@ class PlayClockAPIRouter(
 
                 await self.service.enable_match_data_clock_queues(item_id, sec)
                 if present_playclock_status != "running":
+                    started_at_ms = int(time.time() * 1000)
                     await self.service.update(
                         item_id,
                         PlayClockSchemaUpdate(
                             playclock=sec,
                             playclock_status=item_status,
+                            started_at_ms=started_at_ms,
                         ),
                     )
+
+                    state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
+                    if state_machine:
+                        state_machine.started_at = time.time()
+                        state_machine.status = "running"
 
                 if not self.service.disable_background_tasks:
                     self.logger.debug("Start playclock background task, loop decrement")
@@ -165,8 +183,9 @@ class PlayClockAPIRouter(
                         item_id,
                     )
 
-                return self.create_response(
-                    item,
+                updated = await self.service.get_by_id(item_id)
+                return self.create_response_with_server_time(
+                    updated,
                     f"Playclock ID:{item_id} {item_status}",
                 )
             except HTTPException:
