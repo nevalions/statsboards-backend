@@ -333,18 +333,27 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 
 ```
 1. Clock Orchestrator: ClockOrchestrator._run_loop()
-    - Single centralized loop checking all running clocks every 100ms
-    - Uses ClockStateMachine for in-memory state tracking
-    - Calculates current value from elapsed time (no DB read)
-    - Registers/unregisters playclocks and gameclocks dynamically
+     - Single centralized loop checking all running clocks every 100ms
+     - Uses ClockStateMachine for in-memory state tracking
+     - Calculates current value from elapsed time (no DB read)
+     - Registers/unregisters playclocks and gameclocks dynamically
 2. Service Callbacks: Trigger NOTIFY and update database
-    - PlayClockServiceDB.trigger_update_playclock()
-    - GameClockServiceDB.trigger_update_gameclock()
-    - Stop callbacks when clocks reach 0
+     - PlayClockServiceDB.trigger_update_playclock()
+     - GameClockServiceDB.trigger_update_gameclock()
+     - Stop callbacks when clocks reach 0
 3. WebSocket Manager: Broadcasts to all connected clients
-    - Broadcasts every second with calculated value (no DB round-trip)
+     - Broadcasts every second with calculated value (no DB round-trip)
 4. Clients: Receive real-time clock updates via WebSocket
 ```
+
+**Note:** For comprehensive documentation on clock handling system, see [CLOCK_HANDLING.md](CLOCK_HANDLING.md) which covers:
+- Complete clock architecture diagrams
+- State machine transitions and timing calculations
+- Database triggers and notification flow
+- WebSocket message processing
+- Start/stop/pause/reset operations
+- Differences between PlayClock and GameClock
+- Troubleshooting common issues
 
 **Architecture Benefits:**
 - Single loop replaces per-clock background tasks
