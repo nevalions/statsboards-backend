@@ -37,6 +37,7 @@ class PlayClockServiceDB(BaseServiceDB):
     async def enable_match_data_clock_queues(
         self,
         item_id: int,
+        initial_value: int | None = None,
     ) -> asyncio.Queue:
         self.logger.debug(f"Enable matchdata playclock queues match id:{item_id}")
         playclock = await self.get_by_id(item_id)
@@ -49,15 +50,12 @@ class PlayClockServiceDB(BaseServiceDB):
 
         if item_id not in active_clock_matches:
             self.logger.debug(f"Playclock not in active playclock matches: {item_id}")
-            initial_value = playclock.playclock if playclock and playclock.playclock else 0
+            if initial_value is None:
+                initial_value = playclock.playclock if playclock and playclock.playclock else 0
             await self.clock_manager.start_clock(item_id, initial_value)
 
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
-            if (
-                state_machine
-                and playclock
-                and playclock.playclock_status == "running"
-            ):
+            if state_machine and playclock and playclock.playclock_status == "running":
                 state_machine.start()
 
             self.logger.debug(f"Playclock added to active playclock matches: {item_id}")
@@ -241,9 +239,7 @@ class PlayClockServiceDB(BaseServiceDB):
 
                 if state_machine.needs_db_sync(settings.clock_db_sync_interval):
                     self.logger.debug(f"Syncing playclock to DB: {current_value}")
-                    await self.update(
-                        playclock_id, PlayClockSchemaUpdate(playclock=current_value)
-                    )
+                    await self.update(playclock_id, PlayClockSchemaUpdate(playclock=current_value))
                     state_machine.mark_db_synced()
 
         self.logger.debug("Returning playclock")

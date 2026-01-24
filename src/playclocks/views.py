@@ -148,7 +148,7 @@ class PlayClockAPIRouter(
                 item = await self.service.get_by_id(item_id)
                 present_playclock_status = item.playclock_status
 
-                await self.service.enable_match_data_clock_queues(item_id)
+                await self.service.enable_match_data_clock_queues(item_id, sec)
                 if present_playclock_status != "running":
                     await self.service.update(
                         item_id,
