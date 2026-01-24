@@ -6390,8 +6390,10 @@ Upon successful connection, the server sends three initial messages immediately:
     "id": 234,
     "match_id": 123,
     "playclock": 40,
-    "playclock_status": "running"
-  }
+    "playclock_status": "running",
+    "started_at_ms": 1737648000000
+  },
+  "server_time_ms": 1737648000050
 }
 
 // 3. Gameclock update
@@ -6502,7 +6504,9 @@ interface PlayclockUpdateMessage {
     match_id: number;
     playclock?: number;
     playclock_status: string;  // "stopped", "running"
+    started_at_ms?: number | null;
   };
+  server_time_ms?: number;
 }
 ```
 
@@ -9180,6 +9184,8 @@ interface PlayClockSchema {
   playclock_status: string; // Status: "stopped", "running", "paused" (max 50 chars)
   match_id: number | null; // Associated match ID
   version: number; // Version number, starts at 1, increments on each update
+  started_at_ms: number | null; // Unix timestamp (ms) when clock started, null if paused/stopped
+  server_time_ms: number | null; // Server time (ms) when response generated
 }
 
 interface PlayClockSchemaCreate {
@@ -9187,12 +9193,14 @@ interface PlayClockSchemaCreate {
   playclock_status: string; // Status, defaults to "stopped" (max 50 chars)
   match_id: number | null; // Optional match ID
   version?: number; // Version number, defaults to 1
+  started_at_ms?: number | null; // Optional start timestamp (ms)
 }
 
 interface PlayClockSchemaUpdate {
   playclock: number | null; // Optional time in seconds
   playclock_status: string | null; // Optional status
   match_id: number | null; // Optional match ID
+  started_at_ms?: number | null; // Optional start timestamp (ms)
 }
 ```
 
@@ -9233,7 +9241,9 @@ interface PlayClockSchemaCreate {
   "playclock": 40,
   "playclock_status": "stopped",
   "match_id": 123,
-  "version": 1
+  "version": 1,
+  "started_at_ms": null,
+  "server_time_ms": 1737648070000
 }
 ```
 
@@ -9286,7 +9296,9 @@ interface PlayClockSchemaUpdate {
   "playclock": 35,
   "playclock_status": "running",
   "match_id": 123,
-  "version": 2
+  "version": 2,
+  "started_at_ms": 1737648000000,
+  "server_time_ms": 1737648000050
 }
 ```
 
@@ -9399,7 +9411,9 @@ PUT /api/playclock/id/{item_id}/running/{sec}/
     "playclock": 40,
     "playclock_status": "running",
     "match_id": 123,
-    "version": 2
+    "version": 2,
+    "started_at_ms": 1737648000000,
+    "server_time_ms": 1737648000050
   },
   "status_code": 200,
   "success": true
@@ -9409,8 +9423,11 @@ PUT /api/playclock/id/{item_id}/running/{sec}/
 **Behavior:**
 - Enables match data clock queues for SSE
 - If playclock was not already running, updates to specified time and status "running"
-- Starts background task for decrementing the clock if background tasks are enabled
-- Background task decrements playclock every second until stopped
+- Sets `started_at_ms` to current server time in milliseconds (Unix timestamp)
+- Updates state machine with `started_at_ms` for accurate time calculation
+- Starts background task for decrementing clock if background tasks are enabled
+- Background task decrements playclock every second until stopped based on elapsed time from `started_at_ms`
+- Includes `server_time_ms` in response for frontend time synchronization
 
 **Error Responses:**
 
@@ -9445,7 +9462,9 @@ PUT /api/playclock/id/{item_id}/{item_status}/{sec}/
     "id": 1,
     "playclock": 25,
     "playclock_status": "stopped",
-    "match_id": 123
+    "match_id": 123,
+    "started_at_ms": null,
+    "server_time_ms": 1737648070000
   },
   "status_code": 200,
   "success": true
@@ -9487,7 +9506,9 @@ PUT /api/playclock/id/{item_id}/stopped/
     "id": 1,
     "playclock": null,
     "playclock_status": "stopped",
-    "match_id": 123
+    "match_id": 123,
+    "started_at_ms": null,
+    "server_time_ms": 1737648070000
   },
   "status_code": 200,
   "success": true
@@ -9496,6 +9517,9 @@ PUT /api/playclock/id/{item_id}/stopped/
 
 **Behavior:**
 - Sets playclock to `null` and status to "stopped"
+- Calculates current value from state machine using `started_at_ms` elapsed time
+- Sets `started_at_ms` to `null` (cleared when clock is paused)
+- Includes `server_time_ms` in response for frontend time synchronization
 - Used to clear clock display between plays
 
 **Error Responses:**
