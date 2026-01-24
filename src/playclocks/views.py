@@ -161,26 +161,23 @@ class PlayClockAPIRouter(
 
                 await self.service.enable_match_data_clock_queues(item_id, sec)
                 if present_playclock_status != "running":
+                    started_at_ms = int(time.time() * 1000)
+
                     await self.service.update(
                         item_id,
                         PlayClockSchemaUpdate(
                             playclock=sec,
                             playclock_status=item_status,
+                            started_at_ms=started_at_ms,
                         ),
                     )
 
-                started_at_ms = int(time.time() * 1000)
-                await self.service.update(
-                    item_id,
-                    PlayClockSchemaUpdate(
-                        started_at_ms=started_at_ms,
-                    ),
-                )
-
-                state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
-                if state_machine:
-                    state_machine.started_at_ms = int(time.time() * 1000)
-                    state_machine.status = "running"
+                    state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
+                    if not state_machine:
+                        await self.service.clock_manager.start_clock(item_id, sec)
+                    if state_machine:
+                        state_machine.started_at_ms = started_at_ms
+                        state_machine.status = "running"
 
                 updated = await self.service.get_by_id(item_id)
                 return self.create_response_with_server_time(

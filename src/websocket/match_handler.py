@@ -228,17 +228,10 @@ class MatchWebSocketHandler:
                 websocket_logger.warning("WebSocket not connected, skipping playclock data send")
                 return
 
-            if data is None or "data" not in data:
-                from src.helpers.fetch_helpers import fetch_playclock
+            from src.helpers.fetch_helpers import fetch_playclock
 
-                playclock_data = await fetch_playclock(match_id, cache_service=self.cache_service)
-                playclock_data["type"] = "playclock-update"
-            else:
-                playclock_data = {
-                    "match_id": match_id,
-                    "playclock": data.get("data"),
-                    "type": "playclock-update",
-                }
+            playclock_data = await fetch_playclock(match_id, cache_service=self.cache_service)
+            playclock_data["type"] = "playclock-update"
 
             if websocket.application_state == WebSocketState.CONNECTED:
                 websocket_logger.debug(f"Processing match data type: {playclock_data['type']}")
