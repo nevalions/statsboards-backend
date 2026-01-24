@@ -57,6 +57,8 @@ class PlayClockServiceDB(BaseServiceDB):
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
             if state_machine and playclock and playclock.playclock_status == "running":
                 state_machine.start()
+            elif initial_value is not None and state_machine:
+                state_machine.start()
 
             self.logger.debug(f"Playclock added to active playclock matches: {item_id}")
         match_queue = active_clock_matches[item_id]
