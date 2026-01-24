@@ -161,13 +161,6 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                         state_machine.started_at_ms = started_at_ms
                         state_machine.status = "running"
 
-                    # Start background task for decrementing the game clock
-                    if not self.service.disable_background_tasks:
-                        self.logger.debug("Start gameclock background task, loop decrement")
-                        background_tasks.add_task(
-                            self.service.loop_decrement_gameclock, gameclock_id
-                        )
-
                     if hasattr(self.service, "cache_service") and self.service.cache_service:
                         self.service.cache_service.invalidate_gameclock(gameclock_id)
 
@@ -201,6 +194,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             item_status = "paused"
 
             try:
+                await self.service.stop_gameclock(item_id)
                 state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
                 current_value = None
 
@@ -209,8 +203,6 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     current_value = state_machine.get_current_value()
                     self.logger.debug(f"Current value from state machine: {current_value}")
                     self.logger.debug(f"Current status from state machine: {state_machine.status}")
-                    state_machine.pause()
-                    self.logger.debug(f"Paused state machine for gameclock {item_id}")
                     self.logger.debug(f"State machine value after pause: {state_machine.value}")
                 else:
                     self.logger.warning(

@@ -182,13 +182,6 @@ class PlayClockAPIRouter(
                     state_machine.started_at_ms = int(time.time() * 1000)
                     state_machine.status = "running"
 
-                if not self.service.disable_background_tasks:
-                    self.logger.debug("Start playclock background task, loop decrement")
-                    await self.service.decrement_playclock(
-                        background_tasks,
-                        item_id,
-                    )
-
                 updated = await self.service.get_by_id(item_id)
                 return self.create_response_with_server_time(
                     updated,

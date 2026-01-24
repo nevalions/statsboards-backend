@@ -9425,8 +9425,8 @@ PUT /api/playclock/id/{item_id}/running/{sec}/
 - If playclock was not already running, updates to specified time and status "running"
 - Sets `started_at_ms` to current server time in milliseconds (Unix timestamp)
 - Updates state machine with `started_at_ms` for accurate time calculation
-- Starts background task for decrementing clock if background tasks are enabled
-- Background task decrements playclock every second until stopped based on elapsed time from `started_at_ms`
+- Registers playclock with ClockOrchestrator for centralized management
+- ClockOrchestrator decrements playclock every second until stopped based on elapsed time from `started_at_ms`
 - Includes `server_time_ms` in response for frontend time synchronization
 
 **Error Responses:**
@@ -9798,8 +9798,8 @@ PUT /api/gameclock/id/{gameclock_id}/running/
 - If gameclock was not running, updates status to "running" and sets `gameclock_time_remaining` to current `gameclock` value
 - Sets `started_at_ms` to current server time in milliseconds (Unix timestamp)
 - Updates state machine with `started_at_ms` for accurate time calculation
-- Starts background task for decrementing game clock
-- Background task decrements `gameclock_time_remaining` every second based on elapsed time from `started_at_ms`
+- Registers gameclock with ClockOrchestrator for centralized management
+- ClockOrchestrator decrements `gameclock_time_remaining` every second based on elapsed time from `started_at_ms`
 - Includes `server_time_ms` in response for frontend time synchronization
 - Invalidates gameclock cache to trigger immediate WebSocket updates to all connected clients
 - If gameclock was already running, returns current state with message

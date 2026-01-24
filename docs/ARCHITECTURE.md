@@ -332,17 +332,25 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 ### Real-time Game Clock Updates
 
 ```
-1. Background Task: ClockManager.loop_decrement_gameclock()
-   - Runs in asyncio task
-   - Uses ClockStateMachine for in-memory state tracking
-   - Calculates current value from elapsed time (no DB read)
-2. Database Update: Updates gameclock in PostgreSQL
-   - Only writes every 5 seconds (configurable via clock_db_sync_interval)
-   - Immediately persists on state changes (stop/pause)
+1. Clock Orchestrator: ClockOrchestrator._run_loop()
+    - Single centralized loop checking all running clocks every 100ms
+    - Uses ClockStateMachine for in-memory state tracking
+    - Calculates current value from elapsed time (no DB read)
+    - Registers/unregisters playclocks and gameclocks dynamically
+2. Service Callbacks: Trigger NOTIFY and update database
+    - PlayClockServiceDB.trigger_update_playclock()
+    - GameClockServiceDB.trigger_update_gameclock()
+    - Stop callbacks when clocks reach 0
 3. WebSocket Manager: Broadcasts to all connected clients
-   - Broadcasts every second with calculated value (no DB round-trip)
+    - Broadcasts every second with calculated value (no DB round-trip)
 4. Clients: Receive real-time clock updates via WebSocket
 ```
+
+**Architecture Benefits:**
+- Single loop replaces per-clock background tasks
+- Reduced resource usage (one async task instead of one per clock)
+- Centralized callback pattern for extensibility
+- Immediate database updates on state changes (no sync interval needed)
 
 ## Cross-Domain Communication
 

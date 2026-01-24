@@ -204,6 +204,9 @@ src/
 │ ├── tournaments/                # Tournament organization
 │ ├── seasons/                    # Season management
 │ ├── scoreboards/                # Scoreboard management
+│ ├── clocks/                     # Centralized clock orchestration
+│ │   ├── clock_orchestrator.py   # Single loop for all running clocks
+│ │   └── __init__.py
 │ ├── gameclocks/                 # Game clock functionality
 │ ├── playclocks/                 # Play clock functionality
 │ ├── matchdata/                  # Real-time match data
@@ -240,7 +243,7 @@ docs/                          # Documentation
 ### Real-time Capabilities
 - Live match data streaming via WebSockets
 - Real-time scoreboard updates
-- Game clock and play clock synchronization with background tasks
+- Game clock and play clock synchronization via centralized ClockOrchestrator
 - Event notifications for football events
 - Match data queue management for concurrent updates
 

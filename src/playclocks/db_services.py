@@ -1,13 +1,12 @@
 import asyncio
-import time
 
-from fastapi import BackgroundTasks, HTTPException
+from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.config import settings
 from src.core.models import BaseServiceDB, PlayClockDB, handle_service_exceptions
 from src.core.models.base import Database
 
+from ..clocks import clock_orchestrator
 from ..logging_config import get_logger
 from .clock_manager import ClockManager
 from .schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
@@ -20,9 +19,13 @@ class PlayClockServiceDB(BaseServiceDB):
         super().__init__(database, PlayClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
-        self.active_decrement_tasks: set[int] = set()  # Track active decrement loops
         self.logger = get_logger("backend_logger_PlayClockServiceDB", self)
         self.logger.debug("Initialized PlayClockServiceDB")
+        self._setup_orchestrator_callbacks()
+
+    def _setup_orchestrator_callbacks(self) -> None:
+        clock_orchestrator.set_playclock_update_callback(self.trigger_update_playclock)
+        clock_orchestrator.set_playclock_stop_callback(self._stop_playclock_internal)
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")
     async def create(self, item: PlayClockSchemaCreate) -> PlayClockDB:
@@ -35,6 +38,36 @@ class PlayClockServiceDB(BaseServiceDB):
         result = await super().create(item)
         return result  # type: ignore
 
+    async def _stop_playclock_internal(self, playclock_id: int) -> None:
+        """Handle playclock stop when it reaches 0"""
+        self.logger.debug(f"Stopping playclock {playclock_id} (reached 0)")
+        clock_orchestrator.unregister_playclock(playclock_id)
+        await self.clock_manager.end_clock(playclock_id)
+        await self.update(
+            playclock_id,
+            PlayClockSchemaUpdate(
+                playclock_status="stopping",
+                playclock=0,
+            ),
+        )
+        await asyncio.sleep(2)
+        await self.update(
+            playclock_id,
+            PlayClockSchemaUpdate(
+                playclock=None,
+                playclock_status="stopped",
+            ),
+        )
+
+    async def stop_playclock(self, playclock_id: int) -> None:
+        """Manually stop playclock and unregister from orchestrator"""
+        self.logger.debug(f"Manually stopping playclock {playclock_id}")
+        state_machine = self.clock_manager.get_clock_state_machine(playclock_id)
+        if state_machine:
+            state_machine.stop()
+        clock_orchestrator.unregister_playclock(playclock_id)
+        await self.clock_manager.end_clock(playclock_id)
+
     async def enable_match_data_clock_queues(
         self,
         item_id: int,
@@ -45,7 +78,6 @@ class PlayClockServiceDB(BaseServiceDB):
 
         if not playclock:
             self.logger.warning(f"Playclock not found: {item_id}")
-            # raise ValueError(f"Playclock {item_id} not found")
 
         active_clock_matches = self.clock_manager.active_playclock_matches
 
@@ -53,13 +85,18 @@ class PlayClockServiceDB(BaseServiceDB):
             self.logger.debug(f"Playclock not in active playclock matches: {item_id}")
             if initial_value is None:
                 initial_value = playclock.playclock if playclock and playclock.playclock else 0
-            await self.clock_manager.start_clock(item_id, initial_value)
+            await self.clock_manager.start_clock(
+                item_id, initial_value if initial_value is not None else 0
+            )
 
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
             if state_machine and playclock and playclock.playclock_status == "running":
                 state_machine.start()
             elif initial_value is not None and state_machine:
                 state_machine.start()
+
+            if state_machine and state_machine.status == "running":
+                clock_orchestrator.register_playclock(item_id, state_machine)
 
             self.logger.debug(f"Playclock added to active playclock matches: {item_id}")
         match_queue = active_clock_matches[item_id]
@@ -161,105 +198,12 @@ class PlayClockServiceDB(BaseServiceDB):
                 self.logger.debug(f"Playclock in DB: {result}")
                 playclock: PlayClockDB | None = result.one_or_none()
                 if playclock:
+                    state_machine = self.clock_manager.get_clock_state_machine(playclock.id)
+                    if state_machine and state_machine.status == "running":
+                        playclock.playclock = state_machine.get_current_value()
                     self.logger.debug(f"Playclock found: {playclock}")
                     return playclock
         return None
-
-    async def decrement_playclock(
-        self,
-        background_tasks: BackgroundTasks,
-        playclock_id: int,
-    ) -> None:
-        self.logger.debug(f"Decrement playclock by id:{playclock_id}")
-
-        if self.disable_background_tasks:
-            self.logger.debug("Background tasks disabled, skipping playclock decrement")
-            return
-
-        # Prevent duplicate background tasks for the same playclock
-        if playclock_id in self.active_decrement_tasks:
-            self.logger.debug(f"Decrement task already running for playclock:{playclock_id}, skipping")
-            return
-
-        if playclock_id in self.clock_manager.active_playclock_matches:
-            self.active_decrement_tasks.add(playclock_id)
-            background_tasks.add_task(
-                self.loop_decrement_playclock,
-                playclock_id,
-            )
-        else:
-            self.logger.warning(f"Playclock not found by id:{playclock_id}")
-
-    async def loop_decrement_playclock(self, playclock_id: int) -> PlayClockDB | None:
-        self.logger.debug(f"Loop decrement playclock by id:{playclock_id}")
-        next_time = time.monotonic()
-
-        state_machine = self.clock_manager.get_clock_state_machine(playclock_id)
-        if not state_machine:
-            self.logger.warning(f"State machine not found for playclock: {playclock_id}")
-            self.active_decrement_tasks.discard(playclock_id)
-            return await self.get_by_id(playclock_id)
-
-        while True:
-            next_time += 1
-            sleep_time = next_time - time.monotonic()
-            if sleep_time > 0:
-                await asyncio.sleep(sleep_time)
-
-            playclock_status = await self.get_playclock_status(playclock_id)
-            self.logger.debug(f"Playclock status: {playclock_status}")
-
-            if playclock_status == "stopped":
-                state_machine.stop()
-                self.active_decrement_tasks.discard(playclock_id)
-                break
-            elif playclock_status == "paused":
-                self.active_decrement_tasks.discard(playclock_id)
-                break
-
-            current_value = state_machine.get_current_value()
-            self.logger.debug(f"Current playclock value: {current_value}")
-
-            if current_value == 0:
-                self.logger.debug("Stopping playclock")
-                state_machine.stop()
-                await self.update(
-                    playclock_id,
-                    PlayClockSchemaUpdate(
-                        playclock_status="stopping",
-                        playclock=0,
-                    ),
-                )
-
-                await asyncio.sleep(2)
-
-                playclock: PlayClockDB = await self.update(
-                    playclock_id,
-                    PlayClockSchemaUpdate(
-                        playclock=None,
-                        playclock_status="stopped",
-                    ),
-                )
-                self.logger.debug(f"Playclock status: {playclock.playclock_status}")
-                self.active_decrement_tasks.discard(playclock_id)
-                break  # Exit loop after clock reaches 0
-
-            else:
-                playclock_obj = await self.get_by_id(playclock_id)
-                if playclock_obj:
-                    playclock_obj.playclock = current_value
-                    await self.clock_manager.update_queue_clock(
-                        playclock_id,
-                        playclock_obj,
-                    )
-
-                if state_machine.needs_db_sync(settings.clock_db_sync_interval):
-                    self.logger.debug(f"Syncing playclock to DB: {current_value}")
-                    await self.update(playclock_id, PlayClockSchemaUpdate(playclock=current_value))
-                    state_machine.mark_db_synced()
-
-        self.logger.debug("Returning playclock")
-        return await self.get_by_id(playclock_id)
 
     async def decrement_playclock_one_second(
         self,
