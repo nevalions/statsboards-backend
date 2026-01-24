@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+import time
 from typing import Any
 
 from fastapi import status
@@ -216,6 +217,7 @@ async def fetch_gameclock(
             return {
                 "match_id": match_id,
                 "gameclock": instance_to_dict(dict(gameclock.__dict__)),
+                "server_time_ms": int(time.time() * 1000),
             }
         else:
             return {
@@ -256,6 +258,7 @@ async def fetch_playclock(
             return {
                 "match_id": match_id,
                 "playclock": instance_to_dict(dict(playclock.__dict__)),
+                "server_time_ms": int(time.time() * 1000),
             }
         else:
             return {
