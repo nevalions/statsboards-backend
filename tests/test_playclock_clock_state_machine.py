@@ -9,7 +9,7 @@ class TestClockStateMachine:
         assert state_machine.clock_id == 1
         assert state_machine.value == 100
         assert state_machine.status == "stopped"
-        assert state_machine.started_at is None
+        assert state_machine.started_at_ms is None
         assert isinstance(state_machine.last_db_sync, float)
 
     def test_get_current_value_stopped(self):
@@ -37,7 +37,7 @@ class TestClockStateMachine:
         state_machine = ClockStateMachine(1, 100)
         state_machine.start()
         assert state_machine.status == "running"
-        assert state_machine.started_at is not None
+        assert state_machine.started_at_ms is not None
 
     def test_stop(self):
         state_machine = ClockStateMachine(1, 100)
@@ -45,7 +45,7 @@ class TestClockStateMachine:
         time.sleep(2)
         state_machine.stop()
         assert state_machine.status == "stopped"
-        assert state_machine.started_at is None
+        assert state_machine.started_at_ms is None
         assert state_machine.value == 98
 
     def test_pause(self):
@@ -54,7 +54,7 @@ class TestClockStateMachine:
         time.sleep(2)
         state_machine.pause()
         assert state_machine.status == "paused"
-        assert state_machine.started_at is None
+        assert state_machine.started_at_ms is None
         assert state_machine.value == 98
 
     def test_needs_db_sync(self):

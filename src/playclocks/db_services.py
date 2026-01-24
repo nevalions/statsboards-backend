@@ -20,6 +20,7 @@ class PlayClockServiceDB(BaseServiceDB):
         super().__init__(database, PlayClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
+        self.active_decrement_tasks: set[int] = set()  # Track active decrement loops
         self.logger = get_logger("backend_logger_PlayClockServiceDB", self)
         self.logger.debug("Initialized PlayClockServiceDB")
 
@@ -175,7 +176,13 @@ class PlayClockServiceDB(BaseServiceDB):
             self.logger.debug("Background tasks disabled, skipping playclock decrement")
             return
 
+        # Prevent duplicate background tasks for the same playclock
+        if playclock_id in self.active_decrement_tasks:
+            self.logger.debug(f"Decrement task already running for playclock:{playclock_id}, skipping")
+            return
+
         if playclock_id in self.clock_manager.active_playclock_matches:
+            self.active_decrement_tasks.add(playclock_id)
             background_tasks.add_task(
                 self.loop_decrement_playclock,
                 playclock_id,
@@ -190,6 +197,7 @@ class PlayClockServiceDB(BaseServiceDB):
         state_machine = self.clock_manager.get_clock_state_machine(playclock_id)
         if not state_machine:
             self.logger.warning(f"State machine not found for playclock: {playclock_id}")
+            self.active_decrement_tasks.discard(playclock_id)
             return await self.get_by_id(playclock_id)
 
         while True:
@@ -201,8 +209,12 @@ class PlayClockServiceDB(BaseServiceDB):
             playclock_status = await self.get_playclock_status(playclock_id)
             self.logger.debug(f"Playclock status: {playclock_status}")
 
-            if playclock_status != "running":
+            if playclock_status == "stopped":
                 state_machine.stop()
+                self.active_decrement_tasks.discard(playclock_id)
+                break
+            elif playclock_status == "paused":
+                self.active_decrement_tasks.discard(playclock_id)
                 break
 
             current_value = state_machine.get_current_value()
@@ -229,6 +241,8 @@ class PlayClockServiceDB(BaseServiceDB):
                     ),
                 )
                 self.logger.debug(f"Playclock status: {playclock.playclock_status}")
+                self.active_decrement_tasks.discard(playclock_id)
+                break  # Exit loop after clock reaches 0
 
             else:
                 playclock_obj = await self.get_by_id(playclock_id)

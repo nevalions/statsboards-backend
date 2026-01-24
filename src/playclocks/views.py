@@ -179,7 +179,7 @@ class PlayClockAPIRouter(
 
                 state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
                 if state_machine:
-                    state_machine.started_at = time.time()
+                    state_machine.started_at_ms = int(time.time() * 1000)
                     state_machine.status = "running"
 
                 if not self.service.disable_background_tasks:
