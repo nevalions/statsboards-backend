@@ -1,3 +1,4 @@
+import time
 from typing import Annotated
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
@@ -7,11 +8,11 @@ from src.auth.dependencies import require_roles
 from src.core import BaseRouter
 from src.core.models import MatchDB
 from src.core.service_registry import ServiceRegistryAccessorMixin
-from src.gameclocks.schemas import GameClockSchemaCreate
+from src.gameclocks.schemas import GameClockSchema, GameClockSchemaCreate
 from src.helpers.file_service import file_service
 from src.logging_config import get_logger
 from src.matchdata.schemas import MatchDataSchemaCreate
-from src.playclocks.schemas import PlayClockSchemaCreate
+from src.playclocks.schemas import PlayClockSchema, PlayClockSchemaCreate
 from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
 from src.teams.schemas import UploadResizeTeamLogoResponse, UploadTeamLogoResponse
@@ -299,14 +300,24 @@ class MatchCRUDRouter(
         )
         async def get_playclock_by_match_id_endpoint(match_id: int):
             self.logger.debug(f"Get playclock by match id:{match_id} endpoint")
-            return await self.service.get_playclock_by_match(match_id)
+            playclock = await self.service.get_playclock_by_match(match_id)
+            if playclock:
+                result = PlayClockSchema.model_validate(playclock).model_dump()
+                result["server_time_ms"] = int(time.time() * 1000)
+                return result
+            return None
 
         @router.get(
             "/id/{match_id}/gameclock/",
         )
         async def get_gameclock_by_match_id_endpoint(match_id: int):
             self.logger.debug(f"Get gameclock by match id:{match_id} endpoint")
-            return await self.service.get_gameclock_by_match(match_id)
+            gameclock = await self.service.get_gameclock_by_match(match_id)
+            if gameclock:
+                result = GameClockSchema.model_validate(gameclock).model_dump()
+                result["server_time_ms"] = int(time.time() * 1000)
+                return result
+            return None
 
         @router.get(
             "/id/{match_id}/scoreboard_data/",
@@ -536,7 +547,9 @@ class MatchCRUDRouter(
             order_by: str = Query("match_date", description="First sort column"),
             order_by_two: str = Query("id", description="Second sort column"),
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
-            search: str | None = Query(None, description="Search query for match_eesl_id or team titles"),
+            search: str | None = Query(
+                None, description="Search query for match_eesl_id or team titles"
+            ),
             week: int | None = Query(None, ge=1, description="Filter by week number"),
             tournament_id: int | None = Query(None, ge=1, description="Filter by tournament_id"),
             user_id: int | None = Query(None, description="Filter by user_id"),
@@ -575,7 +588,9 @@ class MatchCRUDRouter(
             order_by: str = Query("match_date", description="First sort column"),
             order_by_two: str = Query("id", description="Second sort column"),
             ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
-            search: str | None = Query(None, description="Search query for match_eesl_id or team titles"),
+            search: str | None = Query(
+                None, description="Search query for match_eesl_id or team titles"
+            ),
             week: int | None = Query(None, ge=1, description="Filter by week number"),
             tournament_id: int | None = Query(None, ge=1, description="Filter by tournament_id"),
             user_id: int | None = Query(None, description="Filter by user_id"),
