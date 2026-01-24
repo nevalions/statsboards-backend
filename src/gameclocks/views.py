@@ -194,7 +194,6 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             item_status = "paused"
 
             try:
-                await self.service.stop_gameclock(item_id)
                 state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
                 current_value = None
 
@@ -214,6 +213,8 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     if gameclock_db:
                         current_value = gameclock_db.gameclock
                         self.logger.debug(f"Current value from DB: {current_value}")
+
+                await self.service.stop_gameclock(item_id)
 
                 update_data = GameClockSchemaUpdate(
                     gameclock_status=item_status,
