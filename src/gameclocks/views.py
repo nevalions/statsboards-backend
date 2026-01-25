@@ -11,20 +11,20 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter, db
+from src.core import BaseRouter
+from src.core.dependencies import GameClockService
 from src.core.models import GameClockDB
 
 from ..logging_config import get_logger
-from .db_services import GameClockServiceDB
 from .schemas import GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate
 
 
 class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, GameClockSchemaUpdate]):
-    def __init__(self, service: GameClockServiceDB):
+    def __init__(self):
         super().__init__(
             "/api/gameclock",
             ["gameclock"],
-            service,
+            None,
         )
         self.logger = get_logger("backend_logger_GameClockAPIRouter", self)
         self.logger.debug("Initialized GameClockAPIRouter")
@@ -57,10 +57,12 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             "/",
             response_model=GameClockSchema,
         )
-        async def create_gameclock_endpoint(gameclock_data: GameClockSchemaCreate):
+        async def create_gameclock_endpoint(
+            game_clock_service: GameClockService, gameclock_data: GameClockSchemaCreate
+        ):
             self.logger.debug(f"Create gameclock endpoint got data: {gameclock_data}")
             try:
-                new_gameclock = await self.service.create(gameclock_data)
+                new_gameclock = await game_clock_service.create(gameclock_data)
                 return GameClockSchema.model_validate(new_gameclock)
             except Exception as ex:
                 self.logger.error(
@@ -77,12 +79,13 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             response_model=GameClockSchema,
         )
         async def update_gameclock_(
+            game_clock_service: GameClockService,
             item_id: int,
             item: GameClockSchemaUpdate,
         ):
             self.logger.debug(f"Update gameclock endpoint id:{item_id} data: {item}")
             try:
-                gameclock_update = await self.service.update(
+                gameclock_update = await game_clock_service.update(
                     item_id,
                     item,
                 )
@@ -123,10 +126,14 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             )
 
         @router.put("/id/{gameclock_id}/running/", response_class=JSONResponse)
-        async def start_gameclock_endpoint(background_tasks: BackgroundTasks, gameclock_id: int):
+        async def start_gameclock_endpoint(
+            game_clock_service: GameClockService,
+            background_tasks: BackgroundTasks,
+            gameclock_id: int,
+        ):
             self.logger.debug(f"Start gameclock endpoint with id: {gameclock_id}")
             try:
-                gameclock = await self.service.get_by_id(gameclock_id)
+                gameclock = await game_clock_service.get_by_id(gameclock_id)
                 present_gameclock_status = gameclock.gameclock_status
 
                 # If the gameclock was not running, then start it
@@ -134,7 +141,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     started_at_ms = int(time.time() * 1000)
 
                     # Update the gameclock status to running
-                    updated = await self.service.update(
+                    updated = await game_clock_service.update(
                         gameclock_id,
                         GameClockSchemaUpdate(
                             gameclock_status="running",
@@ -144,15 +151,17 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     )
 
                     # Ensure state machine exists
-                    state_machine = self.service.clock_manager.get_clock_state_machine(gameclock_id)
+                    state_machine = game_clock_service.clock_manager.get_clock_state_machine(
+                        gameclock_id
+                    )
                     if not state_machine:
                         self.logger.debug(
                             f"State machine not found, creating new one for gameclock {gameclock_id}"
                         )
-                        await self.service.clock_manager.start_clock(
+                        await game_clock_service.clock_manager.start_clock(
                             gameclock_id, gameclock.gameclock
                         )
-                        state_machine = self.service.clock_manager.get_clock_state_machine(
+                        state_machine = game_clock_service.clock_manager.get_clock_state_machine(
                             gameclock_id
                         )
 
@@ -161,8 +170,8 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                         state_machine.started_at_ms = started_at_ms
                         state_machine.status = "running"
 
-                    if hasattr(self.service, "cache_service") and self.service.cache_service:
-                        self.service.cache_service.invalidate_gameclock(gameclock_id)
+                    if hasattr(self.service, "cache_service") and game_clock_service.cache_service:
+                        game_clock_service.cache_service.invalidate_gameclock(gameclock_id)
 
                     return self.create_response_with_server_time(
                         updated,
@@ -188,13 +197,14 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             response_class=JSONResponse,
         )
         async def pause_gameclock_endpoint(
+            game_clock_service: GameClockService,
             item_id: int,
         ):
             self.logger.debug(f"Pausing gameclock endpoint with id: {item_id}")
             item_status = "paused"
 
             try:
-                state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
+                state_machine = game_clock_service.clock_manager.get_clock_state_machine(item_id)
                 current_value = None
 
                 if state_machine:
@@ -209,12 +219,12 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     )
 
                 if current_value is None:
-                    gameclock_db = await self.service.get_by_id(item_id)
+                    gameclock_db = await game_clock_service.get_by_id(item_id)
                     if gameclock_db:
                         current_value = gameclock_db.gameclock
                         self.logger.debug(f"Current value from DB: {current_value}")
 
-                await self.service.stop_gameclock(item_id)
+                await game_clock_service.stop_gameclock(item_id)
 
                 update_data = GameClockSchemaUpdate(
                     gameclock_status=item_status,
@@ -226,13 +236,13 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     f"Updating gameclock {item_id} with status={item_status}, value={current_value}"
                 )
 
-                updated_ = await self.service.update(
+                updated_ = await game_clock_service.update(
                     item_id,
                     update_data,
                 )
                 if updated_:
-                    if hasattr(self.service, "cache_service") and self.service.cache_service:
-                        self.service.cache_service.invalidate_gameclock(item_id)
+                    if hasattr(self.service, "cache_service") and game_clock_service.cache_service:
+                        game_clock_service.cache_service.invalidate_gameclock(item_id)
                     return self.create_response_with_server_time(
                         updated_,
                         f"Game clock ID:{item_id} {item_status}",
@@ -256,6 +266,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             response_class=JSONResponse,
         )
         async def reset_gameclock_endpoint(
+            game_clock_service: GameClockService,
             item_id: int,
             item_status: str = Path(
                 ...,
@@ -269,7 +280,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
         ):
             self.logger.debug(f"Resetting gameclock endpoint with id: {item_id}")
             try:
-                updated = await self.service.update(
+                updated = await game_clock_service.update(
                     item_id,
                     GameClockSchemaUpdate(gameclock=sec, gameclock_status=item_status),
                 )
@@ -280,8 +291,8 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                         status.HTTP_404_NOT_FOUND,
                     )
 
-                if hasattr(self.service, "cache_service") and self.service.cache_service:
-                    self.service.cache_service.invalidate_gameclock(item_id)
+                if hasattr(self.service, "cache_service") and game_clock_service.cache_service:
+                    game_clock_service.cache_service.invalidate_gameclock(item_id)
 
                 return self.create_response(
                     updated,
@@ -310,14 +321,15 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             },
         )
         async def delete_gameclock_endpoint(
+            game_clock_service: GameClockService,
             model_id: int,
             _: Annotated[GameClockDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete gameclock endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await game_clock_service.delete(model_id)
             return {"detail": f"Gameclock {model_id} deleted successfully"}
 
         return router
 
 
-api_gameclock_router = GameClockAPIRouter(GameClockServiceDB(db)).route()
+api_gameclock_router = GameClockAPIRouter().route()

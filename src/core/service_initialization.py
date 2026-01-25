@@ -69,6 +69,12 @@ def _player_team_tournament_factory(database: Database) -> BaseServiceDB:
     return PlayerTeamTournamentServiceDB(database)
 
 
+def _team_tournament_factory(database: Database) -> BaseServiceDB:
+    from src.team_tournament.db_services import TeamTournamentServiceDB
+
+    return TeamTournamentServiceDB(database)
+
+
 def _position_factory(database: Database) -> BaseServiceDB:
     from src.positions.db_services import PositionServiceDB
 
@@ -166,6 +172,7 @@ def register_all_services(database: Database) -> ServiceRegistry:
         ("season", _season_factory, False),
         ("tournament", _tournament_factory, False),
         ("team", _team_factory, False),
+        ("team_tournament", _team_tournament_factory, False),
         ("match", _match_factory, False),
         ("player", _player_factory, False),
         ("person", _person_factory, False),

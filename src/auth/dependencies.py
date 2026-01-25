@@ -6,17 +6,21 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from src.auth.security import decode_access_token
+from src.core.dependencies import UserService
 from src.core.models import UserDB
-from src.core.service_registry import get_service_registry
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserDB:
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    user_service: UserService,
+) -> UserDB:
     """Dependency to get current authenticated user from JWT token.
 
     Args:
         token: JWT token from OAuth2 scheme.
+        user_service: User service instance.
 
     Returns:
         UserDB: Current authenticated user.
@@ -42,14 +46,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
         user_id = int(user_id_str)
     except (ValueError, TypeError):
         raise credentials_exception
-
-    service_registry = get_service_registry()
-    user_service = service_registry.get("user")
-    if user_service is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="User service not available",
-        )
 
     user = await user_service.get_by_id(user_id)
     if user is None:
@@ -103,11 +99,15 @@ def require_roles(*required_roles: str):
             ...
     """
 
-    async def role_checker(current_user: Annotated[UserDB, Depends(get_current_user)]) -> UserDB:
+    async def role_checker(
+        current_user: Annotated[UserDB, Depends(get_current_user)],
+        user_service: UserService,
+    ) -> UserDB:
         """Check if user has required roles.
 
         Args:
             current_user: Current authenticated user.
+            user_service: User service instance.
 
         Returns:
             UserDB: Current user if they have required roles.
@@ -115,14 +115,6 @@ def require_roles(*required_roles: str):
         Raises:
             HTTPException: If user lacks required roles.
         """
-        service_registry = get_service_registry()
-        user_service = service_registry.get("user")
-        if user_service is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="User service not available",
-            )
-
         user = await user_service.get_by_id_with_roles(current_user.id)
 
         if user is None:

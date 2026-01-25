@@ -3,13 +3,13 @@ from typing import Annotated, List
 from fastapi import Depends, HTTPException
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter, db
+from src.core import BaseRouter
+from src.core.dependencies import GlobalSettingService
 from src.core.models import UserDB
 from src.core.service_registry import get_service_registry
 from src.seasons.schemas import SeasonSchema, SeasonSchemaCreate, SeasonSchemaUpdate
 
 from ..logging_config import get_logger
-from .db_services import GlobalSettingServiceDB
 from .schemas import (
     GlobalSettingSchema,
     GlobalSettingSchemaCreate,
@@ -25,11 +25,11 @@ class GlobalSettingAPIRouter(
         GlobalSettingSchemaUpdate,
     ]
 ):
-    def __init__(self, service: GlobalSettingServiceDB):
+    def __init__(self):
         super().__init__(
             "/api/settings",
             ["settings"],
-            service,
+            None,
         )
         self.logger = get_logger("backend_logger_GlobalSettingAPIRouter", self)
         self.logger.debug("Initialized GlobalSettingAPIRouter")
@@ -38,17 +38,19 @@ class GlobalSettingAPIRouter(
         router = super().route()
 
         @router.get("/grouped")
-        async def get_all_settings_grouped():
+        async def get_all_settings_grouped(global_setting_service: GlobalSettingService):
             """Get all settings grouped by category for frontend."""
             self.logger.debug("Get all settings grouped by category")
-            grouped = await self.service.get_all_grouped()
+            grouped = await global_setting_service.get_all_grouped()
             return grouped
 
         @router.get("/category/{category}")
-        async def get_settings_by_category(category: str):
+        async def get_settings_by_category(
+            global_setting_service: GlobalSettingService, category: str
+        ):
             """Get all settings in a specific category."""
             self.logger.debug(f"Get settings by category:{category}")
-            settings = await self.service.get_all_by_category(category)
+            settings = await global_setting_service.get_all_by_category(category)
             return [GlobalSettingSchema.model_validate(s) for s in settings]
 
         @router.get("/value/{key}", response_model=GlobalSettingValueSchema)
@@ -79,12 +81,13 @@ class GlobalSettingAPIRouter(
             },
         )
         async def create_setting_endpoint(
+            global_setting_service: GlobalSettingService,
             item: GlobalSettingSchemaCreate,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
         ):
             """Create a new global setting (admin only)."""
             self.logger.debug(f"Create setting endpoint got data: {item}")
-            new_ = await self.service.create(item)
+            new_ = await global_setting_service.create(item)
             return GlobalSettingSchema.model_validate(new_)
 
         @router.put(
@@ -101,13 +104,14 @@ class GlobalSettingAPIRouter(
             },
         )
         async def update_setting_endpoint(
+            global_setting_service: GlobalSettingService,
             item_id: int,
             item: GlobalSettingSchemaUpdate,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
         ):
             """Update a global setting (admin only)."""
             self.logger.debug(f"Update setting endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update(
+            update_ = await global_setting_service.update(
                 item_id,
                 item,
             )
@@ -128,12 +132,13 @@ class GlobalSettingAPIRouter(
             },
         )
         async def delete_setting_endpoint(
+            global_setting_service: GlobalSettingService,
             model_id: int,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
         ):
             """Delete a global setting (admin only)."""
             self.logger.debug(f"Delete setting endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await global_setting_service.delete(model_id)
             return {"detail": f"Setting {model_id} deleted successfully"}
 
         @router.post(
@@ -146,10 +151,12 @@ class GlobalSettingAPIRouter(
                 422: {"description": "Validation error"},
             },
         )
-        async def create_season_endpoint(item: SeasonSchemaCreate):
+        async def create_season_endpoint(
+            global_setting_service: GlobalSettingService, item: SeasonSchemaCreate
+        ):
             """Create a new season through settings API."""
             self.logger.debug(f"Create season endpoint got data: {item}")
-            new_ = await self.service.create_season(item)
+            new_ = await global_setting_service.create_season(item)
             return new_
 
         @router.put(
@@ -164,12 +171,13 @@ class GlobalSettingAPIRouter(
             },
         )
         async def update_season_endpoint(
+            global_setting_service: GlobalSettingService,
             item_id: int,
             item: SeasonSchemaUpdate,
         ):
             """Update a season through settings API."""
             self.logger.debug(f"Update season endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update_season(item_id, item)
+            update_ = await global_setting_service.update_season(item_id, item)
             if update_ is None:
                 raise HTTPException(status_code=404, detail=f"Season {item_id} not found")
             return update_
@@ -184,10 +192,12 @@ class GlobalSettingAPIRouter(
                 404: {"description": "Season not found"},
             },
         )
-        async def get_season_by_id_endpoint(item_id: int):
+        async def get_season_by_id_endpoint(
+            global_setting_service: GlobalSettingService, item_id: int
+        ):
             """Get a season by ID through settings API."""
             self.logger.debug(f"Get season by id endpoint: {item_id}")
-            season = await self.service.get_season_by_id(item_id)
+            season = await global_setting_service.get_season_by_id(item_id)
             if season is None:
                 raise HTTPException(status_code=404, detail=f"Season {item_id} not found")
             return season
@@ -202,10 +212,12 @@ class GlobalSettingAPIRouter(
                 500: {"description": "Internal server error"},
             },
         )
-        async def delete_season_endpoint(model_id: int):
+        async def delete_season_endpoint(
+            global_setting_service: GlobalSettingService, model_id: int
+        ):
             """Delete a season through settings API."""
             self.logger.debug(f"Delete season endpoint id:{model_id}")
-            await self.service.delete_season(model_id)
+            await global_setting_service.delete_season(model_id)
             return {"detail": f"Season {model_id} deleted successfully"}
 
         @router.get(
@@ -217,13 +229,13 @@ class GlobalSettingAPIRouter(
                 200: {"description": "Seasons retrieved successfully"},
             },
         )
-        async def get_all_seasons_endpoint():
+        async def get_all_seasons_endpoint(global_setting_service: GlobalSettingService):
             """Get all seasons through settings API ordered by year."""
             self.logger.debug("Get all seasons endpoint")
-            seasons = await self.service.get_all_seasons()
+            seasons = await global_setting_service.get_all_seasons()
             return seasons
 
         return router
 
 
-api_global_setting_router = GlobalSettingAPIRouter(GlobalSettingServiceDB(db)).route()
+api_global_setting_router = GlobalSettingAPIRouter().route()

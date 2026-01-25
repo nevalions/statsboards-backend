@@ -4,13 +4,12 @@ from fastapi import Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter, db
+from src.core import BaseRouter
+from src.core.dependencies import SportService, TeamService
 from src.core.models import SportDB
 
 from ..logging_config import get_logger
-from ..teams.db_services import TeamServiceDB
 from ..teams.schemas import PaginatedTeamResponse
-from .db_services import SportServiceDB
 from .schemas import SportSchema, SportSchemaCreate, SportSchemaUpdate
 
 
@@ -21,11 +20,11 @@ class SportAPIRouter(
         SportSchemaUpdate,
     ]
 ):
-    def __init__(self, service: SportServiceDB):
+    def __init__(self):
         super().__init__(
             "/api/sports",
             ["sports"],
-            service,
+            None,
         )
         self.logger = get_logger("backend_logger_SportAPIRouter", self)
         self.logger.debug("Initialized SportAPIRouter")
@@ -37,9 +36,12 @@ class SportAPIRouter(
             "/",
             response_model=SportSchema,
         )
-        async def create_sport_endpoint(item: SportSchemaCreate):
+        async def create_sport_endpoint(
+            item: SportSchemaCreate,
+            sport_service: SportService,
+        ):
             self.logger.debug(f"Create sport endpoint got data: {item}")
-            new_ = await self.service.create(item)
+            new_ = await sport_service.create(item)
             return SportSchema.model_validate(new_)
 
         @router.put(
@@ -49,9 +51,10 @@ class SportAPIRouter(
         async def update_sport_endpoint(
             item_id: int,
             item: SportSchemaUpdate,
+            sport_service: SportService,
         ):
             self.logger.debug(f"Update sport endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update(
+            update_ = await sport_service.update(
                 item_id,
                 item,
             )
@@ -63,14 +66,14 @@ class SportAPIRouter(
             "/id/{item_id}/",
             response_class=JSONResponse,
         )
-        async def get_sport_by_id_endpoint(item_id: int):
+        async def get_sport_by_id_endpoint(item_id: int, sport_service: SportService):
             self.logger.debug(f"Getting sport by id: {item_id} endpoint")
-            item = await self.service.get_by_id(item_id)
+            item = await sport_service.get_by_id(item_id)
             if item:
                 return self.create_response(
                     item,
                     f"Sport ID:{item.id}",
-                    "Sport",
+                    "text",
                 )
             else:
                 raise HTTPException(
@@ -79,24 +82,24 @@ class SportAPIRouter(
                 )
 
         @router.get("/id/{sport_id}/tournaments")
-        async def tournaments_by_sport_endpoint(sport_id: int):
+        async def tournaments_by_sport_endpoint(sport_id: int, sport_service: SportService):
             self.logger.debug(f"Get tournaments by sport id:{sport_id} endpoint")
-            return await self.service.get_tournaments_by_sport(sport_id)
+            return await sport_service.get_tournaments_by_sport(sport_id)
 
         @router.get("/id/{sport_id}/teams")
-        async def teams_by_sport_endpoint(sport_id: int):
+        async def teams_by_sport_endpoint(sport_id: int, sport_service: SportService):
             self.logger.debug(f"Get teams by sport id:{sport_id} endpoint")
-            return await self.service.get_teams_by_sport(sport_id)
+            return await sport_service.get_teams_by_sport(sport_id)
 
         @router.get("/id/{sport_id}/players")
-        async def players_by_sport_endpoint(sport_id: int):
+        async def players_by_sport_endpoint(sport_id: int, sport_service: SportService):
             self.logger.debug(f"Get players by sport id:{sport_id} endpoint")
-            return await self.service.get_players_by_sport(sport_id)
+            return await sport_service.get_players_by_sport(sport_id)
 
         @router.get("/id/{sport_id}/positions")
-        async def positions_by_sport_endpoint(sport_id: int):
+        async def positions_by_sport_endpoint(sport_id: int, sport_service: SportService):
             self.logger.debug(f"Get positions by sport id:{sport_id} endpoint")
-            return await self.service.get_positions_by_sport(sport_id)
+            return await sport_service.get_positions_by_sport(sport_id)
 
         @router.get(
             "/id/{sport_id}/teams/paginated",
@@ -104,6 +107,7 @@ class SportAPIRouter(
         )
         async def teams_by_sport_paginated_endpoint(
             sport_id: int,
+            team_service: TeamService,
             page: int = Query(1, ge=1, description="Page number (1-based)"),
             items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
             order_by: str = Query("title", description="First sort column"),
@@ -116,7 +120,6 @@ class SportAPIRouter(
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
-            team_service = TeamServiceDB(self.service.db)
             response = await team_service.search_teams_by_sport_with_pagination(
                 sport_id=sport_id,
                 search_query=search,
@@ -143,12 +146,13 @@ class SportAPIRouter(
         async def delete_sport_endpoint(
             model_id: int,
             _: Annotated[SportDB, Depends(require_roles("admin"))],
+            sport_service: SportService,
         ):
             self.logger.debug(f"Delete sport endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await sport_service.delete(model_id)
             return {"detail": f"Sport {model_id} deleted successfully"}
 
         return router
 
 
-api_sport_router = SportAPIRouter(SportServiceDB(db)).route()
+api_sport_router = SportAPIRouter().route()

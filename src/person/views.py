@@ -3,12 +3,12 @@ from typing import Annotated
 from fastapi import Depends, File, HTTPException, Query, UploadFile
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter, db
+from src.core import BaseRouter
+from src.core.dependencies import PersonService
 from src.core.models import PersonDB
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
-from .db_services import PersonServiceDB
 from .schemas import (
     PaginatedPersonResponse,
     PersonSchema,
@@ -20,8 +20,8 @@ from .schemas import (
 
 
 class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaUpdate]):
-    def __init__(self, service: PersonServiceDB):
-        super().__init__("/api/persons", ["persons"], service)
+    def __init__(self):
+        super().__init__("/api/persons", ["persons"], None)
         self.logger = get_logger("backend_logger_PersonAPIRouter", self)
         self.logger.debug("Initialized PersonAPIRouter")
 
@@ -33,10 +33,11 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             response_model=PersonSchema,
         )
         async def create_person_endpoint(
+            person_service: PersonService,
             person: PersonSchemaCreate,
         ):
             self.logger.debug(f"Create or update person endpoint got data: {person}")
-            new_person = await self.service.create_or_update_person(person)
+            new_person = await person_service.create_or_update_person(person)
             if new_person:
                 return PersonSchema.model_validate(new_person)
             else:
@@ -48,10 +49,11 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             response_model=PersonSchema,
         )
         async def get_person_by_eesl_id_endpoint(
+            person_service: PersonService,
             eesl_id: int,
         ):
             self.logger.debug(f"Get person by eesl_id: {eesl_id}")
-            person = await self.service.get_person_by_eesl_id(value=eesl_id)
+            person = await person_service.get_person_by_eesl_id(value=eesl_id)
             if person is None:
                 raise HTTPException(
                     status_code=404,
@@ -64,12 +66,13 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             response_model=PersonSchema,
         )
         async def update_person_endpoint(
+            person_service: PersonService,
             item_id: int,
             item: PersonSchemaUpdate,
         ):
             self.logger.debug(f"Update person endpoint got data: {item}")
             try:
-                update_ = await self.service.update(item_id, item)
+                update_ = await person_service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(status_code=404, detail=f"Person id {item_id} not found")
                 return PersonSchema.model_validate(update_)
@@ -127,6 +130,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             response_model=PaginatedPersonResponse,
         )
         async def get_all_persons_paginated_endpoint(
+            person_service: PersonService,
             page: int = Query(1, ge=1, description="Page number (1-based)"),
             items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
             order_by: str = Query("second_name", description="First sort column"),
@@ -142,7 +146,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 f"owner_user_id={owner_user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_persons_with_pagination(
+            response = await person_service.search_persons_with_pagination(
                 search_query=search,
                 owner_user_id=owner_user_id,
                 isprivate=isprivate,
@@ -158,9 +162,9 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             "/count",
             response_model=dict[str, int],
         )
-        async def get_persons_count_endpoint() -> dict[str, int]:
+        async def get_persons_count_endpoint(person_service: PersonService) -> dict[str, int]:
             self.logger.debug("Get persons count endpoint")
-            count = await self.service.get_persons_count()
+            count = await person_service.get_persons_count()
             return {"total_items": count}
 
         @router.get(
@@ -168,10 +172,11 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             response_model=list[PersonSchema],
         )
         async def get_all_persons_not_in_sport_endpoint(
+            person_service: PersonService,
             sport_id: int,
         ):
             self.logger.debug(f"Get all persons not in sport {sport_id}")
-            persons = await self.service.get_all_persons_not_in_sport(sport_id=sport_id)
+            persons = await person_service.get_all_persons_not_in_sport(sport_id=sport_id)
             return [PersonSchema.model_validate(p) for p in persons]
 
         @router.get(
@@ -179,6 +184,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             response_model=PaginatedPersonResponse,
         )
         async def get_persons_not_in_sport_endpoint(
+            person_service: PersonService,
             sport_id: int,
             page: int = Query(1, ge=1, description="Page number (1-based)"),
             items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
@@ -192,7 +198,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.get_persons_not_in_sport(
+            response = await person_service.get_persons_not_in_sport(
                 sport_id=sport_id,
                 search_query=search,
                 skip=skip,
@@ -216,14 +222,15 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
             },
         )
         async def delete_person_endpoint(
+            person_service: PersonService,
             model_id: int,
             _: Annotated[PersonDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete person endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await person_service.delete(model_id)
             return {"detail": f"Person {model_id} deleted successfully"}
 
         return router
 
 
-api_person_router = PersonAPIRouter(PersonServiceDB(db)).route()
+api_person_router = PersonAPIRouter().route()

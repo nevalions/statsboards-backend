@@ -3,7 +3,8 @@ from typing import Annotated
 from fastapi import Depends, File, HTTPException, Query, UploadFile
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter, db
+from src.core import BaseRouter
+from src.core.dependencies import TeamService, TeamTournamentService, TournamentService
 from src.core.models import TeamDB, handle_view_exceptions
 
 from ..helpers.file_service import file_service
@@ -11,10 +12,7 @@ from ..logging_config import get_logger
 from ..pars_eesl.pars_tournament import (
     parse_tournament_teams_index_page_eesl,
 )
-from ..team_tournament.db_services import TeamTournamentServiceDB
 from ..team_tournament.schemas import TeamTournamentSchemaCreate
-from ..tournaments.db_services import TournamentServiceDB
-from .db_services import TeamServiceDB
 from .schemas import (
     PaginatedTeamResponse,
     PaginatedTeamWithDetailsResponse,
@@ -29,8 +27,8 @@ from .schemas import (
 
 # Team backend
 class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
-    def __init__(self, service: TeamServiceDB):
-        super().__init__("/api/teams", ["teams"], service)
+    def __init__(self):
+        super().__init__("/api/teams", ["teams"], None)
         self.logger = get_logger("backend_logger_TeamAPIRouter", self)
         self.logger.debug("Initialized TeamAPIRouter")
 
@@ -49,11 +47,13 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             },
         )
         async def create_team_endpoint(
+            team_service: TeamService,
+            team_tournament_service: TeamTournamentService,
             team: TeamSchemaCreate,
             tour_id: int | None = None,
         ):
             self.logger.debug(f"Create team endpoint got data: {team}")
-            new_team = await self.service.create_or_update_team(team)
+            new_team = await team_service.create_or_update_team(team)
             if not new_team:
                 raise HTTPException(
                     status_code=400,
@@ -68,7 +68,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     self.logger.debug(
                         f"Try creating team_tournament connection team_id: {new_team.id} to tour_id: {tour_id}"
                     )
-                    await TeamTournamentServiceDB(db).create(dict_conv)
+                    await team_tournament_service.create(dict_conv)
                 except HTTPException:
                     raise
                 except Exception as ex:
@@ -94,10 +94,11 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             },
         )
         async def get_team_by_eesl_id_endpoint(
+            team_service: TeamService,
             eesl_id: int,
         ):
             self.logger.debug(f"Get team by eesl_id endpoint got eesl_id:{eesl_id}")
-            team = await self.service.get_team_by_eesl_id(value=eesl_id)
+            team = await team_service.get_team_by_eesl_id(value=eesl_id)
             if team is None:
                 self.logger.warning(f"No team found with eesl_id: {eesl_id}")
                 raise HTTPException(
@@ -116,9 +117,9 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 404: {"description": "Team not found"},
             },
         )
-        async def get_team_with_details_endpoint(team_id: int):
+        async def get_team_with_details_endpoint(team_service: TeamService, team_id: int):
             self.logger.debug(f"Get team with full details endpoint id:{team_id}")
-            team = await self.service.get_team_with_details(team_id)
+            team = await team_service.get_team_with_details(team_id)
             if team is None:
                 raise HTTPException(
                     status_code=404,
@@ -138,11 +139,12 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             },
         )
         async def update_team_endpoint(
+            team_service: TeamService,
             item_id: int,
             item: TeamSchemaUpdate,
         ):
             self.logger.debug(f"Update team endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update(item_id, item)
+            update_ = await team_service.update(item_id, item)
             if update_ is None:
                 raise HTTPException(status_code=404, detail=f"Team id {item_id} not found")
             return TeamSchema.model_validate(update_)
@@ -152,20 +154,22 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             error_message="Internal server error fetching matches for team",
             status_code=500,
         )
-        async def get_matches_by_team_endpoint(team_id: int):
+        async def get_matches_by_team_endpoint(team_service: TeamService, team_id: int):
             self.logger.debug(f"Get matches by team id:{team_id} endpoint")
-            return await self.service.get_matches_by_team_id(team_id)
+            return await team_service.get_matches_by_team_id(team_id)
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players/")
         @handle_view_exceptions(
             error_message="Internal server error fetching players for team and tournament",
             status_code=500,
         )
-        async def get_players_by_team_and_tournament_endpoint(team_id: int, tournament_id: int):
+        async def get_players_by_team_and_tournament_endpoint(
+            team_service: TeamService, team_id: int, tournament_id: int
+        ):
             self.logger.debug(
                 f"Get players by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
-            return await self.service.get_players_by_team_id_tournament_id(team_id, tournament_id)
+            return await team_service.get_players_by_team_id_tournament_id(team_id, tournament_id)
 
         @router.get("/id/{team_id}/tournament/id/{tournament_id}/players_with_persons/")
         @handle_view_exceptions(
@@ -173,12 +177,12 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             status_code=500,
         )
         async def get_players_by_team_id_tournament_id_with_person_endpoint(
-            team_id: int, tournament_id: int
+            team_service: TeamService, team_id: int, tournament_id: int
         ):
             self.logger.debug(
                 f"Get players with persons by team id:{team_id} and tournament id: {tournament_id} endpoint"
             )
-            return await self.service.get_players_by_team_id_tournament_id_with_person(
+            return await team_service.get_players_by_team_id_tournament_id_with_person(
                 team_id, tournament_id
             )
 
@@ -225,12 +229,15 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             status_code=500,
         )
         async def create_parsed_teams_endpoint(
+            team_service: TeamService,
+            team_tournament_service: TeamTournamentService,
+            tournament_service: TournamentService,
             eesl_tournament_id: int,
         ):
             self.logger.debug(
                 f"Get and Save parsed teams from tournament eesl_id:{eesl_tournament_id} endpoint"
             )
-            tournament = await TournamentServiceDB(db).get_tournament_by_eesl_id(eesl_tournament_id)
+            tournament = await tournament_service.get_tournament_by_eesl_id(eesl_tournament_id)
             self.logger.debug(f"Tournament: {tournament}")
             teams_list = await parse_tournament_teams_index_page_eesl(eesl_tournament_id)
             self.logger.debug(f"Teams after parse: {teams_list}")
@@ -240,7 +247,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             if teams_list:
                 for t in teams_list:
                     team = TeamSchemaCreate(**t)
-                    created_team = await self.service.create_or_update_team(team)
+                    created_team = await team_service.create_or_update_team(team)
                     self.logger.debug(f"Created or updated team after parse {created_team}")
                     created_teams.append(created_team)
                     if created_team and tournament:
@@ -254,7 +261,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                             self.logger.debug(
                                 "Trying to create team and tournament connection after parse"
                             )
-                            team_tournament_connection = await TeamTournamentServiceDB(db).create(
+                            team_tournament_connection = await team_tournament_service.create(
                                 dict_conv
                             )
                             created_team_tournament_ids.append(team_tournament_connection)
@@ -278,6 +285,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             response_model=PaginatedTeamResponse,
         )
         async def get_all_teams_paginated_endpoint(
+            team_service: TeamService,
             page: int = Query(1, ge=1, description="Page number (1-based)"),
             items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
             order_by: str = Query("title", description="First sort column"),
@@ -293,7 +301,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 f"user_id={user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_teams_with_pagination(
+            response = await team_service.search_teams_with_pagination(
                 search_query=search,
                 user_id=user_id,
                 isprivate=isprivate,
@@ -312,6 +320,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             description="Search teams by title, sport_id with pagination and nested sport, sponsor objects",
         )
         async def get_teams_with_details_paginated_endpoint(
+            team_service: TeamService,
             page: int = Query(1, ge=1, description="Page number (1-based)"),
             items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
             order_by: str = Query("title", description="First sort column"),
@@ -328,7 +337,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                 f"user_id={user_id}, isprivate={isprivate}, sport_id={sport_id}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_teams_with_details_pagination(
+            response = await team_service.search_teams_with_details_pagination(
                 search_query=search,
                 user_id=user_id,
                 isprivate=isprivate,
@@ -354,14 +363,15 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             },
         )
         async def delete_team_endpoint(
+            team_service: TeamService,
             model_id: int,
             _: Annotated[TeamDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete team endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await team_service.delete(model_id)
             return {"detail": f"Team {model_id} deleted successfully"}
 
         return router
 
 
-api_team_router = TeamAPIRouter(TeamServiceDB(db)).route()
+api_team_router = TeamAPIRouter().route()

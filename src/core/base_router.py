@@ -56,6 +56,10 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 class BaseRouter(MinimalBaseRouter[ModelType, CreateSchemaType, UpdateSchemaType]):
     def route(self):
         router = super().route()
+
+        if self.service is None:
+            return router
+
         model_name = self.service.model.__name__.lower()
 
         @router.get("/", operation_id=f"get_all_{model_name}")

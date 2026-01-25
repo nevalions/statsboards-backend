@@ -4,14 +4,12 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query
 
-from src.auth.dependencies import CurrentUser, require_roles
+from src.auth.dependencies import CurrentUser, UserService, require_roles
 from src.auth.schemas import UserRoleAssign
 from src.core import BaseRouter
 from src.core.models import UserDB
-from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
 
-from .db_services import UserServiceDB
 from .schemas import (
     AdminPasswordChange,
     PaginatedUserResponse,
@@ -25,8 +23,8 @@ ITEM = "USER"
 
 
 class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
-    def __init__(self, service: UserServiceDB):
-        super().__init__("/api/users", ["users"], service)
+    def __init__(self):
+        super().__init__("/api/users", ["users"], None)
         self.logger = get_logger("backend_logger_UserAPIRouter", self)
         self.logger.debug("Initialized UserAPIRouter")
 
@@ -44,26 +42,26 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 500: {"description": "Internal server error"},
             },
         )
-        async def register_user(user_data: UserSchemaCreate):
+        async def register_user(user_service: UserService, user_data: UserSchemaCreate):
             """Register a new user."""
             self.logger.debug(f"Register user endpoint got data: {user_data}")
 
-            existing_user = await self.service.get_by_username(user_data.username)
+            existing_user = await user_service.get_by_username(user_data.username)
             if existing_user:
                 raise HTTPException(
                     status_code=400,
                     detail="Username already exists",
                 )
 
-            existing_user = await self.service.get_by_email(user_data.email)
+            existing_user = await user_service.get_by_email(user_data.email)
             if existing_user:
                 raise HTTPException(
                     status_code=400,
                     detail="Email already exists",
                 )
 
-            new_user = await self.service.create(user_data)
-            user = await self.service.get_by_id_with_roles(new_user.id)
+            new_user = await user_service.create(user_data)
+            user = await user_service.get_by_id_with_roles(new_user.id)
             roles = [role.name for role in user.roles] if user.roles else []
             return UserSchema(
                 id=user.id,
@@ -83,11 +81,13 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             summary="Get current user profile",
             description="Returns profile of currently authenticated user.",
         )
-        async def get_current_user_profile(current_user: CurrentUser) -> UserSchema:
+        async def get_current_user_profile(
+            user_service: UserService, current_user: CurrentUser
+        ) -> UserSchema:
             """Get current user profile."""
             self.logger.debug(f"Get current user profile: {current_user.id}")
 
-            user = await self.service.get_by_id_with_roles(current_user.id)
+            user = await user_service.get_by_id_with_roles(current_user.id)
             if user is None:
                 raise HTTPException(
                     status_code=404,
@@ -115,14 +115,15 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             description="Updates profile of currently authenticated user.",
         )
         async def update_current_user_profile(
+            user_service: UserService,
             user_data: UserSchemaUpdate,
             current_user: CurrentUser,
         ) -> UserSchema:
             """Update current user profile."""
             self.logger.debug(f"Update current user profile: {current_user.id}")
 
-            updated_user = await self.service.update(current_user.id, user_data)
-            user = await self.service.get_by_id_with_roles(updated_user.id)
+            updated_user = await user_service.update(current_user.id, user_data)
+            user = await user_service.get_by_id_with_roles(updated_user.id)
 
             roles = [role.name for role in user.roles]
 
@@ -149,12 +150,13 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             },
         )
         async def change_own_password(
+            user_service: UserService,
             password_data: UserChangePassword,
             current_user: CurrentUser,
         ):
             """Change own password."""
             self.logger.debug(f"Change own password for user: {current_user.id}")
-            await self.service.change_password(
+            await user_service.change_password(
                 current_user.id,
                 password_data.old_password,
                 password_data.new_password,
@@ -175,6 +177,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             },
         )
         async def assign_role_to_user(
+            user_service: UserService,
             user_id: int,
             role_assign: UserRoleAssign,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
@@ -182,8 +185,8 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             """Assign a role to a user."""
             self.logger.debug(f"Assign role {role_assign.role_id} to user {user_id}")
 
-            await self.service.assign_role(user_id, role_assign.role_id)
-            user = await self.service.get_by_id_with_roles(user_id)
+            await user_service.assign_role(user_id, role_assign.role_id)
+            user = await user_service.get_by_id_with_roles(user_id)
 
             if user is None:
                 raise HTTPException(
@@ -218,6 +221,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             },
         )
         async def remove_role_from_user(
+            user_service: UserService,
             user_id: int,
             role_id: int,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
@@ -225,8 +229,8 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             """Remove a role from a user."""
             self.logger.debug(f"Remove role {role_id} from user {user_id}")
 
-            await self.service.remove_role(user_id, role_id)
-            user = await self.service.get_by_id_with_roles(user_id)
+            await user_service.remove_role(user_id, role_id)
+            user = await user_service.get_by_id_with_roles(user_id)
 
             if user is None:
                 raise HTTPException(
@@ -259,13 +263,14 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             },
         )
         async def get_user_roles(
+            user_service: UserService,
             user_id: int,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
         ):
             """Get user roles."""
             self.logger.debug(f"Get roles for user: {user_id}")
 
-            user = await self.service.get_by_id_with_roles(user_id)
+            user = await user_service.get_by_id_with_roles(user_id)
             if user is None:
                 raise HTTPException(
                     status_code=404,
@@ -281,6 +286,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             description="Search users by username. Supports pagination, ordering (username, is_online, etc.), role filtering, and online status filtering.",
         )
         async def search_users_endpoint(
+            user_service: UserService,
             page: int = Query(1, ge=1, description="Page number (1-based)"),
             items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
             order_by: str = Query("username", description="First sort column"),
@@ -295,7 +301,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}, role_names={role_names}, is_online={is_online}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_users_with_pagination(
+            response = await user_service.search_users_with_pagination(
                 search_query=search,
                 skip=skip,
                 limit=items_per_page,
@@ -320,31 +326,19 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             },
         )
         async def get_user_by_id(
+            user_service: UserService,
             user_id: int,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
         ) -> UserSchema:
             """Get user by ID with roles."""
             self.logger.debug(f"Get user by id: {user_id}")
 
-            user = await self.service.get_by_id_with_roles(user_id)
+            user = await user_service.get_by_id_with_roles(user_id)
             if user is None:
                 raise HTTPException(
                     status_code=404,
                     detail="User not found",
                 )
-
-            roles = [role.name for role in user.roles] if user.roles else []
-            return UserSchema(
-                id=user.id,
-                username=user.username,
-                email=user.email,
-                is_active=user.is_active,
-                person_id=user.person_id,
-                roles=roles,
-                created=user.created,
-                last_online=user.last_online,
-                is_online=user.is_online,
-            )
 
             roles = [role.name for role in user.roles] if user.roles else []
             return UserSchema(
@@ -369,9 +363,11 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 401: {"description": "Unauthorized"},
                 403: {"description": "Forbidden - requires admin role"},
                 404: {"description": "User not found"},
+                400: {"description": "Bad request - validation error"},
             },
         )
         async def update_user_by_id(
+            user_service: UserService,
             user_id: int,
             user_data: UserSchemaUpdate,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
@@ -379,8 +375,8 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             """Update user by ID."""
             self.logger.debug(f"Update user by id: {user_id}")
 
-            updated_user = await self.service.update(user_id, user_data)
-            user = await self.service.get_by_id_with_roles(updated_user.id)
+            updated_user = await user_service.update(user_id, user_data)
+            user = await user_service.get_by_id_with_roles(updated_user.id)
 
             roles = [role.name for role in user.roles] if user.roles else []
             return UserSchema(
@@ -408,6 +404,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             },
         )
         async def admin_change_password(
+            user_service: UserService,
             user_id: int,
             password_data: AdminPasswordChange,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
@@ -415,10 +412,10 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             """Admin change user password."""
             self.logger.debug(f"Admin change password for user: {user_id}")
 
-            updated_user = await self.service.admin_change_password(
+            updated_user = await user_service.admin_change_password(
                 user_id, password_data.new_password
             )
-            user = await self.service.get_by_id_with_roles(updated_user.id)
+            user = await user_service.get_by_id_with_roles(updated_user.id)
 
             roles = [role.name for role in user.roles] if user.roles else []
             return UserSchema(
@@ -446,13 +443,14 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
             },
         )
         async def delete_user_by_id(
+            user_service: UserService,
             user_id: int,
             _: Annotated[UserDB, Depends(require_roles("admin"))],
         ):
             """Delete user by ID."""
             self.logger.debug(f"Delete user by id: {user_id}")
 
-            await self.service.delete(user_id)
+            await user_service.delete(user_id)
             return {"detail": f"{ITEM} {user_id} deleted successfully"}
 
         @router.delete(
@@ -466,11 +464,11 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
                 500: {"description": "Internal server error"},
             },
         )
-        async def delete_current_user(current_user: CurrentUser):
+        async def delete_current_user(user_service: UserService, current_user: CurrentUser):
             """Delete current user."""
             self.logger.debug(f"Delete current user: {current_user.id}")
 
-            await self.service.delete(current_user.id)
+            await user_service.delete(current_user.id)
             return {"detail": f"{ITEM} deleted successfully"}
 
         return router
@@ -478,14 +476,7 @@ class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
 
 def get_user_router():
     """Get user router instance."""
-    from src.core.models import db
-
-    try:
-        registry = get_service_registry()
-        service = UserServiceDB(registry.database)
-        return UserAPIRouter(service).route()
-    except RuntimeError:
-        return UserAPIRouter(UserServiceDB(db)).route()
+    return UserAPIRouter().route()
 
 
 api_user_router = get_user_router()

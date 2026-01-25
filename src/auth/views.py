@@ -5,9 +5,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from src.auth.dependencies import CurrentUser
+from src.auth.dependencies import CurrentUser, UserService
 from src.auth.schemas import Token
-from src.core.service_registry import get_service_registry
 from src.logging_config import get_logger
 from src.users.schemas import UserSchema
 
@@ -32,14 +31,10 @@ class AuthRouter:
         )
         async def login_for_access_token(
             form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+            user_service: UserService,
         ) -> Token:
             """Authenticate user and return JWT token."""
             self.logger.debug(f"Login attempt for username: {form_data.username}")
-
-            from src.users.db_services import UserServiceDB
-
-            registry = get_service_registry()
-            user_service = UserServiceDB(registry.database)
 
             user = await user_service.authenticate(
                 form_data.username,
@@ -69,14 +64,12 @@ class AuthRouter:
             summary="Get current user",
             description="Returns currently authenticated user's profile.",
         )
-        async def get_current_user_info(current_user: CurrentUser) -> UserSchema:
+        async def get_current_user_info(
+            current_user: CurrentUser, user_service: UserService
+        ) -> UserSchema:
             """Get current user profile."""
             self.logger.debug(f"Get current user info: {current_user.id}")
 
-            from src.users.db_services import UserServiceDB
-
-            registry = get_service_registry()
-            user_service = UserServiceDB(registry.database)
             user = await user_service.get_by_id_with_roles(current_user.id)
 
             if user is None:
@@ -111,14 +104,10 @@ class AuthRouter:
                 401: {"description": "Not authenticated"},
             },
         )
-        async def heartbeat(current_user: CurrentUser) -> None:
+        async def heartbeat(current_user: CurrentUser, user_service: UserService) -> None:
             """Update user's online status."""
             self.logger.debug(f"Heartbeat for user: {current_user.id}")
 
-            from src.users.db_services import UserServiceDB
-
-            registry = get_service_registry()
-            user_service = UserServiceDB(registry.database)
             await user_service.heartbeat(current_user.id)
 
         return self.router

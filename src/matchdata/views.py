@@ -11,11 +11,11 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter, db
+from src.core import BaseRouter
+from src.core.dependencies import MatchDataService
 from src.core.models import MatchDataDB
 
 from ..logging_config import get_logger
-from .db_services import MatchDataServiceDB
 from .schemas import MatchDataSchema, MatchDataSchemaCreate, MatchDataSchemaUpdate
 
 
@@ -26,11 +26,11 @@ class MatchDataAPIRouter(
         MatchDataSchemaUpdate,
     ]
 ):
-    def __init__(self, service: MatchDataServiceDB):
+    def __init__(self):
         super().__init__(
             "/api/matchdata",
             ["matchdata"],
-            service,
+            None,
         )
         self.logger = get_logger("backend_logger_MatchDataAPIRouter", self)
         self.logger.debug("Initialized MatchDataAPIRouter")
@@ -43,10 +43,12 @@ class MatchDataAPIRouter(
             "/",
             response_model=MatchDataSchema,
         )
-        async def create_match_data(match_data: MatchDataSchemaCreate):
+        async def create_match_data(
+            match_data_service: MatchDataService, match_data: MatchDataSchemaCreate
+        ):
             self.logger.debug(f"Create matchdata endpoint got data: {match_data}")
             try:
-                new_match_data = await self.service.create(match_data)
+                new_match_data = await match_data_service.create(match_data)
                 return MatchDataSchema.model_validate(new_match_data)
             except Exception as ex:
                 self.logger.error(
@@ -59,12 +61,13 @@ class MatchDataAPIRouter(
             response_model=MatchDataSchema,
         )
         async def update_match_data_(
+            match_data_service: MatchDataService,
             item_id: int,
             match_data: MatchDataSchemaUpdate,
         ):
             self.logger.debug(f"Update matchdata endpoint id:{item_id} data: {match_data}")
             try:
-                match_data_update = await self.service.update(
+                match_data_update = await match_data_service.update(
                     item_id,
                     match_data,
                 )
@@ -109,13 +112,15 @@ class MatchDataAPIRouter(
             response_class=JSONResponse,
         )
         async def get_matchdata_by_id(
-            item=Depends(self.service.get_by_id),
+            match_data_service: MatchDataService,
+            item_id: int,
         ):
             self.logger.debug("Get matchdata by id endpoint")
+            item = await match_data_service.get_by_id(item_id)
             return self.create_response(
                 item,
                 f"MatchData ID:{item.id}",
-                "matchData",
+                "json",
             )
 
         @router.put(
@@ -123,6 +128,7 @@ class MatchDataAPIRouter(
             response_class=JSONResponse,
         )
         async def start_gameclock_endpoint(
+            match_data_service: MatchDataService,
             background_tasks: BackgroundTasks,
             match_data_id: int,
         ):
@@ -131,7 +137,7 @@ class MatchDataAPIRouter(
             try:
                 start_game = "in-progress"
                 self.logger.debug(f"Start gameclock with matchdata id: {match_data_id}")
-                await self.service.update(
+                await match_data_service.update(
                     match_data_id,
                     MatchDataSchemaUpdate(
                         game_status=start_game,
@@ -143,7 +149,7 @@ class MatchDataAPIRouter(
                     exc_info=True,
                 )
             tasks = [
-                self.service.enable_match_data_clock_queues(
+                match_data_service.enable_match_data_clock_queues(
                     match_data_id,
                     "game",
                 ),
@@ -155,13 +161,13 @@ class MatchDataAPIRouter(
             item_status = "running"
             try:
                 self.logger.debug(f"Start gameclock with matchdata id: {match_data_id}")
-                match_data = await self.service.get_by_id(match_data_id)
+                match_data = await match_data_service.get_by_id(match_data_id)
                 present_gameclock_status = match_data.gameclock_status
                 self.logger.debug(f"Present gameclock status: {present_gameclock_status}")
 
                 if present_gameclock_status != "running":
                     self.logger.debug("Gameclock not running")
-                    updated = await self.service.update(
+                    updated = await match_data_service.update(
                         match_data_id,
                         MatchDataSchemaUpdate(
                             gameclock_status=item_status,
@@ -169,7 +175,7 @@ class MatchDataAPIRouter(
                     )
 
                     self.logger.debug("Go to decrement gameclock")
-                    await self.service.decrement_gameclock(
+                    await match_data_service.decrement_gameclock(
                         background_tasks,
                         match_data_id,
                     )
@@ -196,12 +202,14 @@ class MatchDataAPIRouter(
             response_class=JSONResponse,
         )
         async def pause_gameclock_endpoint(
+            match_data_service: MatchDataService,
+            background_tasks: BackgroundTasks,
             item_id: int,
         ):
             self.logger.debug("Pause gameclock endpoint")
             item_status = "paused"
             try:
-                updated_ = await self.service.update(
+                updated_ = await match_data_service.update(
                     item_id,
                     MatchDataSchemaUpdate(gameclock_status=item_status),
                 )
@@ -219,6 +227,7 @@ class MatchDataAPIRouter(
             response_class=JSONResponse,
         )
         async def reset_gameclock_endpoint(
+            match_data_service: MatchDataService,
             item_id: int,
             item_status: str = Path(
                 ...,
@@ -232,7 +241,7 @@ class MatchDataAPIRouter(
         ):
             try:
                 self.logger.debug("Reset gameclock endpoint")
-                await self.service.update(
+                await match_data_service.update(
                     item_id,
                     MatchDataSchemaUpdate(
                         gameclock=sec,
@@ -243,10 +252,10 @@ class MatchDataAPIRouter(
             except Exception as ex:
                 self.logger.error(f"Error updating gameclock id: {item_id} {ex}", exc_info=True)
 
-            # await self.service.trigger_update_match_clock(item_id, "game")
+            # await match_data_service.trigger_update_match_clock(item_id, "game")
 
             try:
-                updated = await self.service.update(
+                updated = await match_data_service.update(
                     item_id,
                     MatchDataSchemaUpdate(
                         gameclock=sec,
@@ -255,7 +264,7 @@ class MatchDataAPIRouter(
                     ),
                 )
 
-                # await self.service.trigger_update_match_clock(item_id, "game")
+                # await match_data_service.trigger_update_match_clock(item_id, "game")
                 self.logger.debug(f"Game clock id:{item_id} {item_status}")
                 return self.create_response(
                     updated,
@@ -269,24 +278,25 @@ class MatchDataAPIRouter(
             response_class=JSONResponse,
         )
         async def start_playclock_endpoint(
+            match_data_service: MatchDataService,
             background_tasks: BackgroundTasks,
             item_id: int,
-            sec: int,
+            sec: int = Path(..., description="Seconds", examples=[720]),
         ):
             self.logger.debug("Start playclock endpoint")
             item_status = "running"
 
             try:
-                item = await self.service.get_by_id(item_id)
+                item = await match_data_service.get_by_id(item_id)
                 present_playclock_status = item.playclock_status
 
-                await self.service.enable_match_data_clock_queues(
+                await match_data_service.enable_match_data_clock_queues(
                     item_id,
                     "play",
                 )
                 if present_playclock_status != "running":
                     self.logger.debug("Playclock not running")
-                    await self.service.update(
+                    await match_data_service.update(
                         item_id,
                         MatchDataSchemaUpdate(
                             playclock=sec,
@@ -295,7 +305,7 @@ class MatchDataAPIRouter(
                     )
 
                     self.logger.debug("Go to decrement playclock")
-                    await self.service.decrement_playclock(
+                    await match_data_service.decrement_playclock(
                         background_tasks,
                         item_id,
                     )
@@ -320,12 +330,13 @@ class MatchDataAPIRouter(
             response_class=JSONResponse,
         )
         async def reset_playclock_endpoint(
+            match_data_service: MatchDataService,
             item_id: int,
         ):
             item_status = "stopped"
             self.logger.debug(f"Reset playclock id{item_id} endpoint")
 
-            await self.service.update(
+            await match_data_service.update(
                 item_id,
                 MatchDataSchemaUpdate(
                     playclock=None,
@@ -333,9 +344,9 @@ class MatchDataAPIRouter(
                 ),
             )
 
-            # await self.service.trigger_update_match_clock(item_id, "play")
+            # await match_data_service.trigger_update_match_clock(item_id, "play")
 
-            updated = await self.service.update(
+            updated = await match_data_service.update(
                 item_id,
                 MatchDataSchemaUpdate(
                     playclock_status="stopped",
@@ -351,14 +362,14 @@ class MatchDataAPIRouter(
         # @router.get("/id/{match_data_id}/events/gamedata/")
         # async def sse_match_data_endpoint(match_data_id: int):
         #     return StreamingResponse(
-        #         self.service.event_generator_get_match_data(match_data_id),
+        #         match_data_service.event_generator_get_match_data(match_data_id),
         #         media_type="text/event-stream",
         #     )
         #
         # @router.get("/id/{match_data_id}/events/playclock/")
         # async def sse_match_data_playclock_endpoint(match_data_id: int):
         #     return StreamingResponse(
-        #         self.service.event_generator_get_match_clock(
+        #         match_data_service.event_generator_get_match_clock(
         #             match_data_id,
         #             "play",
         #         ),
@@ -368,7 +379,7 @@ class MatchDataAPIRouter(
         # @router.get("/id/{match_data_id}/events/gameclock/")
         # async def sse_match_data_gameclock_endpoint(match_data_id: int):
         #     return StreamingResponse(
-        #         self.service.event_generator_get_match_clock(
+        #         match_data_service.event_generator_get_match_clock(
         #             match_data_id,
         #             "game",
         #         ),
@@ -378,10 +389,10 @@ class MatchDataAPIRouter(
         # @router.get("/id/{match_data_id}/events/gameclock/")
         # async def sse_match_data_gameclock_endpoint(match_data_id: int):
         #
-        #     await self.service.enable_match_data_events_queues(match_data_id)
+        #     await match_data_service.enable_match_data_events_queues(match_data_id)
         #
         #     return StreamingResponse(
-        #         self.service.event_generator_get_match_data_gameclock(
+        #         match_data_service.event_generator_get_match_data_gameclock(
         #             match_data_id
         #         ),
         #         media_type="text/event-stream",
@@ -392,7 +403,7 @@ class MatchDataAPIRouter(
         #     response_class=JSONResponse,
         # )
         # async def queue():
-        #     return await self.service.get_active_match_ids()
+        #     return await match_data_service.get_active_match_ids()
 
         @router.delete(
             "/id/{model_id}",
@@ -407,14 +418,15 @@ class MatchDataAPIRouter(
             },
         )
         async def delete_matchdata_endpoint(
+            match_data_service: MatchDataService,
             model_id: int,
             _: Annotated[MatchDataDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete matchdata endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await match_data_service.delete(model_id)
             return {"detail": f"MatchData {model_id} deleted successfully"}
 
         return router
 
 
-api_matchdata_router = MatchDataAPIRouter(MatchDataServiceDB(db)).route()
+api_matchdata_router = MatchDataAPIRouter().route()
