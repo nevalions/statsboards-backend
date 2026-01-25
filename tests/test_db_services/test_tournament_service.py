@@ -137,7 +137,7 @@ class TestTournamentServiceDB:
         )
         team3_db = await test_team_service.create_or_update_team(team3)
 
-        async with test_tournament_service.db.async_session() as session:
+        async with test_tournament_service.db.get_session_maker()() as session:
             tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1_db.id)
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2_db.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3_db.id)
@@ -187,7 +187,7 @@ class TestTournamentServiceDB:
         )
         team3_db = await test_team_service.create_or_update_team(team3)
 
-        async with test_tournament_service.db.async_session() as session:
+        async with test_tournament_service.db.get_session_maker()() as session:
             tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1_db.id)
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2_db.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3_db.id)
@@ -228,7 +228,7 @@ class TestTournamentServiceDB:
             team_db = await test_team_service.create_or_update_team(team_data)
             teams_db.append(team_db)
 
-        async with test_tournament_service.db.async_session() as session:
+        async with test_tournament_service.db.get_session_maker()() as session:
             tt_entries = [
                 TeamTournamentDB(tournament_id=tournament.id, team_id=team.id) for team in teams_db
             ]
@@ -290,7 +290,7 @@ class TestTournamentServiceDBPlayersWithoutTeam:
 
         from src.core.models.player_team_tournament import PlayerTeamTournamentDB
 
-        async with test_tournament_service.db.async_session() as session:
+        async with test_tournament_service.db.get_session_maker()() as session:
             ptt1 = PlayerTeamTournamentDB(
                 player_id=player1.id, tournament_id=tournament.id, team_id=team_db.id
             )
@@ -350,7 +350,7 @@ class TestTournamentServiceDBPlayersWithoutTeam:
 
         from src.core.models.player_team_tournament import PlayerTeamTournamentDB
 
-        async with test_tournament_service.db.async_session() as session:
+        async with test_tournament_service.db.get_session_maker()() as session:
             ptt1 = PlayerTeamTournamentDB(
                 player_id=player1.id, tournament_id=tournament.id, team_id=None
             )
@@ -393,7 +393,7 @@ class TestTournamentServiceDBPlayersWithoutTeam:
 
         from src.core.models.player_team_tournament import PlayerTeamTournamentDB
 
-        async with test_tournament_service.db.async_session() as session:
+        async with test_tournament_service.db.get_session_maker()() as session:
             ptt_entries = [
                 PlayerTeamTournamentDB(
                     player_id=player.id, tournament_id=tournament.id, team_id=None
