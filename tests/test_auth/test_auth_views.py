@@ -14,8 +14,12 @@ from src.users.schemas import UserSchemaCreate
 async def test_user_with_role(test_db: Database):
     """Create a test user with a role."""
     from src.auth.security import get_password_hash
+    from src.users.db_services import UserServiceDB
+    from src.core.models import RoleDB
 
-    async with test_db.async_session() as db_session:
+    service = UserServiceDB(test_db)
+
+    async with test_db.get_session_maker()() as db_session:
         role = RoleDB(name="test_role", description="Test role")
         db_session.add(role)
         await db_session.flush()

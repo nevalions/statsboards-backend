@@ -19,7 +19,7 @@ async def role_service(test_db: Database):
 @pytest.fixture
 async def test_role(test_db: Database):
     """Create a test role."""
-    async with test_db.async_session() as db_session:
+    async with test_db.get_session_maker()() as db_session:
         role = RoleDB(name="test_role", description="Test role description")
         db_session.add(role)
         await db_session.flush()
@@ -123,7 +123,7 @@ class TestRoleService:
             "hashed_password": get_password_hash("password123"),
         }
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             user_obj = UserDB(**user_data)
             db_session.add(user_obj)
             await db_session.flush()

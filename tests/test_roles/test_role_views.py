@@ -12,7 +12,7 @@ from src.users.schemas import UserSchemaCreate
 @pytest.fixture
 async def test_role(test_db: Database):
     """Create a test role."""
-    async with test_db.async_session() as db_session:
+    async with test_db.get_session_maker()() as db_session:
         role = RoleDB(name="test_role", description="Test role description")
         db_session.add(role)
         await db_session.flush()
@@ -26,7 +26,7 @@ async def test_role(test_db: Database):
 @pytest.fixture
 async def test_admin_user(test_db: Database):
     """Create a test admin user."""
-    async with test_db.async_session() as db_session:
+    async with test_db.get_session_maker()() as db_session:
         from src.auth.security import get_password_hash
 
         role = RoleDB(name="admin", description="Admin role")
@@ -191,7 +191,7 @@ class TestRoleViews:
 
         from src.auth.security import get_password_hash
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             # Refresh role from current session to avoid session attachment issues
             stmt = select(RoleDB).where(RoleDB.id == test_role.id)
             result = await db_session.execute(stmt)

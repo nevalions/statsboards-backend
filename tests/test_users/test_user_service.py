@@ -34,7 +34,7 @@ class TestUserServiceDB:
         """Test creating a user linked to PersonDB."""
         from src.core.models import PersonDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(
                 person_eesl_id=2000,
                 first_name="Test",
@@ -159,7 +159,7 @@ class TestUserServiceDB:
         from src.auth.security import get_password_hash
         from src.core.models import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user = UserDB(
                 username="heartbeat_test",
                 email="heartbeat@example.com",
@@ -173,7 +173,7 @@ class TestUserServiceDB:
         service = UserServiceDB(test_db)
         await service.heartbeat(user_id)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             from sqlalchemy import select
 
             stmt = select(UserDB).where(UserDB.id == user_id)
@@ -193,7 +193,7 @@ class TestUserServiceDB:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="stale_user1",
                 email="stale1@example.com",
@@ -222,7 +222,7 @@ class TestUserServiceDB:
 
         assert count == 1
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             from sqlalchemy import select
 
             stmt = select(UserDB).where(UserDB.username == "stale_user1")

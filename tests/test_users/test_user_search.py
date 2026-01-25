@@ -16,7 +16,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person1 = PersonDB(person_eesl_id=1001, first_name="John", second_name="Doe")
             person2 = PersonDB(person_eesl_id=1002, first_name="Jane", second_name="Smith")
             person3 = PersonDB(person_eesl_id=1003, first_name="Иван", second_name="Иванов")
@@ -74,7 +74,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2001, first_name="John", second_name="Doe")
             session.add(person)
             await session.flush()
@@ -82,7 +82,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="searchable_user",
                 email="searchable1@example.com",
@@ -122,7 +122,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2002, first_name="John", second_name="Doe")
             session.add(person)
             await session.flush()
@@ -130,7 +130,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="email_user",
                 email="searchable@example.com",
@@ -169,7 +169,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2003, first_name="TestName", second_name="Doe")
             session.add(person)
             await session.flush()
@@ -177,7 +177,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user = UserDB(
                 username="nameuser",
                 email="name@example.com",
@@ -208,7 +208,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2004, first_name="John", second_name="Searchable")
             session.add(person)
             await session.flush()
@@ -216,7 +216,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user = UserDB(
                 username="surnameuser",
                 email="surname@example.com",
@@ -247,7 +247,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2005, first_name="John", second_name="Doe")
             session.add(person)
             await session.flush()
@@ -255,7 +255,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user = UserDB(
                 username="Алексей",
                 email="alexey@example.com",
@@ -286,7 +286,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2006, first_name="John", second_name="Doe")
             session.add(person)
             await session.flush()
@@ -294,7 +294,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user = UserDB(
                 username="CaseUser",
                 email="case@example.com",
@@ -325,7 +325,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2007, first_name="Pagination", second_name="Test")
             session.add(person)
             await session.flush()
@@ -333,7 +333,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             for i in range(5):
                 user = UserDB(
                     username=f"user{i}",
@@ -413,7 +413,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2008, first_name="Order", second_name="Test")
             session.add(person)
             await session.flush()
@@ -421,7 +421,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="b_user",
                 email="b@example.com",
@@ -480,7 +480,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2009, first_name="Metadata", second_name="Test")
             session.add(person)
             await session.flush()
@@ -488,7 +488,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             for i in range(3):
                 user = UserDB(
                     username=f"user{i}",
@@ -522,7 +522,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=2010, first_name="John", second_name="Doe")
             session.add(person)
             await session.flush()
@@ -530,7 +530,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user = UserDB(
                 username="partialuser",
                 email="partial@example.com",
@@ -560,7 +560,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=3001, first_name="Test", second_name="User")
             admin_role = RoleDB(name="admin", description="Admin role")
             user_role = RoleDB(name="user", description="User role")
@@ -611,7 +611,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=3002, first_name="Test", second_name="User")
             admin_role = RoleDB(name="admin", description="Admin role")
             moderator_role = RoleDB(name="moderator", description="Moderator role")
@@ -671,7 +671,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person1 = PersonDB(person_eesl_id=3003, first_name="John", second_name="Admin")
             person2 = PersonDB(person_eesl_id=3004, first_name="Jane", second_name="User")
             admin_role = RoleDB(name="admin", description="Admin role")
@@ -722,7 +722,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=3005, first_name="Test", second_name="User")
             user_role = RoleDB(name="user", description="User role")
             session.add_all([person, user_role])
@@ -761,7 +761,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=4001, first_name="Test", second_name="User")
             session.add(person)
             await session.flush()
@@ -769,7 +769,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="online_user",
                 email="online@example.com",
@@ -810,7 +810,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=4002, first_name="Test", second_name="User")
             session.add(person)
             await session.flush()
@@ -818,7 +818,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="online_user1",
                 email="online1@example.com",
@@ -869,7 +869,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=4003, first_name="Test", second_name="User")
             session.add(person)
             await session.flush()
@@ -877,7 +877,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="online_user",
                 email="online@example.com",
@@ -928,7 +928,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=4004, first_name="Test", second_name="User")
             session.add(person)
             await session.flush()
@@ -936,7 +936,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="online_user",
                 email="online@example.com",
@@ -976,7 +976,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=4005, first_name="Test", second_name="User")
             admin_role = RoleDB(name="admin", description="Admin role")
             user_role = RoleDB(name="user", description="User role")
@@ -1040,7 +1040,7 @@ class TestUserSearch:
 
         service = UserServiceDB(test_db)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             person = PersonDB(person_eesl_id=4006, first_name="Test", second_name="User")
             session.add(person)
             await session.flush()
@@ -1048,7 +1048,7 @@ class TestUserSearch:
 
         from src.core.models.user import UserDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             user1 = UserDB(
                 username="test_online",
                 email="test_online@example.com",

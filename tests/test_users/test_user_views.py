@@ -13,7 +13,7 @@ from src.users.schemas import UserSchemaCreate
 @pytest.fixture
 async def test_user(test_db: Database):
     """Create a test user."""
-    async with test_db.async_session() as db_session:
+    async with test_db.get_session_maker()() as db_session:
         user_data = UserSchemaCreate(
             username="test_view_user",
             email="test_view@example.com",
@@ -116,7 +116,7 @@ class TestUserViews:
     @pytest.mark.asyncio
     async def test_register_duplicate_email(self, client: AsyncClient, test_db: Database):
         """Test registration fails with duplicate email."""
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             user_data = UserSchemaCreate(
                 username="existing_user",
                 email="existing@example.com",
@@ -148,7 +148,7 @@ class TestUserViews:
 
         from src.core.models import RoleDB
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             admin_role = RoleDB(name="admin", description="Administrator role")
             db_session.add(admin_role)
             await db_session.flush()
@@ -212,7 +212,7 @@ class TestUserViews:
         """Test getting roles for non-existent user returns 404."""
         from src.core.models import RoleDB
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             admin_role = RoleDB(name="admin", description="Administrator role")
             db_session.add(admin_role)
             await db_session.flush()
@@ -244,7 +244,7 @@ class TestUserViews:
 
         from src.core.models import RoleDB
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             admin_role = RoleDB(name="admin", description="Administrator role")
             db_session.add(admin_role)
             await db_session.flush()
@@ -310,7 +310,7 @@ class TestUserViews:
         """Test getting non-existent user returns 404."""
         from src.core.models import RoleDB
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             admin_role = RoleDB(name="admin", description="Administrator role")
             db_session.add(admin_role)
             await db_session.flush()
@@ -340,7 +340,7 @@ class TestUserViews:
         """Test updating user by ID (admin only)."""
         from src.core.models import RoleDB
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             admin_role = RoleDB(name="admin", description="Administrator role")
             db_session.add(admin_role)
             await db_session.flush()
@@ -390,7 +390,7 @@ class TestUserViews:
         from src.auth.security import verify_password
         from src.core.models import RoleDB
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             admin_role = RoleDB(name="admin", description="Administrator role")
             db_session.add(admin_role)
             await db_session.flush()
@@ -417,7 +417,7 @@ class TestUserViews:
 
         assert response.status_code == 200
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             stmt = select(UserDB).where(UserDB.id == test_user.id)
             result = await db_session.execute(stmt)
             user = result.scalar_one_or_none()
@@ -443,7 +443,7 @@ class TestUserViews:
     ):
         """Test changing own password with correct current password."""
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             stmt = select(UserDB).where(UserDB.id == test_user.id)
             result = await db_session.execute(stmt)
             user = result.scalar_one_or_none()
@@ -461,7 +461,7 @@ class TestUserViews:
         data = response.json()
         assert data["message"] == "Password changed successfully"
 
-        async with test_db.async_session() as db_session:
+        async with test_db.get_session_maker()() as db_session:
             stmt = select(UserDB).where(UserDB.id == test_user.id)
             result = await db_session.execute(stmt)
             user = result.scalar_one_or_none()

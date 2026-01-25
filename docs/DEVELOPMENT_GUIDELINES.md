@@ -1034,10 +1034,10 @@ Current optimizations implemented:
 database = Database(test_db_url, echo=False, test_mode=True)
 ```
 
-When writing direct session code in test fixtures, still use `flush()` instead of `commit()`:
+When writing direct session code in test fixtures, always use `test_db.get_session_maker()()`:
 
 ```python
-async with test_db.async_session() as db_session:
+async with test_db.get_session_maker()() as db_session:
     role = RoleDB(name="test_role", description="Test role")
     db_session.add(role)
     await db_session.flush()  # Use flush() instead of commit()

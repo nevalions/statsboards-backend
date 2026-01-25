@@ -16,7 +16,7 @@ async def role_service(test_db: Database):
 @pytest.fixture
 async def sample_roles(test_db: Database):
     """Create sample roles for search testing."""
-    async with test_db.async_session() as db_session:
+    async with test_db.get_session_maker()() as db_session:
         roles = []
         role_names = ["admin", "moderator", "user", "guest", "editor"]
 
