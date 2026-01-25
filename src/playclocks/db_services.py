@@ -113,7 +113,7 @@ class PlayClockServiceDB(BaseServiceDB):
         **kwargs,
     ) -> PlayClockDB:
         self.logger.debug(f"Update playclock id:{item_id} data: {item}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(select(PlayClockDB).where(PlayClockDB.id == item_id))
             updated_item = result.scalars().one_or_none()
 
@@ -148,7 +148,7 @@ class PlayClockServiceDB(BaseServiceDB):
         **kwargs,
     ) -> PlayClockDB:
         self.logger.debug(f"Update playclock with None allowed id:{item_id} data: {item}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(select(PlayClockDB).where(PlayClockDB.id == item_id))
             updated_item = result.scalars().one_or_none()
 
@@ -189,7 +189,7 @@ class PlayClockServiceDB(BaseServiceDB):
             return None
 
     async def get_playclock_by_match_id(self, match_id: int) -> PlayClockDB | None:
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Get playclock by match id:{match_id}")
             result = await session.scalars(
                 select(PlayClockDB).where(PlayClockDB.match_id == match_id)

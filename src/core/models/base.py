@@ -34,6 +34,7 @@ class Database:
         self.logger = get_logger("backend_logger_base_db", self)
         self.logger.info(f"Initializing Database with URL: {db_url}, Echo: {echo}")
         self.test_mode = test_mode
+        self.test_async_session: Any | None = None
 
         try:
             pool_size = 3 if "test" in db_url else 5
@@ -52,6 +53,16 @@ class Database:
             self.logger.error(f"Error initializing Database engine: {e}", exc_info=True)
         except Exception as e:
             self.logger.error(f"Unexpected error initializing Database: {e}", exc_info=True)
+
+    def get_session_maker(self) -> Any:
+        """Get appropriate session maker for current context.
+
+        Returns test_async_session if available (for test transaction isolation),
+        otherwise returns default async_session.
+        """
+        return (
+            self.test_async_session if self.test_async_session is not None else self.async_session
+        )
 
     async def test_connection(self, test_query: str = "SELECT 1"):
         try:

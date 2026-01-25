@@ -95,7 +95,7 @@ async def search_{entity}s_with_pagination(
 ) -> Paginated{Entity}Response:
     self.logger.debug(f"Search {ITEM}: query={search_query}")
 
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         base_query = select({Model}DB)
 
         # Search pattern matching with ICU collation for international text

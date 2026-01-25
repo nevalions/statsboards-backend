@@ -38,7 +38,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
         self, team_id: int, tournament_id: int
     ) -> TeamTournamentDB | None:
         self.logger.debug(f"Get {ITEM} relation: team_id:{team_id} tournament_id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(
                 select(TeamTournamentDB).where(
                     (TeamTournamentDB.team_id == team_id)
@@ -53,7 +53,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
     )
     async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:
         self.logger.debug(f"Get {ITEM} related teams for tournament_id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(
                 select(TeamDB)
                 .join(TeamTournamentDB)
@@ -70,7 +70,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
         self, team_id: int, tournament_id: int
     ) -> TeamTournamentDB:
         self.logger.debug(f"Delete {ITEM} team_id:{team_id} tournament_id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(
                 select(TeamTournamentDB).where(
                     (TeamTournamentDB.team_id == team_id)

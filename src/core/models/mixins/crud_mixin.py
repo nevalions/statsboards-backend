@@ -23,7 +23,7 @@ class CRUDMixin:
         attempt = 0
 
         while True:
-            async with self.db.async_session() as session:
+            async with self.db.get_session_maker()() as session:
                 self.logger.debug(
                     f"Starting to create {self.model.__name__} with data: {item.__dict__}"
                 )
@@ -75,7 +75,7 @@ class CRUDMixin:
                     raise
 
     async def get_all_elements(self):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(self.model)
 
             items = await session.execute(stmt)
@@ -86,7 +86,7 @@ class CRUDMixin:
     async def get_by_id(self, item_id: int):
         self.logger.debug(f"Starting to fetch element with ID: {item_id} for {self.model.__name__}")
         try:
-            async with self.db.async_session() as session:
+            async with self.db.get_session_maker()() as session:
                 result = await session.execute(select(self.model).where(self.model.id == item_id))
                 if result:
                     final_result = result.scalars().one_or_none()
@@ -142,7 +142,7 @@ class CRUDMixin:
     ):
         self.logger.debug(f"Starting to fetch element with ID: {item_id} for {model.__name__}")
         try:
-            async with self.db.async_session() as session:
+            async with self.db.get_session_maker()() as session:
                 result = await session.execute(select(model).where(model.id == item_id))
                 item = result.scalars().one_or_none()
                 if item is not None:
@@ -184,7 +184,7 @@ class CRUDMixin:
 
     async def update(self, item_id: int, item, **kwargs):
         self.logger.debug(f"Starting to update element with ID: {item_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             try:
                 result = await session.execute(select(self.model).where(self.model.id == item_id))
                 updated_item = result.scalars().one_or_none()
@@ -242,7 +242,7 @@ class CRUDMixin:
 
     async def delete(self, item_id: int):
         self.logger.debug(f"Starting to delete element with ID: {item_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             try:
                 db_item = await self.get_by_id(item_id)
                 if not db_item:
@@ -291,7 +291,7 @@ class CRUDMixin:
     async def get_count(self) -> int:
         self.logger.debug(f"Getting count of {self.model.__name__} elements")
         try:
-            async with self.db.async_session() as session:
+            async with self.db.get_session_maker()() as session:
                 stmt = select(func.count()).select_from(self.model)
                 result = await session.execute(stmt)
                 count = result.scalar()
@@ -329,7 +329,7 @@ class CRUDMixin:
             f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}"
         )
         try:
-            async with self.db.async_session() as session:
+            async with self.db.get_session_maker()() as session:
                 try:
                     order_column = getattr(self.model, order_by, self.model.id)
                 except AttributeError:

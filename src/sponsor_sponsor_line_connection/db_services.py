@@ -42,7 +42,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
         self, sponsor_id: int, sponsor_line_id: int
     ) -> SponsorSponsorLineDB | None:
         self.logger.debug(f"Getting {ITEM}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(
                 select(SponsorSponsorLineDB).where(
                     (SponsorSponsorLineDB.sponsor_id == sponsor_id)
@@ -59,7 +59,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
     )
     async def get_related_sponsors(self, sponsor_line_id: int) -> dict:
         self.logger.debug(f"Getting sponsors by sponsor line id: {sponsor_line_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             sponsor_line = await session.get(SponsorLineDB, sponsor_line_id)
             result = await session.execute(
                 select(SponsorDB, SponsorSponsorLineDB.position)
@@ -77,7 +77,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
         self, sponsor_id: int, sponsor_line_id: int
     ) -> SponsorSponsorLineDB:
         self.logger.debug(f"Deleting {ITEM}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(
                 select(SponsorSponsorLineDB).where(
                     (SponsorSponsorLineDB.sponsor_id == sponsor_id)

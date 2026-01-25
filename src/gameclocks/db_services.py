@@ -126,7 +126,7 @@ class GameClockServiceDB(BaseServiceDB):
         **kwargs,
     ) -> GameClockDB | None:
         self.logger.debug(f"Update gameclock endpoint id:{item_id} data: {item}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.execute(select(GameClockDB).where(GameClockDB.id == item_id))
             updated_item = result.scalars().one_or_none()
 
@@ -163,7 +163,7 @@ class GameClockServiceDB(BaseServiceDB):
             return None
 
     async def get_gameclock_by_match_id(self, match_id: int) -> GameClockDB | None:
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Get gameclock by match id:{match_id}")
             result = await session.scalars(
                 select(GameClockDB).where(GameClockDB.match_id == match_id)

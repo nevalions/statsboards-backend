@@ -65,7 +65,7 @@ class SponsorServiceDB(BaseServiceDB, SearchPaginationMixin):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(SponsorDB)
 
             base_query = await self._apply_search_filters(

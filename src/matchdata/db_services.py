@@ -53,7 +53,7 @@ class MatchDataServiceDB(BaseServiceDB):
     async def get_match_data_by_match_id(self, match_id: int) -> MatchDataDB | None:
         self.logger.debug(f"Get {ITEM} by match id: {match_id}")
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             result = await session.scalars(
                 select(MatchDataDB).where(MatchDataDB.match_id == match_id)
             )

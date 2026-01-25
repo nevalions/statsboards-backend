@@ -42,7 +42,7 @@ class UserServiceDB(BaseServiceDB):
         item_dict["hashed_password"] = get_password_hash(item_dict.pop("password"))
 
         user = UserDB(**item_dict)
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(RoleDB).where(RoleDB.name == "user")
             results = await session.execute(stmt)
             role = results.scalar_one_or_none()
@@ -65,7 +65,7 @@ class UserServiceDB(BaseServiceDB):
             UserDB | None: User if found, None otherwise.
         """
         self.logger.debug(f"Get {ITEM} by username:{username}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.username == username)
             results = await session.execute(stmt)
             return results.scalar_one_or_none()
@@ -80,7 +80,7 @@ class UserServiceDB(BaseServiceDB):
             UserDB | None: User if found, None otherwise.
         """
         self.logger.debug(f"Get {ITEM} by email:{email}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.email == email)
             results = await session.execute(stmt)
             return results.scalar_one_or_none()
@@ -95,7 +95,7 @@ class UserServiceDB(BaseServiceDB):
             UserDB | None: User if found, None otherwise.
         """
         self.logger.debug(f"Get {ITEM} by id:{user_id} with roles")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.id == user_id).options(selectinload(UserDB.roles))
             results = await session.execute(stmt)
             return results.scalar_one_or_none()
@@ -120,7 +120,7 @@ class UserServiceDB(BaseServiceDB):
             HTTPException: If user not found.
         """
         self.logger.debug(f"Update {ITEM} id:{item_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.id == item_id)
             results = await session.execute(stmt)
             user = results.scalar_one_or_none()
@@ -160,7 +160,7 @@ class UserServiceDB(BaseServiceDB):
             HTTPException: If user not found or old password is incorrect.
         """
         self.logger.debug(f"Change password for {ITEM} id:{user_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.id == user_id)
             results = await session.execute(stmt)
             user = results.scalar_one_or_none()
@@ -200,7 +200,7 @@ class UserServiceDB(BaseServiceDB):
             HTTPException: If user not found.
         """
         self.logger.debug(f"Admin change password for {ITEM} id:{user_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.id == user_id)
             results = await session.execute(stmt)
             user = results.scalar_one_or_none()
@@ -234,7 +234,7 @@ class UserServiceDB(BaseServiceDB):
             HTTPException: If user or role not found, or relationship already exists.
         """
         self.logger.debug(f"Assign role {role_id} to {ITEM} id:{user_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.id == user_id).options(selectinload(UserDB.roles))
             results = await session.execute(stmt)
             user = results.scalar_one_or_none()
@@ -281,7 +281,7 @@ class UserServiceDB(BaseServiceDB):
             HTTPException: If relationship not found.
         """
         self.logger.debug(f"Remove role {role_id} from {ITEM} id:{user_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(UserDB).where(UserDB.id == user_id).options(selectinload(UserDB.roles))
             results = await session.execute(stmt)
             user = results.scalar_one_or_none()
@@ -346,7 +346,7 @@ class UserServiceDB(BaseServiceDB):
             user_id: User ID to update.
         """
         self.logger.debug(f"Heartbeat for {ITEM} id:{user_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 update(UserDB)
                 .where(UserDB.id == user_id)
@@ -365,7 +365,7 @@ class UserServiceDB(BaseServiceDB):
             int: Number of users marked as offline.
         """
         self.logger.debug(f"Marking stale users offline (timeout: {timeout_minutes} minutes)")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             cutoff_time = datetime.now(UTC) - timedelta(minutes=timeout_minutes)
             stmt = (
                 update(UserDB)
@@ -398,7 +398,7 @@ class UserServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(UserDB).options(selectinload(UserDB.roles))
 
             if role_names:

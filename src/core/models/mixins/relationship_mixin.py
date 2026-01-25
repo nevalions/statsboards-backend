@@ -48,7 +48,7 @@ class RelationshipMixin:
         field_name_one: str,
         field_name_two: str,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Starting find_relation for model {self.model.__name__}")
             existing_relation = await session.execute(
                 select(secondary_table).filter(
@@ -97,7 +97,7 @@ class RelationshipMixin:
         child_id_name: str,
         child_relation,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             existing_relation = await self.is_relation_exist(
                 secondary_table,
                 parent_id,
@@ -180,7 +180,7 @@ class RelationshipMixin:
         skip: int | None = None,
         limit: int | None = None,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(
                 f"Fetching related items for id: {item_id} and property: {related_property} for model {self.model.__name__}"
             )
@@ -223,7 +223,7 @@ class RelationshipMixin:
         order_by_two: str = "id",
         ascending: bool = True,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             try:
                 self.logger.debug(
                     f"Fetching related items for item id one level: {item_id} and property: {related_property} "
@@ -346,7 +346,7 @@ class RelationshipMixin:
         filter_value: Any,
         related_property: str,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             try:
                 self.logger.debug(
                     f"Fetching related items for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
@@ -380,7 +380,7 @@ class RelationshipMixin:
         related_property: str,
         second_level_property: str,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             try:
                 self.logger.debug(
                     f"Fetching related item by two level for "

@@ -82,7 +82,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         match_id: int,
     ) -> MatchDB | None:
         self.logger.debug(f"Get {ITEM} with details id:{match_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(MatchDB)
                 .where(MatchDB.id == match_id)
@@ -123,7 +123,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         match_id: int,
     ) -> dict | None:
         self.logger.debug(f"Get teams by {ITEM} id:{match_id}")
-        async with self.db.async_session():
+        async with self.db.get_session_maker()() as session:
             team_service = self.service_registry.get("team")
             match = await self.get_by_id(match_id)
             if match:
@@ -210,7 +210,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         match_id: int,
     ) -> list[PlayerMatchDB]:
         self.logger.debug(f"Get players by {ITEM} id:{match_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(PlayerMatchDB).where(PlayerMatchDB.match_id == match_id)
 
             results = await session.execute(stmt)
@@ -227,7 +227,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         from src.core.models.player import PlayerDB
         from src.core.models.player_team_tournament import PlayerTeamTournamentDB
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerMatchDB)
                 .where(PlayerMatchDB.match_id == match_id)
@@ -294,7 +294,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         from src.core.models.player import PlayerDB
         from src.core.models.player_team_tournament import PlayerTeamTournamentDB
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerMatchDB)
                 .where(PlayerMatchDB.match_id == match_id)
@@ -415,7 +415,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
 
         from src.core.models.player import PlayerDB
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(MatchDB)
                 .where(MatchDB.id == match_id)
@@ -562,7 +562,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
 
         self.logger.debug(f"Get available players for team id:{team_id} in match id:{match_id}")
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             match = await session.get(MatchDB, match_id)
             if not match:
                 return []
@@ -625,7 +625,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             f"skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(MatchDB)
 
             if user_id is not None:
@@ -702,7 +702,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             f"skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(MatchDB).options(
                 joinedload(MatchDB.team_a),
                 joinedload(MatchDB.team_b),
@@ -776,7 +776,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         self.logger.debug(f"Get comprehensive data for {ITEM} id:{match_id}")
         from src.core.models.football_event import FootballEventDB
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(MatchDB)
                 .where(MatchDB.id == match_id)

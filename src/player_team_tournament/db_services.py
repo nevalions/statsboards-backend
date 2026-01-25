@@ -147,7 +147,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         self, tournament_id: int, player_id: int
     ) -> PlayerTeamTournamentDB | None:
         self.logger.debug(f"Get {ITEM} by tournament id:{tournament_id} and player id:{player_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerTeamTournamentDB)
                 .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
@@ -280,7 +280,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             f"Get team rosters for match_id:{match_id} include_available:{include_available} include_match_players:{include_match_players}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt_match = (
                 select(MatchDB)
                 .where(MatchDB.id == match_id)
@@ -515,7 +515,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             f"team_title={team_title}, skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = await self._build_base_query_with_search(
                 tournament_id,
                 search_query,
@@ -567,7 +567,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             f"team_title={team_title}, skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = await self._build_base_query_with_search(
                 tournament_id,
                 search_query,
@@ -649,7 +649,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             (PersonDB, "second_name"),
         ]
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             if search_query or team_title:
                 base_query = (
                     select(PlayerTeamTournamentDB)
@@ -756,7 +756,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             f"team_title={team_title}, skip={skip}, limit={limit}, order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = await self._build_base_query_with_search(
                 tournament_id,
                 search_query,

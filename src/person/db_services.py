@@ -115,7 +115,7 @@ class PersonServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(PersonDB)
 
             if owner_user_id is not None:
@@ -162,7 +162,7 @@ class PersonServiceDB(BaseServiceDB):
 
         self.logger.debug(f"Get all {ITEM} not in sport {sport_id}")
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             subquery = select(PlayerDB.id).where(
                 PlayerDB.person_id == PersonDB.id,
                 PlayerDB.sport_id == sport_id,
@@ -198,7 +198,7 @@ class PersonServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             subquery = select(PlayerDB.id).where(
                 PlayerDB.person_id == PersonDB.id,
                 PlayerDB.sport_id == sport_id,

@@ -328,7 +328,7 @@ async def search_{entity_lower}_with_details_pagination(
 ) -> Paginated{Entity}WithDetailsResponse:
     skip = (page - 1) * items_per_page
 
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         base_query = select({Entity}DB).options(
             # Eager load based on schema type
             selectinload({Entity}DB.relationships),

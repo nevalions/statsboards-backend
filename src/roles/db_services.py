@@ -29,7 +29,7 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
         item: RoleSchemaCreate,
     ) -> RoleDB:
         self.logger.debug(f"Creating {ITEM} {item}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(RoleDB).where(RoleDB.name == item.name)
             results = await session.execute(stmt)
             existing = results.scalar_one_or_none()
@@ -51,7 +51,7 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
         role_id: int,
     ) -> RoleDB | None:
         self.logger.debug(f"Get {ITEM} by id:{role_id} with user_count")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(RoleDB).where(RoleDB.id == role_id)
             results = await session.execute(stmt)
             role = results.scalar_one_or_none()
@@ -75,7 +75,7 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
         **kwargs,
     ) -> RoleDB:
         self.logger.debug(f"Update {ITEM} id:{item_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(RoleDB).where(RoleDB.id == item_id)
             results = await session.execute(stmt)
             role = results.scalar_one_or_none()
@@ -100,7 +100,7 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
         item_id: int,
     ) -> None:
         self.logger.debug(f"Delete {ITEM} id:{item_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(RoleDB).options(selectinload(RoleDB.users)).where(RoleDB.id == item_id)
             results = await session.execute(stmt)
             role = results.scalar_one_or_none()
@@ -139,7 +139,7 @@ class RoleServiceDB(BaseServiceDB, SearchPaginationMixin):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(RoleDB)
 
             base_query = await self._apply_search_filters(

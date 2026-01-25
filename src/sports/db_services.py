@@ -88,7 +88,7 @@ class SportServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         key: str = "id",
     ) -> list[PositionDB]:
         self.logger.debug(f"Get positions by {ITEM} id:{sport_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PositionDB).where(PositionDB.sport_id == sport_id).order_by(PositionDB.title)
             )

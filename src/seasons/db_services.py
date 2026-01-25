@@ -44,7 +44,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
         """
         self.logger.debug(f"Set other seasons to not current except season_id={season_id}")
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = update(SeasonDB).where(SeasonDB.id != season_id).values(iscurrent=False)
             await session.execute(stmt)
             await session.commit()
@@ -79,7 +79,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
         )
 
     async def get_season_by_year(self, season_year: int) -> SeasonDB | None:
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Get {ITEM}s by year id:{season_year}")
             season = await session.execute(select(SeasonDB).filter_by(year=season_year))
             return season.scalars().one_or_none()
@@ -93,7 +93,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
         key: str = "year",
     ) -> list[TournamentDB]:
         self.logger.debug(f"Get tournaments by {ITEM} year:{year}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(TournamentDB)
                 .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
@@ -112,7 +112,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
         year: int,
         sport_id: int,
     ) -> list[TournamentDB]:
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Get tournaments by {ITEM} year:{year} id:{sport_id}")
             stmt = (
                 select(TournamentDB)
@@ -135,7 +135,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
         sport_id: int,
     ) -> list[TournamentDB]:
         self.logger.debug(f"Get tournaments by {ITEM} id:{season_id} and sport_id:{sport_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(TournamentDB)
                 .join(SeasonDB, TournamentDB.season_id == SeasonDB.id)
@@ -187,7 +187,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
             SeasonDB object if found, None otherwise
         """
         self.logger.debug("Get current season")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(SeasonDB).where(SeasonDB.iscurrent)
             result = await session.execute(stmt)
             current_season = result.scalar_one_or_none()
@@ -247,7 +247,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(SeasonDB)
 
             base_query = await self._apply_search_filters(

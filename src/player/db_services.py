@@ -169,7 +169,7 @@ class PlayerServiceDB(BaseServiceDB):
     ) -> PlayerDB | None:
         self.logger.debug(f"Get player for person {person_id} and sport {sport_id}")
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerDB)
                 .where(PlayerDB.person_id == person_id)
@@ -202,7 +202,7 @@ class PlayerServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = (
                 select(PlayerDB)
                 .where(PlayerDB.sport_id == sport_id)
@@ -305,7 +305,7 @@ class PlayerServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = (
                 select(PlayerDB)
                 .where(PlayerDB.sport_id == sport_id)
@@ -420,7 +420,7 @@ class PlayerServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = (
                 select(PlayerDB)
                 .where(PlayerDB.sport_id == sport_id)
@@ -507,7 +507,7 @@ class PlayerServiceDB(BaseServiceDB):
     async def get_player_career(self, player_id: int) -> PlayerCareerResponseSchema:
         self.logger.debug(f"Get player career data for player_id:{player_id}")
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerDB)
                 .options(
@@ -629,7 +629,7 @@ class PlayerServiceDB(BaseServiceDB):
     ) -> PlayerDetailInTournamentResponse:
         self.logger.debug(f"Get player {player_id} detail in tournament {tournament_id}")
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerDB)
                 .options(

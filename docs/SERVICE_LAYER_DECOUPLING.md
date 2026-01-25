@@ -144,7 +144,7 @@ async def lifespan(_app: FastAPI):
 
 ## Usage in Router Endpoints
 
-When creating router endpoints that need database access, especially for operations that create their own sessions (like `get_value()` calls that use `async with self.db.async_session()`), use the service registry to ensure the correct database connection is used:
+When creating router endpoints that need database access, especially for operations that create their own sessions (like `get_value()` calls that use `async with self.db.get_session_maker()()`), use the service registry to ensure the correct database connection is used:
 
 ```python
 # src/my_module/views.py

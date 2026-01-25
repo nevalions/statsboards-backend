@@ -47,7 +47,7 @@ class FootballEventServiceDB(BaseServiceDB):
         item_name=ITEM, operation="fetching match events", return_value_on_not_found=[]
     )
     async def get_match_football_events_by_match_id(self, match_id: int) -> list[FootballEventDB]:
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Getting {ITEM}s by match id({match_id})")
             result = await session.scalars(
                 select(FootballEventDB).where(FootballEventDB.match_id == match_id)
@@ -71,7 +71,7 @@ class FootballEventServiceDB(BaseServiceDB):
         Get all football events for a match with embedded player data.
         Single query with optimized joins using selectinload.
         """
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Getting {ITEM}s with players for match id({match_id})")
 
             stmt = (

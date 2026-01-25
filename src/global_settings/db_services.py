@@ -55,7 +55,7 @@ class GlobalSettingServiceDB(BaseServiceDB):
             Parsed value according to value_type, or default if not found
         """
         self.logger.debug(f"Get {ITEM} value for key:{key}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(GlobalSettingDB).where(GlobalSettingDB.key == key)
             result = await session.execute(stmt)
             setting = result.scalar_one_or_none()
@@ -76,7 +76,7 @@ class GlobalSettingServiceDB(BaseServiceDB):
             List of settings in the category
         """
         self.logger.debug(f"Get {ITEM}s by category:{category}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(GlobalSettingDB)
                 .where(GlobalSettingDB.category == category)
@@ -92,7 +92,7 @@ class GlobalSettingServiceDB(BaseServiceDB):
             Dictionary mapping categories to list of setting dicts
         """
         self.logger.debug(f"Get all {ITEM}s grouped by category")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(GlobalSettingDB).order_by(GlobalSettingDB.category, GlobalSettingDB.key)
             result = await session.execute(stmt)
             settings = result.scalars().all()
@@ -197,7 +197,7 @@ class GlobalSettingServiceDB(BaseServiceDB):
     async def get_all_seasons(self) -> list[SeasonSchema]:
         """Get all seasons ordered by year."""
         self.logger.debug("Get all seasons via settings")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(SeasonDB).order_by(asc(SeasonDB.year))
             result = await session.execute(stmt)
             seasons = result.scalars().all()

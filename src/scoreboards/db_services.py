@@ -126,7 +126,7 @@ class ScoreboardServiceDB(BaseServiceDB):
         self,
         matchdata_id: int,
     ) -> ScoreboardDB:
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Get scoreboard by matchdata id: {matchdata_id}")
             query = select(MatchDataDB).where(MatchDataDB.id == matchdata_id)
             result = await session.execute(query)

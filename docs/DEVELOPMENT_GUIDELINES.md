@@ -835,7 +835,7 @@ async def create(self, item: TeamSchemaCreate) -> TeamDB:
     return_value_on_not_found=[]
 )
 async def get_players_by_team_id(self, team_id: int) -> list[PlayerDB]:
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         stmt = select(PlayerDB).where(PlayerDB.team_id == team_id)
         results = await session.execute(stmt)
         return results.scalars().all()
@@ -1053,7 +1053,7 @@ None. Previously had deprecation warnings from `passlib` library (using deprecat
 
 ## Database Operations
 
-- Always use async context managers: `async with self.db.async_session() as session:`
+- Always use async context managers: `async with self.db.get_session_maker()() as session:`
 - Use SQLAlchemy 2.0 select API: `select(Model).where(Model.field == value)`
 - Use `session.execute(stmt)` and `results.scalars().all()` for queries
 - Never commit manually in service methods - let BaseServiceDB handle it
@@ -1108,7 +1108,7 @@ async def get_player_by_match_full_data(self, match_id: int) -> list[dict]:
     from src.core.models.player import PlayerDB
     from src.core.models.player_team_tournament import PlayerTeamTournamentDB
 
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         stmt = (
             select(PlayerMatchDB)
             .where(PlayerMatchDB.match_id == match_id)
@@ -1178,7 +1178,7 @@ async def get_players_by_team_id_tournament_id(
     tournament_id: int,
 ) -> list[PlayerTeamTournamentDB]:
     self.logger.debug(f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}")
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         stmt = (
             select(PlayerTeamTournamentDB)
             .where(PlayerTeamTournamentDB.team_id == team_id)
@@ -1194,7 +1194,7 @@ async def get_players_by_team_id_tournament_id(
 ```python
 async def get_related_teams(self, tournament_id: int) -> list[TeamDB]:
     self.logger.debug(f"Get {ITEM} related teams for tournament_id:{tournament_id}")
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         result = await session.execute(
             select(TeamDB)
             .join(TeamTournamentDB)
@@ -1361,7 +1361,7 @@ async def get_match_full_context(self, match_id: int) -> dict | None:
     """Get match with all initialization data: teams, sport, positions, players."""
     from src.core.models.player import PlayerDB
 
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         # Query 1: Match with teams and tournament
         stmt = (
             select(MatchDB)
@@ -1512,7 +1512,7 @@ Key utility methods provided by base class:
 ```python
 # Service method with eager loading
 async def get_match_with_details(self, match_id: int) -> MatchDB | None:
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         stmt = (
             select(MatchDB)
             .where(MatchDB.id == match_id)
@@ -1584,7 +1584,7 @@ async def search_{entity}s_with_pagination(
         f"order_by={order_by}, order_by_two={order_by_two}"
     )
 
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         base_query = select({Model}DB)
 
         # Search pattern matching with ICU collation for international text
@@ -2036,7 +2036,7 @@ class PlayerCareerResponseSchema(BaseModel):
 async def get_player_career(self, player_id: int) -> PlayerCareerResponseSchema:
     self.logger.debug(f"Get player career data for player_id:{player_id}")
 
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         # Single optimized query with all nested relationships
         stmt = (
             select(PlayerDB)
@@ -2483,7 +2483,7 @@ async def get_persons_not_in_sport(
     order_by_two: str = "id",
     ascending: bool = True,
 ) -> PaginatedPersonResponse:
-    async with self.db.async_session() as session:
+    async with self.db.get_session_maker()() as session:
         # Subquery to find persons who ARE in the sport
         subquery = select(PlayerDB.id).where(
             PlayerDB.person_id == PersonDB.id,

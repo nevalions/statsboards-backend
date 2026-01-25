@@ -43,7 +43,7 @@ class PositionServiceDB(BaseServiceDB):
 
     @handle_service_exceptions(item_name=ITEM, operation="fetching by title")
     async def get_position_by_title(self, title: str) -> PositionDB | None:
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(f"Getting position by title: {title}")
             stmt = select(PositionDB).where(
                 func.lower(func.trim(PositionDB.title)) == title.lower().strip()

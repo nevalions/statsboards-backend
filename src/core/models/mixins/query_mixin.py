@@ -22,7 +22,7 @@ class QueryMixin:
         self.logger.debug(
             f"Starting to fetch item by field {field_name} with value: {value} for model {self.model.__name__}"
         )
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             try:
                 column: Column = getattr(self.model, field_name)
                 self.logger.debug(f"Accessed column: {column} for model {self.model.__name__}")
@@ -81,7 +81,7 @@ class QueryMixin:
         eesl_value: int,
         new_item,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.info(
                 f"Starting update_item_by_eesl_id with eesl_field_name: {eesl_field_name}, eesl_value: {eesl_value} for model {self.model.__name__}"
             )
@@ -120,7 +120,7 @@ class QueryMixin:
         item_id: int,
         related_property: str,
     ):
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             self.logger.debug(
                 f"Getting item first with id {item_id} and property {related_property}"
             )

@@ -74,7 +74,7 @@ class TournamentServiceDB(BaseServiceDB):
         tournament_id: int,
     ) -> TournamentDB | None:
         self.logger.debug(f"Get {ITEM} with details id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(TournamentDB)
                 .where(TournamentDB.id == tournament_id)
@@ -107,7 +107,7 @@ class TournamentServiceDB(BaseServiceDB):
         tournament_id: int,
     ) -> list[TeamDB]:
         self.logger.debug(f"Get teams by {ITEM} id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(TeamDB)
                 .join(TeamTournamentDB, TeamDB.id == TeamTournamentDB.team_id)
@@ -138,7 +138,7 @@ class TournamentServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = (
                 select(TeamDB)
                 .join(TeamTournamentDB, TeamDB.id == TeamTournamentDB.team_id)
@@ -188,7 +188,7 @@ class TournamentServiceDB(BaseServiceDB):
         from src.core.models.person import PersonDB
 
         self.logger.debug(f"Get players by {ITEM} id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerTeamTournamentDB)
                 .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
@@ -211,7 +211,7 @@ class TournamentServiceDB(BaseServiceDB):
         from src.core.models.person import PersonDB
 
         self.logger.debug(f"Get available players for {ITEM} id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             tournament = await session.get(TournamentDB, tournament_id)
             if not tournament:
                 return []
@@ -241,7 +241,7 @@ class TournamentServiceDB(BaseServiceDB):
         tournament_id: int,
     ) -> list[TeamDB]:
         self.logger.debug(f"Get available teams for {ITEM} id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             tournament = await session.get(TournamentDB, tournament_id)
             if not tournament:
                 return []
@@ -284,7 +284,7 @@ class TournamentServiceDB(BaseServiceDB):
             f"Get players without team in tournament {tournament_id} without pagination"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = (
                 select(PlayerDB)
                 .join(PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id)
@@ -358,7 +358,7 @@ class TournamentServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = (
                 select(PlayerDB)
                 .join(PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id)
@@ -421,7 +421,7 @@ class TournamentServiceDB(BaseServiceDB):
             f"Get players without team in tournament {tournament_id} without pagination"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerDB)
                 .join(PlayerTeamTournamentDB, PlayerDB.id == PlayerTeamTournamentDB.player_id)
@@ -530,7 +530,7 @@ class TournamentServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}, sport_id={sport_id}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(TournamentDB).options(
                 joinedload(TournamentDB.season),
                 joinedload(TournamentDB.sport),

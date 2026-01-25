@@ -82,7 +82,7 @@ class PlayerMatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         self, match_id: int, player_match_eesl_id: int | str
     ) -> PlayerMatchDB | None:
         self.logger.debug(f"Get {ITEM} by match id:{match_id} and eesl id:{player_match_eesl_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerMatchDB)
                 .where(PlayerMatchDB.match_id == match_id)
@@ -119,7 +119,7 @@ class PlayerMatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         self, match_id: int, player_team_tournament_id: int
     ) -> PlayerMatchDB | None:
         self.logger.debug(f"Get {ITEM} by match id:{match_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerMatchDB)
                 .where(PlayerMatchDB.match_id == match_id)

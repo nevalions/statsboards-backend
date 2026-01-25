@@ -128,7 +128,16 @@ async def test_db(test_db_url):
 
     async with database.engine.connect() as connection:
         transaction = await connection.begin()
-        database.async_session.configure(bind=connection)
+
+        from sqlalchemy.ext.asyncio import async_sessionmaker
+
+        test_session_maker = async_sessionmaker(
+            bind=connection,
+            class_=database.async_session.class_,
+            expire_on_commit=False,
+        )
+
+        database.test_async_session = test_session_maker
 
         try:
             yield database

@@ -68,7 +68,7 @@ class TeamServiceDB(BaseServiceDB):
         team_id: int,
     ) -> TeamDB | None:
         self.logger.debug(f"Get {ITEM} with details id:{team_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(TeamDB)
                 .where(TeamDB.id == team_id)
@@ -102,7 +102,7 @@ class TeamServiceDB(BaseServiceDB):
         tournament_id: int,
     ) -> list[PlayerTeamTournamentDB]:
         self.logger.debug(f"Get players by {ITEM} id:{team_id} and tournament id:{tournament_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(PlayerTeamTournamentDB)
                 .where(PlayerTeamTournamentDB.team_id == team_id)
@@ -183,7 +183,7 @@ class TeamServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(TeamDB)
 
             if user_id is not None:
@@ -237,7 +237,7 @@ class TeamServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(TeamDB).where(TeamDB.sport_id == sport_id)
             base_query = await self._apply_search_filters(
                 base_query,
@@ -286,7 +286,7 @@ class TeamServiceDB(BaseServiceDB):
             f"order_by={order_by}, order_by_two={order_by_two}, sport_id={sport_id}"
         )
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(TeamDB).options(
                 joinedload(TeamDB.sport),
                 joinedload(TeamDB.main_sponsor),

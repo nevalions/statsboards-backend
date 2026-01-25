@@ -493,7 +493,7 @@ from sqlalchemy.orm import selectinload, joinedload
 class SponsorServiceDB(BaseServiceDB):
     async def get_sponsor_with_matches(self, sponsor_id: int) -> SponsorDB | None:
         """Get sponsor with full match details including teams."""
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(SponsorDB)
                 .where(SponsorDB.id == sponsor_id)
@@ -517,7 +517,7 @@ class SponsorServiceDB(BaseServiceDB):
         """Get sponsors with matches, paginated."""
         from src.sponsors.schemas import SponsorWithMatchesSchema
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             base_query = select(SponsorDB).options(
                 selectinload(SponsorDB.matches)
                 .selectinload(MatchDB.team_a)
