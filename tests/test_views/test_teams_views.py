@@ -5,7 +5,7 @@ from PIL import Image
 
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
-from tests.factories import SportFactorySample, TeamFactory, TournamentFactory
+from tests.factories import SeasonFactorySample, SportFactorySample, TeamFactory, TournamentFactory
 
 
 def create_test_image():
@@ -196,15 +196,18 @@ class TestTeamViews:
         assert len(data["data"]) >= 1
         assert data["data"][0]["sport"]["id"] == sport.id
 
-    @pytest.mark.skip("Requires proper tournament setup with seasons")
     async def test_create_team_with_tournament_endpoint(self, client, test_db):
+        from src.seasons.db_services import SeasonServiceDB
         from src.tournaments.db_services import TournamentServiceDB
 
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
         tournament_service = TournamentServiceDB(test_db)
-        tournament_data = TournamentFactory.build(sport_id=sport.id)
+        tournament_data = TournamentFactory.build(sport_id=sport.id, season_id=season.id)
         tournament = await tournament_service.create(tournament_data)
 
         team_service = TeamServiceDB(test_db)

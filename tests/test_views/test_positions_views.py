@@ -86,10 +86,10 @@ class TestPositionViews:
 
         assert response.status_code == 404
 
-    @pytest.mark.skip("Auth test setup is complex")
     async def test_delete_position_endpoint_as_admin(self, client, test_db):
-        from src.auth.security import get_password_hash
-        from src.core.models import RoleDB, UserDB
+        from src.auth.security import create_access_token, get_password_hash
+        from src.core.models import RoleDB, UserDB, UserRoleDB
+        from src.users.schemas import UserSchemaCreate
 
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -104,28 +104,20 @@ class TestPositionViews:
             await session.flush()
             await session.refresh(role)
 
-            from src.users.schemas import UserSchemaCreate
-
-            user_data = UserSchemaCreate(
+            user = UserDB(
                 username="test_admin",
                 email="admin@test.com",
-                password="SecurePass123!",
+                hashed_password=get_password_hash("SecurePass123!"),
             )
-            user_obj = UserDB(
-                username=user_data.username,
-                email=user_data.email,
-                hashed_password=get_password_hash(user_data.password),
-            )
-            user_obj.roles = [role]
-            session.add(user_obj)
+            session.add(user)
             await session.flush()
-            await session.refresh(user_obj)
+            await session.refresh(user)
 
-        token_response = await client.post(
-            "/api/auth/login",
-            json={"email": "admin@test.com", "password": "SecurePass123!"},
-        )
-        token = token_response.json()["access_token"]
+            session.add(UserRoleDB(user_id=user.id, role_id=role.id))
+            await session.commit()
+            await session.refresh(user, ["roles"])
+
+        token = create_access_token(data={"sub": str(user.id)})
 
         response = await client.delete(
             f"/api/positions/id/{position.id}",
