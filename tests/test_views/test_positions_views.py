@@ -139,7 +139,6 @@ class TestPositionViews:
 
         assert response.status_code == 401
 
-    @pytest.mark.skip("Endpoint returns None instead of 404")
     async def test_get_position_by_title_not_found(self, client):
         response = await client.get("/api/positions/title/NonExistent/")
 

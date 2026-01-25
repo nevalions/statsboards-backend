@@ -77,7 +77,6 @@ class TestSponsorViews:
 
         assert response.status_code == 404
 
-    @pytest.mark.skip(reason="SponsorServiceDB missing save_upload_image method after DI migration")
     async def test_upload_sponsor_logo_endpoint(self, client):
         file_content = create_test_image()
         files = {"file": ("test_logo.png", BytesIO(file_content), "image/png")}

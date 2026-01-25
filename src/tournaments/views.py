@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.dependencies import TournamentService
 from src.core.models import TournamentDB, handle_view_exceptions
 
 # from src.core.config import templates
@@ -475,6 +476,7 @@ class TournamentAPIRouter(
             status_code=500,
         )
         async def create_parsed_tournament_endpoint(
+            tournament_service: TournamentService,
             eesl_season_id: int,
             season_id: int | None = Query(None),
             sport_id: int | None = Query(None),
@@ -490,7 +492,9 @@ class TournamentAPIRouter(
             if tournaments_list:
                 for t in tournaments_list:
                     tournament = TournamentSchemaCreate(**t)
-                    created_tournament = await self.service.create_or_update_tournament(tournament)
+                    created_tournament = await tournament_service.create_or_update_tournament(
+                        tournament
+                    )
                     self.logger.debug(
                         f"Created or updated tournament after parse {created_tournament}"
                     )
