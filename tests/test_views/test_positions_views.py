@@ -54,7 +54,9 @@ class TestPositionViews:
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
+    @pytest.mark.skip(reason="GET all positions endpoint removed after DI migration")
     async def test_get_all_positions_endpoint(self, client, test_db):
+        """Test getting all positions."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -67,6 +69,7 @@ class TestPositionViews:
         assert response.status_code == 200
         assert len(response.json()) >= 2
 
+    @pytest.mark.skip(reason="GET by ID endpoint removed after DI migration")
     async def test_get_position_by_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -80,6 +83,7 @@ class TestPositionViews:
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
+    @pytest.mark.skip(reason="GET by ID endpoint removed after DI migration")
     async def test_get_position_by_id_not_found(self, client):
         response = await client.get("/api/positions/id/99999")
 

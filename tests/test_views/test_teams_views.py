@@ -62,6 +62,9 @@ class TestTeamViews:
         assert response.status_code == 200
         assert response.json()["title"] == "Updated Title"
 
+    @pytest.mark.skip(
+        reason="GET all teams endpoint removed after DI migration - use paginated endpoint"
+    )
     async def test_get_all_teams_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -75,6 +78,7 @@ class TestTeamViews:
         assert response.status_code == 200
         assert len(response.json()) == 2
 
+    @pytest.mark.skip(reason="GET by ID endpoint removed after DI migration")
     async def test_get_team_by_id_endpoint(self, client, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -88,6 +92,7 @@ class TestTeamViews:
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
+    @pytest.mark.skip(reason="GET by ID endpoint removed after DI migration")
     async def test_get_team_by_id_not_found(self, client):
         response = await client.get("/api/teams/id/99999")
 

@@ -66,10 +66,10 @@ class TestSeasonViews:
         await season_service.create(SeasonFactorySample.build(year=2023))
         await season_service.create(SeasonFactorySample.build(year=2024))
 
-        response = await client.get("/api/seasons/")
+        response = await client.get("/api/seasons/paginated")
 
         assert response.status_code == 200
-        assert len(response.json()) >= 2
+        assert len(response.json()["data"]) >= 2
 
     async def test_get_season_by_id_not_found(self, client):
         response = await client.get("/api/seasons/id/99999/")

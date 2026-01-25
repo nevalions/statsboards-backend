@@ -87,10 +87,10 @@ class TestTournamentManagementE2E:
             assert team_response.status_code == 200
             teams.append(team_response.json()["id"])
 
-        all_teams_response = await client.get("/api/teams/")
+        all_teams_response = await client.get("/api/teams/paginated")
         assert all_teams_response.status_code == 200
         all_teams = all_teams_response.json()
-        assert len(all_teams) >= 4
+        assert len(all_teams["data"]) >= 4
 
     async def test_tournament_with_matches_workflow(self, client: AsyncClient):
         """Test creating a tournament with multiple matches."""
@@ -276,10 +276,10 @@ class TestSponsorManagementE2E:
         )
         assert connection_response.status_code in [200, 404]
 
-        get_sponsor_response = await client.get(f"/api/sponsors/id/{sponsor_id}")
+        get_sponsor_response = await client.get(f"/api/sponsors/id/{sponsor_id}/")
         assert get_sponsor_response.status_code == 200
         sponsor = get_sponsor_response.json()
-        assert sponsor["id"] == sponsor_id
+        assert sponsor["content"]["id"] == sponsor_id
 
 
 @pytest.mark.e2e
@@ -299,11 +299,11 @@ class TestErrorHandlingE2E:
         team_response = await client.post("/api/teams/", json=team_data.model_dump())
         assert team_response.status_code == 200
 
-        get_team_response = await client.get("/api/teams/")
+        get_team_response = await client.get("/api/teams/paginated")
         assert get_team_response.status_code == 200
         teams = get_team_response.json()
-        assert len(teams) > 0
-        assert teams[0]["sport_id"] == sport_id
+        assert len(teams["data"]) > 0
+        assert teams["data"][0]["sport_id"] == sport_id
 
     async def test_duplicate_entity_handling(self, client: AsyncClient):
         """Test that duplicate entities are properly rejected."""
@@ -372,7 +372,7 @@ class TestSearchAndFilteringE2E:
         team_data = TeamFactory.build(sport_id=sport_id, title="Test Team")
         await client.post("/api/teams/", json=team_data.model_dump())
 
-        all_teams_response = await client.get("/api/teams/")
+        all_teams_response = await client.get("/api/teams/paginated")
         assert all_teams_response.status_code == 200
         teams = all_teams_response.json()
-        assert len(teams) > 0
+        assert len(teams["data"]) > 0
