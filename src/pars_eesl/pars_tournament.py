@@ -40,9 +40,7 @@ class ParsedTeamData(TypedDict):
 
 
 async def parse_tournament_matches_and_create_jsons(_id: int):
-    logger.debug(
-        f"Starting create parsed json of {ITEM_GOT_MATCH} for {ITEM_PARSED} id:{_id}"
-    )
+    logger.debug(f"Starting create parsed json of {ITEM_GOT_MATCH} for {ITEM_PARSED} id:{_id}")
     try:
         data = await parse_tournament_matches_index_page_eesl(_id)
         logger.debug(f"Parsed json for {ITEM_PARSED} id{_id} data: {data}")
@@ -57,9 +55,7 @@ async def parse_tournament_matches_and_create_jsons(_id: int):
 
 
 async def parse_tournament_teams_and_create_jsons(_id: int):
-    logger.debug(
-        f"Starting create parsed json of {ITEM_GOT} for {ITEM_PARSED} id:{_id}"
-    )
+    logger.debug(f"Starting create parsed json of {ITEM_GOT} for {ITEM_PARSED} id:{_id}")
     try:
         data = await parse_tournament_teams_index_page_eesl(_id)
         logger.debug(f"Parsed json for {ITEM_PARSED} id{_id} data: {data}")
@@ -83,6 +79,9 @@ async def parse_tournament_teams_index_page_eesl(
     teams_in_tournament = []
     url = f"{base_url}{str(_id)}/teams"
     req = await get_url(url)
+    if req is None:
+        logger.warning(f"Failed to fetch tournament teams page for id:{_id}")
+        return None
     # logger.debug(f"Request: {req}")
     soup = BeautifulSoup(req.content, "lxml")
     # logger.debug(f"Soup: {soup}")
@@ -94,9 +93,7 @@ async def parse_tournament_teams_index_page_eesl(
             # logger.debug(f"Parsing {ITEM_GOT}: {t}")
             try:
                 team_eesl_id = int(
-                    re.findall(
-                        r"team_id=(\d+)", t.find("a", class_="teams__logo").get("href")
-                    )[0]
+                    re.findall(r"team_id=(\d+)", t.find("a", class_="teams__logo").get("href"))[0]
                 )
                 logger.debug(f"{ITEM_GOT} team_eesl_id: {team_eesl_id}")
                 team_title = t.find("a", class_="teams__name-link").text.strip().lower()
@@ -120,9 +117,7 @@ async def parse_tournament_teams_index_page_eesl(
                 team_color = "#c01c28"
                 try:
                     team_color = (
-                        await file_service.get_most_common_color(
-                            image_info["image_path"]
-                        )
+                        await file_service.get_most_common_color(image_info["image_path"])
                         or team_color
                     )
                 except Exception as ex:
@@ -156,9 +151,7 @@ async def parse_tournament_teams_index_page_eesl(
                     f"Problem parsing {ITEM_GOT} data for {ITEM_PARSED} id:{_id}, {ex}",
                     exc_info=True,
                 )
-        logger.info(
-            f"Parsed {ITEM_GOT}s for {ITEM_PARSED} id:{_id}: {teams_in_tournament}"
-        )
+        logger.info(f"Parsed {ITEM_GOT}s for {ITEM_PARSED} id:{_id}: {teams_in_tournament}")
         return teams_in_tournament
     else:
         logger.warning(f"No {ITEM_GOT}s found for eesl {ITEM_PARSED} id:{_id}")
@@ -166,9 +159,7 @@ async def parse_tournament_teams_index_page_eesl(
 
 
 def _parse_match_basic_info(item):
-    match_eesl_id = int(
-        re.findall(r"\d+", item.find("a", class_="schedule__score").get("href"))[0]
-    )
+    match_eesl_id = int(re.findall(r"\d+", item.find("a", class_="schedule__score").get("href"))[0])
     logger.debug(f"{ITEM_GOT_MATCH} match_eesl_id:{match_eesl_id}")
 
     team_a_eesl_id = int(
@@ -190,9 +181,7 @@ def _parse_match_basic_info(item):
         score_team_a = safe_int_conversion(score[0])
         score_team_b = safe_int_conversion(score[1])
 
-    logger.debug(
-        f"{ITEM_GOT_MATCH} score_team_a:{score_team_a} - score_team_b:{score_team_b}"
-    )
+    logger.debug(f"{ITEM_GOT_MATCH} score_team_a:{score_team_a} - score_team_b:{score_team_b}")
 
     return {
         "match_eesl_id": match_eesl_id,
@@ -216,9 +205,7 @@ def _parse_match_date(date_texts, item):
     try:
         logger.debug(f"Split date_formatted:{date_formatted.split()}")
         date, month, day, time = date_formatted.split()
-        logger.debug(
-            f"{ITEM_GOT_MATCH} date:{date}, month:{month}, day:{day}, time:{time}"
-        )
+        logger.debug(f"{ITEM_GOT_MATCH} date:{date}, month:{month}, day:{day}, time:{time}")
     except Exception as ex:
         logger.error(f"Error splitting date_formatted:{date_formatted} {ex}")
         date = 1
@@ -236,9 +223,7 @@ def _parse_match_date(date_texts, item):
 
 def _calculate_week_number(date_, week_counter, last_week_num):
     iso_year, iso_week_num, iso_weekday = date_.isocalendar()
-    logger.debug(
-        f"Iso year: {iso_year}, iso week_num: {iso_week_num}, iso weekday: {iso_weekday}"
-    )
+    logger.debug(f"Iso year: {iso_year}, iso week_num: {iso_week_num}, iso weekday: {iso_weekday}")
 
     if last_week_num is None or last_week_num != iso_week_num:
         logger.debug(f"Add new week for week_counter: {week_counter}+1")
@@ -278,9 +263,7 @@ def _process_matches_in_week(
         for item in match:
             match_info = _parse_match_basic_info(item)
             date_ = _parse_match_date(date_texts, item)
-            week_counter, last_week_num = _calculate_week_number(
-                date_, week_counter, last_week_num
-            )
+            week_counter, last_week_num = _calculate_week_number(date_, week_counter, last_week_num)
             formatted_date = date_.strftime("%Y-%m-%d %H:%M:%S.%f")
 
             final_match = _create_final_match_data(
@@ -303,18 +286,17 @@ async def parse_tournament_matches_index_page_eesl(
 
     url = f"{base_url}{str(_id)}/calendar"
     req = await get_url(url)
+    if req is None:
+        logger.warning(f"Failed to fetch tournament matches page for id:{_id}")
+        return None
     soup = BeautifulSoup(req.content, "lxml")
     all_schedule_matches = soup.select(".js-schedule")
 
     for week in all_schedule_matches:
         logger.debug(f"Parsing week {week_counter} for {ITEM_PARSED} id:{_id}")
         try:
-            all_weeks_in_schedule = week.find_all(
-                "div", class_="js-calendar-matches-header"
-            )
-            logger.debug(
-                f"Parsing all weeks: {all_weeks_in_schedule} for {ITEM_PARSED} id:{_id}"
-            )
+            all_weeks_in_schedule = week.find_all("div", class_="js-calendar-matches-header")
+            logger.debug(f"Parsing all weeks: {all_weeks_in_schedule} for {ITEM_PARSED} id:{_id}")
 
             for week_in_schedule in all_weeks_in_schedule:
                 logger.debug(f"Parsing week:{week_counter} for {ITEM_PARSED} id:{_id}")
@@ -324,15 +306,11 @@ async def parse_tournament_matches_index_page_eesl(
                 all_matches_in_week = week_in_schedule.find_all(
                     "ul", class_="schedule__matches-list"
                 )
-                logger.debug(
-                    f"All {ITEM_GOT_MATCH}s in week in schedule: {week_in_schedule}"
-                )
+                logger.debug(f"All {ITEM_GOT_MATCH}s in week in schedule: {week_in_schedule}")
 
                 date_texts = week_in_schedule.find("span", class_="schedule__head-text")
                 try:
-                    logger.debug(
-                        f"Date of week:{week_counter} {date_texts.text.strip()}"
-                    )
+                    logger.debug(f"Date of week:{week_counter} {date_texts.text.strip()}")
                 except Exception as ex:
                     logger.debug(
                         f"No date of week:{week_counter} date parsed:{date_texts} {ex}",
@@ -358,9 +336,7 @@ async def parse_tournament_matches_index_page_eesl(
             )
             return None
 
-    logger.info(
-        f"Parsed {ITEM_GOT_MATCH}s for {ITEM_PARSED} id:{_id}: {matches_in_tournament}"
-    )
+    logger.info(f"Parsed {ITEM_GOT_MATCH}s for {ITEM_PARSED} id:{_id}: {matches_in_tournament}")
     return matches_in_tournament
 
 

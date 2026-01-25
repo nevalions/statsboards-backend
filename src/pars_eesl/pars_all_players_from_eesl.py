@@ -46,6 +46,9 @@ async def collect_players_dob_from_all_eesl(player_eesl_id: int, base_url: str =
     logger.debug(f"URL: {url}")
     try:
         req = await get_url(url)
+        if req is None:
+            logger.warning(f"Failed to fetch player DOB page for id:{player_eesl_id}")
+            return None
         soup = BeautifulSoup(req.content, "lxml")
         dob_text = soup.find("span", class_="player-promo__value").text.strip().lower()
         dob_text_eng = ru_to_eng_datetime_month(dob_text)
@@ -66,6 +69,9 @@ async def collect_player_full_data_eesl(
     logger.debug(f"URL: {url}")
     try:
         req = await get_url(url)
+        if req is None:
+            logger.warning(f"Failed to fetch player data page for id:{player_eesl_id}")
+            return None
         soup = BeautifulSoup(req.content, "lxml")
         dob_text = soup.find("span", class_="player-promo__value").text.strip().lower()
 
@@ -213,6 +219,9 @@ async def parse_all_players_from_eesl_index_page_eesl(
         )
         logger.debug(f"URL:{url}")
         req = await get_url(url)
+        if req is None:
+            logger.warning(f"Failed to fetch all players page {num}")
+            break
         soup = BeautifulSoup(req.content, "lxml")
         all_eesl_players = soup.find_all("tr", class_="table__row")
 

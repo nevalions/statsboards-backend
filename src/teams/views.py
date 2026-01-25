@@ -301,7 +301,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     f"Created team tournament connections after parsing: {created_team_tournament_ids}"
                 )
 
-                return created_teams, created_team_tournament_ids
+                return created_teams
             else:
                 self.logger.warning("Team list is empty")
                 return []

@@ -14,7 +14,7 @@ ITEM_PARSED = "SEASON"
 ITEM_GOT = "TOURNAMENT"
 
 
-def parse_season_and_create_jsons(
+async def parse_season_and_create_jsons(
     _id: int, season_id: int | None = None, sport_id: int | None = None
 ):
     logger.debug(
@@ -22,7 +22,7 @@ def parse_season_and_create_jsons(
     )
     try:
         # _id = 8  # 2024
-        data = parse_season_index_page_eesl(_id, season_id=season_id, sport_id=sport_id)
+        data = await parse_season_index_page_eesl(_id, season_id=season_id, sport_id=sport_id)
         logger.debug(f"Parsed json for {ITEM_PARSED} id{_id} data: {data}")
         return data
     except Exception as ex:
@@ -43,6 +43,9 @@ async def parse_season_index_page_eesl(
     tournaments_in_season = []
 
     req = await get_url(base_url + str(_id))
+    if req is None:
+        logger.warning(f"Failed to fetch season page for id:{_id}")
+        return None
     # logger.debug(f"Request: {req}")
     soup = BeautifulSoup(req.content, "lxml")
     # logger.debug(f"Soup: {soup}")

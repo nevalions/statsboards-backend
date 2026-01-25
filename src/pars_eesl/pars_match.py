@@ -43,9 +43,7 @@ async def parse_match_and_create_jsons(m_id: int):
         data = await parse_match_index_page_eesl(m_id)
         return data
     except Exception as ex:
-        logger.error(
-            f"Error parse and create jsons for match id:{m_id} {ex}", exc_info=True
-        )
+        logger.error(f"Error parse and create jsons for match id:{m_id} {ex}", exc_info=True)
 
 
 async def parse_match_index_page_eesl(
@@ -68,15 +66,14 @@ async def parse_match_index_page_eesl(
         logger.debug("Parse match from eesl")
 
         req = await get_url(base_url + str(m_id))
+        if req is None:
+            logger.warning(f"Failed to fetch match page for id:{m_id}")
+            return match_data
         soup = BeautifulSoup(req.content, "lxml")
 
-        team_a = soup.find(
-            "a", class_="match-protocol__team-name match-protocol__team-name--left"
-        )
+        team_a = soup.find("a", class_="match-protocol__team-name match-protocol__team-name--left")
 
-        team_b = soup.find(
-            "a", class_="match-protocol__team-name match-protocol__team-name--right"
-        )
+        team_b = soup.find("a", class_="match-protocol__team-name match-protocol__team-name--right")
         logo_urls = soup.find_all("img", class_="match-promo__team-img")
         score = soup.find("div", class_="match-promo__score-main")
 
@@ -127,9 +124,7 @@ async def parse_match_index_page_eesl(
                     if player:
                         roster_a.append(player.copy())
                 except Exception as ex:
-                    logger.error(
-                        f"Error getting player for home roster {ex}", exc_info=True
-                    )
+                    logger.error(f"Error getting player for home roster {ex}", exc_info=True)
         else:
             logger.warning(f"No home players found for match id:{m_id}")
 
@@ -142,16 +137,18 @@ async def parse_match_index_page_eesl(
                     if player:
                         roster_b.append(player.copy())
                 except Exception as ex:
-                    logger.error(
-                        f"Error getting player for away roster {ex}", exc_info=True
-                    )
+                    logger.error(f"Error getting player for away roster {ex}", exc_info=True)
         else:
             logger.warning(f"No away players found for match id:{m_id}")
 
         try:
             logger.debug("Set sorted rosters")
-            match_data["roster_a"] = sorted([d for d in roster_a if d], key=lambda d: d["player_number"] if d else "")
-            match_data["roster_b"] = sorted([d for d in roster_b if d], key=lambda d: d["player_number"] if d else "")
+            match_data["roster_a"] = sorted(
+                [d for d in roster_a if d], key=lambda d: d["player_number"] if d else ""
+            )
+            match_data["roster_b"] = sorted(
+                [d for d in roster_b if d], key=lambda d: d["player_number"] if d else ""
+            )
         except Exception as ex:
             logger.error(f"Error getting sorted rosters {ex}", exc_info=True)
 
@@ -179,9 +176,7 @@ async def get_player_eesl_from_match(
             "player_full_name": name_text,
             "player_first_name": name_parts[0] if len(name_parts) > 0 else "",
             "player_second_name": name_parts[1] if len(name_parts) > 1 else "",
-            "player_eesl_id": int(
-                re.findall(r"\d+", name_el.get("href") or "")[0]
-            )
+            "player_eesl_id": int(re.findall(r"\d+", name_el.get("href") or "")[0])
             if name_el and name_el.get("href")
             else 0,
             "player_img_url": img_el.get("src") if img_el else None,
