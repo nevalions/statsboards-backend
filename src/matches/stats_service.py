@@ -36,7 +36,7 @@ class MatchStatsServiceDB(BaseServiceDB):
         team_id: int,
     ) -> dict:
         self.logger.debug(f"Calculating team stats for match {match_id}, team {team_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(FootballEventDB).where(FootballEventDB.match_id == match_id)
             results = await session.execute(stmt)
             events = results.scalars().all()
@@ -146,9 +146,7 @@ class MatchStatsServiceDB(BaseServiceDB):
             if event.play_result == "sack" or (event.play_result == "run" and event.is_fumble):
                 if distance_moved and distance_moved < 0:
                     lost_yards += abs(distance_moved)
-            elif (
-                event.play_type == "run" or event.play_type == "pass"
-            ) and event.play_result == "run":
+            elif event.play_type == "run" and event.play_result == "run":
                 run_yards += distance_moved if not event.is_fumble else distance_moved
             elif event.play_type == "pass" and event.play_result == "completed":
                 pass_yards += distance_moved if not event.is_fumble else distance_moved
@@ -248,7 +246,7 @@ class MatchStatsServiceDB(BaseServiceDB):
         team_id: int,
     ) -> dict[int, dict]:
         self.logger.debug(f"Calculating offense stats for match {match_id}, team {team_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(FootballEventDB)
                 .where(FootballEventDB.match_id == match_id)
@@ -364,7 +362,7 @@ class MatchStatsServiceDB(BaseServiceDB):
         team_id: int,
     ) -> dict[int, dict]:
         self.logger.debug(f"Calculating QB stats for match {match_id}, team {team_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(FootballEventDB)
                 .where(FootballEventDB.match_id == match_id)
@@ -476,7 +474,7 @@ class MatchStatsServiceDB(BaseServiceDB):
         team_id: int,
     ) -> dict[int, dict]:
         self.logger.debug(f"Calculating defense stats for match {match_id}, team {team_id}")
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = select(FootballEventDB).where(FootballEventDB.match_id == match_id)
             results = await session.execute(stmt)
             events = results.scalars().all()
@@ -526,7 +524,7 @@ class MatchStatsServiceDB(BaseServiceDB):
             self.logger.debug(f"Returning cached stats for match {match_id}")
             return self._cache[match_id]
 
-        async with self.db.async_session() as session:
+        async with self.db.get_session_maker()() as session:
             stmt = (
                 select(MatchDB)
                 .where(MatchDB.id == match_id)
