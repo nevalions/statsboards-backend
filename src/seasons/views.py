@@ -31,6 +31,15 @@ class SeasonAPIRouter(
     def route(self):
         router = super().route()
 
+        @router.get(
+            "/",
+            response_model=list[SeasonSchema],
+        )
+        async def get_all_seasons_endpoint(season_service: SeasonService):
+            self.logger.debug("Get all seasons endpoint")
+            seasons = await season_service.get_all_elements()
+            return [SeasonSchema.model_validate(s) for s in seasons]
+
         @router.post("/", response_model=SeasonSchema)
         @handle_view_exceptions(
             error_message="Internal server error creating season",
