@@ -93,7 +93,13 @@ class PositionAPIRouter(BaseRouter[PositionSchema, PositionSchemaCreate, Positio
             item_title: str,
         ):
             try:
-                return await position_service.get_position_by_title(item_title)
+                position = await position_service.get_position_by_title(item_title)
+                if position is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Position title {item_title} not found",
+                    )
+                return PositionSchema.model_validate(position)
             except Exception as ex:
                 self.logger.error(f"Error on get position by title: {item_title}", exc_info=ex)
                 raise

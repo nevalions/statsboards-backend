@@ -20,17 +20,17 @@ The main frontend for this project is **[frontend-angular-signals](../frontend-a
 
 **Testing:**
 ```bash
-# Start test database (creates test_db and test_db2)
-docker-compose -f docker-compose.test-db-only.yml up -d
+# Run all tests with 4 workers (recommended, restarts DB first)
+./run-tests.sh
 
-# Run all tests (parallel with 4 workers by default using 2 databases)
+# Run all tests (parallel with 4 workers using 4 databases)
 pytest
 
-# Run tests sequentially (for debugging or full test suite)
+# Run tests sequentially (for absolute stability, debugging, or full test suite)
 pytest -n 0
 
 # Run with coverage
-pytest --cov=src --cov-report=html
+./run-tests.sh --cov=src --cov-report=html
 ```
 
 **Code Quality:**
@@ -62,14 +62,21 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 1207 tests pass in parallel (~91s with pytest-xdist using 4 workers). Tests use:
+All 1263 tests pass in parallel (~106s with pytest-xdist using 4 workers). Tests use:
 - Transactional rollback for isolation
-- 2 parallel databases (test_db, test_db2) distributed across 4 workers
+- 4 parallel databases (test_db, test_db2, test_db3, test_db4) distributed across 4 workers
 - Worker-specific lock files for safe table creation
 
 **Worker distribution:**
-- gw0, gw2 → test_db
-- gw1, gw3 → test_db2
+- gw0 → test_db
+- gw1 → test_db2
+- gw2 → test_db3
+- gw3 → test_db4
+
+**Testing Recommendations:**
+- Use `./run-tests.sh` for most development work (restarts DB before running tests)
+- For absolute stability (CI, critical debugging), use `pytest -n 0` (sequential)
+- Occasional flakiness with 4 workers is expected due to complex fixture dependencies and async test execution
 
 **Coverage:** ~76% overall (76.32% as of 2026-01-21), with comprehensive coverage of core utilities, error handling, router registry, Redis services, SSE queues, and match parser.
 
@@ -103,8 +110,9 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 | Tool | Purpose | Command |
 |------|----------|----------|
 | pytest | Test runner | `pytest` |
-| pytest-xdist | Parallel test execution (4 workers by default using 2 databases) | `pytest -n auto` |
-| pytest-cov | Coverage reporting | `pytest --cov=src` |
+| pytest-xdist | Parallel test execution (4 workers using 4 databases) | `pytest -n 4` |
+| run-tests.sh | Run tests with DB restart (recommended) | `./run-tests.sh` |
+| pytest-cov | Coverage reporting | `./run-tests.sh --cov=src` |
 | Hypothesis | Property-based testing | `pytest tests/test_property_based.py` |
 | Ruff | Linting | `ruff check src/ tests/` |
 | Alembic | Database migrations | `alembic upgrade head` |
@@ -125,6 +133,8 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 **Note:** When you need to search docs, use `context7` tools.
 
 **Note:** Tests use transactional rollback for isolation. Always use `flush()` instead of `commit()` in test fixtures to avoid deadlocks during parallel execution.
+
+**Note:** Parallel testing with 4 workers on 2 databases may have occasional flaky tests due to race conditions between workers sharing the same database. Use `./run-tests.sh` for stable results, or `pytest -n 0` for absolute stability.
 
 ### Workflow References
 

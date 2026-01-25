@@ -34,10 +34,14 @@ def get_db_url_for_worker(worker_id: str):
         return base_url
 
     worker_num = int(worker_id.replace("gw", ""))
-    db_num = worker_num % 2
+    db_num = worker_num % 4
 
     if db_num == 1:
         return base_url.replace(settings.test_db.name, f"{settings.test_db.name}2")
+    elif db_num == 2:
+        return base_url.replace(settings.test_db.name, f"{settings.test_db.name}3")
+    elif db_num == 3:
+        return base_url.replace(settings.test_db.name, f"{settings.test_db.name}4")
 
     return base_url
 
