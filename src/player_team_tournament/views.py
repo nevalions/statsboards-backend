@@ -78,7 +78,7 @@ class PlayerTeamTournamentAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error creating player team tournament",
-                )
+                ) from e
 
         @router.get(
             "/eesl_id/{eesl_id}",
@@ -106,7 +106,7 @@ class PlayerTeamTournamentAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail=f"Internal server error fetching player team tournament for eesl_id {eesl_id}",
-                )
+                ) from e
 
         @router.put(
             "/{item_id}/",
@@ -135,7 +135,7 @@ class PlayerTeamTournamentAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error updating player team tournament",
-                )
+                ) from e
 
         @router.get(
             "/tournament/{tournament_id}/players/paginated",
@@ -305,7 +305,7 @@ class PlayerTeamTournamentAPIRouter(
                     f"Error getting person for player_team_tournament id {player_id}: {e}",
                     exc_info=True,
                 )
-                raise HTTPException(status_code=500, detail="Internal server error")
+                raise HTTPException(status_code=500, detail="Internal server error") from e
 
         @router.get(
             "/pars/tournament/{tournament_id}/team/{team_id}",
@@ -436,7 +436,7 @@ class PlayerTeamTournamentAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error parsing and creating players to team tournament",
-                )
+                ) from e
 
         @router.delete(
             "/id/{model_id}",

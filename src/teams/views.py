@@ -80,7 +80,7 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
                     raise HTTPException(
                         status_code=500,
                         detail="Error creating team tournament connection",
-                    )
+                    ) from ex
             return TeamSchema.model_validate(new_team)
 
         @router.get(

@@ -83,7 +83,7 @@ class PlayerMatchAPIRouter(
                     f"Error getting player in match with match eesl_id {eesl_id} {ex}",
                     exc_info=True,
                 )
-                raise HTTPException(status_code=500, detail="Internal server error")
+                raise HTTPException(status_code=500, detail="Internal server error") from ex
 
         @router.put(
             "/{item_id}/",

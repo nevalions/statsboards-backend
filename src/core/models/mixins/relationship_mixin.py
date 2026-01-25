@@ -436,7 +436,7 @@ class RelationshipMixin:
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error fetching {self.model.__name__}",
-                )
+                ) from e
             except (ValueError, KeyError, TypeError) as e:
                 self.logger.warning(
                     f"Data error fetching related item for key: {filter_key} and value {filter_value} "
@@ -446,7 +446,7 @@ class RelationshipMixin:
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided",
-                )
+                ) from e
             except NotFoundError as e:
                 self.logger.info(
                     f"Resource not found for key: {filter_key} and value {filter_value}: {e} for model {self.model.__name__}",
@@ -455,7 +455,7 @@ class RelationshipMixin:
                 raise HTTPException(
                     status_code=404,
                     detail="Database error",
-                )
+                ) from e
             except Exception as e:
                 self.logger.critical(
                     f"Unexpected error in {self.__class__.__name__}.get_related_items_by_two({filter_key}, {filter_value}): {e}",
@@ -464,4 +464,4 @@ class RelationshipMixin:
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error",
-                )
+                ) from e

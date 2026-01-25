@@ -69,7 +69,7 @@ class PlayClockAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Database error creating playclock",
-                )
+                ) from ex
             except Exception as ex:
                 self.logger.error(
                     f"Error creating playclock with data: {playclock_data} {ex}",
@@ -78,7 +78,7 @@ class PlayClockAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error creating playclock",
-                )
+                ) from ex
 
         @router.put(
             "/{item_id}/",
@@ -105,7 +105,7 @@ class PlayClockAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error updating playclock",
-                )
+                ) from ex
 
         @router.put(
             "/id/{item_id}/",
@@ -193,13 +193,13 @@ class PlayClockAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error starting playclock with id {item_id}",
-                )
+                ) from ex
             except Exception as ex:
                 self.logger.error(f"Error starting playclock with id: {item_id} {ex}")
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error starting playclock",
-                )
+                ) from ex
 
         @router.put(
             "/id/{item_id}/{item_status}/{sec}/",
@@ -240,7 +240,7 @@ class PlayClockAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Database error resetting playclock",
-                )
+                ) from ex
             except Exception as ex:
                 self.logger.error(f"Error resetting playclock with id: {item_id} {ex}")
                 raise HTTPException(

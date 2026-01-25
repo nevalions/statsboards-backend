@@ -81,7 +81,7 @@ class MatchDataAPIRouter(
                 raise HTTPException(
                     status_code=409,
                     detail="Error updating matchdata with data",
-                )
+                ) from ex
 
         @router.put(
             "/id/{item_id}/",

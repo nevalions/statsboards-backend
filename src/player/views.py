@@ -94,7 +94,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error fetching person by player id",
-                )
+                ) from ex
 
         @router.get("/id/{player_id}/career", response_model=PlayerCareerResponseSchema)
         async def player_career_endpoint(player_id: int):
@@ -111,7 +111,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error fetching player career",
-                )
+                ) from ex
 
         @router.get(
             "/id/{player_id}/in-tournament/{tournament_id}",
@@ -133,7 +133,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error fetching player detail in tournament",
-                )
+                ) from ex
 
         @router.get(
             "/pars/all_eesl",
@@ -289,7 +289,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error adding person to sport",
-                )
+                ) from ex
 
         @router.delete("/remove-person-from-sport/personid/{person_id}/sportid/{sport_id}")
         async def remove_person_from_sport_endpoint(
@@ -313,7 +313,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error removing person from sport",
-                )
+                ) from ex
 
         @router.post("/pars_and_create/all_eesl/start_page/{start_page}/season_id/{season_id}/")
         async def create_parsed_players_with_person_endpoint(
@@ -355,7 +355,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error creating parsed players with person from EESL",
-                )
+                ) from ex
 
         return router
 

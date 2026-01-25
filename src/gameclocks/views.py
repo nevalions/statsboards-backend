@@ -70,7 +70,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                 raise HTTPException(
                     status_code=500,
                     detail=f"Error creating gameclock: {str(ex)}",
-                )
+                ) from ex
 
         @router.put(
             "/{item_id}/",
@@ -99,7 +99,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                 raise HTTPException(
                     status_code=409,
                     detail="Error updating gameclock with data",
-                )
+                ) from ex
 
         @router.put(
             "/id/{item_id}/",

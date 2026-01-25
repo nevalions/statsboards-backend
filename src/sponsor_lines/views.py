@@ -98,7 +98,7 @@ class SponsorLineAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Error retrieving sponsor line",
-                )
+                ) from e
 
         @router.delete(
             "/id/{model_id}",

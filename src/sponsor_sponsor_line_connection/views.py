@@ -79,7 +79,7 @@ class SponsorSponsorLineAPIRouter(
                 raise HTTPException(
                     status_code=409,
                     detail="Error updating sponsor sponsor line relation",
-                )
+                ) from e
 
         @router.get("/{sponsor_id}in{sponsor_line_id}")
         async def get_sponsor_sponsor_line_relation_endpoint(sponsor_id: int, sponsor_line_id: int):
@@ -100,7 +100,7 @@ class SponsorSponsorLineAPIRouter(
                 raise HTTPException(
                     status_code=500,
                     detail="Error retrieving sponsor sponsor line relation",
-                )
+                ) from e
 
         @router.get("/sponsor_line/id/{sponsor_line_id}/sponsors")
         async def get_sponsors_in_sponsor_line_endpoint(sponsor_line_id: int):

@@ -185,7 +185,7 @@ class BaseServiceDB(
             raise HTTPException(
                 status_code=409,
                 detail=f"{self.model.__name__} ({item_schema}) returned some error",
-            )
+            ) from ex
 
     async def _update_item(self, existing_item, item_schema, field_name: str, field_value: Any):
         if field_name.endswith("_eesl_id"):

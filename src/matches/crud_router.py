@@ -505,7 +505,7 @@ class MatchCRUDRouter(
                 raise
             except Exception as ex:
                 self.logger.error(f"Error fetching stats for match {match_id}: {ex}", exc_info=True)
-                raise HTTPException(status_code=500, detail="Internal server error")
+                raise HTTPException(status_code=500, detail="Internal server error") from ex
 
         @router.get(
             "/id/{match_id}/full-context/",
@@ -533,7 +533,7 @@ class MatchCRUDRouter(
                 self.logger.error(
                     f"Error fetching full context for match {match_id}: {ex}", exc_info=True
                 )
-                raise HTTPException(status_code=500, detail="Internal server error")
+                raise HTTPException(status_code=500, detail="Internal server error") from ex
 
         @router.get(
             "/paginated",
@@ -643,7 +643,7 @@ class MatchCRUDRouter(
                 self.logger.error(
                     f"Error fetching comprehensive data for match {match_id}: {ex}", exc_info=True
                 )
-                raise HTTPException(status_code=500, detail="Internal server error")
+                raise HTTPException(status_code=500, detail="Internal server error") from ex
 
         @router.delete(
             "/id/{model_id}",

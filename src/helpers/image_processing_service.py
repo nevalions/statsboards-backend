@@ -27,9 +27,7 @@ class ImageProcessingService:
                 image_data = file.read()
                 return Image.open(BytesIO(image_data))
         except Exception as e:
-            self.logger.error(
-                f"Error opening image from {image_path}: {e}", exc_info=True
-            )
+            self.logger.error(f"Error opening image from {image_path}: {e}", exc_info=True)
             raise
 
     async def save_image(
@@ -45,7 +43,7 @@ class ImageProcessingService:
             raise HTTPException(
                 status_code=400,
                 detail="An error occurred while saving image.",
-            )
+            ) from e
 
     async def resize_image(self, image: Image.Image, height: int) -> Image.Image:
         try:
@@ -156,7 +154,12 @@ class ImageProcessingService:
             ]
 
             most_common_color = next(
-                (color for count, color in colors if color not in excluded_colors and (isinstance(color, tuple) and len(color) == 3)),
+                (
+                    color
+                    for count, color in colors
+                    if color not in excluded_colors
+                    and (isinstance(color, tuple) and len(color) == 3)
+                ),
                 None,
             )
 

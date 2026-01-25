@@ -46,7 +46,7 @@ class QueryMixin:
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error fetching {self.model.__name__}",
-                )
+                ) from ex
             except (ValueError, KeyError, TypeError) as ex:
                 self.logger.warning(
                     f"Data error fetching item by {field_name} with value {value}: {ex} for model {self.model.__name__}",
@@ -55,7 +55,7 @@ class QueryMixin:
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided",
-                )
+                ) from ex
             except NotFoundError as ex:
                 self.logger.info(
                     f"Item not found by {field_name} with value {value}: {ex} for model {self.model.__name__}",
@@ -64,7 +64,7 @@ class QueryMixin:
                 raise HTTPException(
                     status_code=404,
                     detail="Resource not found",
-                )
+                ) from ex
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error in {self.__class__.__name__}.get_item_by_field_value({field_name}, {value}): {ex}",
@@ -73,7 +73,7 @@ class QueryMixin:
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error",
-                )
+                ) from ex
 
     async def update_item_by_eesl_id(
         self,

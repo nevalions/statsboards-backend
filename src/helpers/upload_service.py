@@ -64,9 +64,7 @@ class UploadService:
         return original_filename
 
     async def is_image_type(self, upload_file: UploadFile) -> None:
-        if not upload_file.content_type or not upload_file.content_type.startswith(
-            "image/"
-        ):
+        if not upload_file.content_type or not upload_file.content_type.startswith("image/"):
             self.logger.error("Uploaded file type not an image", exc_info=True)
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
@@ -82,7 +80,7 @@ class UploadService:
             )
             raise HTTPException(
                 status_code=400, detail="An error occurred while uploading file."
-            )
+            ) from ex
 
     async def upload_image_and_return_data(
         self, sub_folder: str, upload_file: UploadFile

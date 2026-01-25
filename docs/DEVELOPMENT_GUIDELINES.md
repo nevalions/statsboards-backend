@@ -888,36 +888,36 @@ The `@handle_view_exceptions` decorator:
 
 - For manual try/except, catch specific exceptions in this order:
 
-  ```python
-  try:
-      # business logic
-  except HTTPException:
-      raise  # Re-raise HTTPExceptions
-  except (IntegrityError, SQLAlchemyError) as ex:
-      # Database errors
-      self.logger.error(f"Database error: {ex}", exc_info=True)
-      raise HTTPException(status_code=500, detail="Database error")
-  except ValidationError as ex:
-      # Validation errors
-      self.logger.warning(f"Validation error: {ex}", exc_info=True)
-      raise HTTPException(status_code=400, detail=str(ex))
-  except (ValueError, KeyError, TypeError) as ex:
-      # Data errors
-      self.logger.warning(f"Data error: {ex}", exc_info=True)
-      raise HTTPException(status_code=400, detail="Invalid data")
-  except NotFoundError as ex:
-      # Not found
-      self.logger.info(f"Not found: {ex}", exc_info=True)
-      raise HTTPException(status_code=404, detail=str(ex))
-  except BusinessLogicError as ex:
-      # Business logic errors
-      self.logger.error(f"Business logic error: {ex}", exc_info=True)
-      raise HTTPException(status_code=422, detail=str(ex))
-  except Exception as ex:
-      # Only for truly unexpected errors - should rarely trigger
-      self.logger.critical(f"Unexpected error: {ex}", exc_info=True)
-      raise HTTPException(status_code=500, detail="Internal server error")
-  ```
+   ```python
+   try:
+       # business logic
+   except HTTPException:
+       raise  # Re-raise HTTPExceptions
+   except (IntegrityError, SQLAlchemyError) as ex:
+       # Database errors
+       self.logger.error(f"Database error: {ex}", exc_info=True)
+       raise HTTPException(status_code=500, detail="Database error") from ex
+   except ValidationError as ex:
+       # Validation errors
+       self.logger.warning(f"Validation error: {ex}", exc_info=True)
+       raise HTTPException(status_code=400, detail=str(ex)) from ex
+   except (ValueError, KeyError, TypeError) as ex:
+       # Data errors
+       self.logger.warning(f"Data error: {ex}", exc_info=True)
+       raise HTTPException(status_code=400, detail="Invalid data") from ex
+   except NotFoundError as ex:
+       # Not found
+       self.logger.info(f"Not found: {ex}", exc_info=True)
+       raise HTTPException(status_code=404, detail=str(ex)) from ex
+   except BusinessLogicError as ex:
+       # Business logic errors
+       self.logger.error(f"Business logic error: {ex}", exc_info=True)
+       raise HTTPException(status_code=422, detail=str(ex)) from ex
+   except Exception as ex:
+       # Only for truly unexpected errors - should rarely trigger
+       self.logger.critical(f"Unexpected error: {ex}", exc_info=True)
+       raise HTTPException(status_code=500, detail="Internal server error") from ex
+   ```
 
 - Raise `HTTPException` with appropriate status codes:
   - 400: Bad Request (ValidationError, ValueError, KeyError, TypeError)
@@ -2175,8 +2175,8 @@ async def player_career_endpoint(player_id: int):
         raise HTTPException(
             status_code=500,
             detail="Internal server error fetching player career",
-        )
-```
+        ) from ex
+   ```
 
 ### Key Implementation Details
 

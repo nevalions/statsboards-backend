@@ -83,7 +83,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error updating person",
-                )
+                ) from ex
 
         @router.post("/upload_photo", response_model=UploadPersonPhotoResponse)
         async def upload_person_photo_endpoint(file: UploadFile = File(...)):
@@ -100,7 +100,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Error uploading person photo",
-                )
+                ) from ex
 
         @router.post("/upload_resize_photo", response_model=UploadResizePersonPhotoResponse)
         async def upload_and_resize_person_photo_endpoint(file: UploadFile = File(...)):
@@ -120,7 +120,7 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 raise HTTPException(
                     status_code=500,
                     detail="Error uploading and resizing person photo",
-                )
+                ) from ex
 
         @router.get(
             "/paginated",

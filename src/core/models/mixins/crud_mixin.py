@@ -115,7 +115,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail=f"Database error fetching {self.model.__name__}",
-            )
+            ) from ex
         except (ValueError, KeyError, TypeError) as ex:
             self.logger.warning(
                 f"Data error fetching element with ID: {item_id} for {self.model.__name__}: {ex}",
@@ -124,7 +124,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid data provided",
-            )
+            ) from ex
         except Exception as ex:
             self.logger.critical(
                 f"Unexpected error in {self.__class__.__name__}.get_by_id({item_id}): {ex}",
@@ -133,7 +133,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error",
-            )
+            ) from ex
 
     async def get_by_id_and_model(
         self,
@@ -162,7 +162,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail=f"Database error fetching {model.__name__}",
-            )
+            ) from ex
         except (ValueError, KeyError, TypeError) as ex:
             self.logger.warning(
                 f"Data error fetching element with ID: {item_id} for {model.__name__}: {ex}",
@@ -171,7 +171,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid data provided",
-            )
+            ) from ex
         except Exception as ex:
             self.logger.critical(
                 f"Unexpected error in {self.__class__.__name__}.get_by_id_and_model({item_id}): {ex}",
@@ -180,7 +180,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error",
-            )
+            ) from ex
 
     async def update(self, item_id: int, item, **kwargs):
         self.logger.debug(f"Starting to update element with ID: {item_id}")
@@ -218,7 +218,7 @@ class CRUDMixin:
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error updating {self.model.__name__}",
-                )
+                ) from ex
             except (ValueError, KeyError, TypeError) as ex:
                 self.logger.warning(
                     f"Data error updating element with ID: {item_id} for {self.model.__name__}: {ex}",
@@ -228,7 +228,7 @@ class CRUDMixin:
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided",
-                )
+                ) from ex
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error in {self.__class__.__name__}.update({item_id}): {ex}",
@@ -238,7 +238,7 @@ class CRUDMixin:
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error",
-                )
+                ) from ex
 
     async def delete(self, item_id: int):
         self.logger.debug(f"Starting to delete element with ID: {item_id}")
@@ -266,7 +266,7 @@ class CRUDMixin:
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database error deleting {self.model.__name__}",
-                )
+                ) from ex
             except (ValueError, KeyError, TypeError) as ex:
                 self.logger.warning(
                     f"Data error deleting element with ID: {item_id} for {self.model.__name__}: {ex}",
@@ -276,7 +276,7 @@ class CRUDMixin:
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid data provided",
-                )
+                ) from ex
             except Exception as ex:
                 self.logger.critical(
                     f"Unexpected error in {self.__class__.__name__}.delete({item_id}): {ex}",
@@ -286,7 +286,7 @@ class CRUDMixin:
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error",
-                )
+                ) from ex
 
     async def get_count(self) -> int:
         self.logger.debug(f"Getting count of {self.model.__name__} elements")
@@ -305,7 +305,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail=f"Database error counting {self.model.__name__}",
-            )
+            ) from ex
         except Exception as ex:
             self.logger.critical(
                 f"Unexpected error in {self.__class__.__name__}.get_count(): {ex}",
@@ -314,7 +314,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error",
-            )
+            ) from ex
 
     async def get_all_with_pagination(
         self,
@@ -370,7 +370,7 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail=f"Database error fetching {self.model.__name__}",
-            )
+            ) from ex
         except Exception as ex:
             self.logger.critical(
                 f"Unexpected error in {self.__class__.__name__}.get_all_with_pagination(): {ex}",
@@ -379,4 +379,4 @@ class CRUDMixin:
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error",
-            )
+            ) from ex
