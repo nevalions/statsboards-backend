@@ -66,9 +66,6 @@ class TestPersonViews:
         assert response.status_code == 200
         assert len(response.json()["data"]) >= 2
 
-    @pytest.mark.skip(
-        reason="GET by ID endpoint removed after DI migration - use paginated endpoint"
-    )
     async def test_get_person_by_id_endpoint(self, client, test_db):
         person_service = PersonServiceDB(test_db)
         person_data = PersonFactory.build()
@@ -79,9 +76,6 @@ class TestPersonViews:
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
-    @pytest.mark.skip(
-        reason="GET by ID endpoint removed after DI migration - use paginated endpoint"
-    )
     async def test_get_person_by_id_not_found(self, client):
         response = await client.get("/api/persons/id/99999")
         assert response.status_code == 404

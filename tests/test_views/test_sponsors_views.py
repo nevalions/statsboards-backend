@@ -87,7 +87,6 @@ class TestSponsorViews:
         assert "logoUrl" in response.json()
         assert "sponsors/logos" in response.json()["logoUrl"]
 
-    @pytest.mark.skip(reason="SponsorServiceDB missing save_upload_image method after DI migration")
     async def test_upload_sponsor_logo_with_invalid_file(self, client):
         file_content = b"not a valid image"
         files = {"file": ("test_invalid.txt", BytesIO(file_content), "text/plain")}

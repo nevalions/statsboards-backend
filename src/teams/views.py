@@ -35,6 +35,32 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
     def route(self):
         router = super().route()
 
+        @router.get(
+            "/",
+            response_model=list[TeamSchema],
+        )
+        async def get_all_teams_endpoint(team_service: TeamService):
+            self.logger.debug("Get all teams endpoint")
+            teams = await team_service.get_all_elements()
+            return [TeamSchema.model_validate(t) for t in teams]
+
+        @router.get(
+            "/id/{item_id}",
+            response_model=TeamSchema,
+        )
+        async def get_team_by_id_endpoint(
+            team_service: TeamService,
+            item_id: int,
+        ):
+            self.logger.debug(f"Get team by id: {item_id}")
+            team = await team_service.get_by_id(item_id)
+            if team is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Team id {item_id} not found",
+                )
+            return TeamSchema.model_validate(team)
+
         @router.post(
             "/",
             response_model=TeamSchema,

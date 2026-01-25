@@ -59,6 +59,32 @@ class PositionAPIRouter(BaseRouter[PositionSchema, PositionSchemaCreate, Positio
                 raise
 
         @router.get(
+            "/",
+            response_model=list[PositionSchema],
+        )
+        async def get_all_positions_endpoint(position_service: PositionService):
+            self.logger.debug("Get all positions endpoint")
+            positions = await position_service.get_all_elements()
+            return [PositionSchema.model_validate(p) for p in positions]
+
+        @router.get(
+            "/id/{item_id}",
+            response_model=PositionSchema,
+        )
+        async def get_position_by_id_endpoint(
+            position_service: PositionService,
+            item_id: int,
+        ):
+            self.logger.debug(f"Get position by id: {item_id}")
+            position = await position_service.get_by_id(item_id)
+            if position is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Position id {item_id} not found",
+                )
+            return PositionSchema.model_validate(position)
+
+        @router.get(
             "/title/{item_title}/",
             response_model=PositionSchema,
         )

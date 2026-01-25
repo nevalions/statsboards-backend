@@ -45,6 +45,23 @@ class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaU
                 raise HTTPException(status_code=409, detail="Person creation fail")
 
         @router.get(
+            "/id/{item_id}",
+            response_model=PersonSchema,
+        )
+        async def get_person_by_id_endpoint(
+            person_service: PersonService,
+            item_id: int,
+        ):
+            self.logger.debug(f"Get person by id: {item_id}")
+            person = await person_service.get_by_id(item_id)
+            if person is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Person id {item_id} not found",
+                )
+            return PersonSchema.model_validate(person)
+
+        @router.get(
             "/eesl_id/{eesl_id}",
             response_model=PersonSchema,
         )

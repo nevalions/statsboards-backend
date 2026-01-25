@@ -32,6 +32,15 @@ class SportAPIRouter(
     def route(self):
         router = super().route()
 
+        @router.get(
+            "/",
+            response_model=list[SportSchema],
+        )
+        async def get_all_sports_endpoint(sport_service: SportService):
+            self.logger.debug("Get all sports endpoint")
+            sports = await sport_service.get_all_elements()
+            return [SportSchema.model_validate(s) for s in sports]
+
         @router.post(
             "/",
             response_model=SportSchema,

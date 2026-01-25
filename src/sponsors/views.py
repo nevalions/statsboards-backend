@@ -8,6 +8,7 @@ from src.core import BaseRouter
 from src.core.dependencies import SponsorService
 from src.core.models import SponsorDB, handle_view_exceptions
 
+from ..helpers.file_service import file_service
 from ..logging_config import get_logger
 from .schemas import (
     PaginatedSponsorResponse,
@@ -99,11 +100,10 @@ class SponsorAPIRouter(
             status_code=500,
         )
         async def upload_sponsor_logo_endpoint(
-            sponsor_service: SponsorService,
             file: UploadFile = File(...),
         ):
             self.logger.debug("Uploading sponsor logo")
-            file_location = await sponsor_service.save_upload_image(
+            file_location = await file_service.save_upload_image(
                 file,
                 sub_folder="sponsors/logos",
             )
