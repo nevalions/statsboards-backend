@@ -6448,11 +6448,32 @@ Upon successful connection, server sends one combined initial message with all m
             "last_name": "Doe"
           }
         }
-      }
-    ],
-    "statistics": {
-      "team_a": {
-        "id": 1,
+       }
+     ],
+     "players": [
+       {
+         "id": 1,
+         "player_id": 10,
+         "team_id": 1,
+         "match_id": 123,
+         "person": {
+           "id": 100,
+           "first_name": "John",
+           "last_name": "Doe",
+           "photo_url": "/static/uploads/persons/photos/100.jpg"
+         },
+         "position": {
+           "id": 5,
+           "title": "Quarterback",
+           "category": "offense"
+         },
+         "is_starting": true,
+         "starting_type": "starter"
+       }
+     ],
+     "statistics": {
+       "team_a": {
+         "id": 1,
         "team_stats": {
           "id": 1,
           "offence_yards": 250,
@@ -6535,6 +6556,7 @@ interface InitialLoadMessage {
       started_at_ms?: number | null;
     };
     events: FootballEvent[];
+    players: PlayerMatchData[];
     statistics: {
       team_a: {
         id: number;

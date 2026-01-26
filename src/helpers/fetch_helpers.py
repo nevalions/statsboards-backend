@@ -132,11 +132,20 @@ async def fetch_with_scoreboard_data(
     match_service_db = MatchServiceDB(_db)
 
     try:
-        scoreboard_data, match, match_teams_data, match_data = await asyncio.gather(
+        (
+            scoreboard_data,
+            match,
+            match_teams_data,
+            match_data,
+            players,
+            events,
+        ) = await asyncio.gather(
             match_service_db.get_scoreboard_by_match(match_id),
             match_service_db.get_by_id(match_id),
             match_service_db.get_teams_by_match(match_id),
             match_service_db.get_matchdata_by_match(match_id),
+            match_service_db.get_players_with_full_data_optimized(match_id),
+            _fetch_events_by_match(match_id, database=_db),
         )
         fetch_data_logger.debug(f"Scoreboard Data: {scoreboard_data}")
         fetch_data_logger.debug(f"Match by match_id:{match_id} {match}")
@@ -167,6 +176,8 @@ async def fetch_with_scoreboard_data(
                     "scoreboard_data": instance_to_dict(dict(scoreboard_data.__dict__)),
                     "teams_data": deep_dict_convert(match_teams_data),
                     "match_data": instance_to_dict(dict(match_data.__dict__)),
+                    "players": players,
+                    "events": events,
                 }
             }
             fetch_data_logger.debug(
@@ -415,3 +426,16 @@ def deep_dict_convert(obj: dict[str, Any]) -> dict[str, Any] | None:
     except Exception as e:
         logger.error(f"Error in deep dictionary convert: {e}")
         return None
+
+
+async def _fetch_events_by_match(match_id: int, database=None) -> list:
+    from src.core.models.football_event import FootballEventDB
+
+    _db = database or db
+    fetch_data_logger.debug(f"Fetching events for match_id:{match_id}")
+    async with _db.get_session_maker()() as session:
+        stmt = select(FootballEventDB).where(FootballEventDB.match_id == match_id)
+        result = await session.execute(stmt)
+        events = result.scalars().all()
+        fetch_data_logger.debug(f"Fetched {len(events)} events for match_id:{match_id}")
+        return events
