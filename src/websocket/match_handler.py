@@ -20,6 +20,7 @@ class MatchWebSocketHandler:
 
     async def send_initial_data(self, websocket: WebSocket, client_id: str, match_id: int):
         from src.helpers.fetch_helpers import (
+            fetch_event,
             fetch_gameclock,
             fetch_playclock,
             fetch_with_scoreboard_data,
@@ -44,10 +45,18 @@ class MatchWebSocketHandler:
         await websocket.send_json(initial_playclock_data)
         await websocket.send_json(initial_gameclock_data)
 
+        initial_event_data = await fetch_event(match_id, cache_service=self.cache_service)
+        initial_event_data["type"] = "event-update"
+        websocket_logger.debug("WebSocket Connection initial_data for type: event-update")
+        websocket_logger.info(f"WebSocket Connection initial_data: {initial_event_data}")
+
+        await websocket.send_json(initial_event_data)
+
         if client_id in connection_manager.queues:
             await connection_manager.queues[client_id].put(initial_data)
             await connection_manager.queues[client_id].put(initial_playclock_data)
             await connection_manager.queues[client_id].put(initial_gameclock_data)
+            await connection_manager.queues[client_id].put(initial_event_data)
             websocket_logger.debug(
                 f"Put initial_data into queue for client_id:{client_id}: {initial_data}"
             )
@@ -56,6 +65,9 @@ class MatchWebSocketHandler:
             )
             websocket_logger.debug(
                 f"Put initial_gameclock_data into queue for client_id:{client_id}: {initial_gameclock_data}"
+            )
+            websocket_logger.debug(
+                f"Put initial_event_data into queue for client_id:{client_id}: {initial_event_data}"
             )
         else:
             websocket_logger.warning(

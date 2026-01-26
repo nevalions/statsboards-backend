@@ -6362,7 +6362,7 @@ Future versions may implement WebSocket authentication through:
 
 #### Initial Data
 
-Upon successful connection, the server sends three initial messages immediately:
+Upon successful connection, the server sends four initial messages immediately:
 
 ```typescript
 // 1. Match data update
@@ -6445,6 +6445,29 @@ Upon successful connection, the server sends three initial messages immediately:
     "gameclock_max": 720,
     "gameclock_status": "stopped"
   }
+}
+
+// 4. Football events update
+{
+  "type": "event-update",
+  "match_id": 123,
+  "events": [
+    {
+      "id": 1,
+      "match_id": 123,
+      "quarter": "1st",
+      "time_remaining": "12:34",
+      "event_type": "run",
+      "event_number": 1,
+      "run_player": {
+        "id": 10,
+        "person": {
+          "first_name": "John",
+          "last_name": "Doe"
+        }
+      }
+    }
+  ]
 }
 ```
 
