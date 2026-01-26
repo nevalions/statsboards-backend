@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -111,33 +110,28 @@ async def collect_player_full_data_eesl(
             person_image_filename_resized_web_view
         )
 
-        image_path = os.path.join(str(settings.uploads_path), "persons/photos/")
-        image_path_with_filename = os.path.join(
-            str(settings.uploads_path), f"persons/photos/{person_image_filename}"
+        image_path = str(settings.uploads_path / "persons/photos/")
+        image_path_with_filename = str(
+            settings.uploads_path / f"persons/photos/{person_image_filename}"
         )
 
-        resized_icon_image_path = os.path.join(
-            str(settings.uploads_path),
-            f"persons/photos/{person_image_filename_resized_icon}",
+        resized_icon_image_path = str(
+            settings.uploads_path / f"persons/photos/{person_image_filename_resized_icon}",
         )
-        resized_web_image_path = os.path.join(
-            str(settings.uploads_path),
-            f"persons/photos/{person_image_filename_resized_web_view}",
+        resized_web_image_path = str(
+            settings.uploads_path / f"persons/photos/{person_image_filename_resized_web_view}",
         )
 
-        relative_image_icon_path = os.path.join(
-            "/static/uploads/persons/photos",
-            person_image_filename_resized_icon,
+        relative_image_icon_path = str(
+            Path("/static/uploads/persons/photos") / person_image_filename_resized_icon,
         )
 
-        relative_image_web_path = os.path.join(
-            "/static/uploads/persons/photos",
-            person_image_filename_resized_web_view,
+        relative_image_web_path = str(
+            Path("/static/uploads/persons/photos") / person_image_filename_resized_web_view,
         )
 
-        relative_image_path = os.path.join(
-            "/static/uploads/persons/photos",
-            person_image_filename,
+        relative_image_path = str(
+            Path("/static/uploads/persons/photos") / person_image_filename,
         )
 
         try:
@@ -318,25 +312,25 @@ def _generate_player_image_paths(
         person_image_filename_resized_web_view
     )
 
-    image_path = os.path.join(str(settings.uploads_path), "persons/photos/")
-    image_path_with_filename = os.path.join(
-        str(settings.uploads_path), f"persons/photos/{person_image_filename}"
+    image_path = str(settings.uploads_path / "persons/photos/")
+    image_path_with_filename = str(
+        settings.uploads_path / f"persons/photos/{person_image_filename}"
     )
 
-    resized_icon_image_path = os.path.join(
-        str(settings.uploads_path), f"persons/photos/{person_image_filename_resized_icon}"
+    resized_icon_image_path = str(
+        settings.uploads_path / f"persons/photos/{person_image_filename_resized_icon}"
     )
-    resized_web_image_path = os.path.join(
-        str(settings.uploads_path), f"persons/photos/{person_image_filename_resized_web_view}"
+    resized_web_image_path = str(
+        settings.uploads_path / f"persons/photos/{person_image_filename_resized_web_view}"
     )
 
-    relative_image_icon_path = os.path.join(
-        "/static/uploads/persons/photos", person_image_filename_resized_icon
+    relative_image_icon_path = str(
+        Path("/static/uploads/persons/photos") / person_image_filename_resized_icon
     )
-    relative_image_web_path = os.path.join(
-        "/static/uploads/persons/photos", person_image_filename_resized_web_view
+    relative_image_web_path = str(
+        Path("/static/uploads/persons/photos") / person_image_filename_resized_web_view
     )
-    relative_image_path = os.path.join("/static/uploads/persons/photos", person_image_filename)
+    relative_image_path = str(Path("/static/uploads/persons/photos") / person_image_filename)
 
     return {
         "image_path": image_path,

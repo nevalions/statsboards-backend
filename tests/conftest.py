@@ -1,4 +1,3 @@
-import os
 import shutil
 from pathlib import Path
 
@@ -155,13 +154,13 @@ async def test_db(test_db_url):
 @pytest.fixture(scope="session")
 def test_downloads_dir():
     """Fixture to create and clean up test downloads directory."""
-    downloads_dir = os.path.join(os.path.dirname(__file__), "test_downloads")
+    downloads_dir = Path(__file__).parent / "test_downloads"
 
-    os.makedirs(downloads_dir, exist_ok=True)
+    downloads_dir.mkdir(parents=True, exist_ok=True)
 
-    yield downloads_dir
+    yield str(downloads_dir)
 
-    if os.path.exists(downloads_dir):
+    if downloads_dir.exists():
         shutil.rmtree(downloads_dir)
         print(f"\nCleaned up test downloads directory: {downloads_dir}")
 

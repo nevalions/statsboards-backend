@@ -1,4 +1,3 @@
-import os
 import re
 from pathlib import Path
 from typing import TypedDict
@@ -176,7 +175,7 @@ class FileService:
         sanitized = convert_cyrillic_filename(image_title)
         sanitized = sanitized.strip().replace(" ", "_")
         sanitized = sanitized.replace("\\", "/")
-        sanitized = os.path.basename(sanitized)
+        sanitized = Path(sanitized).name
         sanitized = re.sub(r'[<>:"|?*]', "_", sanitized)
         sanitized = re.sub(r"\.\.+", "_", sanitized)
         sanitized = sanitized.lstrip("._")
@@ -198,14 +197,13 @@ class FileService:
         webview_filename = f"{image_filename}_{web_view_height}px{ext}"
 
         main_path = f"{image_type_prefix}"
-        image_path = os.path.join(str(settings.uploads_path), f"{main_path}{image_filename}{ext}")
-        icon_path = os.path.join(str(settings.uploads_path), f"{main_path}{icon_filename}")
-        webview_path = os.path.join(str(settings.uploads_path), f"{main_path}{webview_filename}")
+        image_path = str(settings.uploads_path / f"{main_path}{image_filename}{ext}")
+        icon_path = str(settings.uploads_path / f"{main_path}{icon_filename}")
+        webview_path = str(settings.uploads_path / f"{main_path}{webview_filename}")
 
-        static_uploads_path = "/static/uploads/"
-        relative_image_url = os.path.join(static_uploads_path, main_path, f"{image_filename}{ext}")
-        relative_icon_url = os.path.join(static_uploads_path, main_path, icon_filename)
-        relative_webview_url = os.path.join(static_uploads_path, main_path, webview_filename)
+        relative_image_url = str(Path("/static/uploads") / main_path / f"{image_filename}{ext}")
+        relative_icon_url = str(Path("/static/uploads") / main_path / icon_filename)
+        relative_webview_url = str(Path("/static/uploads") / main_path / webview_filename)
 
         return {
             "main_path": main_path,

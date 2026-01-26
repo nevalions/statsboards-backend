@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Any
 
@@ -30,9 +29,7 @@ class FileSystemService:
         await self.create_upload_dir(sub_folder, upload_dir)
         return upload_dir
 
-    async def get_destination_with_filename(
-        self, filename: str, upload_dir: Path
-    ) -> Path:
+    async def get_destination_with_filename(self, filename: str, upload_dir: Path) -> Path:
         dest = upload_dir / filename
         self.logger.debug(f"Original destination: {dest}")
         return dest
@@ -40,7 +37,7 @@ class FileSystemService:
     async def ensure_directory_created(self, image_path: str) -> None:
         self.logger.debug(f"Ensuring directory exists for path: {image_path}")
         try:
-            os.makedirs(os.path.dirname(image_path), exist_ok=True)
+            Path(image_path).parent.mkdir(parents=True, exist_ok=True)
             self.logger.debug(f"Directory created: {image_path}")
         except Exception as e:
             self.logger.error(f"Error creating directory for {image_path}: {e}")
@@ -49,8 +46,8 @@ class FileSystemService:
     async def create_path(self, path: str) -> str:
         try:
             self.logger.debug(f"Creating path {path}")
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            self.logger.debug(f"Path created: {os.path.dirname(path)}")
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            self.logger.debug(f"Path created: {Path(path).parent}")
             return path
         except Exception as e:
             self.logger.error(f"Error creating path {path}: {e}", exc_info=True)
@@ -70,11 +67,9 @@ class FileSystemService:
             self.logger.debug(f"Opening file from {file_path}")
             with open(file_path, "rb") as file:
                 file_data = file.read()
-                filename = os.path.basename(file_path)
+                filename = Path(file_path).name
                 self.logger.debug(f"Filename: {filename}")
                 return {"filename": filename, "data": file_data}
         except Exception as e:
-            self.logger.error(
-                f"Error opening file from {file_path}: {e}", exc_info=True
-            )
+            self.logger.error(f"Error opening file from {file_path}: {e}", exc_info=True)
             raise

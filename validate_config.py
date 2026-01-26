@@ -5,14 +5,15 @@ Run this script to validate all configuration settings before starting the appli
 """
 
 import sys
-import os
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).parent))
 
 from src.core.config import settings
 from src.logging_config import setup_logging
 
 setup_logging()
+
 
 def main():
     try:
@@ -23,6 +24,7 @@ def main():
     except Exception as e:
         print(f"✗ Configuration validation failed: {e}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
