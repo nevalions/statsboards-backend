@@ -1,9 +1,11 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from starlette.websockets import WebSocket, WebSocketState
 
 from src.matches.match_data_cache_service import MatchDataCacheService
 from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
+from src.websocket.match_handler import MatchWebSocketHandler
 
 
 @pytest.mark.asyncio
@@ -164,3 +166,86 @@ class TestEventUpdates:
         assert events[0]["run_player"]["id"] == 10
         assert events[0]["run_player"]["first_name"] == "John"
         assert "pass_received_player" in events[0]
+
+
+@pytest.mark.asyncio
+class TestWebSocketEventUpdateHandler:
+    @pytest.fixture
+    def handler(self):
+        return MatchWebSocketHandler(cache_service=None)
+
+    @pytest.fixture
+    def cache_service(self):
+        mock_db = MagicMock()
+        return MatchDataCacheService(mock_db)
+
+    @pytest.fixture
+    def mock_websocket(self):
+        ws = AsyncMock(spec=WebSocket)
+        ws.application_state = WebSocketState.CONNECTED
+        return ws
+
+    async def test_process_event_data_sends_to_websocket(self, handler, mock_websocket):
+        mock_event_data = {
+            "match_id": 1,
+            "id": 1,
+            "status_code": 200,
+            "events": [
+                {
+                    "id": 1,
+                    "play_type": "run",
+                    "event_number": 1,
+                }
+            ],
+        }
+
+        with patch(
+            "src.helpers.fetch_helpers.fetch_event",
+            return_value=mock_event_data,
+        ):
+            await handler.process_event_data(mock_websocket, 1)
+
+            assert mock_websocket.send_json.called
+            sent_data = mock_websocket.send_json.call_args[0][0]
+            assert sent_data["type"] == "event-update"
+            assert sent_data["match_id"] == 1
+            assert "events" in sent_data
+
+    async def test_process_event_data_with_provided_data(self, handler, mock_websocket):
+        provided_data = {
+            "match_id": 1,
+            "id": 1,
+            "type": "event-update",
+            "events": [{"id": 1, "play_type": "pass"}],
+        }
+
+        await handler.process_event_data(mock_websocket, 1, provided_data)
+
+        assert mock_websocket.send_json.called
+        sent_data = mock_websocket.send_json.call_args[0][0]
+        assert sent_data["type"] == "event-update"
+        assert sent_data == provided_data
+
+    async def test_process_event_data_websocket_disconnected(self, handler, mock_websocket):
+        mock_websocket.application_state = WebSocketState.DISCONNECTED
+
+        await handler.process_event_data(mock_websocket, 1)
+
+        assert not mock_websocket.send_json.called
+
+    async def test_process_event_data_connection_error_handling(
+        self, handler, cache_service, mock_websocket
+    ):
+        mock_websocket.send_json.side_effect = Exception("Connection closed")
+
+        handler.cache_service = cache_service
+
+        mock_event_data = {"match_id": 1, "id": 1, "events": []}
+
+        with patch(
+            "src.helpers.fetch_helpers.fetch_event",
+            return_value=mock_event_data,
+        ):
+            await handler.process_event_data(mock_websocket, 1)
+
+            assert mock_websocket.send_json.called
