@@ -265,6 +265,34 @@ python validate_config.py
 - Use `Annotated` for Pydantic field validation: `Annotated[str, Path(max_length=50)]`
 - Use `TYPE_CHECKING` for circular import dependencies in models
 
+### Conditional Statements
+
+- **Use match/case for 5+ elif chains**: Python 3.10+ match/case pattern matching improves readability for complex conditional logic
+  ```python
+  match value_type:
+      case "string":
+          return str(value)
+      case "int":
+          return int(value)
+      case "bool":
+          return bool(value)
+      case _:
+          return value
+  ```
+
+- **Keep if/elif for simple logic**: Use traditional if/elif chains for:
+  - 2-4 conditional branches
+  - Complex conditions with side effects
+  - Type checking with isinstance()
+  
+- **Always include default case**: Use `case _:` as catch-all for match/case statements
+
+- **Prefer dictionaries for key-value mappings**: For simple lookups, dictionaries are more efficient than match/case
+  ```python
+  months = {"января": "january", "февраля": "february"}
+  return months.get(russian_month, None)
+  ```
+
 ### Naming Conventions
 
 - **Classes**: PascalCase with descriptive suffixes (e.g., `TeamServiceDB`, `TeamSchema`, `TeamAPIRouter`)
