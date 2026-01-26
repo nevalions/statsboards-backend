@@ -275,7 +275,7 @@ class Settings(BaseSettings):
         description="Access token expiration time in minutes (default 1 day)",
     )
     rate_limit_requests_per_second: float = Field(
-        default=2.0,
+        default=0.5,
         description="Rate limit for requests per second",
     )
     rate_limit_max_concurrent: int = Field(

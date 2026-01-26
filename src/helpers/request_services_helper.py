@@ -12,6 +12,7 @@ from ..core.config import settings
 from ..logging_config import get_logger
 from .proxy_manager import ProxyManager
 from .rate_limiter import TokenBucket
+from .user_agent_rotator import get_random_user_agent
 
 logger = get_logger("backend_logger_request_services")
 
@@ -48,24 +49,36 @@ async def get_url(
     Args:
         url: URL to fetch.
         use_proxy: Whether to use proxy if configured.
-        timeout: Optional timeout in seconds. Defaults to random 0.5-0.9s.
+        timeout: Optional timeout in seconds. Defaults to random 1-3s.
 
     Returns:
         Response with content, or None on failure.
     """
-    timeout_val = timeout if timeout is not None else uniform(0.5, 0.9)
+    timeout_val = timeout if timeout is not None else uniform(1.0, 3.0)
 
     async with _concurrency_limiter:
         await _rate_limiter.acquire()
 
         headers = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Max-Age": "3600",
-            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) "
-            "Gecko/20100101 Firefox/52.0",
+            "User-Agent": get_random_user_agent(),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Cache-Control": "max-age=0",
         }
+
+        if url.startswith(("http://", "https://")):
+            parts = url.split("/")
+            if len(parts) >= 3:
+                base_url = f"{parts[0]}//{parts[2]}"
+                headers["Referer"] = base_url
+                headers["Sec-Fetch-Site"] = "same-origin"
 
         proxy_url: str | None = None
         excluded_proxies: list[str] = []
