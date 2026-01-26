@@ -22,6 +22,16 @@ _proxy_manager = ProxyManager(
 )
 
 
+async def initialize_proxy_manager() -> None:
+    """
+    Initialize proxy manager by fetching proxies from sources if configured.
+
+    Should be called during application startup.
+    """
+    await _proxy_manager.fetch_proxies_from_sources()
+    logger.info(f"Proxy manager initialized with {_proxy_manager.proxy_count} proxies")
+
+
 class Response(NamedTuple):
     content: str
 

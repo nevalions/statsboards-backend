@@ -77,6 +77,11 @@ async def lifespan(_app: FastAPI):
             match_websocket_handler.cache_service = cache_service
             logger.info("Match data cache service initialized and set on WebSocket components")
 
+        from src.helpers.request_services_helper import initialize_proxy_manager
+
+        await initialize_proxy_manager()
+        logger.info("Proxy manager initialized")
+
         await db.validate_database_connection()
 
         await ws_manager.startup()
