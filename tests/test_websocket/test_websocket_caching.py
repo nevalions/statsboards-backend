@@ -183,6 +183,44 @@ class TestWebSocketCaching:
             assert result2 == mock_match_data
             assert result1 == result2
 
+    async def test_process_match_data_with_initial_load_nested_data(self, handler, mock_websocket):
+        """Test process_match_data handles initial-load nested data correctly."""
+        initial_load_message = {
+            "type": "initial-load",
+            "data": {
+                "match_id": 1,
+                "id": 1,
+                "match": {"id": 1, "title": "Test Match"},
+                "teams_data": {"team_a": {"id": 1}, "team_b": {"id": 2}},
+                "scoreboard_data": {"id": 1, "team_a_game_color": "#ffffff"},
+                "match_data": {"id": 1, "match_id": 1, "score_team_a": 0},
+                "gameclock": {"id": 1, "gameclock": "10:00"},
+                "playclock": {"id": 1, "playclock": "25:00"},
+                "events": [{"id": 1, "play_type": "run"}],
+                "statistics": {"team_a": {}, "team_b": {}},
+                "server_time_ms": 1234567890,
+            },
+        }
+
+        await handler.process_match_data(mock_websocket, 1, initial_load_message)
+
+        assert mock_websocket.send_json.called
+        sent_data = mock_websocket.send_json.call_args[0][0]
+        assert sent_data["type"] == "match-update"
+        assert "match" in sent_data
+        assert sent_data["match"]["id"] == 1
+        assert sent_data["match"]["title"] == "Test Match"
+        assert "teams_data" in sent_data
+        assert "scoreboard_data" in sent_data
+        assert "match_data" in sent_data
+        assert "gameclock" in sent_data
+        assert sent_data["gameclock"]["gameclock"] == "10:00"
+        assert "playclock" in sent_data
+        assert sent_data["playclock"]["playclock"] == "25:00"
+        assert "events" in sent_data
+        assert len(sent_data["events"]) == 1
+        assert "statistics" in sent_data
+
     async def test_database_update_invalidates_cache(self, cache_service):
         """Test that cache is cleared after invalidation."""
         mock_match_data = {

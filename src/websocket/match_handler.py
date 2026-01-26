@@ -29,11 +29,19 @@ class MatchWebSocketHandler:
             fetch_with_scoreboard_data,
         )
 
-        initial_data = await fetch_with_scoreboard_data(match_id, cache_service=self.cache_service)
-        initial_playclock_data = await fetch_playclock(match_id, cache_service=self.cache_service)
-        initial_gameclock_data = await fetch_gameclock(match_id, cache_service=self.cache_service)
-        initial_event_data = await fetch_event(match_id, cache_service=self.cache_service)
-        initial_stats_data = await fetch_stats(match_id, cache_service=self.cache_service)
+        (
+            initial_data,
+            initial_playclock_data,
+            initial_gameclock_data,
+            initial_event_data,
+            initial_stats_data,
+        ) = await asyncio.gather(
+            fetch_with_scoreboard_data(match_id, cache_service=self.cache_service),
+            fetch_playclock(match_id, cache_service=self.cache_service),
+            fetch_gameclock(match_id, cache_service=self.cache_service),
+            fetch_event(match_id, cache_service=self.cache_service),
+            fetch_stats(match_id, cache_service=self.cache_service),
+        )
 
         combined_data = {
             "type": "initial-load",

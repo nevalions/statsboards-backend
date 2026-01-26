@@ -313,38 +313,57 @@ class TestWebSocketEndpointIntegration:
         await connection_manager.connect(mock_websocket, client_id, match_id)
 
         from src.helpers.fetch_helpers import (
+            fetch_event,
             fetch_gameclock,
             fetch_playclock,
+            fetch_stats,
             fetch_with_scoreboard_data,
         )
 
-        initial_data = await fetch_with_scoreboard_data(match_id)
-        initial_data["type"] = "message-update"  # type: ignore[assignment]
-        await mock_websocket.send_json(initial_data)
+        initial_data = await fetch_with_scoreboard_data(match_id, database=test_db)
+        initial_playclock_data = await fetch_playclock(match_id, database=test_db)
+        initial_gameclock_data = await fetch_gameclock(match_id, database=test_db)
+        initial_event_data = await fetch_event(match_id, database=test_db)
+        initial_stats_data = await fetch_stats(match_id, database=test_db)
 
-        initial_playclock_data = await fetch_playclock(match_id)
-        initial_playclock_data["type"] = "playclock-update"  # type: ignore[assignment]
-        await mock_websocket.send_json(initial_playclock_data)
+        combined_initial_data = {
+            "type": "initial-load",
+            "data": {
+                **(initial_data.get("data") or {}),
+                "gameclock": initial_gameclock_data.get("gameclock")
+                if initial_gameclock_data
+                else None,
+                "playclock": initial_playclock_data.get("playclock")
+                if initial_playclock_data
+                else None,
+                "events": initial_event_data.get("events", []) if initial_event_data else [],
+                "statistics": initial_stats_data.get("statistics", {})
+                if initial_stats_data
+                else {},
+                "server_time_ms": 1000000000,
+            },
+        }
+        await mock_websocket.send_json(combined_initial_data)
 
-        initial_gameclock_data = await fetch_gameclock(match_id)
-        initial_gameclock_data["type"] = "gameclock-update"  # type: ignore[assignment]
-        await mock_websocket.send_json(initial_gameclock_data)
-
-        assert mock_websocket.send_json.call_count == 3
+        assert mock_websocket.send_json.call_count == 1
 
         messages_sent = [call.args[0] for call in mock_websocket.send_json.call_args_list]
 
         message_types = [msg.get("type") for msg in messages_sent]
-        assert "message-update" in message_types
-        assert "playclock-update" in message_types
-        assert "gameclock-update" in message_types
+        assert "initial-load" in message_types
 
-        for msg in messages_sent:
-            assert "match_id" in msg or msg.get("type") in [
-                "message-update",
-                "playclock-update",
-                "gameclock-update",
-            ]
+        initial_message = messages_sent[0]
+        assert initial_message["type"] == "initial-load"
+        assert "data" in initial_message
+        assert "match" in initial_message["data"]
+        assert "teams_data" in initial_message["data"]
+        assert "scoreboard_data" in initial_message["data"]
+        assert "match_data" in initial_message["data"]
+        assert "gameclock" in initial_message["data"]
+        assert "playclock" in initial_message["data"]
+        assert "events" in initial_message["data"]
+        assert "statistics" in initial_message["data"]
+        assert "server_time_ms" in initial_message["data"]
 
         await connection_manager.disconnect(client_id)
 
