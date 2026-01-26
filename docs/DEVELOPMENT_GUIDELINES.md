@@ -947,6 +947,32 @@ The `@handle_view_exceptions` decorator:
   - `warning`: Expected but noteworthy situations
   - `error`: Unexpected errors with exceptions
 
+### Request ID Middleware
+
+The application includes automatic request ID tracking via `RequestIDMiddleware` in `src/main.py`:
+- Each request gets a unique ID (either from `X-Request-ID` header or auto-generated UUID4)
+- Request ID is available in `request.state.request_id` throughout the request lifecycle
+- Request ID is included in response headers (`X-Request-ID`)
+- Request ID is included in all error responses for traceability
+
+### Logging Middleware
+
+Automatic request/response logging via `LoggingMiddleware` in `src/main.py`:
+- Logs request start with method, path, and request_id
+- Logs request completion with status code, duration (in ms), and request_id
+- Logs request failures with error type and full exception info
+- Enables correlation of logs across services using request_id
+
+### Using Request IDs in Custom Code
+
+```python
+from fastapi import Request
+
+async def my_endpoint(request: Request):
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.info(f"Processing with request_id={request_id}")
+```
+
 ## Testing
 
 - Use `@pytest.mark.asyncio` for async test classes

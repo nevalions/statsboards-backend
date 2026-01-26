@@ -23,14 +23,20 @@ class TestCreateErrorResponse:
     def test_create_error_response_basic(self):
         from src.core.exception_handler import create_error_response
 
-        response = create_error_response(400, "Bad Request", "TestError")
+        request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-123"
+        response = create_error_response(request, 400, "Bad Request", "TestError")
         assert isinstance(response, JSONResponse)
         assert response.status_code == 400
+        content = response.body.decode()
+        assert "test-request-123" in content
 
     def test_create_error_response_without_exc_type(self):
         from src.core.exception_handler import create_error_response
 
-        response = create_error_response(404, "Not Found")
+        request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-456"
+        response = create_error_response(request, 404, "Not Found")
         assert isinstance(response, JSONResponse)
         assert response.status_code == 404
 
@@ -40,6 +46,7 @@ class TestValidationExceptionHandler:
         from src.core.exception_handler import validation_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-001"
         exc = ValidationError("Invalid data")
 
         response = await validation_exception_handler(request, exc)
@@ -51,6 +58,7 @@ class TestNotFoundExceptionHandler:
         from src.core.exception_handler import not_found_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-002"
         exc = NotFoundError("Resource not found")
 
         response = await not_found_exception_handler(request, exc)
@@ -62,6 +70,7 @@ class TestDatabaseExceptionHandler:
         from src.core.exception_handler import database_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-003"
         exc = DatabaseError("Database failed")
 
         response = await database_exception_handler(request, exc)
@@ -73,6 +82,7 @@ class TestBusinessLogicExceptionHandler:
         from src.core.exception_handler import business_logic_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-004"
         exc = BusinessLogicError("Logic error")
 
         response = await business_logic_exception_handler(request, exc)
@@ -84,6 +94,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-005"
         exc = AuthenticationError("Auth failed")
 
         response = await statsboard_exception_handler(request, exc)
@@ -93,6 +104,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-006"
         exc = AuthorizationError("No permission")
 
         response = await statsboard_exception_handler(request, exc)
@@ -102,6 +114,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-007"
         exc = ConcurrencyError("Locked")
 
         response = await statsboard_exception_handler(request, exc)
@@ -111,6 +124,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-008"
         exc = BusinessLogicError("Invalid")
 
         response = await statsboard_exception_handler(request, exc)
@@ -120,6 +134,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-009"
         exc = ExternalServiceError("Service down")
 
         response = await statsboard_exception_handler(request, exc)
@@ -129,6 +144,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-010"
         exc = ConfigurationError("Config missing")
 
         response = await statsboard_exception_handler(request, exc)
@@ -138,6 +154,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-011"
         exc = FileOperationError("File error")
 
         response = await statsboard_exception_handler(request, exc)
@@ -147,6 +164,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-012"
         exc = ParsingError("Parse failed")
 
         response = await statsboard_exception_handler(request, exc)
@@ -156,6 +174,7 @@ class TestStatsBoardExceptionHandler:
         from src.core.exception_handler import statsboard_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-013"
         exc = StatsBoardException("Custom error")
 
         response = await statsboard_exception_handler(request, exc)
@@ -167,6 +186,7 @@ class TestIntegrityErrorHandler:
         from src.core.exception_handler import integrity_error_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-014"
         from sqlalchemy.exc import IntegrityError
 
         exc = IntegrityError("test", {}, Exception())
@@ -180,6 +200,7 @@ class TestSQLAlchemyErrorHandler:
         from src.core.exception_handler import sqlalchemy_error_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-015"
         from sqlalchemy.exc import SQLAlchemyError
 
         exc = SQLAlchemyError("DB error")
@@ -193,6 +214,7 @@ class TestValueErrorHandler:
         from src.core.exception_handler import value_error_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-016"
         exc = ValueError("Invalid value")
 
         response = await value_error_handler(request, exc)
@@ -204,6 +226,7 @@ class TestKeyErrorHandler:
         from src.core.exception_handler import key_error_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-017"
         exc = KeyError("missing_key")
 
         response = await key_error_handler(request, exc)
@@ -215,6 +238,7 @@ class TestTypeErrorHandler:
         from src.core.exception_handler import type_error_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-018"
         exc = TypeError("Invalid type")
 
         response = await type_error_handler(request, exc)
@@ -226,6 +250,7 @@ class TestConnectionErrorHandler:
         from src.core.exception_handler import connection_error_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-019"
         exc = ConnectionError("Cannot connect")
 
         response = await connection_error_handler(request, exc)
@@ -237,6 +262,7 @@ class TestTimeoutErrorHandler:
         from src.core.exception_handler import timeout_error_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-020"
         exc = TimeoutError("Timed out")
 
         response = await timeout_error_handler(request, exc)
@@ -248,6 +274,7 @@ class TestGlobalExceptionHandler:
         from src.core.exception_handler import global_exception_handler
 
         request = MagicMock(spec=Request)
+        request.state.request_id = "test-request-021"
         exc = RuntimeError("Unexpected error")
 
         response = await global_exception_handler(request, exc)

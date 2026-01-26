@@ -10477,6 +10477,9 @@ All API endpoints return consistent error responses.
 ```typescript
 interface ErrorResponse {
   detail: string;
+  success: boolean;
+  request_id?: string;
+  type?: string;
   [key: string]: any;
 }
 ```
@@ -10499,21 +10502,30 @@ interface ErrorResponse {
 
 ```json
 {
-  "detail": "Match 123 not found"
+  "detail": "Match 123 not found",
+  "success": false,
+  "type": "NotFoundError",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
 ```json
 {
-  "detail": "Validation error: match_number must be at most 10 characters"
+  "detail": "Validation error: match_number must be at most 10 characters",
+  "success": false,
+  "type": "ValidationError",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
 ```json
 {
-  "detail": "Conflict - player match creation failed"
+  "detail": "Conflict - player match creation failed",
+  "success": false,
+  "type": "IntegrityError",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000"
 }
- ```
+```
 
 ### GET /api/matches/id/{match_id}/full-context/
 

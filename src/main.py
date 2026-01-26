@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from src.core.config import settings
 from src.core.exception_handler import register_exception_handlers
+from src.core.middleware import LoggingMiddleware, RequestIDMiddleware
 from src.core.models.base import db
 from src.core.router_registry import RouterRegistry, configure_routers
 from src.core.service_initialization import register_all_services
@@ -137,6 +138,8 @@ allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
 origins = [allowed_origins] if allowed_origins == "*" else allowed_origins.split(",")
 logger.info(f"allowed_origins: {origins}")
 
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(LoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

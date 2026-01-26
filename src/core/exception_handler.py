@@ -40,10 +40,16 @@ EXCEPTION_MAPPING: dict[type[Exception], tuple[int, str]] = {
 
 
 def create_error_response(
-    status_code: int, detail: str, exc_type: str | None = None
+    request: Request,
+    status_code: int,
+    detail: str,
+    exc_type: str | None = None,
 ) -> JSONResponse:
     """Create standardized error response"""
+    request_id = getattr(request.state, "request_id", None)
     content: dict[str, Any] = {"detail": detail, "success": False}
+    if request_id:
+        content["request_id"] = request_id
     if exc_type:
         content["type"] = exc_type
     return JSONResponse(status_code=status_code, content=content)
@@ -52,6 +58,7 @@ def create_error_response(
 async def validation_exception_handler(request: Request, exc: ValidationError) -> JSONResponse:
     """Handle validation errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=exc.message,
         exc_type="ValidationError",
@@ -61,6 +68,7 @@ async def validation_exception_handler(request: Request, exc: ValidationError) -
 async def not_found_exception_handler(request: Request, exc: NotFoundError) -> JSONResponse:
     """Handle not found errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_404_NOT_FOUND,
         detail=exc.message,
         exc_type="NotFoundError",
@@ -70,6 +78,7 @@ async def not_found_exception_handler(request: Request, exc: NotFoundError) -> J
 async def database_exception_handler(request: Request, exc: DatabaseError) -> JSONResponse:
     """Handle database errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Database operation failed",
         exc_type="DatabaseError",
@@ -81,6 +90,7 @@ async def business_logic_exception_handler(
 ) -> JSONResponse:
     """Handle business logic errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         detail=exc.message,
         exc_type="BusinessLogicError",
@@ -93,6 +103,7 @@ async def statsboard_exception_handler(request: Request, exc: StatsBoardExceptio
         type(exc), (status.HTTP_500_INTERNAL_SERVER_ERROR, "Internal Server Error")
     )
     return create_error_response(
+        request=request,
         status_code=status_code,
         detail=exc.message,
         exc_type=error_type,
@@ -102,6 +113,7 @@ async def statsboard_exception_handler(request: Request, exc: StatsBoardExceptio
 async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
     """Handle database integrity errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_409_CONFLICT,
         detail="Resource already exists or violates constraints",
         exc_type="IntegrityError",
@@ -111,6 +123,7 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
 async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
     """Handle database errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Database operation failed",
         exc_type="SQLAlchemyError",
@@ -120,6 +133,7 @@ async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JS
 async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
     """Handle value errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid data provided",
         exc_type="ValueError",
@@ -129,6 +143,7 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
 async def key_error_handler(request: Request, exc: KeyError) -> JSONResponse:
     """Handle key errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Missing required field",
         exc_type="KeyError",
@@ -138,6 +153,7 @@ async def key_error_handler(request: Request, exc: KeyError) -> JSONResponse:
 async def type_error_handler(request: Request, exc: TypeError) -> JSONResponse:
     """Handle type errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid data type",
         exc_type="TypeError",
@@ -147,6 +163,7 @@ async def type_error_handler(request: Request, exc: TypeError) -> JSONResponse:
 async def connection_error_handler(request: Request, exc: ConnectionError) -> JSONResponse:
     """Handle connection errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail="Service unavailable - connection error",
         exc_type="ConnectionError",
@@ -156,6 +173,7 @@ async def connection_error_handler(request: Request, exc: ConnectionError) -> JS
 async def timeout_error_handler(request: Request, exc: TimeoutError) -> JSONResponse:
     """Handle timeout errors"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_504_GATEWAY_TIMEOUT,
         detail="Operation timed out",
         exc_type="TimeoutError",
@@ -165,6 +183,7 @@ async def timeout_error_handler(request: Request, exc: TimeoutError) -> JSONResp
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle truly unexpected errors - should rarely trigger"""
     return create_error_response(
+        request=request,
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Internal server error",
         exc_type=type(exc).__name__,
