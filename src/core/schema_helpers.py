@@ -1,4 +1,4 @@
-from types import NoneType
+from types import NoneType, UnionType
 from typing import Annotated, Union, get_args, get_origin
 
 from pydantic import BaseModel, Field, create_model
@@ -16,7 +16,7 @@ class PaginationMetadata(BaseModel):
 def has_none_in_annotation(annotation) -> bool:
     """Check if None is already in the annotation type."""
     origin = get_origin(annotation)
-    if origin is Union or origin is type(str | int | None):
+    if origin is UnionType or origin is Union or origin is type(str | int | None):
         args = get_args(annotation)
         return NoneType in args
     return annotation is NoneType
@@ -50,7 +50,7 @@ def make_fields_optional(model_cls: type[BaseModel]) -> type[BaseModel]:
         if has_none_in_annotation(f_info.annotation):
             new_annotation = f_info.annotation
         else:
-            new_annotation = Union[f_info.annotation, None]
+            new_annotation = f_info.annotation | None
 
         if f_info.metadata:
             new_annotation = Annotated[new_annotation, *f_info.metadata]
