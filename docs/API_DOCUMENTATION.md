@@ -6362,112 +6362,116 @@ Future versions may implement WebSocket authentication through:
 
 #### Initial Data
 
-Upon successful connection, the server sends four initial messages immediately:
+Upon successful connection, server sends one combined initial message with all match data:
 
 ```typescript
-// 1. Match data update
 {
-  "type": "message-update",
-  "match_id": 123,
-  "match": {
+  "type": "initial-load",
+  "data": {
+    "match_id": 123,
     "id": 123,
-    "title": "Team A vs Team B",
-    "match_date": "2026-01-21T19:00:00Z",
-    "team_a_id": 1,
-    "team_b_id": 2,
-    "team_a_score": 14,
-    "team_b_score": 10
-  },
-  "teams_data": {
-    "team_a": {
-      "id": 1,
-      "title": "Team A",
-      "team_color": "#FF0000",
-      "logo_url": "/static/uploads/teams/logos/1.jpg"
+    "match": {
+      "id": 123,
+      "title": "Team A vs Team B",
+      "match_date": "2026-01-21T19:00:00Z",
+      "team_a_id": 1,
+      "team_b_id": 2,
+      "team_a_score": 14,
+      "team_b_score": 10
     },
-    "team_b": {
-      "id": 2,
-      "title": "Team B",
-      "team_color": "#0000FF",
-      "logo_url": "/static/uploads/teams/logos/2.jpg"
-    }
-  },
-  "match_data": {
-    "id": 456,
-    "match_id": 123,
-    "field_length": 92,
-    "game_status": "in-progress",
-    "score_team_a": 14,
-    "score_team_b": 10,
-    "timeout_team_a": "●●",
-    "timeout_team_b": "●●",
-    "qtr": "1st",
-    "ball_on": 20,
-    "down": "1st",
-    "distance": "10"
-  },
-  "scoreboard_data": {
-    "id": 789,
-    "match_id": 123,
-    "is_qtr": true,
-    "is_time": true,
-    "is_playclock": true,
-    "is_downdistance": true,
-    "team_a_game_color": "#FF0000",
-    "team_b_game_color": "#0000FF",
-    "team_a_game_title": "Team A",
-    "team_b_game_title": "Team B"
-  }
-}
-
-// 2. Playclock update
-{
-  "type": "playclock-update",
-  "match_id": 123,
-  "playclock": {
-    "id": 234,
-    "match_id": 123,
-    "playclock": 40,
-    "playclock_status": "running",
-    "started_at_ms": 1737648000000
-  },
-  "server_time_ms": 1737648000050
-}
-
-// 3. Gameclock update
-{
-  "type": "gameclock-update",
-  "match_id": 123,
-  "gameclock": {
-    "id": 345,
-    "match_id": 123,
-    "gameclock": 720,
-    "gameclock_max": 720,
-    "gameclock_status": "stopped"
-  }
-}
-
-// 4. Football events update
-{
-  "type": "event-update",
-  "match_id": 123,
-  "events": [
-    {
-      "id": 1,
+    "teams_data": {
+      "team_a": {
+        "id": 1,
+        "title": "Team A",
+        "team_color": "#FF0000",
+        "logo_url": "/static/uploads/teams/logos/1.jpg"
+      },
+      "team_b": {
+        "id": 2,
+        "title": "Team B",
+        "team_color": "#0000FF",
+        "logo_url": "/static/uploads/teams/logos/2.jpg"
+      }
+    },
+    "match_data": {
+      "id": 456,
       "match_id": 123,
-      "quarter": "1st",
-      "time_remaining": "12:34",
-      "event_type": "run",
-      "event_number": 1,
-      "run_player": {
-        "id": 10,
-        "person": {
-          "first_name": "John",
-          "last_name": "Doe"
+      "field_length": 92,
+      "game_status": "in-progress",
+      "score_team_a": 14,
+      "score_team_b": 10,
+      "timeout_team_a": "●●",
+      "timeout_team_b": "●●",
+      "qtr": "1st",
+      "ball_on": 20,
+      "down": "1st",
+      "distance": "10"
+    },
+    "scoreboard_data": {
+      "id": 789,
+      "match_id": 123,
+      "is_qtr": true,
+      "is_time": true,
+      "is_playclock": true,
+      "is_downdistance": true,
+      "team_a_game_color": "#FF0000",
+      "team_b_game_color": "#0000FF",
+      "team_a_game_title": "Team A",
+      "team_b_game_title": "Team B"
+    },
+    "gameclock": {
+      "id": 345,
+      "match_id": 123,
+      "gameclock": 720,
+      "gameclock_max": 720,
+      "gameclock_status": "stopped"
+    },
+    "playclock": {
+      "id": 234,
+      "match_id": 123,
+      "playclock": 40,
+      "playclock_status": "running",
+      "started_at_ms": 1737648000000
+    },
+    "events": [
+      {
+        "id": 1,
+        "match_id": 123,
+        "quarter": "1st",
+        "time_remaining": "12:34",
+        "event_type": "run",
+        "event_number": 1,
+        "run_player": {
+          "id": 10,
+          "person": {
+            "first_name": "John",
+            "last_name": "Doe"
+          }
         }
       }
-    }
-  ]
+    ],
+    "statistics": {
+      "team_a": {
+        "id": 1,
+        "team_stats": {
+          "id": 1,
+          "offence_yards": 250,
+          "pass_att": 20,
+          "run_att": 30
+        }
+      },
+      "team_b": {
+        "id": 2,
+        "team_stats": {
+          "id": 2,
+          "offence_yards": 200,
+          "pass_att": 15,
+          "run_att": 25
+        }
+      }
+    },
+    "server_time_ms": 1737648000050
+  }
 }
 ```
 
@@ -6477,12 +6481,74 @@ The following message types are sent from server to client when data changes:
 
 | Message Type | Trigger | Description |
 |--------------|----------|-------------|
+| `initial-load` | On connection | Combined initial message with all match data (match, teams, clocks, events, stats) |
 | `match-update` | Match data changes | Updated match information, teams, or scoreboard |
-| `message-update` | Match data changes | Initial message with full match context |
+| `message-update` | Match data changes | Updated match information (legacy, use match-update) |
 | `gameclock-update` | Game clock changes | Updated game clock time or status |
 | `playclock-update` | Play clock changes | Updated play clock time or status |
 | `event-update` | Football events occur | New or updated football events |
+| `statistics-update` | Statistics changes | Updated match statistics |
 | `ping` | Every 30 seconds | Heartbeat message for connection health check |
+
+##### Initial Load Message
+
+```typescript
+interface InitialLoadMessage {
+  type: "initial-load";
+  data: {
+    match_id: number;
+    id: number;
+    match: MatchData;
+    teams_data: {
+      team_a: TeamData;
+      team_b: TeamData;
+    };
+    match_data: {
+      id: number;
+      match_id: number;
+      field_length?: number;
+      game_status?: string;  // "in-progress", "stopped", "completed"
+      score_team_a?: number;
+      score_team_b?: number;
+      timeout_team_a?: string;
+      timeout_team_b?: string;
+      qtr?: string;
+      ball_on?: number;
+      down?: string;
+      distance?: string;
+    };
+    scoreboard_data?: ScoreboardData;
+    gameclock?: {
+      id: number;
+      match_id: number;
+      gameclock: number;
+      gameclock_max?: number;
+      gameclock_status: string;  // "stopped", "running", "paused"
+      gameclock_time_remaining?: number;
+      started_at_ms?: number | null;
+    };
+    playclock?: {
+      id: number;
+      match_id: number;
+      playclock: number;
+      playclock_status: string;  // "stopped", "running", "paused"
+      started_at_ms?: number | null;
+    };
+    events: FootballEvent[];
+    statistics: {
+      team_a: {
+        id: number;
+        team_stats: TeamStats;
+      };
+      team_b: {
+        id: number;
+        team_stats: TeamStats;
+      };
+    };
+    server_time_ms: number;
+  };
+}
+```
 
 ##### Match Update Message
 

@@ -76,6 +76,14 @@ class TestWebSocketShutdown:
                 "src.helpers.fetch_helpers.fetch_playclock",
                 return_value={"match_id": 1, "id": 1, "status_code": 200},
             ),
+            patch(
+                "src.helpers.fetch_helpers.fetch_event",
+                return_value={"match_id": 1, "id": 1, "status_code": 200, "events": []},
+            ),
+            patch(
+                "src.helpers.fetch_helpers.fetch_stats",
+                return_value={"match_id": 1, "statistics": {}},
+            ),
         ):
             mock_cm.connect = AsyncMock()
             mock_cm.disconnect = AsyncMock()

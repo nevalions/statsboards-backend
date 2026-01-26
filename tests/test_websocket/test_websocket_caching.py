@@ -42,21 +42,39 @@ class TestWebSocketCaching:
         with (
             patch(
                 "src.helpers.fetch_helpers.fetch_with_scoreboard_data",
-                return_value=mock_match_data["data"],
+                return_value=mock_match_data,
             ),
             patch(
                 "src.helpers.fetch_helpers.fetch_gameclock",
-                return_value={"match_id": 1, "id": 1, "status_code": 200},
+                return_value={"match_id": 1, "gameclock": {"id": 1}, "status_code": 200},
             ),
             patch(
                 "src.helpers.fetch_helpers.fetch_playclock",
-                return_value={"match_id": 1, "id": 1, "status_code": 200},
+                return_value={"match_id": 1, "playclock": {"id": 1}, "status_code": 200},
+            ),
+            patch(
+                "src.helpers.fetch_helpers.fetch_event",
+                return_value={"match_id": 1, "id": 1, "status_code": 200, "events": []},
+            ),
+            patch(
+                "src.helpers.fetch_helpers.fetch_stats",
+                return_value={"match_id": 1, "statistics": {}},
             ),
         ):
             await handler.send_initial_data(mock_websocket, "client1", 1)
 
             assert mock_websocket.send_json.called
-            assert mock_websocket.send_json.call_count >= 3
+            assert mock_websocket.send_json.call_count == 1
+            message = mock_websocket.send_json.call_args[0][0]
+            assert message["type"] == "initial-load"
+            assert "data" in message
+            assert "match" in message["data"]
+            assert "teams_data" in message["data"]
+            assert "gameclock" in message["data"]
+            assert "playclock" in message["data"]
+            assert "events" in message["data"]
+            assert "statistics" in message["data"]
+            assert "server_time_ms" in message["data"]
 
     async def test_cache_service_caches_match_data(self, cache_service):
         mock_match_data = {
