@@ -20,6 +20,7 @@ from src.core.service_registry import get_service_registry, init_service_registr
 from src.logging_config import logs_dir, setup_logging
 from src.utils.websocket.websocket_manager import ws_manager
 from src.websocket.match_handler import match_websocket_handler
+from src.helpers.request_services_helper import initialize_proxy_manager
 
 logger = logging.getLogger("backend_logger_fastapi")
 db_logger = logging.getLogger("backend_logger_base_db")
@@ -76,8 +77,6 @@ async def lifespan(_app: FastAPI):
             ws_manager.set_cache_service(cache_service)
             match_websocket_handler.cache_service = cache_service
             logger.info("Match data cache service initialized and set on WebSocket components")
-
-        from src.helpers.request_services_helper import initialize_proxy_manager
 
         await initialize_proxy_manager()
         logger.info("Proxy manager initialized")
