@@ -231,6 +231,7 @@ class TestGameClockViews:
         await asyncio.sleep(2)
 
         pause_response = await client.put(f"/api/gameclock/id/{created.id}/paused/")
+
         assert pause_response.status_code == 200
         assert pause_response.json()["content"]["gameclock_status"] == "paused"
 
