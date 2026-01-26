@@ -44,7 +44,7 @@ class TestSeasonViews:
         response = await client.get(f"/api/seasons/id/{created.id}/")
 
         assert response.status_code == 200
-        assert response.json()["content"]["id"] == created.id
+        assert response.json()["id"] == created.id
 
     async def test_get_season_by_year_endpoint(self, client, test_db):
         season_service = SeasonServiceDB(test_db)

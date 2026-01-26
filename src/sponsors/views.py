@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
@@ -78,7 +77,7 @@ class SponsorAPIRouter(
 
         @router.get(
             "/id/{item_id}/",
-            response_class=JSONResponse,
+            response_model=SponsorSchema,
         )
         async def get_sponsor_by_id_endpoint(sponsor_service: SponsorService, item_id: int):
             self.logger.debug(f"Getting sponsor endpoint by id: {item_id}")
@@ -88,11 +87,7 @@ class SponsorAPIRouter(
                     status_code=404,
                     detail=f"Sponsor id:{item_id} not found",
                 )
-            return self.create_response(
-                item,
-                f"Sponsor ID:{item.id}",
-                "text",
-            )
+            return SponsorSchema.model_validate(item)
 
         @router.post("/upload_logo", response_model=UploadSponsorLogoResponse)
         @handle_view_exceptions(

@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query
-from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
@@ -73,22 +72,17 @@ class SportAPIRouter(
 
         @router.get(
             "/id/{item_id}/",
-            response_class=JSONResponse,
+            response_model=SportSchema,
         )
         async def get_sport_by_id_endpoint(item_id: int, sport_service: SportService):
             self.logger.debug(f"Getting sport by id: {item_id} endpoint")
             item = await sport_service.get_by_id(item_id)
-            if item:
-                return self.create_response(
-                    item,
-                    f"Sport ID:{item.id}",
-                    "text",
-                )
-            else:
+            if item is None:
                 raise HTTPException(
                     status_code=404,
                     detail=f"Sport id:{item_id} not found",
                 )
+            return SportSchema.model_validate(item)
 
         @router.get("/id/{sport_id}/tournaments")
         async def tournaments_by_sport_endpoint(sport_id: int, sport_service: SportService):

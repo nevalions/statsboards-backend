@@ -55,7 +55,7 @@ class TestSponsorViews:
         response = await client.get(f"/api/sponsors/id/{created.id}/")
 
         assert response.status_code == 200
-        assert response.json()["content"]["id"] == created.id
+        assert response.json()["id"] == created.id
 
     async def test_get_sponsor_by_id_not_found(self, client):
         response = await client.get("/api/sponsors/id/99999/")

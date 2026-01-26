@@ -10,9 +10,7 @@ class TestSponsorLineViews:
     async def test_create_sponsor_line_endpoint(self, client, test_db):
         sponsor_line_data = SponsorLineFactory.build()
 
-        response = await client.post(
-            "/api/sponsor_lines/", json=sponsor_line_data.model_dump()
-        )
+        response = await client.post("/api/sponsor_lines/", json=sponsor_line_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
@@ -49,7 +47,7 @@ class TestSponsorLineViews:
         response = await client.get(f"/api/sponsor_lines/id/{created.id}/")
 
         assert response.status_code == 200
-        assert response.json()["content"]["id"] == created.id
+        assert response.json()["id"] == created.id
 
     async def test_get_sponsor_line_by_id_not_found(self, client):
         response = await client.get("/api/sponsor_lines/id/99999/")

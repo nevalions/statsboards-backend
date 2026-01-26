@@ -279,7 +279,7 @@ class TestSponsorManagementE2E:
         get_sponsor_response = await client.get(f"/api/sponsors/id/{sponsor_id}/")
         assert get_sponsor_response.status_code == 200
         sponsor = get_sponsor_response.json()
-        assert sponsor["content"]["id"] == sponsor_id
+        assert sponsor["id"] == sponsor_id
 
 
 @pytest.mark.e2e

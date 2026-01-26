@@ -6,7 +6,6 @@ from fastapi import (
     Depends,
     HTTPException,
     Path,
-    status,
 )
 from fastapi.responses import JSONResponse
 
@@ -88,28 +87,23 @@ class MatchDataAPIRouter(
 
         @router.put(
             "/id/{item_id}/",
-            response_class=JSONResponse,
+            response_model=MatchDataSchema,
         )
         async def update_matchdata_by_id(
             item_id: int,
             item=Depends(update_match_data_),
         ):
             self.logger.debug("Update matchdata by ID")
-            if item:
-                return {
-                    "content": MatchDataSchema.model_validate(item).model_dump(),
-                    "status_code": status.HTTP_200_OK,
-                    "success": True,
-                }
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"MatchData id:{item_id} not found",
-            )
+            if item is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"MatchData id:{item_id} not found",
+                )
+            return MatchDataSchema.model_validate(item)
 
         @router.get(
             "/id/{item_id}/",
-            response_class=JSONResponse,
+            response_model=MatchDataSchema,
         )
         async def get_matchdata_by_id(
             match_data_service: MatchDataService,
@@ -117,11 +111,12 @@ class MatchDataAPIRouter(
         ):
             self.logger.debug("Get matchdata by id endpoint")
             item = await match_data_service.get_by_id(item_id)
-            return self.create_response(
-                item,
-                f"MatchData ID:{item.id}",
-                "json",
-            )
+            if item is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"MatchData id:{item_id} not found",
+                )
+            return MatchDataSchema.model_validate(item)
 
         @router.put(
             "/id/{match_data_id}/gameclock/running/",

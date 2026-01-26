@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException
-from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
@@ -71,23 +70,18 @@ class SponsorLineAPIRouter(
 
         @router.get(
             "/id/{item_id}/",
-            response_class=JSONResponse,
+            response_model=SponsorLineSchema,
         )
         async def get_sponsor_line_by_id_endpoint(item_id: int):
             try:
                 self.logger.debug(f"Get sponsor line endpoint by id {item_id}")
                 item = await self.service.get_by_id(item_id)
-                if item:
-                    return self.create_response(
-                        item,
-                        f"SponsorLine ID:{item.id}",
-                        "SponsorLine",
-                    )
-                else:
+                if item is None:
                     raise HTTPException(
                         status_code=404,
                         detail=f"SponsorLine id:{item_id} not found",
                     )
+                return SponsorLineSchema.model_validate(item)
             except HTTPException:
                 raise
             except Exception as e:

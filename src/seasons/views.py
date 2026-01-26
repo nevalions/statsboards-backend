@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query
-from fastapi.responses import JSONResponse
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
@@ -80,7 +79,7 @@ class SeasonAPIRouter(
 
         @router.get(
             "/id/{item_id}/",
-            response_class=JSONResponse,
+            response_model=SeasonSchema,
         )
         @handle_view_exceptions(
             error_message="Internal server error fetching season",
@@ -94,11 +93,7 @@ class SeasonAPIRouter(
                     status_code=404,
                     detail=f"Season with id {item_id} not found",
                 )
-            return self.create_response(
-                item,
-                f"Season ID:{item.id}",
-                "text",
-            )
+            return SeasonSchema.model_validate(item)
 
         @router.get("/id/{item_id}/sports/id/{sport_id}/tournaments")
         async def tournaments_by_season_id_and_sport_endpoint(
