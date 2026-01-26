@@ -274,6 +274,42 @@ class Settings(BaseSettings):
         default=60 * 24,
         description="Access token expiration time in minutes (default 1 day)",
     )
+    rate_limit_requests_per_second: float = Field(
+        default=2.0,
+        description="Rate limit for requests per second",
+    )
+    rate_limit_max_concurrent: int = Field(
+        default=5,
+        description="Maximum number of concurrent requests",
+    )
+    proxy_list: str | None = Field(
+        default=None,
+        description="Comma-separated list of proxy URLs (e.g., http://user:pass@host:port,http://host2:port2)",
+    )
+    proxy_timeout: int = Field(
+        default=10,
+        description="Timeout for proxy connections in seconds",
+    )
+    proxy_max_retries: int = Field(
+        default=3,
+        description="Maximum number of retry attempts when a proxy fails",
+    )
+    proxy_source_urls: str | None = Field(
+        default="https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+        description="Comma-separated list of proxy source URLs to fetch from",
+    )
+    proxy_source_cache_ttl: int = Field(
+        default=3600,
+        description="Proxy source cache time-to-live in seconds (default: 1 hour)",
+    )
+    proxy_source_max_proxies: int = Field(
+        default=100,
+        description="Maximum number of proxies to fetch from sources",
+    )
+    proxy_source_fetch_timeout: int = Field(
+        default=10,
+        description="Timeout for fetching proxy sources in seconds",
+    )
 
     @property
     def static_main_path(self) -> Path:
