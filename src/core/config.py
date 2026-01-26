@@ -3,6 +3,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Self
 
 from dotenv import load_dotenv
 from pydantic import Field, PostgresDsn, field_validator, model_validator
@@ -316,12 +317,12 @@ class Settings(BaseSettings):
         return v
 
     @model_validator(mode="after")
-    def validate_ssl_files(self) -> "Settings":
+    def validate_ssl_files(self) -> Self:
         """
         Validate that SSL files are both provided or both absent.
 
         Returns:
-            Settings: Validated settings instance.
+            Self: Validated settings instance.
 
         Raises:
             ConfigurationError: If only one SSL file is provided.

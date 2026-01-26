@@ -42,7 +42,7 @@ Added validators to `Settings` class:
 
 ```python
 @model_validator(mode="after")
-def validate_ssl_files(self) -> "Settings":
+def validate_ssl_files(self) -> Self:
     if bool(self.ssl_keyfile) != bool(self.ssl_certfile):
         raise ConfigurationError(
             "Both SSL_KEYFILE and SSL_CERTFILE must be provided or neither",
