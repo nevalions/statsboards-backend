@@ -183,13 +183,20 @@ class ProxyManager:
             for url, result in zip(self._source_urls, results):
                 if isinstance(result, Exception):
                     logger.warning(f"Failed to fetch from {url}: {result}")
-                elif result:
+                elif isinstance(result, list):
+                    is_socks5_source = "socks5" in url.lower()
+
                     for proxy_str in result:
                         proxy_str = proxy_str.strip()
                         if not proxy_str:
                             continue
 
                         try:
+                            if is_socks5_source and not proxy_str.startswith(
+                                ("socks://", "socks5://", "http://", "https://")
+                            ):
+                                proxy_str = f"socks5://{proxy_str}"
+
                             proxy_info = self._parse_proxy_string(proxy_str)
                             if proxy_info.url not in all_proxies:
                                 all_proxies.add(proxy_info.url)

@@ -6,6 +6,7 @@ from typing import NamedTuple
 
 from aiohttp import ClientConnectorError, ClientProxyConnectionError, ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
+from aiohttp_socks import ProxyConnector
 
 from ..core.config import settings
 from ..logging_config import get_logger
@@ -78,21 +79,33 @@ async def get_url(
 
         for attempt in range(max_retries):
             try:
-                async with ClientSession() as session:
-                    async with session.get(
-                        url=url,
-                        headers=headers,
-                        timeout=ClientTimeout(total=timeout_val),
-                        ssl=False,
-                        proxy=proxy_url,
-                    ) as response:
-                        response.raise_for_status()
-                        text_content = await response.text()
-
-                        if proxy_url:
+                if proxy_url and proxy_url.startswith(("socks://", "socks5://")):
+                    connector = ProxyConnector.from_url(proxy_url)
+                    async with ClientSession(connector=connector) as session:
+                        async with session.get(
+                            url=url,
+                            headers=headers,
+                            timeout=ClientTimeout(total=timeout_val),
+                        ) as response:
+                            response.raise_for_status()
+                            text_content = await response.text()
                             _proxy_manager.record_success(proxy_url)
+                            return Response(content=text_content)
+                else:
+                    async with ClientSession() as session:
+                        async with session.get(
+                            url=url,
+                            headers=headers,
+                            timeout=ClientTimeout(total=timeout_val),
+                            proxy=proxy_url,
+                        ) as response:
+                            response.raise_for_status()
+                            text_content = await response.text()
 
-                        return Response(content=text_content)
+                            if proxy_url:
+                                _proxy_manager.record_success(proxy_url)
+
+                            return Response(content=text_content)
 
             except ClientProxyConnectionError as e:
                 if proxy_url:
