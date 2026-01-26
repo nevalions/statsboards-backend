@@ -281,6 +281,176 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 - Game clock synchronization
 - Play clock updates
 
+### WebSocket Message Architecture
+
+#### Message Types
+
+**Initial Connection Messages:**
+
+| Message Type | Description | When Sent |
+|--------------|-------------|------------|
+| `initial-load` | Combined initial data with all match information | On new WebSocket connection |
+
+**Ongoing Update Messages:**
+
+| Message Type | Description | Trigger |
+|--------------|-------------|----------|
+| `match-update` | Match data, teams, scoreboard changes | Database NOTIF on match/teams/scoreboard |
+| `gameclock-update` | Game clock time/status changes | Every second by ClockOrchestrator |
+| `playclock-update` | Play clock time/status changes | Every second by ClockOrchestrator |
+| `event-update` | Football events list | Database NOTIF on football events |
+| `statistics-update` | Match statistics updates | Database NOTIF on match statistics |
+
+#### Message Formats
+
+**Initial Load Message:**
+
+```typescript
+{
+  "type": "initial-load",
+  "data": {
+    "match": {
+      "id": 123,
+      "title": "Team A vs Team B",
+      "match_date": "2026-01-21T19:00:00Z"
+    },
+    "teams_data": {
+      "team_a": {
+        "id": 1,
+        "title": "Team A",
+        "team_color": "#FF0000"
+      },
+      "team_b": {
+        "id": 2,
+        "title": "Team B",
+        "team_color": "#0000FF"
+      }
+    },
+    "scoreboard_data": {
+      "id": 789,
+      "match_id": 123,
+      "team_a_game_color": "#FF0000",
+      "team_b_game_color": "#0000FF"
+    },
+    "match_data": {
+      "id": 456,
+      "match_id": 123,
+      "score_team_a": 14,
+      "score_team_b": 10,
+      "qtr": "1st"
+    },
+    "gameclock": {
+      "id": 345,
+      "match_id": 123,
+      "gameclock": 720,
+      "gameclock_status": "running"
+    },
+    "playclock": {
+      "id": 234,
+      "match_id": 123,
+      "playclock": 40,
+      "playclock_status": "running"
+    },
+    "events": [
+      {
+        "id": 1,
+        "match_id": 123,
+        "event_type": "touchdown"
+      }
+    ],
+    "statistics": {
+      "team_a": {
+        "id": 1,
+        "team_stats": {
+          "offence_yards": 250,
+          "pass_att": 20
+        }
+      },
+      "team_b": {
+        "id": 2,
+        "team_stats": {
+          "offence_yards": 200,
+          "pass_att": 15
+        }
+      }
+    },
+    "server_time_ms": 1737648000050
+  }
+}
+```
+
+**Update Messages (format unchanged):**
+
+```typescript
+// gameclock-update
+{
+  "type": "gameclock-update",
+  "match_id": 123,
+  "gameclock": {
+    "id": 345,
+    "gameclock": 720,
+    "gameclock_status": "running"
+  }
+}
+
+// playclock-update
+{
+  "type": "playclock-update",
+  "match_id": 123,
+  "playclock": {
+    "id": 234,
+    "playclock": 40,
+    "playclock_status": "running"
+  }
+}
+
+// match-update
+{
+  "type": "match-update",
+  "match_id": 123,
+  "data": {
+    "match": {...},
+    "teams_data": {...},
+    "scoreboard_data": {...},
+    "match_data": {...}
+  }
+}
+```
+
+### Architecture Decisions
+
+**Why Combined Initial Load:**
+
+1. **Performance**: Single `asyncio.gather` fetches all data concurrently instead of 5 sequential requests
+2. **Atomicity**: All initial data arrives together, no partial state issues
+3. **Frontend Integration**: Frontend can use WebSocket as primary data source, avoiding race conditions
+4. **Backward Compatibility**: Existing update messages unchanged, gradual migration possible
+
+**Why Full Data on Updates (vs. Deltas):**
+
+1. **Simplicity**: No complex change tracking or delta calculation logic
+2. **Consistency**: Always have full data for each update type
+3. **Network Overhead**: Acceptable for typical use case (< 1MB per message)
+4. **Future-Proof**: Full data makes conflicts easier to resolve (last-write-wins)
+
+**Why HTTP as Fallback (vs. WebSocket-only):**
+
+1. **Robustness**: Works even if WebSocket fails to connect
+2. **SSR Support**: Initial HTML render can use HTTP data before WebSocket connects
+3. **Debugging**: Can test HTTP separately from WebSocket
+4. **Graceful Degradation**: Falls back gracefully if WebSocket unavailable
+
+### Implementation Status
+
+- ✅ STAB-148: Main WebSocket refactor issue
+- ✅ STAB-149: Backend parallel data fetching implementation
+- ✅ STAB-150: Comprehensive backend testing
+- ✅ STAF-204: Frontend WebSocket service handler
+- ✅ STAF-202: Frontend scoreboard-view component
+- ✅ STAF-203: Frontend scoreboard-admin component
+
+**See**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md#websocket-endpoints) for complete WebSocket message specifications
+
 ### File Management (`src/helpers/`)
 
 **Services**:
