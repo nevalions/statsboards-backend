@@ -3,6 +3,7 @@ import asyncio
 from fastapi import HTTPException
 from sqlalchemy import select
 
+from src.core.enums import ClockStatus
 from src.core.models import BaseServiceDB, PlayClockDB, handle_service_exceptions
 from src.core.models.base import Database
 
@@ -90,12 +91,12 @@ class PlayClockServiceDB(BaseServiceDB):
             )
 
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
-            if state_machine and playclock and playclock.playclock_status == "running":
+            if state_machine and playclock and playclock.playclock_status == ClockStatus.RUNNING:
                 state_machine.start()
             elif initial_value is not None and state_machine:
                 state_machine.start()
 
-            if state_machine and state_machine.status == "running":
+            if state_machine and state_machine.status == ClockStatus.RUNNING:
                 clock_orchestrator.register_playclock(item_id, state_machine)
 
             self.logger.debug(f"Playclock added to active playclock matches: {item_id}")
@@ -199,7 +200,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 playclock: PlayClockDB | None = result.one_or_none()
                 if playclock:
                     state_machine = self.clock_manager.get_clock_state_machine(playclock.id)
-                    if state_machine and state_machine.status == "running":
+                    if state_machine and state_machine.status == ClockStatus.RUNNING:
                         playclock.playclock = state_machine.get_current_value()
                     self.logger.debug(f"Playclock found: {playclock}")
                     return playclock

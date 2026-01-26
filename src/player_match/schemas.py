@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.enums import PlayerStartingType
 from src.core.schema_helpers import make_fields_optional
 
 
@@ -17,7 +18,7 @@ class PlayerMatchSchemaBase(BaseModel):
     team_id: int
     is_start: bool | None = False
     is_starting: bool | None = False
-    starting_type: str | None = None
+    starting_type: PlayerStartingType | None = None
 
 
 PlayerMatchSchemaUpdate = make_fields_optional(PlayerMatchSchemaBase)

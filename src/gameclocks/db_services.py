@@ -3,6 +3,7 @@ import asyncio
 from sqlalchemy import select
 
 from src.core.decorators import handle_service_exceptions
+from src.core.enums import ClockStatus
 from src.core.models import BaseServiceDB, GameClockDB
 from src.core.models.base import Database
 
@@ -106,10 +107,10 @@ class GameClockServiceDB(BaseServiceDB):
             await self.clock_manager.start_clock(item_id, initial_value)
 
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
-            if state_machine and gameclock and gameclock.gameclock_status == "running":
+            if state_machine and gameclock and gameclock.gameclock_status == ClockStatus.RUNNING:
                 state_machine.start()
 
-            if state_machine and state_machine.status == "running":
+            if state_machine and state_machine.status == ClockStatus.RUNNING:
                 clock_orchestrator.register_gameclock(item_id, state_machine)
 
             self.logger.debug(f"Gameclock added to active gameclock matches: {item_id}")
@@ -173,7 +174,7 @@ class GameClockServiceDB(BaseServiceDB):
                 gameclock = result.one_or_none()
                 if gameclock:
                     state_machine = self.clock_manager.get_clock_state_machine(gameclock.id)
-                    if state_machine and state_machine.status == "running":
+                    if state_machine and state_machine.status == ClockStatus.RUNNING:
                         gameclock.gameclock = state_machine.get_current_value()
                     self.logger.debug(f"Gameclock found: {gameclock}")
                     return gameclock

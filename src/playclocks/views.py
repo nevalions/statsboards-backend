@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
+from src.core.enums import ClockStatus
 from src.core.models import PlayClockDB
 
 from ..logging_config import get_logger
@@ -155,12 +156,12 @@ class PlayClockAPIRouter(
         ):
             self.logger.debug(f"Start playclock endpoint with id: {item_id}")
             try:
-                item_status = "running"
+                item_status = ClockStatus.RUNNING
                 item = await self.service.get_by_id(item_id)
                 present_playclock_status = item.playclock_status
 
                 await self.service.enable_match_data_clock_queues(item_id, sec)
-                if present_playclock_status != "running":
+                if present_playclock_status != ClockStatus.RUNNING:
                     started_at_ms = int(time.time() * 1000)
 
                     await self.service.update(
@@ -177,7 +178,7 @@ class PlayClockAPIRouter(
                         await self.service.clock_manager.start_clock(item_id, sec)
                     if state_machine:
                         state_machine.started_at_ms = started_at_ms
-                        state_machine.status = "running"
+                        state_machine.status = ClockStatus.RUNNING
 
                 updated = await self.service.get_by_id(item_id)
                 return self.create_response_with_server_time(
@@ -259,7 +260,7 @@ class PlayClockAPIRouter(
                     item_id,
                     PlayClockSchemaUpdate(
                         playclock=None,
-                        playclock_status="stopped",
+                        playclock_status=ClockStatus.STOPPED,
                     ),
                 )
 

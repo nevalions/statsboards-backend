@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
 from src.core.dependencies import GameClockService
+from src.core.enums import ClockStatus
 from src.core.models import GameClockDB
 
 from ..logging_config import get_logger
@@ -135,16 +136,18 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             try:
                 gameclock = await game_clock_service.get_by_id(gameclock_id)
                 present_gameclock_status = gameclock.gameclock_status
-
-                # If the gameclock was not running, then start it
-                if present_gameclock_status != "running":
+                if present_gameclock_status != ClockStatus.RUNNING:
+                    # Start the gameclock by setting started_at_ms
+                    self.logger.debug(
+                        f"Starting gameclock {gameclock_id} at {gameclock.gameclock}s"
+                    )
                     started_at_ms = int(time.time() * 1000)
 
                     # Update the gameclock status to running
                     updated = await game_clock_service.update(
                         gameclock_id,
                         GameClockSchemaUpdate(
-                            gameclock_status="running",
+                            gameclock_status=ClockStatus.RUNNING,
                             gameclock_time_remaining=gameclock.gameclock,
                             started_at_ms=started_at_ms,
                         ),
@@ -201,7 +204,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             item_id: int,
         ):
             self.logger.debug(f"Pausing gameclock endpoint with id: {item_id}")
-            item_status = "paused"
+            item_status = ClockStatus.PAUSED
 
             try:
                 state_machine = game_clock_service.clock_manager.get_clock_state_machine(item_id)
@@ -215,8 +218,13 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     self.logger.debug(f"State machine value after pause: {state_machine.value}")
                 else:
                     self.logger.warning(
-                        f"No state machine found for gameclock {item_id}, getting from DB"
+                        f"State machine not found for gameclock {item_id}, creating new one"
                     )
+
+                updated = await game_clock_service.update(
+                    item_id,
+                    GameClockSchemaUpdate(gameclock=current_value, gameclock_status=item_status),
+                )
 
                 if current_value is None:
                     gameclock_db = await game_clock_service.get_by_id(item_id)
@@ -236,15 +244,15 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     f"Updating gameclock {item_id} with status={item_status}, value={current_value}"
                 )
 
-                updated_ = await game_clock_service.update(
+                updated = await game_clock_service.update(
                     item_id,
                     update_data,
                 )
-                if updated_:
+                if updated:
                     if hasattr(self.service, "cache_service") and game_clock_service.cache_service:
                         game_clock_service.cache_service.invalidate_gameclock(item_id)
                     return self.create_response_with_server_time(
-                        updated_,
+                        updated,
                         f"Game clock ID:{item_id} {item_status}",
                     )
                 else:
@@ -280,9 +288,10 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
         ):
             self.logger.debug(f"Resetting gameclock endpoint with id: {item_id}")
             try:
+                status_enum = ClockStatus(item_status)
                 updated = await game_clock_service.update(
                     item_id,
-                    GameClockSchemaUpdate(gameclock=sec, gameclock_status=item_status),
+                    GameClockSchemaUpdate(gameclock=sec, gameclock_status=status_enum),
                 )
 
                 if not updated:

@@ -80,11 +80,13 @@ The clock handling system manages real-time **playclocks** and **gameclocks** fo
 Both clocks use identical state machine logic:
 
 ```python
+from src.core.enums import ClockStatus
+
 class ClockStateMachine:
     def __init__(self, clock_id: int, initial_value: int) -> None:
         self.clock_id = clock_id
         self.value = initial_value          # Current clock value (seconds)
-        self.status = "stopped"            # "stopped", "running", "paused"
+        self.status = ClockStatus.STOPPED   # ClockStatus enum values
         self.started_at_ms: int | None = None  # Start timestamp (milliseconds)
 ```
 
@@ -108,7 +110,7 @@ stopped ───────────────────▶ running ─
 ```python
 def start(self) -> None:
     self.started_at_ms = int(time.time() * 1000)
-    self.status = "running"
+    self.status = ClockStatus.RUNNING
 ```
 - Records start time
 - Sets status to "running"
@@ -117,7 +119,7 @@ def start(self) -> None:
 ```python
 def stop(self) -> None:
     self.value = self.get_current_value()
-    self.status = "stopped"
+    self.status = ClockStatus.STOPPED
     self.started_at_ms = None
 ```
 - Calculates final value based on elapsed time
@@ -128,7 +130,7 @@ def stop(self) -> None:
 ```python
 def pause(self) -> None:
     self.value = self.get_current_value()
-    self.status = "paused"
+    self.status = ClockStatus.PAUSED
     self.started_at_ms = None
 ```
 - Calculates current value
@@ -139,7 +141,7 @@ def pause(self) -> None:
 
 ```python
 def get_current_value(self) -> int:
-    if self.status != "running" or self.started_at_ms is None:
+    if self.status != ClockStatus.RUNNING or self.started_at_ms is None:
         return self.value
     
     elapsed_ms = int(time.time() * 1000) - self.started_at_ms
@@ -491,6 +493,8 @@ async def get_or_fetch_playclock(self, match_id: int) -> dict | None:
 **Endpoint:** `PUT /api/playclock/id/{item_id}/running/{sec}/`
 
 ```python
+from src.core.enums import ClockStatus
+
 async def start_playclock_endpoint(
     background_tasks: BackgroundTasks,
     item_id: int,
@@ -498,30 +502,30 @@ async def start_playclock_endpoint(
 ):
     # 1. Enable queues and create state machine if needed
     await self.service.enable_match_data_clock_queues(item_id, sec)
-    
+
     # 2. Check if already running
     item = await self.service.get_by_id(item_id)
-    if item.playclock_status != "running":
+    if item.playclock_status != ClockStatus.RUNNING:
         started_at_ms = int(time.time() * 1000)
-        
+
         # 3. Update database (atomic update with all fields)
         await self.service.update(
             item_id,
             PlayClockSchemaUpdate(
                 playclock=sec,
-                playclock_status="running",
+                playclock_status=ClockStatus.RUNNING,
                 started_at_ms=started_at_ms,
             ),
         )
-        
+
         # 4. Update state machine
         state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
         if not state_machine:
             await self.service.clock_manager.start_clock(item_id, sec)
         if state_machine:
             state_machine.started_at_ms = started_at_ms
-            state_machine.status = "running"
-    
+            state_machine.status = ClockStatus.RUNNING
+
     updated = await self.service.get_by_id(item_id)
     return self.create_response_with_server_time(updated, f"Playclock ID:{item_id} running")
 ```
@@ -589,7 +593,7 @@ async def pause_gameclock_endpoint(item_id: int):
     updated = await self.service.update(
         item_id,
         GameClockSchemaUpdate(
-            gameclock_status="paused",
+            gameclock_status=ClockStatus.PAUSED,
             gameclock=current_value,
             gameclock_time_remaining=current_value,
             started_at_ms=None,
@@ -606,7 +610,7 @@ Can set status to "stopped" with a specific value.
 
 #### GameClock Stop
 GameClocks are stopped by:
-1. Pausing (sets status to "paused")
+1. Pausing (sets status to ClockStatus.PAUSED)
 2. Running down to 0 (orchestrator auto-stops)
 3. Resetting to new value
 
@@ -618,12 +622,14 @@ GameClocks are stopped by:
 - `PUT /api/playclock/id/{item_id}/stopped/` - Reset to stopped with `playclock=None`
 
 ```python
+from src.core.enums import ClockStatus
+
 async def reset_playclock_stopped_endpoint(item_id: int):
     updated = await self.service.update_with_none(
         item_id,
         PlayClockSchemaUpdate(
             playclock=None,
-            playclock_status="stopped",
+            playclock_status=ClockStatus.STOPPED,
         ),
     )
 ```
@@ -632,9 +638,11 @@ async def reset_playclock_stopped_endpoint(item_id: int):
 **Endpoint:** `PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/`
 
 ```python
+from src.core.enums import ClockStatus
+
 async def reset_gameclock_endpoint(
     item_id: int,
-    item_status: str = "stopped",
+    item_status: ClockStatus = ClockStatus.STOPPED,
     sec: int = 720,
 ):
     updated = await self.service.update(
@@ -658,13 +666,13 @@ async def reset_gameclock_endpoint(
 ```
 1. Client Request
    PUT /api/playclock/id/123/running/25/
-   
+
 2. Service Layer (enable_match_data_clock_queues)
    ├─▶ clock_manager.start_clock(123, 25)
    │   ├─▶ Create asyncio.Queue for match 123
    │   └─▶ Create ClockStateMachine(123, 25)
    │
-   ├─▶ state_machine.start() [sets started_at_ms=..., status="running"]
+   ├─▶ state_machine.start() [sets started_at_ms=..., status=ClockStatus.RUNNING]
    └─▶ clock_orchestrator.register_playclock(123, state_machine)
 
 3. Service Layer (update - atomic)
@@ -733,7 +741,7 @@ async def reset_gameclock_endpoint(
    └─▶ get_by_id(123) [fetches from DB - NO DB UPDATE!]
        └─▶ Returns PlayClockDB with:
            playclock=25,
-           playclock_status="running",
+           playclock_status=ClockStatus.RUNNING,
            started_at_ms=1737724800000
        └─▶ active_playclock_matches[123].put(playclock)
            └─▶ Push to manager's queue (not used by WebSocket)

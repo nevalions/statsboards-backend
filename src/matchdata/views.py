@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
 from src.core.dependencies import MatchDataService
+from src.core.enums import GameStatus
 from src.core.models import MatchDataDB
 
 from ..logging_config import get_logger
@@ -241,7 +242,7 @@ class MatchDataAPIRouter(
                     MatchDataSchemaUpdate(
                         gameclock=sec,
                         gameclock_status=item_status,
-                        game_status="stopping",
+                        game_status=GameStatus.STOPPING,
                     ),
                 )
             except Exception as ex:
@@ -255,7 +256,7 @@ class MatchDataAPIRouter(
                     MatchDataSchemaUpdate(
                         gameclock=sec,
                         gameclock_status=item_status,
-                        game_status="stopped",
+                        game_status=GameStatus.STOPPED,
                     ),
                 )
 

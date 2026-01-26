@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import BigInteger, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.enums import ClockStatus
 from src.core.models import Base
 
 if TYPE_CHECKING:
@@ -19,10 +20,10 @@ class PlayClockDB(Base):
         default=None,
     )
 
-    playclock_status: Mapped[str] = mapped_column(
+    playclock_status: Mapped[ClockStatus] = mapped_column(
         String(50),
         nullable=True,
-        default="stopped",
+        default=ClockStatus.STOPPED,
     )
 
     version: Mapped[int] = mapped_column(

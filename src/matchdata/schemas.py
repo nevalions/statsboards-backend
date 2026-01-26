@@ -5,12 +5,13 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.enums import GameStatus
 from src.core.schema_helpers import make_fields_optional
 
 
 class MatchDataSchemaBase(BaseModel):
     field_length: int | None = 92
-    game_status: Annotated[str, Path(max_length=50)] = "in-progress"
+    game_status: Annotated[GameStatus, Path(max_length=50)] = GameStatus.IN_PROGRESS
     score_team_a: int | None = 0
     score_team_b: int | None = 0
     timeout_team_a: Annotated[str, Path(max_length=4)] = "●●●"

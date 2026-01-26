@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.enums import PlayerStartingType
 from src.core.models import Base
 
 if TYPE_CHECKING:
@@ -78,7 +79,7 @@ class PlayerMatchDB(Base):
         server_default="false",
     )
 
-    starting_type: Mapped[str | None] = mapped_column(
+    starting_type: Mapped[PlayerStartingType | None] = mapped_column(
         String(20),
         nullable=True,
     )

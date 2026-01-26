@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.enums import GameStatus
 from src.core.models import Base
 
 if TYPE_CHECKING:
@@ -30,10 +31,10 @@ class MatchDataDB(Base):
         default=0,
     )
 
-    game_status: Mapped[str] = mapped_column(
+    game_status: Mapped[GameStatus] = mapped_column(
         String(50),
         nullable=True,
-        default="in-progress",
+        default=GameStatus.IN_PROGRESS,
     )
 
     timeout_team_a: Mapped[str] = mapped_column(

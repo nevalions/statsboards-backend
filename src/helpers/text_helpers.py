@@ -1,51 +1,53 @@
 import logging
 from pathlib import Path
 
+from src.core.enums import RussianDay, RussianMonth
+
 logger = logging.getLogger("backend_logger_text_helpers")
 
 
 months = {
-    "января": "january",
-    "февраля": "february",
-    "марта": "march",
-    "апреля": "april",
-    "мая": "may",
-    "июня": "june",
-    "июля": "july",
-    "августа": "august",
-    "сентября": "september",
-    "октября": "october",
-    "ноября": "november",
-    "декабря": "december",
-    "янв": "jan",
-    "фев": "feb",
-    "мар": "mar",
-    "апр": "apr",
-    "май": "may",
-    "июн": "jun",
-    "июл": "jul",
-    "авг": "aug",
-    "сен": "sep",
-    "окт": "oct",
-    "ноя": "nov",
-    "дек": "dec",
+    RussianMonth.ЯНВАРЯ: "january",
+    RussianMonth.ФЕВРАЛЯ: "february",
+    RussianMonth.МАРТА: "march",
+    RussianMonth.АПРЕЛЯ: "april",
+    RussianMonth.МАЯ: "may",
+    RussianMonth.ИЮНЯ: "june",
+    RussianMonth.ИЮЛЯ: "july",
+    RussianMonth.АВГУСТА: "august",
+    RussianMonth.СЕНТЯБРЯ: "september",
+    RussianMonth.ОКТЯБРЯ: "october",
+    RussianMonth.НОЯБРЯ: "november",
+    RussianMonth.ДЕКАБРЯ: "december",
+    RussianMonth.ЯНВ: "jan",
+    RussianMonth.ФЕВ: "feb",
+    RussianMonth.МАР: "mar",
+    RussianMonth.АПР: "apr",
+    RussianMonth.МАЙ: "may",
+    RussianMonth.ИЮН: "jun",
+    RussianMonth.ИЮЛ: "jul",
+    RussianMonth.АВГ: "aug",
+    RussianMonth.СЕН: "sep",
+    RussianMonth.ОКТ: "oct",
+    RussianMonth.НОЯ: "nov",
+    RussianMonth.ДЕК: "dec",
 }
 
 days = {
-    "понедельник": "monday",
-    "вторник": "tuesday",
-    "среда": "wednesday",
-    "четверг": "thursday",
-    "пятница": "friday",
-    "суббота": "saturday",
-    "воскресенье": "sunday",
-    "пон": "mon",
-    "вто": "tue",
-    "сре": "wed",
-    "чет": "thu",
-    "пят": "fri",
-    "суб": "sat",
-    "вос": "sun",
+    RussianDay.ПОНЕДЕЛЬНИК: "monday",
+    RussianDay.ВТОРНИК: "tuesday",
+    RussianDay.СРЕДА: "wednesday",
+    RussianDay.ЧЕТВЕРГ: "thursday",
+    RussianDay.ПЯТНИЦА: "friday",
+    RussianDay.СУББОТА: "saturday",
+    RussianDay.ВОСКРЕСЕНЬЕ: "sunday",
+    RussianDay.ПОН: "mon",
+    RussianDay.ВТО: "tue",
+    RussianDay.СРЕ: "wed",
+    RussianDay.ЧЕТ: "thu",
+    RussianDay.ПЯТ: "fri",
+    RussianDay.СУБ: "sat",
+    RussianDay.ВОС: "sun",
 }
 
 
@@ -53,12 +55,10 @@ def ru_to_eng_datetime_month(ru: str) -> str | None:
     try:
         logger.debug(f"Converting ru to eng datetime month {ru}")
         s = ru.split(" ")
-        eng_month = months[s[1]]
+        eng_month = months[RussianMonth(value=s[1])]
         return s[0] + " " + eng_month + " " + s[2]
     except Exception as ex:
-        logger.error(
-            f"Error converting ru to eng datetime month {ru} {ex}", exc_info=True
-        )
+        logger.error(f"Error converting ru to eng datetime month {ru} {ex}", exc_info=True)
 
 
 def ru_to_eng_datetime_month_day_time(ru: str, year: str = "2023") -> str | None:
@@ -68,8 +68,8 @@ def ru_to_eng_datetime_month_day_time(ru: str, year: str = "2023") -> str | None
         day_num, month = s[0].strip().split(" ")
         day_word = s[1].strip()
         time = s[2].strip()
-        eng_month = months[month]
-        eng_day = days[day_word]
+        eng_month = months[RussianMonth(value=month)]
+        eng_day = days[RussianDay(value=day_word)]
         return f"{year} {day_num} {eng_month} {eng_day} {time}"
     except Exception as ex:
         logger.error(
@@ -207,9 +207,7 @@ def convert_cyrillic_filename(filename: str) -> str:
         logger.info(f"Converted filename from {filename} to {result}")
         return result
     except Exception as ex:
-        logger.error(
-            f"Error converting cyrillic filename {filename} {ex}", exc_info=True
-        )
+        logger.error(f"Error converting cyrillic filename {filename} {ex}", exc_info=True)
         return filename
 
 
