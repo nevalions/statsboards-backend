@@ -35,6 +35,7 @@ def mock_ws_manager():
     with patch("src.main.ws_manager") as mock:
         mock.startup = AsyncMock()
         mock.shutdown = AsyncMock()
+        mock.maintain_connection = AsyncMock()
         yield mock
 
 
@@ -54,16 +55,21 @@ async def test_lifespan_startup(mock_settings, mock_db, mock_ws_manager, mock_re
     from src.main import lifespan
 
     app = FastAPI()
+    mock_cache_service = Mock()
 
     with (
         patch("src.main.init_service_registry", Mock()) as mock_init,
         patch("src.main.register_all_services", Mock()) as mock_register,
+        patch("src.main.get_service_registry") as mock_get_registry,
     ):
+        mock_get_registry.return_value.get.return_value = mock_cache_service
         async with lifespan(app):
             mock_settings.validate_all.assert_called_once()
             mock_init.assert_called_once_with(mock_db)
             mock_register.assert_called_once_with(mock_db)
             mock_db.validate_database_connection.assert_awaited_once()
+            mock_ws_manager.startup.assert_awaited_once()
+            mock_ws_manager.maintain_connection.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -72,15 +78,19 @@ async def test_lifespan_shutdown(mock_settings, mock_db, mock_ws_manager):
     from src.main import lifespan
 
     app = FastAPI()
+    mock_cache_service = Mock()
 
     with (
         patch("src.main.init_service_registry", Mock()),
         patch("src.main.register_all_services", Mock()),
+        patch("src.main.get_service_registry") as mock_get_registry,
     ):
+        mock_get_registry.return_value.get.return_value = mock_cache_service
         async with lifespan(app):
             pass
 
         mock_db.close.assert_awaited_once()
+        mock_ws_manager.shutdown.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -163,12 +173,21 @@ def test_static_files_mount(mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_websocket_startup_handler(mock_settings, mock_ws_manager):
-    """Test WebSocket startup event handler."""
-    from src.main import app
+async def test_websocket_in_lifespan(mock_settings, mock_ws_manager):
+    """Test WebSocket startup/shutdown in lifespan."""
+    from src.main import lifespan
 
-    for handler in app.router.on_startup:
-        if handler == mock_ws_manager.startup:
-            return True
+    app = FastAPI()
+    mock_cache_service = Mock()
 
-    return False
+    with (
+        patch("src.main.init_service_registry", Mock()),
+        patch("src.main.register_all_services", Mock()),
+        patch("src.main.get_service_registry") as mock_get_registry,
+    ):
+        mock_get_registry.return_value.get.return_value = mock_cache_service
+        async with lifespan(app):
+            pass
+
+        mock_ws_manager.startup.assert_awaited_once()
+        mock_ws_manager.shutdown.assert_awaited_once()

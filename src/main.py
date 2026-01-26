@@ -61,6 +61,7 @@ async def lifespan(_app: FastAPI):
         _app (FastAPI): The FastAPI application instance (unused).
     """
     db_logger.info("Starting application lifespan.")
+    ws_task = None
     stale_users_task = None
     try:
         settings.validate_all()
@@ -76,18 +77,34 @@ async def lifespan(_app: FastAPI):
             logger.info("Match data cache service initialized and set on WebSocket components")
 
         await db.validate_database_connection()
+
+        await ws_manager.startup()
+        ws_task = asyncio.create_task(ws_manager.maintain_connection())
+        logger.info("WebSocket manager started")
+
         stale_users_task = asyncio.create_task(mark_stale_users_offline_task())
+
         yield
     except Exception as ex:
         db_logger.critical(f"Critical error during startup: {ex}", exc_info=True)
         raise ex
     finally:
+        if ws_task:
+            ws_task.cancel()
+            try:
+                await ws_task
+            except asyncio.CancelledError:
+                pass
+
         if stale_users_task:
             stale_users_task.cancel()
             try:
                 await stale_users_task
             except asyncio.CancelledError:
                 pass
+
+        await ws_manager.shutdown()
+        logger.info("WebSocket manager stopped")
         db_logger.info("Shutting down application lifespan after test connection.")
         await db.close()
 
@@ -114,10 +131,6 @@ async def health_check() -> dict[str, object]:
 
 registry = configure_routers(RouterRegistry())
 registry.register_all(app)
-
-# Add these event handlers in your startup code
-app.add_event_handler("startup", ws_manager.startup)
-app.add_event_handler("shutdown", ws_manager.shutdown)
 
 logger.info("FastAPI app initialized.")
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
