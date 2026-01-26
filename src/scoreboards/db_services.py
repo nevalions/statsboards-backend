@@ -144,7 +144,7 @@ class ScoreboardServiceDB(BaseServiceDB):
                 ScoreboardDB.match_id == matchdata.match_id
             )
             scoreboard_result = await session.execute(scoreboard_query)
-            scoreboard = scoreboard_result.scalars().first()
+            scoreboard = scoreboard_result.scalars().one_or_none()
 
             if scoreboard is None:
                 self.logger.warning(f"No scoreboard found for matchdata id: {matchdata_id}")

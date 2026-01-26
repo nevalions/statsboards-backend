@@ -176,7 +176,7 @@ class PlayerServiceDB(BaseServiceDB):
                 .where(PlayerDB.sport_id == sport_id)
             )
             result = await session.execute(stmt)
-            return result.scalars().first()
+            return result.scalars().one_or_none()
 
     @handle_service_exceptions(
         item_name=ITEM,
@@ -491,13 +491,18 @@ class PlayerServiceDB(BaseServiceDB):
                         "first_name": p.person.first_name if p.person else None,
                         "second_name": p.person.second_name if p.person else None,
                         "person_photo_url": p.person.person_photo_url if p.person else None,
-                        "person_photo_icon_url": p.person.person_photo_icon_url if p.person else None,
+                        "person_photo_icon_url": p.person.person_photo_icon_url
+                        if p.person
+                        else None,
                         "player_team_tournaments": player_team_tournaments_info,
                     }
                 )
 
             return PaginatedPlayerWithDetailsAndPhotosResponse(
-                data=[PlayerWithDetailsAndPhotosSchema.model_validate(p) for p in players_with_details_and_photos],
+                data=[
+                    PlayerWithDetailsAndPhotosSchema.model_validate(p)
+                    for p in players_with_details_and_photos
+                ],
                 metadata=PaginationMetadata(
                     **await self._calculate_pagination_metadata(total_items, skip, limit),
                 ),
@@ -526,7 +531,7 @@ class PlayerServiceDB(BaseServiceDB):
             )
 
             result = await session.execute(stmt)
-            player = result.scalars().first()
+            player = result.scalars().one_or_none()
 
             if not player:
                 from fastapi import HTTPException
@@ -649,7 +654,7 @@ class PlayerServiceDB(BaseServiceDB):
             )
 
             result = await session.execute(stmt)
-            player = result.scalars().first()
+            player = result.scalars().one_or_none()
 
             if not player:
                 from fastapi import HTTPException

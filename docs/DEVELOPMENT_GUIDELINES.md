@@ -2110,7 +2110,7 @@ async def get_player_career(self, player_id: int) -> PlayerCareerResponseSchema:
         )
 
         result = await session.execute(stmt)
-        player = result.scalars().first()
+        player = result.scalars().one_or_none()
 
         if not player:
             from fastapi import HTTPException

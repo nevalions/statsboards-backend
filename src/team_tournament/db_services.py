@@ -45,7 +45,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
                     & (TeamTournamentDB.tournament_id == tournament_id)
                 )
             )
-            team_tournament = result.scalars().first()
+            team_tournament = result.scalars().one_or_none()
             return team_tournament
 
     @handle_service_exceptions(
@@ -77,7 +77,7 @@ class TeamTournamentServiceDB(BaseServiceDB):
                     & (TeamTournamentDB.tournament_id == tournament_id)
                 )
             )
-            item = result.scalars().first()
+            item = result.scalars().one_or_none()
 
             if not item:
                 raise NotFoundError(

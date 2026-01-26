@@ -194,7 +194,15 @@ class RelationshipMixin:
                 )
 
                 item = await session.execute(query)
-                result = item.scalars().one()
+                item_obj = item.scalars().one_or_none()
+
+                if item_obj is None:
+                    self.logger.warning(
+                        f"No result found for id: {item_id} for model {self.model.__name__}"
+                    )
+                    return None
+
+                result = item_obj
 
                 if result:
                     self.logger.debug(
@@ -288,7 +296,16 @@ class RelationshipMixin:
                     )
 
                     item = await session.execute(query)
-                    all_related_items = getattr(item.scalars().one(), related_property)
+                    item_obj = item.scalars().one_or_none()
+
+                    if item_obj is None:
+                        self.logger.warning(
+                            f"No result found for item id one level: {item_id} and property: {related_property} "
+                            f"for model {self.model.__name__}"
+                        )
+                        return None
+
+                    all_related_items = getattr(item_obj, related_property)
 
                     if all_related_items:
                         item_count = (
@@ -356,7 +373,15 @@ class RelationshipMixin:
                     .where(getattr(self.model, filter_key) == filter_value)
                     .options(selectinload(getattr(self.model, related_property)))
                 )
-                result = getattr(item.scalars().one(), related_property)
+                item_obj = item.scalars().one_or_none()
+
+                if item_obj is None:
+                    self.logger.warning(
+                        f"No result found for key: {filter_key} and value: {filter_value} for model {self.model.__name__}"
+                    )
+                    return None
+
+                result = getattr(item_obj, related_property)
                 if result:
                     self.logger.debug(
                         f"Related item found {result} for property: {related_property} for model {self.model.__name__}"

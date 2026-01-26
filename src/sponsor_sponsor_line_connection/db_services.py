@@ -49,7 +49,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                     & (SponsorSponsorLineDB.sponsor_line_id == sponsor_line_id)
                 )
             )
-            sponsor_sponsor_line = result.scalars().first()
+            sponsor_sponsor_line = result.scalars().one_or_none()
             return sponsor_sponsor_line
 
     @handle_service_exceptions(
@@ -85,7 +85,7 @@ class SponsorSponsorLineServiceDB(BaseServiceDB):
                 )
             )
 
-            item = result.scalars().first()
+            item = result.scalars().one_or_none()
 
             if not item:
                 raise NotFoundError(
