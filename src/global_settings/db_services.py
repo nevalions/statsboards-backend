@@ -127,17 +127,18 @@ class GlobalSettingServiceDB(BaseServiceDB):
             Parsed value
         """
         try:
-            if value_type == "string":
-                return value
-            elif value_type == "int":
-                return int(value)
-            elif value_type == "bool":
-                return value.lower() in ("true", "1", "yes", "on")
-            elif value_type == "json":
-                return json.loads(value)
-            else:
-                self.logger.warning(f"Unknown value_type:{value_type}, returning as string")
-                return value
+            match value_type:
+                case "string":
+                    return value
+                case "int":
+                    return int(value)
+                case "bool":
+                    return value.lower() in ("true", "1", "yes", "on")
+                case "json":
+                    return json.loads(value)
+                case _:
+                    self.logger.warning(f"Unknown value_type:{value_type}, returning as string")
+                    return value
         except (ValueError, json.JSONDecodeError) as e:
             self.logger.error(f"Failed to parse value '{value}' as type '{value_type}': {e}")
             return value
@@ -152,16 +153,17 @@ class GlobalSettingServiceDB(BaseServiceDB):
         Returns:
             String representation for database
         """
-        if value_type == "string":
-            return str(value)
-        elif value_type == "int":
-            return str(int(value))
-        elif value_type == "bool":
-            return "true" if bool(value) else "false"
-        elif value_type == "json":
-            return json.dumps(value)
-        else:
-            return str(value)
+        match value_type:
+            case "string":
+                return str(value)
+            case "int":
+                return str(int(value))
+            case "bool":
+                return "true" if bool(value) else "false"
+            case "json":
+                return json.dumps(value)
+            case _:
+                return str(value)
 
     async def create_season(self, item: SeasonSchemaCreate) -> SeasonSchema:
         """Create a new season through settings API."""
