@@ -310,6 +310,10 @@ class Settings(BaseSettings):
         default=10,
         description="Timeout for fetching proxy sources in seconds",
     )
+    stats_throttle_seconds: int = Field(
+        default=2,
+        description="Minimum seconds between statistics broadcasts",
+    )
 
     @property
     def static_main_path(self) -> Path:

@@ -20,6 +20,7 @@ class MatchDataWebSocketManager:
         self.playclock_queues = {}
         self.gameclock_queues = {}
         self.event_queues = {}
+        self.stats_queues = {}
         self.logger = logging.getLogger("backend_logger_MatchDataWebSocketManager")
         self.logger.info("MatchDataWebSocketManager initialized")
         self.is_connected = False
@@ -84,6 +85,12 @@ class MatchDataWebSocketManager:
             self.logger.info(f"Deleted event queue for client {client_id}")
         except KeyError:
             self.logger.warning(f"No event queue found for client {client_id}")
+
+        try:
+            self.stats_queues.pop(client_id)
+            self.logger.info(f"Deleted stats queue for client {client_id}")
+        except KeyError:
+            self.logger.warning(f"No stats queue found for client {client_id}")
 
     async def setup_listeners(self):
         if self.connection is None:
@@ -197,6 +204,19 @@ class MatchDataWebSocketManager:
             connection, pid, channel, payload, "event-update", self.event_queues, invalidate_func
         )
 
+        stats_invalidate_func = (
+            self._cache_service.invalidate_stats if self._cache_service else None
+        )
+        await self._base_listener(
+            connection,
+            pid,
+            channel,
+            payload,
+            "statistics-update",
+            self.stats_queues,
+            stats_invalidate_func,
+        )
+
     async def shutdown(self):
         async with self._connection_lock:
             try:
@@ -304,19 +324,18 @@ class ConnectionManager:
                 f"Disconnecting from connections for client with client_id:{client_id}"
             )
             websocket = self.active_connections[client_id]
-            if hasattr(websocket, "application_state") and websocket.application_state == WebSocketState.CONNECTED:
+            if (
+                hasattr(websocket, "application_state")
+                and websocket.application_state == WebSocketState.CONNECTED
+            ):
                 try:
                     await websocket.close()
                     self.logger.debug(f"Closed WebSocket connection for client {client_id}")
                 except RuntimeError as e:
                     if "websocket.close" in str(e):
-                        self.logger.debug(
-                            f"WebSocket already closed for client {client_id}: {e}"
-                        )
+                        self.logger.debug(f"WebSocket already closed for client {client_id}: {e}")
                     else:
-                        self.logger.warning(
-                            f"WebSocket close error for client {client_id}: {e}"
-                        )
+                        self.logger.warning(f"WebSocket close error for client {client_id}: {e}")
                         raise
             elif hasattr(websocket, "application_state"):
                 self.logger.debug(
@@ -330,9 +349,7 @@ class ConnectionManager:
                     await websocket.close()
                 except RuntimeError as e:
                     if "websocket.close" in str(e):
-                        self.logger.debug(
-                            f"WebSocket already closed for client {client_id}: {e}"
-                        )
+                        self.logger.debug(f"WebSocket already closed for client {client_id}: {e}")
                     else:
                         raise
             del self.active_connections[client_id]
@@ -358,7 +375,9 @@ class ConnectionManager:
 
     def update_client_activity(self, client_id: str):
         self.last_activity[client_id] = time.time()
-        self.logger.debug(f"Updated activity for client {client_id}: {self.last_activity[client_id]}")
+        self.logger.debug(
+            f"Updated activity for client {client_id}: {self.last_activity[client_id]}"
+        )
 
     async def cleanup_stale_connections(self, timeout_seconds: float = 90.0):
         now = time.time()

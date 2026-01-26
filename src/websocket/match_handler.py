@@ -23,6 +23,7 @@ class MatchWebSocketHandler:
             fetch_event,
             fetch_gameclock,
             fetch_playclock,
+            fetch_stats,
             fetch_with_scoreboard_data,
         )
 
@@ -52,11 +53,19 @@ class MatchWebSocketHandler:
 
         await websocket.send_json(initial_event_data)
 
+        initial_stats_data = await fetch_stats(match_id, cache_service=self.cache_service)
+        initial_stats_data["type"] = "statistics-update"
+        websocket_logger.debug("WebSocket Connection initial_data for type: statistics-update")
+        websocket_logger.info(f"WebSocket Connection initial_data: {initial_stats_data}")
+
+        await websocket.send_json(initial_stats_data)
+
         if client_id in connection_manager.queues:
             await connection_manager.queues[client_id].put(initial_data)
             await connection_manager.queues[client_id].put(initial_playclock_data)
             await connection_manager.queues[client_id].put(initial_gameclock_data)
             await connection_manager.queues[client_id].put(initial_event_data)
+            await connection_manager.queues[client_id].put(initial_stats_data)
             websocket_logger.debug(
                 f"Put initial_data into queue for client_id:{client_id}: {initial_data}"
             )
@@ -68,6 +77,9 @@ class MatchWebSocketHandler:
             )
             websocket_logger.debug(
                 f"Put initial_event_data into queue for client_id:{client_id}: {initial_event_data}"
+            )
+            websocket_logger.debug(
+                f"Put initial_stats_data into queue for client_id:{client_id}: {initial_stats_data}"
             )
         else:
             websocket_logger.warning(
@@ -106,6 +118,7 @@ class MatchWebSocketHandler:
             "gameclock-update": self.process_gameclock_data,
             "playclock-update": self.process_playclock_data,
             "event-update": self.process_event_data,
+            "statistics-update": self.process_stats_data,
             "matchdata": self.process_match_data,
             "gameclock": self.process_gameclock_data,
             "playclock": self.process_playclock_data,
@@ -308,6 +321,46 @@ class MatchWebSocketHandler:
                 )
         except Exception as e:
             websocket_logger.error(f"Error processing event data: {e}", exc_info=True)
+
+    async def process_stats_data(
+        self, websocket: WebSocket, match_id: int, data: dict | None = None
+    ):
+        try:
+            if websocket.application_state != WebSocketState.CONNECTED:
+                self.logger.debug("WebSocket not connected, skipping stats data send")
+                return
+
+            if data is None:
+                from src.helpers.fetch_helpers import fetch_stats
+
+                stats_data = await fetch_stats(match_id, cache_service=self.cache_service)
+                stats_data["type"] = "statistics-update"
+            else:
+                stats_data = data
+
+            if websocket.application_state == WebSocketState.CONNECTED:
+                websocket_logger.debug(f"Processing match data type: {stats_data['type']}")
+                websocket_logger.debug(f"Stats data fetched: {stats_data}")
+                try:
+                    await websocket.send_json(stats_data)
+                except ConnectionClosedOK:
+                    websocket_logger.debug("WebSocket closed normally while sending stats data")
+                except ConnectionClosedError as e:
+                    websocket_logger.error(
+                        f"WebSocket closed with error while sending stats data: {e}"
+                    )
+                except RuntimeError as e:
+                    if "websocket.close" in str(e) or "websocket.send" in str(e):
+                        websocket_logger.debug("WebSocket already closed, skipping send")
+                    else:
+                        websocket_logger.error(f"Unexpected RuntimeError: {e}")
+                        raise
+            else:
+                websocket_logger.warning(
+                    f"WebSocket no longer connected (state: {websocket.application_state}), skipping stats data send"
+                )
+        except Exception as e:
+            websocket_logger.error(f"Error processing stats data: {e}", exc_info=True)
 
     async def handle_websocket_connection(
         self, websocket: WebSocket, client_id: str, match_id: int

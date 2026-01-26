@@ -28,6 +28,7 @@ __all__ = (
     "UserRoleDB",
     "RoleDB",
     "GlobalSettingDB",
+    "MatchStatsThrottleDB",
 )
 
 from src.core.decorators import handle_service_exceptions, handle_view_exceptions
@@ -36,6 +37,7 @@ from .base import Base, BaseServiceDB, db
 from .football_event import FootballEventDB
 from .gameclock import GameClockDB
 from .global_setting import GlobalSettingDB
+from .match_stats_throttle import MatchStatsThrottleDB
 from .match import MatchDB
 from .matchdata import MatchDataDB
 from .mixins import SeasonSportRelationMixin

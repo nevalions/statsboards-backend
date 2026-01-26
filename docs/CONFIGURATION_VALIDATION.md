@@ -219,6 +219,31 @@ Created extensive test suites:
 7. **Standalone Validation**: Script can be used in CI/CD pipelines
 8. **Graceful Handling**: Optional paths are logged as warnings rather than errors
 
+## WebSocket Settings
+
+### Statistics Throttling
+
+Added `stats_throttle_seconds` configuration setting to limit statistics broadcast frequency:
+
+- **Setting**: `stats_throttle_seconds`
+- **Type**: `int`
+- **Default**: `2`
+- **Description**: Minimum seconds between statistics broadcasts
+- **Purpose**: Prevents excessive CPU usage during high-frequency event periods
+
+When football events occur rapidly (10-30 events per minute), this throttle ensures statistics are only recalculated and broadcast at most once every 2 seconds (configurable).
+
+**Environment Variable**: `STATS_THROTTLE_SECONDS`
+
+Example:
+```bash
+# Default: 2 seconds
+export STATS_THROTTLE_SECONDS=2
+
+# For more aggressive throttling: 5 seconds
+export STATS_THROTTLE_SECONDS=5
+```
+
 ## Usage
 
 ### Automatic Validation

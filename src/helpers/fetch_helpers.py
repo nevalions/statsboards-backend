@@ -309,6 +309,33 @@ async def fetch_event(event_id: int, database=None, cache_service=None) -> dict[
         }
 
 
+async def fetch_stats(match_id: int, database=None, cache_service=None) -> dict[str, Any] | None:
+    if cache_service:
+        result = await cache_service.get_or_fetch_stats(match_id)
+        if result:
+            return result
+
+    from src.matches.stats_service import MatchStatsServiceDB
+
+    fetch_data_logger.debug(f"Starting fetching stats with match_id:{match_id}")
+    _db = database or db
+    stats_service = MatchStatsServiceDB(_db)
+
+    try:
+        stats = await stats_service.get_match_with_cached_stats(match_id)
+        return {
+            "match_id": match_id,
+            "statistics": stats,
+            "server_time_ms": int(time.time() * 1000),
+        }
+    except Exception as e:
+        fetch_data_logger.error(f"Error while fetching stats: {e}", exc_info=True)
+        return {
+            "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }
+
+
 async def fetch_matches_with_data_by_tournament_paginated(
     tournament_id: int,
     skip: int = 0,

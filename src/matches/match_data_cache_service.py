@@ -103,3 +103,25 @@ class MatchDataCacheService:
         if cache_key in self._cache:
             del self._cache[cache_key]
             self.logger.debug(f"Invalidated event data cache for match {match_id}")
+
+    async def get_or_fetch_stats(self, match_id: int) -> dict | None:
+        cache_key = f"statistics-update:{match_id}"
+        if cache_key in self._cache:
+            self.logger.debug(f"Returning cached stats for match {match_id}")
+            return self._cache[cache_key]
+
+        self.logger.debug(f"Fetching stats for match {match_id}")
+        from src.helpers.fetch_helpers import fetch_stats
+
+        result = await fetch_stats(match_id, database=self.db)
+        if result and "statistics" in result:
+            self._cache[cache_key] = result
+            self.logger.debug(f"Cached stats for match {match_id}")
+            return result
+        return None
+
+    def invalidate_stats(self, match_id: int) -> None:
+        cache_key = f"statistics-update:{match_id}"
+        if cache_key in self._cache:
+            del self._cache[cache_key]
+            self.logger.debug(f"Invalidated stats cache for match {match_id}")
