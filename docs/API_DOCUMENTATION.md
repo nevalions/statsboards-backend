@@ -3752,6 +3752,44 @@ interface SponsorSchemaCreate {
 | 409 | Conflict - Failed to create sponsor, check input data |
 | 500 | Internal Server Error - server error |
 
+### GET /api/sponsors/
+
+Get all sponsors.
+
+**Endpoint:**
+```
+GET /api/sponsors/
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Acme Corp",
+    "logo_url": "/static/uploads/sponsors/logos/acme.png",
+    "scale_logo": 1.5
+  },
+  {
+    "id": 2,
+    "title": "Beta Industries",
+    "logo_url": "/static/uploads/sponsors/logos/beta.png",
+    "scale_logo": 1.0
+  }
+]
+```
+
+**Response Schema:**
+```typescript
+type GetSponsorsResponse = SponsorSchema[];
+```
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 500 | Internal Server Error - server error |
+
 ### PUT /api/sponsors/{item_id}/
 
 Update a sponsor by ID.

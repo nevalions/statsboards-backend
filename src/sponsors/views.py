@@ -37,6 +37,15 @@ class SponsorAPIRouter(
     def route(self):
         router = super().route()
 
+        @router.get(
+            "/",
+            response_model=list[SponsorSchema],
+        )
+        async def get_all_sponsors_endpoint(sponsor_service: SponsorService):
+            self.logger.debug("Get all sponsors endpoint")
+            sponsors = await sponsor_service.get_all_elements()
+            return [SponsorSchema.model_validate(s) for s in sponsors]
+
         @router.post(
             "/",
             response_model=SponsorSchema,

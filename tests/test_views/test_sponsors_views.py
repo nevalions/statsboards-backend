@@ -67,10 +67,10 @@ class TestSponsorViews:
         await sponsor_service.create(SponsorFactory.build())
         await sponsor_service.create(SponsorFactory.build())
 
-        response = await client.get("/api/sponsors/paginated")
+        response = await client.get("/api/sponsors/")
 
         assert response.status_code == 200
-        assert len(response.json()["data"]) >= 2
+        assert len(response.json()) >= 2
 
     async def test_get_sponsor_by_id_with_none_item(self, client, test_db):
         response = await client.get("/api/sponsors/id/99999/")
