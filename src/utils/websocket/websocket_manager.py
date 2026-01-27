@@ -130,15 +130,34 @@ class MatchDataWebSocketManager:
         )
 
     async def match_data_listener(self, connection, pid, channel, payload):
-        invalidate_func = self._cache_service.invalidate_match_data if self._cache_service else None
-        await self._base_listener(
-            connection,
-            pid,
-            channel,
-            payload,
-            "match-update",
-            invalidate_func,
-        )
+        from src.helpers.fetch_helpers import fetch_with_scoreboard_data
+
+        try:
+            trigger_data = json.loads(payload.strip())
+            match_id = trigger_data["match_id"]
+
+            self.logger.debug(f"Processing match-update for match {match_id}")
+
+            if self._cache_service:
+                self._cache_service.invalidate_match_data(match_id)
+
+            full_data = await fetch_with_scoreboard_data(
+                match_id, cache_service=self._cache_service
+            )
+            if full_data and "data" in full_data:
+                message = {"type": "match-update", "data": full_data["data"]}
+                await connection_manager.send_to_all(message, match_id=match_id)
+                self.logger.debug(f"Sent full match data for match {match_id}")
+            else:
+                self.logger.warning(
+                    f"Failed to fetch full match data for match {match_id}, sending partial data"
+                )
+                message = {"type": "match-update", "data": trigger_data.get("data", {})}
+                await connection_manager.send_to_all(message, match_id=match_id)
+        except json.JSONDecodeError as e:
+            self.logger.error(f"JSON decode error in match_data_listener: {str(e)}", exc_info=True)
+        except Exception as e:
+            self.logger.error(f"Error in match_data_listener: {str(e)}", exc_info=True)
 
     async def gameclock_listener(self, connection, pid, channel, payload):
         invalidate_func = self._cache_service.invalidate_gameclock if self._cache_service else None

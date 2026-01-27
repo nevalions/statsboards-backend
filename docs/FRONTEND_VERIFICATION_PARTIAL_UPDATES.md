@@ -14,7 +14,9 @@
 }
 ```
 
-**After:** Backend sends enhanced notifications with actual row data
+**After (STAB-147, STAB-149):** Backend fetches full match data with all relations
+
+**Database trigger sends:**
 ```json
 {
   "table": "matchdata",
@@ -27,25 +29,35 @@
     "score_team_b": 3,
     "qtr": "Q2",
     "game_status": "IN_PROGRESS"
-    // ... other fields
+    // ... all matchdata fields
   }
 }
 ```
 
-Backend wraps this as:
+**Backend fetches full data via `fetch_with_scoreboard_data()` and sends:**
 ```json
 {
   "type": "match-update",
   "data": {
+    "match_id": 67,
+    "id": 67,
+    "match": { /* full match object */ },
+    "teams_data": { /* team_a, team_b */ },
     "match_data": {
       "id": 67,
       "score_team_a": 7,
       "score_team_b": 3,
-      // ...
-    }
+      "qtr": "Q2",
+      // ... all matchdata fields
+    },
+    "scoreboard_data": { /* scoreboard settings */ },
+    "players": [ /* all players */ ],
+    "events": [ /* all events */ ]
   }
 }
 ```
+
+**Note:** Match updates now send **FULL data** (~3-8KB) with all relations, not just changed fields. This ensures consistency across the entire match state.
 
 ---
 
@@ -101,24 +113,31 @@ curl -X PUT http://localhost:8000/api/matchdata/67/ \
   }'
 ```
 
-### 5. Observe Partial Update in DevTools
+### 5. Observe Match Update in DevTools
 
 **Expected message:**
 ```json
 {
   "type": "match-update",
   "data": {
+    "match_id": 67,
+    "id": 67,
+    "match": { /* full match object */ },
+    "teams_data": { /* team_a, team_b */ },
     "match_data": {
       "id": 67,
       "score_team_a": 10,
       "qtr": "Q3"
-      // Note: Only changed fields, not full row!
-    }
+      // Note: FULL matchdata object, not just changed fields
+    },
+    "scoreboard_data": { /* scoreboard settings */ },
+    "players": [ /* all players */ ],
+    "events": [ /* all events */ ]
   }
 }
 ```
 
-**Message size:** ~100-500B (partial data)
+**Message size:** ~3-8KB (full data with all relations)
 
 ### 6. Verify Frontend Updates
 
@@ -169,9 +188,11 @@ curl -X PUT http://localhost:8000/api/scoreboards/67/ \
 ### WebSocket Messages
 
 - [ ] Initial load message: **full data** (5-10KB)
-- [ ] Matchdata update message: **partial match_data** (100-500B)
-- [ ] Scoreboard update message: **partial scoreboard_data** (100-300B)
-- [ ] Clock updates: **full clock data** (existing behavior)
+- [ ] Matchdata update message: **full match data with all relations** (3-8KB)
+- [ ] Scoreboard update message: **included in match-update** (via match-update type)
+- [ ] Clock updates: **partial clock data** (200-400B each)
+- [ ] Event updates: **full events list** (500-2000B)
+- [ ] Statistics updates: **full statistics** (1-2KB)
 
 ### Frontend Behavior
 
@@ -182,9 +203,9 @@ curl -X PUT http://localhost:8000/api/scoreboards/67/ \
 
 ### Performance
 
-- [ ] Update latency < **50ms** (measure in Network tab)
-- [ ] No database queries logged after initial load
-- [ ] Partial messages are **10-100x smaller** than initial load
+- [ ] Update latency < **100ms** (measure in Network tab - includes full data fetch)
+- [ ] Database queries for full match data on each update (expected behavior)
+- [ ] Match-update messages are **~50-60%** of initial load size (includes all relations but omits clocks/stats)
 
 ---
 
@@ -220,10 +241,12 @@ alembic upgrade head
 
 ```
 [Initial Load]  0ms      -> type: initial-load, size: 8.5KB
-[Update]        5.2s     -> type: match-update, data: match_data, size: 180B
-[Update]        12.8s    -> type: match-update, data: scoreboard_data, size: 120B
-[Update]        20.1s    -> type: match-update, data: match_data, size: 180B
-[Clock]         28.5s    -> type: gameclock-update, size: 350B
+[Update]        5.2s     -> type: match-update, size: 5.2KB (full match data)
+[Clock]         12.8s    -> type: gameclock-update, size: 350B
+[Clock]         15.1s    -> type: playclock-update, size: 320B
+[Update]        20.1s    -> type: match-update, size: 5.2KB (full match data)
+[Event]         25.5s    -> type: event-update, size: 800B
+[Stats]         25.5s    -> type: statistics-update, size: 1.5KB
 ```
 
 ---
@@ -239,8 +262,10 @@ alembic upgrade head
 
 ### Backend
 
+- `src/utils/websocket/websocket_manager.py:132-160` - Match data listener (fetches full data)
 - `alembic/versions/2026_01_27_1000-stab147_matchdata.py` - Matchdata trigger
 - `alembic/versions/2026_01_27_1005-stab148_scoreboard.py` - Scoreboard trigger
+- `tests/test_websocket/test_match_data_listener.py` - Tests for match data listener
 - `src/websocket/match_handler.py:160-205` - Process match data
 
 ---
@@ -248,5 +273,7 @@ alembic upgrade head
 ## References
 
 - **Linear Issue:** [STAF-208](https://linear.app/statsboard/issue/STAF-208)
-- **Backend Issue:** [STAB-147](https://linear.app/statsboard/issue/STAB-147)
-- **Backend Issue:** [STAB-148](https://linear.app/statsboard/issue/STAB-148)
+- **Backend Issue:** [STAB-147](https://linear.app/statsboard/issue/STAB-147) - Optimized matchdata trigger
+- **Backend Issue:** [STAB-148](https://linear.app/statsboard/issue/STAB-148) - Optimized scoreboard trigger
+- **Backend Issue:** [STAB-149](https://linear.app/statsboard/issue/STAB-149) - Match data listener with full data fetch
+- **Documentation:** [WEBSOCKET_DATA_FLOW.md](./WEBSOCKET_DATA_FLOW.md) - Complete WebSocket data flow documentation
