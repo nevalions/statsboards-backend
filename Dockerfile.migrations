@@ -1,17 +1,26 @@
 # Use a lightweight Python image
 FROM python:3.12-slim
 
+# Install required system dependencies
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser -u 1000 appuser
+
 # Set the working directory
 WORKDIR /app
 
 RUN pip install --no-cache-dir poetry
 
+# Create directories with correct ownership
+RUN mkdir -p /app && chown -R appuser:appuser /app
+
 # Copy necessary files
-COPY alembic.ini alembic.ini
-COPY README.md README.md
-COPY pyproject.toml poetry.lock ./
-COPY alembic alembic
-COPY src src
+COPY --chown=appuser:appuser alembic.ini alembic.ini
+COPY --chown=appuser:appuser README.md README.md
+COPY --chown=appuser:appuser pyproject.toml poetry.lock ./
+COPY --chown=appuser:appuser alembic alembic
+COPY --chown=appuser:appuser src src
 
 # Configure Poetry to avoid creating a virtual environment inside the container
 RUN poetry config virtualenvs.create false
@@ -21,6 +30,9 @@ RUN poetry install --without dev --no-interaction --no-ansi
 
 # Set environment variables (modify as needed)
 ENV PYTHONUNBUFFERED=1
+
+# Switch to non-root user
+USER appuser
 
 # Run Alembic migrations
 CMD ["poetry", "run", "alembic", "upgrade", "head"]
