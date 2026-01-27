@@ -1573,8 +1573,8 @@ class TestDatabaseNotificationFlow:
             "Gameclock cache should be invalidated by gameclock update"
         )
 
-    async def test_event_update_invalidates_both_event_and_stats_cache(self, test_db):
-        """Test that event updates invalidate both event and stats caches."""
+    async def test_invalidate_event_data_only_invalidates_event_cache(self, test_db):
+        """Test that invalidate_event_data() only invalidates event cache, not stats cache."""
         from src.matches.match_data_cache_service import MatchDataCacheService
 
         cache_service = MatchDataCacheService(test_db)
@@ -1600,5 +1600,5 @@ class TestDatabaseNotificationFlow:
             "Event cache should be invalidated"
         )
         assert f"stats-update:{mock_match_id}" in cache_service._cache, (
-            "Stats cache should only be invalidated by stats updates, not events"
+            "invalidate_event_data() should only invalidate event cache, not stats cache"
         )

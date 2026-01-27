@@ -44,14 +44,15 @@ async def setup_stats_throttling_trigger(test_db):
                 v_match_id := NEW.match_id;
                 SELECT last_notified_at INTO last_notify
                 FROM match_stats_throttle
-                WHERE match_stats_throttle.match_id = NEW.match_id;
+                WHERE match_stats_throttle.match_id = v_match_id;
 
                 IF last_notify IS NULL OR
                    EXTRACT(EPOCH FROM (NOW() - last_notify)) > throttle_seconds THEN
 
-                    DELETE FROM match_stats_throttle WHERE match_id = v_match_id;
                     INSERT INTO match_stats_throttle (match_id, last_notified_at)
-                    VALUES (NEW.match_id, NOW());
+                    VALUES (v_match_id, NOW())
+                    ON CONFLICT (match_id) DO UPDATE
+                    SET last_notified_at = NOW();
 
                     PERFORM pg_notify('football_event_change', json_build_object('table', TG_TABLE_NAME, 'operation', TG_OP, 'new_id', NEW.id, 'old_id', OLD.id, 'match_id', NEW.match_id)::text);
                 END IF;
