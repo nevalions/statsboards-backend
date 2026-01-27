@@ -2,6 +2,7 @@
 
 import asyncio
 import pytest
+import pytest_asyncio
 from sqlalchemy import text
 
 from src.core.models import (
@@ -15,7 +16,72 @@ from src.core.models import (
 )
 
 
+@pytest_asyncio.fixture(scope="function")
+async def setup_stats_throttling_trigger(test_db):
+    """Set up PostgreSQL trigger for stats throttling in test database."""
+    async with test_db.engine.begin() as conn:
+        await conn.execute(
+            text("DROP TRIGGER IF EXISTS football_event_change ON football_event CASCADE")
+        )
+
+        await conn.execute(
+            text("DROP TRIGGER IF EXISTS football_event_change ON football_event CASCADE")
+        )
+
+        await conn.execute(
+            text("""
+        CREATE OR REPLACE FUNCTION notify_football_event_change() RETURNS trigger AS $$
+        DECLARE
+            last_notify TIMESTAMP;
+            throttle_seconds INTEGER := 2;
+            v_match_id INTEGER;
+        BEGIN
+            IF (TG_OP = 'DELETE') THEN
+                v_match_id := OLD.match_id;
+                PERFORM pg_notify('football_event_change', json_build_object('table', TG_TABLE_NAME, 'operation', TG_OP, 'old_id', OLD.id, 'match_id', OLD.match_id)::text);
+                RETURN OLD;
+            ELSE
+                v_match_id := NEW.match_id;
+                SELECT last_notified_at INTO last_notify
+                FROM match_stats_throttle
+                WHERE match_stats_throttle.match_id = NEW.match_id;
+
+                IF last_notify IS NULL OR
+                   EXTRACT(EPOCH FROM (NOW() - last_notify)) > throttle_seconds THEN
+
+                    DELETE FROM match_stats_throttle WHERE match_id = v_match_id;
+                    INSERT INTO match_stats_throttle (match_id, last_notified_at)
+                    VALUES (NEW.match_id, NOW());
+
+                    PERFORM pg_notify('football_event_change', json_build_object('table', TG_TABLE_NAME, 'operation', TG_OP, 'new_id', NEW.id, 'old_id', OLD.id, 'match_id', NEW.match_id)::text);
+                END IF;
+
+                RETURN NEW;
+            END IF;
+        END;
+        $$ LANGUAGE plpgsql;
+        """)
+        )
+
+        await conn.execute(
+            text("""
+        CREATE TRIGGER football_event_change
+        AFTER INSERT OR UPDATE OR DELETE ON football_event
+        FOR EACH ROW EXECUTE PROCEDURE notify_football_event_change();
+        """)
+        )
+
+    yield
+
+    async with test_db.engine.begin() as conn:
+        await conn.execute(
+            text("DROP TRIGGER IF EXISTS football_event_change ON football_event CASCADE")
+        )
+        await conn.execute(text("DROP FUNCTION IF EXISTS notify_football_event_change() CASCADE"))
+
+
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("setup_stats_throttling_trigger")
 class TestStatsThrottling:
     async def test_rapid_events_throttled(self, test_db):
         """Test that rapid events update throttle table only once."""
@@ -100,6 +166,7 @@ class TestStatsThrottling:
 
             assert last_notified is not None
 
+    @pytest.mark.usefixtures("setup_stats_throttling_trigger")
     async def test_multiple_matches_independent_throttling(self, test_db):
         """Test that throttling is independent per match."""
         async with test_db.get_session_maker()() as session:
@@ -186,6 +253,7 @@ class TestStatsThrottling:
             assert match1_id in matches
             assert match2_id in matches
 
+    @pytest.mark.usefixtures("setup_stats_throttling_trigger")
     async def test_throttle_table_records_last_notification_time(self, test_db):
         """Test that throttle table correctly records last notification time."""
         async with test_db.get_session_maker()() as session:
@@ -254,6 +322,7 @@ class TestStatsThrottling:
             assert row is not None
             assert row[0] is not None
 
+    @pytest.mark.usefixtures("setup_stats_throttling_trigger")
     async def test_new_event_after_throttle_period_updates_table(self, test_db):
         """Test that new events after throttle period update the throttle table."""
         async with test_db.get_session_maker()() as session:
