@@ -42,5 +42,5 @@ USER appuser
 CMD ["python", "run_prod_server.py"]
 
 ## Add a non-blocking health check to the Dockerfile
-#HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
-#  CMD curl -k https://localhost:9000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:9000/health || exit 1
