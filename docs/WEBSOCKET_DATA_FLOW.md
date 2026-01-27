@@ -697,19 +697,80 @@ Each WebSocket client has its own queue:
 # ConnectionManager
 self.queues: dict[str, asyncio.Queue] = {}
 self.match_subscriptions: dict[str | int, list[str]] = {}
+self.last_activity: dict[str, float] = {}
 ```
 
 **Flow:**
 1. Client connects with `client_id` and `match_id`
 2. Queue created: `queues[client_id] = asyncio.Queue()`
 3. Subscription added: `match_subscriptions[match_id].append(client_id)`
-4. When message arrives, sent to all queues for that `match_id`
-5. `process_data_websocket()` reads from queue and sends to WebSocket
+4. Activity tracking: `last_activity[client_id] = time.time()`
+5. When message arrives, sent to all queues for that `match_id`
+6. `process_data_websocket()` reads from queue and sends to WebSocket
+7. Activity updated on each message: `update_client_activity(client_id)`
 
 **Benefits:**
 - Decouples message generation from message sending
 - Prevents blocking on slow WebSocket connections
 - Handles multiple clients per match
+- Enables automatic cleanup of stale connections
+
+---
+
+## Connection Lifecycle Management
+
+### Automatic Stale Connection Cleanup
+
+The system includes automatic cleanup of inactive WebSocket connections to prevent resource leaks:
+
+```python
+# ConnectionManager method
+async def cleanup_stale_connections(self, timeout_seconds: float = 90.0):
+    now = time.time()
+    stale_clients = [
+        client_id
+        for client_id, last_seen in self.last_activity.items()
+        if now - last_seen > timeout_seconds
+    ]
+    for client_id in stale_clients:
+        self.logger.warning(
+            f"Cleaning up stale connection for client {client_id} "
+            f"(inactive for {now - self.last_activity[client_id]:.1f}s)"
+        )
+        await self.disconnect(client_id)
+```
+
+**Background Task:**
+- Runs every 60 seconds
+- Checks all client activity timestamps
+- Removes connections inactive for >90 seconds
+- Safely disconnects stale clients and cleans up resources
+
+**Benefits:**
+- Prevents connection leaks
+- Frees resources for active clients
+- Handles network interruptions gracefully
+- Maintains accurate active connection count
+
+### Disconnect Handling
+
+The system properly handles disconnected WebSocket clients:
+
+```python
+# In receive_messages loop
+if websocket.application_state != WebSocketState.CONNECTED:
+    websocket_logger.warning(
+        f"WebSocket disconnected (state: {websocket.application_state}), "
+        f"ending processing loop after timeout"
+    )
+    break
+```
+
+**Behavior:**
+- Detects disconnected WebSocket state during queue operations
+- Breaks processing loop when client disconnects
+- Logs disconnection events for debugging
+- Ensures cleanup happens properly on disconnect
 
 ---
 

@@ -272,8 +272,9 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
 **Characteristics**:
 - Connection manager for multiple client types
 - Real-time data streaming for matches, scoreboards, gameclocks
-- Background tasks for clock management
+- Background tasks for clock management and connection cleanup
 - Redis pub/sub for scalable event distribution
+- Automatic cleanup of stale connections (90-second timeout)
 
 **Supported WebSocket Types**:
 - Match data streaming

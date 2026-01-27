@@ -148,6 +148,11 @@ class MatchWebSocketHandler:
                     websocket_logger.debug(
                         f"Queue get operation timed out after {timeout_} seconds"
                     )
+                    if websocket.application_state != WebSocketState.CONNECTED:
+                        websocket_logger.warning(
+                            f"WebSocket disconnected (state: {websocket.application_state}), ending processing loop after timeout"
+                        )
+                        break
                     continue
 
             except Exception as e:
@@ -384,6 +389,7 @@ class MatchWebSocketHandler:
 
         ping_handle = asyncio.create_task(ping_task())
         receive_handle = asyncio.create_task(self.receive_messages(websocket, client_id))
+        websocket_logger.debug(f"Started background tasks for client {client_id}")
 
         try:
             await self.send_initial_data(websocket, client_id, match_id)
@@ -407,11 +413,14 @@ class MatchWebSocketHandler:
             try:
                 await ping_handle
             except asyncio.CancelledError:
-                pass
+                websocket_logger.debug(f"Ping task cancelled for client {client_id}")
             try:
                 await receive_handle
             except asyncio.CancelledError:
-                pass
+                websocket_logger.debug(f"Receive task cancelled for client {client_id}")
+            websocket_logger.info(
+                f"Background tasks cancelled for client {client_id}, starting cleanup"
+            )
             await self.cleanup_websocket(client_id)
 
 

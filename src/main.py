@@ -17,10 +17,10 @@ from src.core.models.base import db
 from src.core.router_registry import RouterRegistry, configure_routers
 from src.core.service_initialization import register_all_services
 from src.core.service_registry import get_service_registry, init_service_registry
-from src.logging_config import logs_dir, setup_logging
-from src.utils.websocket.websocket_manager import ws_manager
-from src.websocket.match_handler import match_websocket_handler
 from src.helpers.request_services_helper import initialize_proxy_manager
+from src.logging_config import logs_dir, setup_logging
+from src.utils.websocket.websocket_manager import connection_manager, ws_manager
+from src.websocket.match_handler import match_websocket_handler
 
 logger = logging.getLogger("backend_logger_fastapi")
 db_logger = logging.getLogger("backend_logger_base_db")
@@ -48,6 +48,22 @@ async def mark_stale_users_offline_task():
             await asyncio.sleep(60)
 
 
+async def cleanup_stale_websocket_connections_task():
+    """Background task to periodically clean up stale WebSocket connections."""
+    logger.info("Starting stale WebSocket connections cleanup task")
+
+    while True:
+        try:
+            await connection_manager.cleanup_stale_connections(timeout_seconds=90.0)
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            logger.info("Stale WebSocket connections cleanup task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Error in stale WebSocket connections cleanup task: {e}", exc_info=True)
+            await asyncio.sleep(60)
+
+
 log_file_path = logs_dir / "backend.log"
 if os.access(log_file_path, os.W_OK):
     logger.debug("Log file is writable.")
@@ -65,6 +81,7 @@ async def lifespan(_app: FastAPI):
     db_logger.info("Starting application lifespan.")
     ws_task = None
     stale_users_task = None
+    stale_websocket_task = None
     try:
         settings.validate_all()
         init_service_registry(db)
@@ -89,6 +106,9 @@ async def lifespan(_app: FastAPI):
 
         stale_users_task = asyncio.create_task(mark_stale_users_offline_task())
 
+        stale_websocket_task = asyncio.create_task(cleanup_stale_websocket_connections_task())
+        logger.info("Stale WebSocket connections cleanup task started")
+
         yield
     except Exception as ex:
         db_logger.critical(f"Critical error during startup: {ex}", exc_info=True)
@@ -105,6 +125,13 @@ async def lifespan(_app: FastAPI):
             stale_users_task.cancel()
             try:
                 await stale_users_task
+            except asyncio.CancelledError:
+                pass
+
+        if stale_websocket_task:
+            stale_websocket_task.cancel()
+            try:
+                await stale_websocket_task
             except asyncio.CancelledError:
                 pass
 
