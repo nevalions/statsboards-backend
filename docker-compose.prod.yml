@@ -9,7 +9,6 @@ networks:
     driver: bridge # need to connect to postgres on local network
 
 volumes:
-  poetry-cache:
   static-files:
     driver: local
     driver_opts:
@@ -118,7 +117,6 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
       - static-files:/app/static:rw  # Read-write access for backend
-      - poetry-cache:/root/.cache/pypoetry
     env_file:
       - .env.prod
     networks:
