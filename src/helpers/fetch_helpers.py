@@ -176,8 +176,10 @@ async def fetch_with_scoreboard_data(
                     "scoreboard_data": instance_to_dict(dict(scoreboard_data.__dict__)),
                     "teams_data": deep_dict_convert(match_teams_data),
                     "match_data": instance_to_dict(dict(match_data.__dict__)),
-                    "players": players,
-                    "events": events,
+                    "players": [deep_dict_convert(player) for player in players] if players else [],
+                    "events": [deep_dict_convert(event.__dict__) for event in events]
+                    if events
+                    else [],
                 }
             }
             fetch_data_logger.debug(
@@ -419,6 +421,19 @@ def deep_dict_convert(obj: dict[str, Any]) -> dict[str, Any] | None:
                 elif isinstance(value, dict):
                     logger.info(f"Converting {key} to dict")
                     result_dict[key] = deep_dict_convert(value)
+                elif isinstance(value, list):
+                    logger.info(f"Converting {key} to list")
+                    result_dict[key] = [
+                        deep_dict_convert(item.__dict__)
+                        if hasattr(item, "__dict__")
+                        else deep_dict_convert(item)
+                        if isinstance(item, dict)
+                        else item
+                        for item in value
+                    ]
+                elif hasattr(value, "__dict__"):
+                    logger.info(f"Converting {key} with __dict__")
+                    result_dict[key] = deep_dict_convert(value.__dict__)
                 else:
                     result_dict[key] = value
         logger.debug(f"Deep dictionary convert completed successfully. Result: {result_dict}")

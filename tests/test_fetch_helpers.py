@@ -139,3 +139,79 @@ class TestDeepDictConvert:
         result = deep_dict_convert(instance)
 
         assert result is None
+
+    def test_deep_dict_convert_with_list_of_objects(self):
+        """Test deep_dict_convert handles lists of objects with __dict__."""
+        from src.helpers.fetch_helpers import deep_dict_convert
+
+        class MockObject:
+            def __init__(self):
+                self.id = 1
+                self.name = "Test"
+                self._private = "hidden"
+
+        instance = {
+            "players": [MockObject(), MockObject()],
+            "count": 2,
+        }
+
+        result = deep_dict_convert(instance)
+
+        assert isinstance(result["players"], list)
+        assert len(result["players"]) == 2
+        assert result["players"][0]["id"] == 1
+        assert result["players"][0]["name"] == "Test"
+        assert "_private" not in result["players"][0]
+        assert result["count"] == 2
+
+    def test_deep_dict_convert_with_nested_objects(self):
+        """Test deep_dict_convert handles nested objects with __dict__."""
+        from src.helpers.fetch_helpers import deep_dict_convert
+
+        class NestedObject:
+            def __init__(self):
+                self.id = 1
+                self.value = "nested"
+
+        class ParentObject:
+            def __init__(self):
+                self.id = 2
+                self.name = "parent"
+                self.nested = NestedObject()
+
+        instance = {
+            "parent": ParentObject(),
+        }
+
+        result = deep_dict_convert(instance)
+
+        assert result["parent"]["id"] == 2
+        assert result["parent"]["name"] == "parent"
+        assert result["parent"]["nested"]["id"] == 1
+        assert result["parent"]["nested"]["value"] == "nested"
+
+    def test_deep_dict_convert_with_dict_containing_objects(self):
+        """Test deep_dict_convert handles dicts containing objects."""
+        from src.helpers.fetch_helpers import deep_dict_convert
+
+        class MockPlayer:
+            def __init__(self):
+                self.id = 1
+                self.name = "Player"
+
+        instance = {
+            "match_id": 1,
+            "players": [
+                {"id": 1, "player": MockPlayer(), "team": {"name": "Team A"}},
+                {"id": 2, "player": MockPlayer(), "team": {"name": "Team B"}},
+            ],
+        }
+
+        result = deep_dict_convert(instance)
+
+        assert result["match_id"] == 1
+        assert len(result["players"]) == 2
+        assert result["players"][0]["player"]["name"] == "Player"
+        assert result["players"][0]["team"]["name"] == "Team A"
+        assert result["players"][1]["player"]["name"] == "Player"
+        assert result["players"][1]["team"]["name"] == "Team B"
