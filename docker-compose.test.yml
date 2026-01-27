@@ -21,7 +21,8 @@ services:
       - postgres_test
 
   postgres_test:
-    image: postgres:latest
+    # PostgreSQL 17.2-alpine
+    image: postgres:17.2-alpine
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test

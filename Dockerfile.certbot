@@ -1,4 +1,5 @@
-FROM certbot/certbot:latest
+# Certbot v2.8.0
+FROM certbot/certbot:v2.8.0
 
 COPY certbot-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
