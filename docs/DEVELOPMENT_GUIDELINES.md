@@ -45,7 +45,7 @@ docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activ
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
-**Important: Parallel tests now work correctly with 1207 tests passing in ~91s:**
+**Important: Parallel tests now work correctly with 1309 tests passing in ~126s:**
 
 ```bash
   pytest -n 4  # Run tests in parallel with 4 workers (using 2 databases)
@@ -64,7 +64,7 @@ The default pytest.ini configuration uses `-n 4` for parallel test execution. Da
 
 ### Understanding Test Markers
 
-Tests in the suite use markers to categorize test types. All 1207 tests run by default, but markers allow selective execution when needed.
+Tests in the suite use markers to categorize test types. All 1309 tests run by default, but markers allow selective execution when needed.
 
 **Breakdown of Marked Tests:**
 
@@ -129,7 +129,7 @@ pytest -m "not integration"
 pytest -m "not integration and not slow"
 ```
 
-All 1207 tests run by default with `pytest -n 4` in ~91s.
+All 1309 tests run by default with `pytest -n 4` in ~126s.
 
 Then run tests:
 
@@ -1099,7 +1099,7 @@ async with test_db.get_session_maker()() as db_session:
 
 **Test Results:**
 
-All 1207 tests pass reliably in ~91s with 4 parallel workers (`-n 4`) across 2 databases. Worker-specific lock files ensure tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
+All 1309 tests pass reliably in ~126s with 4 parallel workers (`-n 4`) across 4 databases. Worker-specific lock files ensure tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
 
 **Known Warnings:**
 

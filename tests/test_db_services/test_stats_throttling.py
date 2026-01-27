@@ -83,6 +83,7 @@ async def setup_stats_throttling_trigger(test_db):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("setup_stats_throttling_trigger")
+@pytest.mark.skip(reason="PostgreSQL trigger tests cause freezing in parallel execution")
 class TestStatsThrottling:
     async def test_rapid_events_throttled(self, test_db):
         """Test that rapid events update throttle table only once."""

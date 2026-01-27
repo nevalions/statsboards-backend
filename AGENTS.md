@@ -62,7 +62,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 1263 tests pass in parallel (~106s with pytest-xdist using 4 workers). Tests use:
+All 1309 tests pass in parallel (~126s with pytest-xdist using 4 workers). Tests use:
 - Transactional rollback for isolation
 - 4 parallel databases (test_db, test_db2, test_db3, test_db4) distributed across 4 workers
 - Worker-specific lock files for safe table creation
