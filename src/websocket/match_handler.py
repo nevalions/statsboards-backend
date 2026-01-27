@@ -148,7 +148,7 @@ class MatchWebSocketHandler:
                     websocket_logger.debug(
                         f"Queue get operation timed out after {timeout_} seconds"
                     )
-                    break
+                    continue
 
             except Exception as e:
                 websocket_logger.error(f"Error in processing loop: {e}", exc_info=True)

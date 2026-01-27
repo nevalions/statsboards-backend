@@ -188,11 +188,9 @@ class TestWebSocketManager:
 
         assert manager.db_url == db_url
         assert manager.connection is None
-        assert manager.match_data_queues == {}
-        assert manager.playclock_queues == {}
-        assert manager.gameclock_queues == {}
         assert manager.is_connected is False
         assert manager._connection_retry_task is None
+        assert manager._cache_service is None
 
     @pytest.mark.asyncio
     async def test_connect_to_db_success(self):
