@@ -125,3 +125,9 @@ class MatchDataCacheService:
         if cache_key in self._cache:
             del self._cache[cache_key]
             self.logger.debug(f"Invalidated stats cache for match {match_id}")
+
+    def invalidate_players(self, match_id: int) -> None:
+        cache_key = f"players-update:{match_id}"
+        if cache_key in self._cache:
+            del self._cache[cache_key]
+            self.logger.debug(f"Invalidated players cache for match {match_id}")

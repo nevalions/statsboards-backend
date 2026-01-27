@@ -65,6 +65,7 @@ class MatchDataWebSocketManager:
             "playclock_change": self.playclock_listener,
             "gameclock_change": self.gameclock_listener,
             "football_event_change": self.event_listener,
+            "player_match_change": self.players_update_listener,
         }
 
         for channel, listener in listeners.items():
@@ -169,6 +170,32 @@ class MatchDataWebSocketManager:
             "gameclock-update",
             invalidate_func,
         )
+
+    async def players_update_listener(self, connection, pid, channel, payload):
+        from src.core import db
+        from src.matches.db_services import MatchServiceDB
+
+        try:
+            trigger_data = json.loads(payload.strip())
+            match_id = trigger_data["match_id"]
+
+            self.logger.debug(f"Processing players-update for match {match_id}")
+
+            if self._cache_service:
+                self._cache_service.invalidate_players(match_id)
+
+            match_service_db = MatchServiceDB(db)
+            players = await match_service_db.get_players_with_full_data_optimized(match_id)
+
+            message = {"type": "players-update", "data": {"match_id": match_id, "players": players}}
+            await connection_manager.send_to_all(message, match_id=match_id)
+            self.logger.debug(f"Sent players update for match {match_id}")
+        except json.JSONDecodeError as e:
+            self.logger.error(
+                f"JSON decode error in players_update_listener: {str(e)}", exc_info=True
+            )
+        except Exception as e:
+            self.logger.error(f"Error in players_update_listener: {str(e)}", exc_info=True)
 
     async def event_listener(self, connection, pid, channel, payload):
         invalidate_func = self._cache_service.invalidate_event_data if self._cache_service else None

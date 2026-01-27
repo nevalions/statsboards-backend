@@ -15,14 +15,15 @@ This document explains the complete data flow for WebSocket real-time updates be
          │ pg_notify()
          │
          ▼
-┌─────────────────────────────────────────┐
-│  MatchDataWebSocketManager            │
-│  - Listeners (asyncpg)             │
-│  - match_data_listener (CUSTOM)      │
-│  - gameclock_listener (_base)        │
-│  - playclock_listener (_base)        │
-│  - event_listener (_base)            │
-└────────┬────────────────────────────┘
+ ┌─────────────────────────────────────────┐
+ │  MatchDataWebSocketManager            │
+ │  - Listeners (asyncpg)             │
+ │  - match_data_listener (CUSTOM)      │
+ │  - gameclock_listener (_base)        │
+ │  - playclock_listener (_base)        │
+ │  - event_listener (_base)            │
+ │  - players_update_listener (CUSTOM)  │
+ └────────┬────────────────────────────┘
          │
          ▼
 ┌─────────────────────────────────────────┐
@@ -579,6 +580,61 @@ if (messageType === 'statistics-update') {
 
 ---
 
+### 7. Players Update (`players-update`)
+
+**When sent:** When `player_match` table changes
+
+**Source:** Database trigger → `MatchDataWebSocketManager.players_update_listener()`
+
+**Backend flow:**
+1. Database trigger fires: `notify_player_match_change()`
+2. Sends pg_notify with payload:
+   ```json
+   {
+     "table": "player_match",
+     "operation": "UPDATE",
+     "match_id": 67
+   }
+   ```
+3. `players_update_listener()` receives notification
+4. **Invalidates cache:** `cache_service.invalidate_players(match_id)`
+5. **Fetches players:** `get_players_with_full_data_optimized(match_id)`
+6. **Sends:**
+   ```json
+   {
+     "type": "players-update",
+     "data": {
+       "match_id": 67,
+       "players": [
+         {
+           "id": 100,
+           "player_id": 50,
+           "match_id": 67,
+           "team_id": 1,
+           "team": {"id": 1, "title": "Team A"},
+           "player": {"id": 50, "name": "John Doe"}
+         }
+       ]
+     }
+   }
+   ```
+
+**Message size:** ~1-5KB (depends on number of players)
+
+**Frontend handling:**
+```typescript
+if (messageType === 'players-update') {
+  const data = message['data'];
+  
+  if (data['players']) {
+    this.players.set(data['players']);
+    this.lastPlayersUpdate.set(Date.now());
+  }
+}
+```
+
+---
+
 ## Special Cases
 
 ### Fallback on Data Fetch Failure
@@ -627,6 +683,7 @@ The cache service is invalidated before sending messages to ensure fresh data:
 | `playclock-update` | `invalidate_playclock(match_id)` |
 | `event-update` | `invalidate_event_data(match_id)` |
 | `statistics-update` | `invalidate_stats(match_id)` |
+| `players-update` | `invalidate_players(match_id)` |
 
 For `match-update`, the full data is **fetched fresh** after cache invalidation, ensuring consistency.
 
@@ -724,5 +781,6 @@ curl -X PUT http://localhost:8000/api/matchdata/67/ \
 - **Clock updates:** Partial clock data (~200-400B) on clock changes
 - **Event updates:** Full events list (~500-2000B) on event changes
 - **Stats updates:** Full statistics (~1-2KB) on event changes
-- **Cache strategy:** Invalidate before fetch for match-update; forward for clocks/events
+- **Players updates:** Full players list (~1-5KB) on player_match changes
+- **Cache strategy:** Invalidate before fetch for match-update and players-update; forward for clocks/events
 - **Queue system:** Per-client async queues decouple message generation from sending
