@@ -101,6 +101,18 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/run/nginx:noexec,nosuid,size=5m
+      - /tmp:noexec,nosuid,size=10m
 
   statsboards-backend:
     labels:
@@ -148,6 +160,8 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+    security_opt:
+      - no-new-privileges:true
 
   nginx-static:
     labels:
