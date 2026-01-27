@@ -1,2 +1,40 @@
-.env*
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov/
+
+# Environment files (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+docs/
+
+# Tests
+tests/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Build artifacts
+*.log
+dist/
+build/
+*.egg-info/
+
+# Static uploads (already there)
 /static/uploads
