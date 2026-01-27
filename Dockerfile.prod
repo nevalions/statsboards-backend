@@ -17,15 +17,17 @@ RUN mkdir -p /app && chown -R appuser:appuser /app
 # Install Poetry
 RUN pip install --no-cache-dir poetry
 
-# Copy the project files
+# Copy dependency files only
 COPY --chown=appuser:appuser pyproject.toml poetry.lock ./
-COPY --chown=appuser:appuser . /app
 
 # Configure Poetry to avoid creating a virtual environment inside the container
 RUN poetry config virtualenvs.create false
 
-# Install dependencies
+# Install dependencies (cached if unchanged)
 RUN poetry install --without dev --no-interaction --no-ansi
+
+# Copy application code (this layer changes frequently)
+COPY --chown=appuser:appuser . /app
 
 WORKDIR /app/src
 
