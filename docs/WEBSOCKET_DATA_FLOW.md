@@ -234,27 +234,49 @@ if (messageType === 'initial-load') {
    ```
 3. `match_data_listener()` receives notification
 4. **Invalidates cache:** `cache_service.invalidate_match_data(match_id)`
-5. **Fetches full data:** `fetch_with_scoreboard_data(match_id, cache_service=cache_service)`
-6. **Wraps and sends:**
+5. **Smart payload selection:**
+   - If trigger payload contains 'data' field (UPDATE/INSERT): Sends trigger data directly
+   - If trigger payload has no 'data' (DELETE/legacy): Falls back to `fetch_with_scoreboard_data()`
+6. **Sends:**
    ```json
    {
      "type": "match-update",
      "data": {
-       "match_id": 67,
        "id": 67,
-       "match": { /* match object */ },
-       "teams_data": { /* teams object */ },
-       "match_data": { /* updated matchdata object */ },
-       "scoreboard_data": { /* scoreboard object */ },
-       "players": [ /* players array */ ],
-       "events": [ /* events array */ ]
+       "match_id": 67,
+       "score_team_a": 22,
+       "score_team_b": 40
+       // ... only changed row fields
      }
    }
    ```
 
-**Important:** This is **FULL data** (not partial) to ensure all related fields are included.
+**Important:** This is **partial data** (changed row only) for UPDATE/INSERT operations, reducing network payload from ~3-8KB to ~200-400B for score updates. Full data fetch only occurs when trigger data is unavailable (DELETE operations or legacy triggers).
 
-**Message structure:**
+**Message structure (UPDATE/INSERT with trigger data):**
+```json
+{
+  "type": "match-update",
+  "data": {
+    "id": 67,
+    "match_id": 67,
+    "score_team_a": 22,
+    "score_team_b": 40,
+    "qtr": "3rd",
+    "down": "2nd",
+    "distance": "Inches",
+    "ball_on": 20,
+    "game_status": "in-progress",
+    "timeout_team_a": "oo●",
+    "timeout_team_b": "oo●",
+    "field_length": 92
+  }
+}
+```
+
+**Message size:** ~200-400B (partial data - changed row only)
+
+**Message structure (DELETE or legacy trigger - fallback):**
 ```json
 {
   "type": "match-update",
@@ -316,7 +338,7 @@ if (messageType === 'initial-load') {
 }
 ```
 
-**Message size:** ~3-8KB (full data with all relations)
+**Message size (fallback):** ~3-8KB (full data with all relations)
 
 **Frontend handling:**
 ```typescript
@@ -838,7 +860,7 @@ curl -X PUT http://localhost:8000/api/matchdata/67/ \
 ## Summary
 
 - **Initial load:** Full data (~5-10KB) on connection
-- **Match updates:** Full data with all relations (~3-8KB) on matchdata/scoreboard changes
+- **Match updates:** Partial data (~200-400B) on matchdata/scoreboard changes (UPDATE/INSERT); full data (~3-8KB) on DELETE/legacy triggers
 - **Clock updates:** Partial clock data (~200-400B) on clock changes
 - **Event updates:** Full events list (~500-2000B) on event changes
 - **Stats updates:** Full statistics (~1-2KB) on event changes

@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from collections.abc import Callable
+from typing import Any
 
 import asyncpg
 from starlette.websockets import WebSocket, WebSocketState
@@ -142,19 +143,24 @@ class MatchDataWebSocketManager:
             if self._cache_service:
                 self._cache_service.invalidate_match_data(match_id)
 
-            full_data = await fetch_with_scoreboard_data(
-                match_id, cache_service=self._cache_service
-            )
-            if full_data and "data" in full_data:
-                message = {"type": "match-update", "data": full_data["data"]}
-                await connection_manager.send_to_all(message, match_id=match_id)
-                self.logger.debug(f"Sent full match data for match {match_id}")
+            if "data" in trigger_data:
+                message = {"type": "match-update", "data": trigger_data["data"]}
+                await connection_manager.send_to_all(json.dumps(message), match_id=match_id)
+                self.logger.debug(f"Sent trigger data for match {match_id}")
             else:
-                self.logger.warning(
-                    f"Failed to fetch full match data for match {match_id}, sending partial data"
+                full_data = await fetch_with_scoreboard_data(
+                    match_id, cache_service=self._cache_service
                 )
-                message = {"type": "match-update", "data": trigger_data.get("data", {})}
-                await connection_manager.send_to_all(message, match_id=match_id)
+                if full_data and "data" in full_data:
+                    message = {"type": "match-update", "data": full_data["data"]}
+                    await connection_manager.send_to_all(json.dumps(message), match_id=match_id)
+                    self.logger.debug(f"Sent full match data for match {match_id}")
+                else:
+                    self.logger.warning(
+                        f"Failed to fetch full match data for match {match_id}, sending partial data"
+                    )
+                    message = {"type": "match-update", "data": trigger_data.get("data", {})}
+                    await connection_manager.send_to_all(json.dumps(message), match_id=match_id)
         except json.JSONDecodeError as e:
             self.logger.error(f"JSON decode error in match_data_listener: {str(e)}", exc_info=True)
         except Exception as e:
@@ -390,7 +396,7 @@ class ConnectionManager:
             )
             await self.disconnect(client_id)
 
-    async def send_to_all(self, data: str, match_id: str | None = None):
+    async def send_to_all(self, data: dict[str, Any] | str, match_id: str | None = None):
         self.logger.debug(f"Sending data: {data} with match_id: {match_id}")
         self.logger.debug(f"Current match with match_id: {match_id}")
         if match_id:
