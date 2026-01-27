@@ -52,6 +52,7 @@ class FootballEventAPIRouter(
                 return FootballEventSchema.model_validate(new_football_event)
             except Exception as e:
                 self.logger.error(f"Error creating football_event: {e}", exc_info=e)
+                raise
 
         @router.put(
             "/{item_id}/",
@@ -89,6 +90,7 @@ class FootballEventAPIRouter(
                 return await football_event_service.get_match_football_events_by_match_id(match_id)
             except Exception as e:
                 self.logger.error(f"Error getting football_events_by_match_id: {e}", exc_info=e)
+                raise
 
         @router.get(
             "/matches/{match_id}/events-with-players/",
@@ -117,6 +119,7 @@ class FootballEventAPIRouter(
                     f"Error getting events_with_players for match {match_id}: {e}",
                     exc_info=e,
                 )
+                raise
 
         @router.delete(
             "/id/{model_id}",
