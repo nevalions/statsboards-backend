@@ -77,16 +77,13 @@ class MatchWebSocketHandler:
 
     async def cleanup_websocket(self, client_id: str):
         try:
-            await asyncio.sleep(0.1)
             await connection_manager.disconnect(client_id)
             connection_socket_logger.warning(
                 f"Client {client_id} disconnected, closing connection and removing from subscriptions"
             )
-            await ws_manager.disconnect(client_id)
             websocket_logger.warning(
                 f"Client {client_id} disconnected from websocket, closing connection"
             )
-            await ws_manager.shutdown()
         except asyncio.CancelledError:
             pass
 

@@ -345,7 +345,6 @@ class TestGameClockViews:
 
         client_id = "test_gameclock_version_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, match.id)
-        ws_manager.gameclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
@@ -357,7 +356,7 @@ class TestGameClockViews:
         await asyncio.sleep(0.2)
 
         try:
-            await asyncio.wait_for(ws_manager.gameclock_queues[client_id].get(), timeout=2.0)
+            await asyncio.wait_for(connection_manager.queues[client_id].get(), timeout=2.0)
         except asyncio.TimeoutError:
             pass
 
@@ -370,7 +369,7 @@ class TestGameClockViews:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.gameclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "gameclock-update"
             assert notification["match_id"] == match.id
@@ -419,7 +418,6 @@ class TestGameClockViews:
 
         client_id = "test_gameclock_pause_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, match.id)
-        ws_manager.gameclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
@@ -432,7 +430,7 @@ class TestGameClockViews:
         await asyncio.sleep(0.2)
 
         try:
-            await asyncio.wait_for(ws_manager.gameclock_queues[client_id].get(), timeout=2.0)
+            await asyncio.wait_for(connection_manager.queues[client_id].get(), timeout=2.0)
         except asyncio.TimeoutError:
             pass
 
@@ -447,7 +445,7 @@ class TestGameClockViews:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.gameclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "gameclock-update"
             assert notification["match_id"] == match.id
@@ -495,7 +493,6 @@ class TestGameClockViews:
 
         client_id = "test_gameclock_reset_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, match.id)
-        ws_manager.gameclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
@@ -506,7 +503,7 @@ class TestGameClockViews:
         await asyncio.sleep(0.2)
 
         try:
-            await asyncio.wait_for(ws_manager.gameclock_queues[client_id].get(), timeout=2.0)
+            await asyncio.wait_for(connection_manager.queues[client_id].get(), timeout=2.0)
         except asyncio.TimeoutError:
             pass
 
@@ -522,7 +519,7 @@ class TestGameClockViews:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.gameclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "gameclock-update"
             assert notification["match_id"] == match.id

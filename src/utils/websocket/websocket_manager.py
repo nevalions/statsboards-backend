@@ -16,11 +16,6 @@ class MatchDataWebSocketManager:
     def __init__(self, db_url):
         self.db_url = db_url
         self.connection = None
-        self.match_data_queues = {}
-        self.playclock_queues = {}
-        self.gameclock_queues = {}
-        self.event_queues = {}
-        self.stats_queues = {}
         self.logger = logging.getLogger("backend_logger_MatchDataWebSocketManager")
         self.logger.info("MatchDataWebSocketManager initialized")
         self.is_connected = False
@@ -59,39 +54,6 @@ class MatchDataWebSocketManager:
                 self.is_connected = False
                 raise
 
-    async def disconnect(self, client_id: str):
-        self.logger.debug(f"Disconnecting from WebSocket with client_id: {client_id}")
-
-        try:
-            self.match_data_queues.pop(client_id)
-            self.logger.info(f"Deleted match data queue for client {client_id}")
-        except KeyError:
-            self.logger.warning(f"No match data queue found for client {client_id}")
-
-        try:
-            self.playclock_queues.pop(client_id)
-            self.logger.info(f"Deleted playclock queue for client {client_id}")
-        except KeyError:
-            self.logger.warning(f"No playclock queue found for client {client_id}")
-
-        try:
-            self.gameclock_queues.pop(client_id)
-            self.logger.info(f"Deleted gameclock queue for client {client_id}")
-        except KeyError:
-            self.logger.warning(f"No gameclock queue found for client {client_id}")
-
-        try:
-            self.event_queues.pop(client_id)
-            self.logger.info(f"Deleted event queue for client {client_id}")
-        except KeyError:
-            self.logger.warning(f"No event queue found for client {client_id}")
-
-        try:
-            self.stats_queues.pop(client_id)
-            self.logger.info(f"Deleted stats queue for client {client_id}")
-        except KeyError:
-            self.logger.warning(f"No stats queue found for client {client_id}")
-
     async def setup_listeners(self):
         if self.connection is None:
             raise RuntimeError("Database connection not established")
@@ -129,7 +91,7 @@ class MatchDataWebSocketManager:
             raise
 
     async def _base_listener(
-        self, connection, pid, channel, payload, update_type, queue_dict, invalidate_func=None
+        self, connection, pid, channel, payload, update_type, invalidate_func=None
     ):
         self.logger.debug(f"{update_type} notification received on channel {channel}")
 
@@ -146,12 +108,6 @@ class MatchDataWebSocketManager:
 
             if invalidate_func and self._cache_service:
                 invalidate_func(match_id)
-
-            clients = await connection_manager.get_match_subscriptions(match_id)
-            for client_id in clients:
-                if client_id in queue_dict:
-                    await queue_dict[client_id].put(data)
-                    self.logger.debug(f"Added {update_type} to queue for client {client_id}")
 
             await connection_manager.send_to_all(data, match_id=match_id)
 
@@ -170,7 +126,6 @@ class MatchDataWebSocketManager:
             channel,
             payload,
             "playclock-update",
-            self.playclock_queues,
             invalidate_func,
         )
 
@@ -182,7 +137,6 @@ class MatchDataWebSocketManager:
             channel,
             payload,
             "match-update",
-            self.match_data_queues,
             invalidate_func,
         )
 
@@ -194,14 +148,13 @@ class MatchDataWebSocketManager:
             channel,
             payload,
             "gameclock-update",
-            self.gameclock_queues,
             invalidate_func,
         )
 
     async def event_listener(self, connection, pid, channel, payload):
         invalidate_func = self._cache_service.invalidate_event_data if self._cache_service else None
         await self._base_listener(
-            connection, pid, channel, payload, "event-update", self.event_queues, invalidate_func
+            connection, pid, channel, payload, "event-update", invalidate_func
         )
 
         stats_invalidate_func = (
@@ -213,7 +166,6 @@ class MatchDataWebSocketManager:
             channel,
             payload,
             "statistics-update",
-            self.stats_queues,
             stats_invalidate_func,
         )
 

@@ -249,7 +249,6 @@ class TestPlayClockViews:
 
         client_id = "test_playclock_version_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, match.id)
-        ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
@@ -263,7 +262,7 @@ class TestPlayClockViews:
         await asyncio.sleep(0.2)
 
         try:
-            await asyncio.wait_for(ws_manager.playclock_queues[client_id].get(), timeout=2.0)
+            await asyncio.wait_for(connection_manager.queues[client_id].get(), timeout=2.0)
         except asyncio.TimeoutError:
             pass
 
@@ -276,7 +275,7 @@ class TestPlayClockViews:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.playclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "playclock-update"
             assert notification["match_id"] == match.id
@@ -325,7 +324,6 @@ class TestPlayClockViews:
 
         client_id = "test_playclock_stop_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, match.id)
-        ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
@@ -338,7 +336,7 @@ class TestPlayClockViews:
         await asyncio.sleep(0.2)
 
         try:
-            await asyncio.wait_for(ws_manager.playclock_queues[client_id].get(), timeout=2.0)
+            await asyncio.wait_for(connection_manager.queues[client_id].get(), timeout=2.0)
         except asyncio.TimeoutError:
             pass
 
@@ -354,7 +352,7 @@ class TestPlayClockViews:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.playclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "playclock-update"
             assert notification["match_id"] == match.id
@@ -365,7 +363,6 @@ class TestPlayClockViews:
 
         await ws_manager.shutdown()
         await connection_manager.disconnect(client_id)
-
 
         tournament_service = TournamentServiceDB(test_db)
         tournament = await tournament_service.create(
@@ -390,19 +387,13 @@ class TestPlayClockViews:
         created = await playclock_service.create(playclock_data)
         initial_version = created.version
 
-        updated1 = await playclock_service.update(
-            created.id, PlayClockSchemaUpdate(playclock=45)
-        )
+        updated1 = await playclock_service.update(created.id, PlayClockSchemaUpdate(playclock=45))
         assert updated1.version == initial_version + 1
 
-        updated2 = await playclock_service.update(
-            created.id, PlayClockSchemaUpdate(playclock=30)
-        )
+        updated2 = await playclock_service.update(created.id, PlayClockSchemaUpdate(playclock=30))
         assert updated2.version == initial_version + 2
 
-        updated3 = await playclock_service.update(
-            created.id, PlayClockSchemaUpdate(playclock=15)
-        )
+        updated3 = await playclock_service.update(created.id, PlayClockSchemaUpdate(playclock=15))
         assert updated3.version == initial_version + 3
 
         final = await playclock_service.get_by_id(created.id)

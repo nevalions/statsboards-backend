@@ -695,183 +695,6 @@ class TestMatchDataWebSocketManagerErrorScenarios:
         manager.connection.close.assert_called_once()
         assert manager.is_connected is False
 
-    async def test_ws_manager_disconnect_nonexistent_client(self):
-        """Test disconnect handles nonexistent clients gracefully."""
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-
-        await manager.disconnect("nonexistent_client")
-
-    async def test_ws_manager_disconnect_partial_cleanup(self):
-        """Test disconnect handles partial cleanup when only some queues exist."""
-        import asyncio
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        client_id = "test_client"
-        manager.match_data_queues[client_id] = asyncio.Queue()
-        manager.playclock_queues[client_id] = asyncio.Queue()
-
-        await manager.disconnect(client_id)
-
-        assert client_id not in manager.match_data_queues
-        assert client_id not in manager.playclock_queues
-        assert client_id not in manager.gameclock_queues
-
-
-@pytest.mark.asyncio
-class TestWebSocketListenerErrorScenarios:
-    async def test_base_listener_empty_payload(self):
-        """Test _base_listener handles empty payload gracefully."""
-        from unittest.mock import AsyncMock
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
-        queue_dict["test_client"].put = AsyncMock()
-
-        await manager._base_listener(
-            connection=None,
-            pid=123,
-            channel="test_channel",
-            payload="   ",
-            update_type="test-update",
-            queue_dict=queue_dict,
-        )
-
-        queue_dict["test_client"].put.assert_not_called()
-
-    async def test_base_listener_invalid_json(self):
-        """Test _base_listener handles invalid JSON payload."""
-        from unittest.mock import AsyncMock
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
-        queue_dict["test_client"].put = AsyncMock()
-
-        await manager._base_listener(
-            connection=None,
-            pid=123,
-            channel="test_channel",
-            payload="invalid json {{{",
-            update_type="test-update",
-            queue_dict=queue_dict,
-        )
-
-        queue_dict["test_client"].put.assert_not_called()
-
-    async def test_base_listener_missing_match_id(self):
-        """Test _base_listener handles payload without match_id."""
-        from unittest.mock import AsyncMock
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        queue_dict = {"test_client": AsyncMock(spec=asyncio.Queue)}
-        queue_dict["test_client"].put = AsyncMock()
-
-        try:
-            await manager._base_listener(
-                connection=None,
-                pid=123,
-                channel="test_channel",
-                payload='{"data": "test"}',
-                update_type="test-update",
-                queue_dict=queue_dict,
-            )
-        except KeyError:
-            pass
-
-    async def test_base_listener_exception_in_queue_put(self):
-        """Test _base_listener handles exceptions when putting to queue."""
-        from unittest.mock import AsyncMock, patch
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        mock_queue = AsyncMock(spec=asyncio.Queue)
-        mock_queue.put = AsyncMock(side_effect=Exception("Queue error"))
-        queue_dict = {"test_client": mock_queue}
-
-        with patch.object(connection_manager, "get_match_subscriptions", return_value=[]):
-            await manager._base_listener(
-                connection=None,
-                pid=123,
-                channel="test_channel",
-                payload='{"match_id": 1}',
-                update_type="test-update",
-                queue_dict=queue_dict,
-            )
-
-    async def test_playclock_listener_error_handling(self):
-        """Test playclock_listener properly delegates to _base_listener."""
-        from unittest.mock import AsyncMock
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        manager._base_listener = AsyncMock()
-
-        await manager.playclock_listener(
-            connection=None,
-            pid=123,
-            channel="playclock_change",
-            payload='{"match_id": 1}',
-        )
-
-        manager._base_listener.assert_called_once()
-        args = manager._base_listener.call_args.args
-        assert args[4] == "playclock-update"
-        assert args[5] == manager.playclock_queues
-
-    async def test_match_data_listener_error_handling(self):
-        """Test match_data_listener properly delegates to _base_listener."""
-        from unittest.mock import AsyncMock
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        manager._base_listener = AsyncMock()
-
-        await manager.match_data_listener(
-            connection=None,
-            pid=123,
-            channel="matchdata_change",
-            payload='{"match_id": 1}',
-        )
-
-        manager._base_listener.assert_called_once()
-        args = manager._base_listener.call_args.args
-        assert args[4] == "match-update"
-        assert args[5] == manager.match_data_queues
-
-    async def test_gameclock_listener_error_handling(self):
-        """Test gameclock_listener properly delegates to _base_listener."""
-        from unittest.mock import AsyncMock
-
-        from src.utils.websocket.websocket_manager import MatchDataWebSocketManager
-
-        manager = MatchDataWebSocketManager(db_url="postgresql://test:test@localhost:5432/test")
-        manager._base_listener = AsyncMock()
-
-        await manager.gameclock_listener(
-            connection=None,
-            pid=123,
-            channel="gameclock_change",
-            payload='{"match_id": 1}',
-        )
-
-        manager._base_listener.assert_called_once()
-        args = manager._base_listener.call_args.args
-        assert args[4] == "gameclock-update"
-        assert args[5] == manager.gameclock_queues
-
 
 @pytest.mark.asyncio
 class TestConnectionManagerErrorScenarios:
@@ -1176,8 +999,6 @@ class TestDatabaseNotificationFlow:
         client_id = "test_notification_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
-        ws_manager.match_data_queues[client_id] = asyncio.Queue()
-
         await asyncio.sleep(0.1)
 
         matchdata_service = MatchDataServiceDB(test_db)
@@ -1187,7 +1008,7 @@ class TestDatabaseNotificationFlow:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.match_data_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "match-update"
             assert notification["match_id"] == created_match.id
@@ -1244,8 +1065,6 @@ class TestDatabaseNotificationFlow:
         client_id = "test_playclock_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
-        ws_manager.playclock_queues[client_id] = asyncio.Queue()
-
         await asyncio.sleep(0.1)
 
         playclock_service = PlayClockServiceDB(test_db)
@@ -1255,7 +1074,7 @@ class TestDatabaseNotificationFlow:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.playclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "playclock-update"
             assert notification["match_id"] == created_match.id
@@ -1311,8 +1130,6 @@ class TestDatabaseNotificationFlow:
         client_id = "test_gameclock_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
-        ws_manager.gameclock_queues[client_id] = asyncio.Queue()
-
         await asyncio.sleep(0.1)
 
         gameclock_service = GameClockServiceDB(test_db)
@@ -1322,7 +1139,7 @@ class TestDatabaseNotificationFlow:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.gameclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "gameclock-update"
             assert notification["match_id"] == created_match.id
@@ -1378,7 +1195,6 @@ class TestDatabaseNotificationFlow:
         clients = ["client_1", "client_2", "client_3"]
         for client_id in clients:
             await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
-            ws_manager.playclock_queues[client_id] = asyncio.Queue()
 
         await asyncio.sleep(0.1)
 
@@ -1391,7 +1207,7 @@ class TestDatabaseNotificationFlow:
         for client_id in clients:
             try:
                 notification = await asyncio.wait_for(
-                    ws_manager.playclock_queues[client_id].get(), timeout=1.0
+                    connection_manager.queues[client_id].get(), timeout=1.0
                 )
                 assert notification["type"] == "playclock-update"
                 received_count += 1
@@ -1466,9 +1282,6 @@ class TestDatabaseNotificationFlow:
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_1, match_1.id)
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_2, match_2.id)
 
-        ws_manager.playclock_queues[client_1] = asyncio.Queue()
-        ws_manager.playclock_queues[client_2] = asyncio.Queue()
-
         await asyncio.sleep(0.1)
 
         playclock_service = PlayClockServiceDB(test_db)
@@ -1478,13 +1291,13 @@ class TestDatabaseNotificationFlow:
 
         try:
             notification_1 = await asyncio.wait_for(
-                ws_manager.playclock_queues[client_1].get(), timeout=1.0
+                connection_manager.queues[client_1].get(), timeout=1.0
             )
             assert notification_1["match_id"] == match_1.id
         except asyncio.TimeoutError:
             pass
 
-        assert ws_manager.playclock_queues[client_2].empty()
+        assert connection_manager.queues[client_2].empty()
 
         await connection_manager.disconnect(client_1)
         await connection_manager.disconnect(client_2)
@@ -1537,16 +1350,14 @@ class TestDatabaseNotificationFlow:
         client_id = "test_update_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
-        ws_manager.playclock_queues[client_id] = asyncio.Queue()
-
         playclock_service = PlayClockServiceDB(test_db)
         playclock = await playclock_service.create(PlayClockSchemaCreate(match_id=created_match.id))
 
         await asyncio.sleep(0.1)
 
-        while not ws_manager.playclock_queues[client_id].empty():
+        while not connection_manager.queues[client_id].empty():
             try:
-                await ws_manager.playclock_queues[client_id].get_nowait()
+                await connection_manager.queues[client_id].get_nowait()
             except asyncio.QueueEmpty:
                 break
 
@@ -1559,7 +1370,7 @@ class TestDatabaseNotificationFlow:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.playclock_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "playclock-update"
             assert notification["match_id"] == created_match.id
@@ -1617,9 +1428,6 @@ class TestDatabaseNotificationFlow:
         client_id = "test_multi_notify_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
-        ws_manager.playclock_queues[client_id] = asyncio.Queue()
-        ws_manager.gameclock_queues[client_id] = asyncio.Queue()
-
         playclock_service = PlayClockServiceDB(test_db)
         gameclock_service = GameClockServiceDB(test_db)
 
@@ -1633,7 +1441,7 @@ class TestDatabaseNotificationFlow:
         received_notifications = []
         try:
             playclock_notification = await asyncio.wait_for(
-                ws_manager.playclock_queues[client_id].get(), timeout=1.0
+                connection_manager.queues[client_id].get(), timeout=1.0
             )
             received_notifications.append(playclock_notification["type"])
         except asyncio.TimeoutError:
@@ -1641,7 +1449,7 @@ class TestDatabaseNotificationFlow:
 
         try:
             gameclock_notification = await asyncio.wait_for(
-                ws_manager.gameclock_queues[client_id].get(), timeout=1.0
+                connection_manager.queues[client_id].get(), timeout=1.0
             )
             received_notifications.append(gameclock_notification["type"])
         except asyncio.TimeoutError:
@@ -1703,8 +1511,6 @@ class TestDatabaseNotificationFlow:
         client_id = "test_event_client"
         await connection_manager.connect(AsyncMock(spec=WebSocket), client_id, created_match.id)
 
-        ws_manager.event_queues[client_id] = asyncio.Queue()
-
         await asyncio.sleep(0.1)
 
         football_event_service = FootballEventServiceDB(test_db)
@@ -1722,7 +1528,7 @@ class TestDatabaseNotificationFlow:
 
         try:
             notification = await asyncio.wait_for(
-                ws_manager.event_queues[client_id].get(), timeout=2.0
+                connection_manager.queues[client_id].get(), timeout=2.0
             )
             assert notification["type"] == "event-update"
             assert notification["match_id"] == created_match.id
