@@ -195,3 +195,12 @@ services:
         reservations:
           cpus: '0.05'
           memory: 64M
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/run/nginx:noexec,nosuid,size=5m
+      - /tmp:noexec,nosuid,size=10m

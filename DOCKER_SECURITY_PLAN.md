@@ -3,7 +3,7 @@
 ## Overview
 This document outlines the implementation plan for fixing Docker and docker-compose security issues and best practices, preparing the application for Kubernetes deployment.
 
-**Status**: STAB-155 created (Phase 1 - Non-root user)
+**Status**: ✅ All 11 issues completed (2026-01-27)
 **Team**: StatsboardBack
 **Priority**: Critical (K8s preparation)
 
@@ -12,35 +12,38 @@ This document outlines the implementation plan for fixing Docker and docker-comp
 ## Phase 1: Critical Security Fixes (URGENT - Priority 1)
 
 ### ✅ STAB-155: Add non-root user to all Python Dockerfiles
-**Status**: Created
+**Status**: ✅ Completed (2026-01-27)
 **URL**: https://linear.app/statsboard/issue/STAB-155
+**Commit**: d0a174a
 
 **Tasks**:
-- [ ] Create `appuser` with UID 1000, GID 1000 in all Python Dockerfiles
-- [ ] Install curl for healthchecks
-- [ ] Fix ownership of /app, /tmp directories
-- [ ] Update Dockerfile.prod, Dockerfile.dev, Dockerfile.test, Dockerfile.migrations
-- [ ] Update WORKDIR and COPY commands to handle permissions correctly
+- [x] Create `appuser` with UID 1000, GID 1000 in all Python Dockerfiles
+- [x] Install curl for healthchecks
+- [x] Fix ownership of /app, /tmp directories
+- [x] Update Dockerfile.prod, Dockerfile.dev, Dockerfile.test, Dockerfile.migrations
+- [x] Update WORKDIR and COPY commands to handle permissions correctly
 
 **Testing**:
-- [ ] `docker exec -it <container> whoami` returns `appuser` (not root)
-- [ ] All Dockerfiles build successfully
-- [ ] Application runs without permission errors
-- [ ] All tests pass
+- [x] `docker exec -it <container> whoami` returns `appuser` (not root)
+- [x] All Dockerfiles build successfully
+- [x] Application runs without permission errors
+- [x] All tests pass
 
 ---
 
-### ⚠️ Issue 2: Pin all image versions (no more 'latest')
-
+### ✅ STAB-158: Pin all image versions (no more 'latest')
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-158
+**Commit**: 6e29acd
 **Priority**: Urgent
 **Files**: Dockerfile.certbot, docker-compose.test.yml, all Python and Nginx Dockerfiles
 
 **Tasks**:
-- [ ] `certbot/certbot:latest` → `certbot/certbot:v2.8.0`
-- [ ] `postgres:latest` → `postgres:17.2-alpine`
-- [ ] `python:3.12-slim` → `python:3.12.3-slim` (all Python Dockerfiles)
-- [ ] `nginx:alpine` → `nginx:1.27.3-alpine` (all Nginx Dockerfiles)
-- [ ] Document version choices in each Dockerfile
+- [x] `certbot/certbot:latest` → `certbot/certbot:v2.8.0`
+- [x] `postgres:latest` → `postgres:17.2-alpine`
+- [x] `python:3.12-slim` → `python:3.12.3-slim` (all Python Dockerfiles)
+- [x] `nginx:alpine` → `nginx:1.27.3-alpine` (all Nginx Dockerfiles)
+- [x] Document version choices in each Dockerfile
 
 **Rationale**:
 - Prevents unpredictable builds
@@ -49,17 +52,19 @@ This document outlines the implementation plan for fixing Docker and docker-comp
 
 ---
 
-### ⚠️ Issue 3: Enable healthchecks in all Dockerfiles
-
+### ✅ STAB-159: Enable healthchecks in all Dockerfiles
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-159
+**Commit**: 37c8ff6
 **Priority**: Urgent
 **Files**: Dockerfile.prod, Dockerfile.dev, Dockerfile.test, Dockerfile.migrations
 
 **Tasks**:
-- [ ] Uncomment and fix Dockerfile.prod healthcheck (use http not https)
-- [ ] Add healthchecks to Dockerfile.dev
-- [ ] Add healthchecks to Dockerfile.test
-- [ ] Add healthchecks to Dockerfile.migrations
-- [ ] Ensure curl is installed in all Python Dockerfiles
+- [x] Uncomment and fix Dockerfile.prod healthcheck (use http not https)
+- [x] Add healthchecks to Dockerfile.dev
+- [x] Add healthchecks to Dockerfile.test
+- [x] Add healthchecks to Dockerfile.migrations
+- [x] Ensure curl is installed in all Python Dockerfiles
 
 **Implementation**:
 ```dockerfile
@@ -74,19 +79,21 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 
 ---
 
-### ⚠️ Issue 4: Improve .dockerignore file
-
+### ✅ STAB-156: Improve .dockerignore file
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-156
+**Commit**: 61ba2d2
 **Priority**: Urgent
 **Files**: .dockerignore
 
 **Tasks**:
-- [ ] Add Git files: `.git`, `.gitignore`
-- [ ] Add Python cache: `__pycache__`, `*.pyc`, `.pytest_cache`, `.ruff_cache`
-- [ ] Add environment files: `.env*` (except .env.example)
-- [ ] Add documentation: `*.md`, `docs/`
-- [ ] Add tests: `tests/`, `.coverage`, `coverage/`
-- [ ] Add development tools: `.vscode/`, `.idea/`, `.DS_Store`
-- [ ] Add build artifacts: `*.log`, `dist/`, `build/`, `*.egg-info/`
+- [x] Add Git files: `.git`, `.gitignore`
+- [x] Add Python cache: `__pycache__`, `*.pyc`, `.pytest_cache`, `.ruff_cache`
+- [x] Add environment files: `.env*` (except .env.example)
+- [x] Add documentation: `*.md`, `docs/`
+- [x] Add tests: `tests/`, `.coverage`, `coverage/`
+- [x] Add development tools: `.vscode/`, `.idea/`, `.DS_Store`
+- [x] Add build artifacts: `*.log`, `dist/`, `build/`, `*.egg-info/`
 
 **Benefits**:
 - Faster builds
@@ -97,18 +104,20 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 
 ## Phase 2: Optimizations & Best Practices (HIGH - Priority 2)
 
-### 📋 Issue 5: Implement multi-stage builds for Python images
-
+### ✅ STAB-160: Implement multi-stage builds for Python images
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-160
+**Commit**: f9bc2a7
 **Priority**: High
 **Files**: Dockerfile.prod, Dockerfile.dev, Dockerfile.test
 
 **Tasks**:
-- [ ] Create multi-stage build for Dockerfile.prod
-- [ ] Create multi-stage build for Dockerfile.dev
-- [ ] Create multi-stage build for Dockerfile.test
-- [ ] Build stage: Install all dependencies
-- [ ] Production stage: Copy only runtime dependencies
-- [ ] Copy application code from build stage
+- [x] Create multi-stage build for Dockerfile.prod
+- [x] Create multi-stage build for Dockerfile.dev
+- [x] Create multi-stage build for Dockerfile.test
+- [x] Build stage: Install all dependencies
+- [x] Production stage: Copy only runtime dependencies
+- [x] Copy application code from build stage
 
 **Expected Results**:
 - Dockerfile.prod: ~300MB → ~180MB (40% reduction)
@@ -117,15 +126,17 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 
 ---
 
-### 📋 Issue 6: Optimize layer caching in Dockerfiles
-
+### ✅ STAB-157: Optimize layer caching in Dockerfiles
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-157
+**Commit**: 42b0a24
 **Priority**: High
 **Files**: Dockerfile.prod, Dockerfile.dev, Dockerfile.test, Dockerfile.migrations
 
 **Tasks**:
-- [ ] Reorder COPY commands (deps first, source last)
-- [ ] Copy `pyproject.toml` and `poetry.lock` before source code
-- [ ] Install dependencies before copying source
+- [x] Reorder COPY commands (deps first, source last)
+- [x] Copy `pyproject.toml` and `poetry.lock` before source code
+- [x] Install dependencies before copying source
 
 **Optimized Order**:
 ```dockerfile
@@ -141,15 +152,17 @@ COPY src /app/src
 
 ---
 
-### 📋 Issue 7: Remove poetry-cache from production
-
+### ✅ STAB-163: Remove poetry-cache from production
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-163
+**Commit**: bdec7e5
 **Priority**: High
 **Files**: docker-compose.prod.yml
 
 **Tasks**:
-- [ ] Remove `poetry-cache` volume definition
-- [ ] Remove `- poetry-cache:/root/.cache/pypoetry` from statsboards-backend service
-- [ ] Verify docker-compose.prod.yml works without volume
+- [x] Remove `poetry-cache` volume definition
+- [x] Remove `- poetry-cache:/root/.cache/pypoetry` from statsboards-backend service
+- [x] Verify docker-compose.prod.yml works without volume
 
 **Rationale**:
 - Prevents cache poisoning attacks
@@ -158,16 +171,18 @@ COPY src /app/src
 
 ---
 
-### 📋 Issue 8: Add resource limits to docker-compose.prod.yml
-
+### ✅ STAB-162: Add resource limits to docker-compose.prod.yml
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-162
+**Commit**: 96e4dbe
 **Priority**: High
 **Files**: docker-compose.prod.yml
 
 **Tasks**:
-- [ ] Add resource requests and limits to statsboards-backend service
-- [ ] Add resource requests and limits to nginx-ssl service
-- [ ] Add resource requests and limits to nginx-static service
-- [ ] Add resource requests and limits to certbot service
+- [x] Add resource requests and limits to statsboards-backend service
+- [x] Add resource requests and limits to nginx-ssl service
+- [x] Add resource requests and limits to nginx-static service
+- [x] Add resource requests and limits to certbot service
 
 **Implementation**:
 ```yaml
@@ -192,17 +207,19 @@ services:
 
 ## Phase 3: Enhanced Security (MEDIUM - Priority 3)
 
-### 📋 Issue 9: Fix certbot script security issues
-
+### ✅ STAB-161: Fix certbot script security issues
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-161
+**Commit**: 68da332
 **Priority**: Medium
 **Files**: certbot-entrypoint.sh
 
 **Tasks**:
-- [ ] Remove `set -x` (verbose mode)
-- [ ] Add certificate validation after generation
-- [ ] Add proper error handling and logging
-- [ ] Add timeout for certificate renewal
-- [ ] Make email and domains configurable
+- [x] Remove `set -x` (verbose mode)
+- [x] Add certificate validation after generation
+- [x] Add proper error handling and logging
+- [x] Add timeout for certificate renewal
+- [x] Make email and domains configurable
 
 **Key Improvements**:
 - No sensitive data in logs
@@ -212,16 +229,18 @@ services:
 
 ---
 
-### 📋 Issue 10: Add security options to docker-compose.prod.yml
-
+### ✅ STAB-165: Add security options to docker-compose.prod.yml
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-165
+**Commit**: f2e54af
 **Priority**: Medium
 **Files**: docker-compose.prod.yml
 
 **Tasks**:
-- [ ] Add `read_only: true` to app container
-- [ ] Add `tmpfs` mounts for /tmp and /run
-- [ ] Add `cap_drop: ["ALL"]` for nginx containers
-- [ ] Add `security_opt: ["no-new-privileges:true"]`
+- [x] Add `read_only: true` to app container
+- [x] Add `tmpfs` mounts for /tmp and /run
+- [x] Add `cap_drop: ["ALL"]` for nginx containers
+- [x] Add `security_opt: ["no-new-privileges:true"]`
 
 **Implementation**:
 ```yaml
@@ -242,16 +261,18 @@ services:
 
 ---
 
-### 📋 Issue 11: Remove .env file mounting in production
-
+### ✅ STAB-164: Remove .env file mounting in production
+**Status**: ✅ Completed (2026-01-27)
+**URL**: https://linear.app/statsboard/issue/STAB-164
+**Commit**: 70e1913
 **Priority**: Medium
 **Files**: docker-compose.prod.yml
 
 **Tasks**:
-- [ ] Remove `env_file: - .env.prod` from docker-compose.prod.yml
-- [ ] Replace with explicit environment variables
-- [ ] Document required environment variables
-- [ ] Update deployment documentation
+- [x] Remove `env_file: - .env.prod` from docker-compose.prod.yml
+- [x] Replace with explicit environment variables
+- [x] Document required environment variables
+- [x] Update deployment documentation
 
 **Rationale**:
 - No risk of committing secrets
@@ -272,14 +293,16 @@ services:
 
 After each issue is completed:
 
-- [ ] All Dockerfiles build successfully
-- [ ] `docker-compose -f docker-compose.dev.yml up` works
-- [ ] `docker-compose -f docker-compose.test.yml up` works
-- [ ] `docker-compose -f docker-compose.prod.yml build` works
-- [ ] All healthchecks respond
-- [ ] No container runs as root (`docker exec -it <container> whoami`)
-- [ ] All tests pass locally
-- [ ] Images use pinned versions only
+- [x] All Dockerfiles build successfully
+- [x] `docker-compose -f docker-compose.dev.yml up` works
+- [x] `docker-compose -f docker-compose.test.yml up` works
+- [x] `docker-compose -f docker-compose.prod.yml build` works
+- [x] All healthchecks respond
+- [x] No container runs as root (`docker exec -it <container> whoami`)
+- [x] All tests pass locally
+- [x] Images use pinned versions only
+
+**All testing completed on 2026-01-27**
 
 ---
 
@@ -308,12 +331,14 @@ After each issue is completed:
 
 ## Next Steps
 
-1. Complete STAB-155 (Phase 1, Issue 1) - **Currently in progress**
-2. Create remaining 10 Linear issues when limit resets
-3. Implement Phase 1 fixes (all 4 issues)
-4. Implement Phase 2 optimizations (all 4 issues)
-5. Implement Phase 3 security hardening (all 3 issues)
-6. End-to-end testing
+1. ✅ Complete STAB-155 (Phase 1, Issue 1) - **Completed on 2026-01-27**
+2. ✅ Create remaining 10 Linear issues - **All created and completed**
+3. ✅ Implement Phase 1 fixes (all 4 issues) - **Completed**
+4. ✅ Implement Phase 2 optimizations (all 4 issues) - **Completed**
+5. ✅ Implement Phase 3 security hardening (all 3 issues) - **Completed**
+6. ✅ End-to-end testing - **Ready for deployment**
+
+**All implementation steps completed. Application is ready for Kubernetes deployment.**
 
 ---
 
@@ -321,5 +346,22 @@ After each issue is completed:
 
 - **Note**: STAB-155 was successfully created before hitting Linear's issue creation limit
 - **Note**: This document serves as a comprehensive plan for all 11 issues
-- **Note**: Create Linear issues when limit resets to track progress
-- **Note**: All commits must be by linroot with email nevalions@gmail.com
+- **Note**: All Linear issues created and completed on 2026-01-27
+- **Note**: All commits made by linroot with email nevalions@gmail.com
+- **Completed**: All 11 issues completed and committed successfully
+
+## Commits Summary
+
+| Issue | Linear ID | Commit | Date | Description |
+|--------|-----------|---------|-------|-------------|
+| STAB-155 | https://linear.app/statsboard/issue/STAB-155 | d0a174a | 2026-01-27 | Add non-root user to all Python Dockerfiles |
+| STAB-156 | https://linear.app/statsboard/issue/STAB-156 | 61ba2d2 | 2026-01-27 | Improve .dockerignore file |
+| STAB-158 | https://linear.app/statsboard/issue/STAB-158 | 6e29acd | 2026-01-27 | Pin all image versions (no more 'latest') |
+| STAB-159 | https://linear.app/statsboard/issue/STAB-159 | 37c8ff6 | 2026-01-27 | Enable healthchecks in all Dockerfiles |
+| STAB-157 | https://linear.app/statsboard/issue/STAB-157 | 42b0a24 | 2026-01-27 | Optimize layer caching in Dockerfiles |
+| STAB-160 | https://linear.app/statsboard/issue/STAB-160 | f9bc2a7 | 2026-01-27 | Implement multi-stage builds for Python images |
+| STAB-162 | https://linear.app/statsboard/issue/STAB-162 | 96e4dbe | 2026-01-27 | Add resource limits to docker-compose.prod.yml |
+| STAB-163 | https://linear.app/statsboard/issue/STAB-163 | bdec7e5 | 2026-01-27 | Remove poetry-cache from production |
+| STAB-161 | https://linear.app/statsboard/issue/STAB-161 | 68da332 | 2026-01-27 | Fix certbot script security issues |
+| STAB-164 | https://linear.app/statsboard/issue/STAB-164 | 70e1913 | 2026-01-27 | Remove .env file mounting in production |
+| STAB-165 | https://linear.app/statsboard/issue/STAB-165 | f2e54af | 2026-01-27 | Add security options to docker-compose.prod.yml |
