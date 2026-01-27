@@ -16,18 +16,20 @@ RUN pip install --no-cache-dir poetry
 # Create directories with correct ownership
 RUN mkdir -p /app && chown -R appuser:appuser /app
 
-# Copy necessary files
-COPY --chown=appuser:appuser alembic.ini alembic.ini
-COPY --chown=appuser:appuser README.md README.md
+# Copy dependency files only
 COPY --chown=appuser:appuser pyproject.toml poetry.lock ./
-COPY --chown=appuser:appuser alembic alembic
-COPY --chown=appuser:appuser src src
 
 # Configure Poetry to avoid creating a virtual environment inside the container
 RUN poetry config virtualenvs.create false
 
-# Install dependencies using Poetry
+# Install dependencies using Poetry (cached if unchanged)
 RUN poetry install --without dev --no-interaction --no-ansi
+
+# Copy application code (this layer changes frequently)
+COPY --chown=appuser:appuser alembic.ini alembic.ini
+COPY --chown=appuser:appuser README.md README.md
+COPY --chown=appuser:appuser alembic alembic
+COPY --chown=appuser:appuser src src
 
 # Set environment variables (modify as needed)
 ENV PYTHONUNBUFFERED=1
