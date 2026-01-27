@@ -117,8 +117,22 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
       - static-files:/app/static:rw  # Read-write access for backend
-    env_file:
-      - .env.prod
+    environment:
+      - LOGS_CONFIG=${LOGS_CONFIG}
+      - CURRENT_SEASON_ID=${CURRENT_SEASON_ID}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - RATE_LIMIT_REQUESTS_PER_SECOND=${RATE_LIMIT_REQUESTS_PER_SECOND}
+      - RATE_LIMIT_MAX_CONCURRENT=${RATE_LIMIT_MAX_CONCURRENT}
+      - PROXY_LIST=${PROXY_LIST}
+      - PROXY_TIMEOUT=${PROXY_TIMEOUT}
+      - PROXY_MAX_RETRIES=${PROXY_MAX_RETRIES}
+      - PROXY_SOURCE_CACHE_TTL=${PROXY_SOURCE_CACHE_TTL}
+      - PROXY_SOURCE_MAX_PROXIES=${PROXY_SOURCE_MAX_PROXIES}
+      - PROXY_SOURCE_FETCH_TIMEOUT=${PROXY_SOURCE_FETCH_TIMEOUT}
     networks:
       - backend-network
       - frontend-network
