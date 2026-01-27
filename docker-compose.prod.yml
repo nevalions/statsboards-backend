@@ -38,6 +38,14 @@ services:
       timeout: 5s
       retries: 3
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   certbot:
     labels:
@@ -52,6 +60,14 @@ services:
       - webroot:/var/lib/letse ncrypt:rw
     depends_on:
       - nginx-init
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   nginx-ssl:
     labels:
@@ -78,6 +94,14 @@ services:
       timeout: 5s
       retries: 3
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   statsboards-backend:
     labels:
@@ -104,6 +128,14 @@ services:
     depends_on:
       - certbot
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   nginx-static:
     labels:
@@ -129,3 +161,11 @@ services:
       - statsboards-backend
       - certbot
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
