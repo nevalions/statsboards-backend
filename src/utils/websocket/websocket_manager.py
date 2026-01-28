@@ -145,7 +145,7 @@ class MatchDataWebSocketManager:
 
             if "data" in trigger_data:
                 message = {"type": "match-update", "data": trigger_data["data"]}
-                await connection_manager.send_to_all(json.dumps(message), match_id=match_id)
+                await connection_manager.send_to_all(message, match_id=match_id)
                 self.logger.debug(f"Sent trigger data for match {match_id}")
             else:
                 full_data = await fetch_with_scoreboard_data(
@@ -153,14 +153,14 @@ class MatchDataWebSocketManager:
                 )
                 if full_data and "data" in full_data:
                     message = {"type": "match-update", "data": full_data["data"]}
-                    await connection_manager.send_to_all(json.dumps(message), match_id=match_id)
+                    await connection_manager.send_to_all(message, match_id=match_id)
                     self.logger.debug(f"Sent full match data for match {match_id}")
                 else:
                     self.logger.warning(
                         f"Failed to fetch full match data for match {match_id}, sending partial data"
                     )
                     message = {"type": "match-update", "data": trigger_data.get("data", {})}
-                    await connection_manager.send_to_all(json.dumps(message), match_id=match_id)
+                    await connection_manager.send_to_all(message, match_id=match_id)
         except json.JSONDecodeError as e:
             self.logger.error(f"JSON decode error in match_data_listener: {str(e)}", exc_info=True)
         except Exception as e:

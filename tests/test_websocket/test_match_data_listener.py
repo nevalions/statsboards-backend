@@ -33,7 +33,7 @@ class TestMatchDataListener:
                 mock_fetch.assert_not_called()
 
                 call_args = mock_conn_mgr.send_to_all.call_args
-                message_sent = json.loads(call_args[0][0])
+                message_sent = call_args[0][0]
 
                 assert message_sent["type"] == "match-update"
                 assert "data" in message_sent
@@ -83,7 +83,7 @@ class TestMatchDataListener:
                 mock_fetch.assert_called_once()
 
                 call_args = mock_conn_mgr.send_to_all.call_args
-                message_sent = json.loads(call_args[0][0])
+                message_sent = call_args[0][0]
 
                 assert message_sent["type"] == "match-update"
                 assert "data" in message_sent
@@ -117,7 +117,7 @@ class TestMatchDataListener:
                 mock_conn_mgr.send_to_all.assert_called_once()
 
                 call_args = mock_conn_mgr.send_to_all.call_args
-                message_sent = json.loads(call_args[0][0])
+                message_sent = call_args[0][0]
 
                 assert message_sent["type"] == "match-update"
                 assert "data" in message_sent
