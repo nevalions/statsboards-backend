@@ -135,11 +135,12 @@ class GameClockServiceDB(BaseServiceDB):
                 self.logger.warning(f"GameClock not found: {item_id}")
                 return None
 
-            update_data = item.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = item.model_dump(exclude_unset=True)
             update_data["version"] = (updated_item.version or 0) + 1
 
             for key, value in update_data.items():
-                setattr(updated_item, key, value)
+                if value is not None or key == "started_at_ms":
+                    setattr(updated_item, key, value)
 
             await session.flush()
             await session.commit()

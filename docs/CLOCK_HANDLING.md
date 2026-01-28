@@ -917,8 +917,14 @@ playclock.currentValue = calculateCurrentPlayclock(
 **Symptom:** Clock shows correct value in admin tab but stale value in other tabs/view.
 
 **Root Cause:** Two separate DB updates causing inconsistent WebSocket notifications with race condition.
+- First update set status without clearing `started_at_ms`
+- Second update cleared `started_at_ms` but sent stale notification
 
-**Solution:** Combined atomic update with all fields (status, value, started_at_ms).
+**Solution (Fixed):**
+- Removed redundant first update in pause endpoint
+- Modified `GameClockServiceDB.update()` to allow `started_at_ms=None` updates
+- Now performs single atomic update with all fields (status, value, started_at_ms)
+- Ensures WebSocket receives correct data with `started_at_ms: null` when paused
 
 ### Issue: Clock Not Updating Every Second
 

@@ -221,11 +221,6 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                         f"State machine not found for gameclock {item_id}, creating new one"
                     )
 
-                updated = await game_clock_service.update(
-                    item_id,
-                    GameClockSchemaUpdate(gameclock=current_value, gameclock_status=item_status),
-                )
-
                 if current_value is None:
                     gameclock_db = await game_clock_service.get_by_id(item_id)
                     if gameclock_db:
