@@ -204,22 +204,39 @@ class MatchDataWebSocketManager:
             self.logger.error(f"Error in players_update_listener: {str(e)}", exc_info=True)
 
     async def event_listener(self, connection, pid, channel, payload):
-        invalidate_func = self._cache_service.invalidate_event_data if self._cache_service else None
-        await self._base_listener(
-            connection, pid, channel, payload, "event-update", invalidate_func
-        )
+        from src.core import db
+        from src.football_events.db_services import FootballEventServiceDB
 
-        stats_invalidate_func = (
-            self._cache_service.invalidate_stats if self._cache_service else None
-        )
-        await self._base_listener(
-            connection,
-            pid,
-            channel,
-            payload,
-            "statistics-update",
-            stats_invalidate_func,
-        )
+        try:
+            trigger_data = json.loads(payload.strip())
+            match_id = trigger_data["match_id"]
+
+            self.logger.debug(f"Processing event-update for match {match_id}")
+
+            if self._cache_service:
+                self._cache_service.invalidate_event_data(match_id)
+
+            event_service_db = FootballEventServiceDB(db)
+            events = await event_service_db.get_events_with_players(match_id)
+
+            message = {"type": "event-update", "match_id": match_id, "events": events or []}
+            await connection_manager.send_to_all(message, match_id=match_id)
+            self.logger.debug(f"Sent events update for match {match_id}")
+
+            if self._cache_service:
+                self._cache_service.invalidate_stats(match_id)
+            await self._base_listener(
+                connection,
+                pid,
+                channel,
+                payload,
+                "statistics-update",
+                self._cache_service.invalidate_stats if self._cache_service else None,
+            )
+        except json.JSONDecodeError as e:
+            self.logger.error(f"JSON decode error in event_listener: {str(e)}", exc_info=True)
+        except Exception as e:
+            self.logger.error(f"Error in event_listener: {str(e)}", exc_info=True)
 
     async def shutdown(self):
         async with self._connection_lock:

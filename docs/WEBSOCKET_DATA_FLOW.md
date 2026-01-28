@@ -16,13 +16,13 @@ This document explains the complete data flow for WebSocket real-time updates be
          │
          ▼
  ┌─────────────────────────────────────────┐
- │  MatchDataWebSocketManager            │
- │  - Listeners (asyncpg)             │
- │  - match_data_listener (CUSTOM)      │
- │  - gameclock_listener (_base)        │
- │  - playclock_listener (_base)        │
- │  - event_listener (_base)            │
- │  - players_update_listener (CUSTOM)  │
+  │  MatchDataWebSocketManager            │
+  │  - Listeners (asyncpg)             │
+  │  - match_data_listener (CUSTOM)      │
+  │  - gameclock_listener (_base)        │
+  │  - playclock_listener (_base)        │
+  │  - event_listener (CUSTOM)           │
+  │  - players_update_listener (CUSTOM)  │
  └────────┬────────────────────────────┘
          │
          ▼
@@ -512,15 +512,53 @@ if (messageType === 'playclock-update') {
 
 **Source:** Database trigger → `MatchDataWebSocketManager.event_listener()`
 
-**Backend flow:**
+ **Backend flow:**
 1. Database trigger fires: `notify_football_event_change()`
-2. Sends pg_notify with payload (from trigger)
-3. `event_listener()` receives via `_base_listener()`
+2. Sends pg_notify with payload:
+    ```json
+    {
+      "table": "football_event",
+      "operation": "INSERT/UPDATE/DELETE",
+      "match_id": 67
+    }
+    ```
+3. `event_listener()` receives notification
 4. **Invalidates cache:** `cache_service.invalidate_event_data(match_id)`
-5. **Invalidates stats:** `cache_service.invalidate_stats(match_id)` (events affect stats)
-6. **Sends twice:**
-   - Once as `event-update` (for events signal)
-   - Once as `statistics-update` (for stats signal)
+5. **Fetches full events:** `FootballEventServiceDB.get_events_with_players(match_id)`
+6. **Sends event-update:**
+    ```json
+    {
+      "type": "event-update",
+      "match_id": 67,
+      "events": [
+        {
+          "id": 500,
+          "match_id": 67,
+          "event_number": 42,
+          "play_type": "touchdown",
+          "event_qtr": "3rd",
+          "offense_team": 2,
+          "qb": {
+            "id": 100,
+            "player_id": 50,
+            "player": {
+              "first_name": "John",
+              "second_name": "Doe",
+              "person_photo_url": "http://example.com/photo.jpg"
+            },
+            "position": {"id": 1, "name": "QB"},
+            "team": {
+              "id": 2,
+              "name": "Team B",
+              "logo_url": "http://example.com/logo.png"
+            }
+          }
+        }
+      ]
+    }
+    ```
+7. **Invalidates stats:** `cache_service.invalidate_stats(match_id)` (events affect stats)
+8. **Sends statistics-update:** Via `_base_listener()` to notify clients of stats change
 
 **Message structure (event-update):**
 ```json
@@ -531,17 +569,55 @@ if (messageType === 'playclock-update') {
     {
       "id": 500,
       "match_id": 67,
-      "event_type": "touchdown",
-      "quarter": "3rd",
-      "time_remaining": "12:00",
-      "team_id": 2,
-      "player_id": 50
+      "event_number": 42,
+      "event_qtr": "3rd",
+      "ball_on": 20,
+      "ball_moved_to": 25,
+      "distance_on_offence": 5,
+      "offense_team": 2,
+      "event_qb": 100,
+      "event_down": "1st",
+      "event_distance": 10,
+      "play_type": "touchdown",
+      "play_result": "touchdown",
+      "qb": {
+        "id": 100,
+        "player_id": 50,
+        "player": {
+          "first_name": "John",
+          "second_name": "Doe",
+          "person_photo_url": "http://example.com/photo.jpg"
+        },
+        "position": {
+          "id": 1,
+          "name": "QB"
+        },
+        "team": {
+          "id": 2,
+          "name": "Team B",
+          "logo_url": "http://example.com/logo.png"
+        }
+      },
+      "score_player": {
+        "id": 101,
+        "player_id": 51,
+        "player": {
+          "first_name": "Jane",
+          "second_name": "Smith"
+        },
+        "team": {
+          "id": 2,
+          "name": "Team B"
+        }
+      }
     }
   ]
 }
 ```
 
-**Message size:** ~500-2000B (depends on number of events)
+**Important:** Events are sent at the **top level** of the message (not nested in `data`), matching frontend expectations. Events include full player relationships with person, position, and team data.
+
+**Message size:** ~1-5KB (depends on number of events and player relationships)
 
 **Frontend handling:**
 ```typescript
@@ -862,8 +938,8 @@ curl -X PUT http://localhost:8000/api/matchdata/67/ \
 - **Initial load:** Full data (~5-10KB) on connection
 - **Match updates:** Partial data (~200-400B) on matchdata/scoreboard changes (UPDATE/INSERT); full data (~3-8KB) on DELETE/legacy triggers
 - **Clock updates:** Partial clock data (~200-400B) on clock changes
-- **Event updates:** Full events list (~500-2000B) on event changes
+- **Event updates:** Full events list with player relationships (~1-5KB) on event changes (fetched fresh)
 - **Stats updates:** Full statistics (~1-2KB) on event changes
 - **Players updates:** Full players list (~1-5KB) on player_match changes
-- **Cache strategy:** Invalidate before fetch for match-update and players-update; forward for clocks/events
+- **Cache strategy:** Invalidate before fetch for match-update, players-update, and event-update; forward for clocks
 - **Queue system:** Per-client async queues decouple message generation from sending
