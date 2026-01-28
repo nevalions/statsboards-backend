@@ -209,6 +209,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             try:
                 state_machine = game_clock_service.clock_manager.get_clock_state_machine(item_id)
                 current_value = None
+                current_gameclock = None
 
                 if state_machine:
                     self.logger.debug(f"Found state machine for gameclock {item_id}")
@@ -218,16 +219,27 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     self.logger.debug(f"State machine value after pause: {state_machine.value}")
                 else:
                     self.logger.warning(
-                        f"State machine not found for gameclock {item_id}, creating new one"
+                        f"State machine not found for gameclock {item_id}, getting from database"
                     )
-
-                if current_value is None:
-                    gameclock_db = await game_clock_service.get_by_id(item_id)
-                    if gameclock_db:
-                        current_value = gameclock_db.gameclock
-                        self.logger.debug(f"Current value from DB: {current_value}")
-
-                await game_clock_service.stop_gameclock(item_id)
+                    current_gameclock = await game_clock_service.get_by_id(item_id)
+                    if current_gameclock:
+                        # Calculate elapsed time if clock was running with started_at_ms
+                        if (
+                            current_gameclock.gameclock_status == ClockStatus.RUNNING
+                            and current_gameclock.started_at_ms
+                        ):
+                            current_time_ms = int(time.time() * 1000)
+                            elapsed_ms = current_time_ms - current_gameclock.started_at_ms
+                            elapsed_seconds = elapsed_ms / 1000
+                            current_value = max(0, int(current_gameclock.gameclock - elapsed_seconds))
+                            self.logger.debug(
+                                f"Calculated elapsed time: started_at_ms={current_gameclock.started_at_ms}, "
+                                f"current_time_ms={current_time_ms}, elapsed_seconds={elapsed_seconds}, "
+                                f"original_value={current_gameclock.gameclock}, current_value={current_value}"
+                            )
+                        else:
+                            current_value = current_gameclock.gameclock
+                            self.logger.debug(f"Current value from database: {current_value}")
 
                 update_data = GameClockSchemaUpdate(
                     gameclock_status=item_status,
@@ -235,6 +247,8 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                     gameclock_time_remaining=current_value,
                     started_at_ms=None,
                 )
+
+                await game_clock_service.stop_gameclock(item_id)
                 self.logger.debug(
                     f"Updating gameclock {item_id} with status={item_status}, value={current_value}"
                 )
