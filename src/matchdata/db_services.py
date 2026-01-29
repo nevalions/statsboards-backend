@@ -16,7 +16,7 @@ class MatchDataServiceDB(BaseServiceDB):
         super().__init__(database, MatchDataDB)
         # self.match_manager = MatchDataManager()
         self._running_tasks = {}
-        self.logger = get_logger("backend_logger_MatchDataServiceDB", self)
+        self.logger = get_logger("MatchDataServiceDB", self)
         self.logger.debug("Initialized MatchDataServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

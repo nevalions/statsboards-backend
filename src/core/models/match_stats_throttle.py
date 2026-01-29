@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Integer, TIMESTAMP
+from sqlalchemy import TIMESTAMP, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.models import Base

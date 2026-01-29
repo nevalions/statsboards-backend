@@ -22,7 +22,7 @@ class SponsorServiceDB(BaseServiceDB, SearchPaginationMixin):
         database: Database,
     ) -> None:
         super().__init__(database, SponsorDB)
-        self.logger = get_logger("backend_logger_SponsorServiceDB", self)
+        self.logger = get_logger("SponsorServiceDB", self)
         self.logger.debug("Initialized SponsorServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

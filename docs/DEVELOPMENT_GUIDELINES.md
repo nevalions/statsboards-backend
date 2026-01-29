@@ -968,7 +968,7 @@ The `@handle_view_exceptions` decorator:
 ## Logging
 
 - Call `setup_logging()` at module level in services and routers
-- Initialize logger with descriptive name: `get_logger("backend_logger_TeamServiceDB", self)`
+- Initialize logger with short, descriptive name: `get_logger("TeamServiceDB", self)`
 - Use appropriate log levels:
   - `debug`: Detailed operation tracking
   - `info`: Significant operations (creates, updates)

@@ -1,10 +1,11 @@
-import logging
 
 from gunicorn.app.base import BaseApplication
 from uvicorn.workers import UvicornWorker
 
 from src.core.config import settings
-from src.logging_config import setup_logging
+from src.logging_config import get_logger, setup_logging
+
+logger = get_logger("server")
 
 
 class StatsboardUvicornWorker(UvicornWorker):
@@ -35,7 +36,6 @@ if __name__ == "__main__":
     import main
 
     setup_logging()
-    logger = logging.getLogger("backend_logger_server")
     logger.info("Production Server Started!")
 
     options = {

@@ -14,7 +14,7 @@ from .schemas import PositionSchema, PositionSchemaCreate, PositionSchemaUpdate
 class PositionAPIRouter(BaseRouter[PositionSchema, PositionSchemaCreate, PositionSchemaUpdate]):
     def __init__(self):
         super().__init__("/api/positions", ["positions"], None)
-        self.logger = get_logger("backend_logger_PositionAPIRouter", self)
+        self.logger = get_logger("PositionAPIRouter", self)
         self.logger.debug("Initialized PositionAPIRouter")
 
     def route(self):

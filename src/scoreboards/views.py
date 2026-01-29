@@ -21,7 +21,7 @@ class ScoreboardAPIRouter(
 ):
     def __init__(self, service: ScoreboardServiceDB):
         super().__init__("/api/scoreboards", ["scoreboards"], service)
-        self.logger = get_logger("backend_logger_ScoreboardAPIRouter", self)
+        self.logger = get_logger("ScoreboardAPIRouter", self)
         self.logger.debug("Initialized ScoreboardAPIRouter")
 
     def route(self):

@@ -14,7 +14,7 @@ from .proxy_manager import ProxyManager
 from .rate_limiter import TokenBucket
 from .user_agent_rotator import get_random_user_agent
 
-logger = get_logger("backend_logger_request_services")
+logger = get_logger("request_services")
 
 _rate_limiter = TokenBucket(rate=settings.rate_limit_requests_per_second)
 _concurrency_limiter = asyncio.Semaphore(settings.rate_limit_max_concurrent)

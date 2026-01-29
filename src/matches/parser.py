@@ -21,7 +21,7 @@ from src.tournaments.db_services import TournamentServiceDB
 
 class MatchParser:
     def __init__(self):
-        self.logger = get_logger("backend_logger_MatchParser", self)
+        self.logger = get_logger("MatchParser", self)
         self.logger.debug("Initialized MatchParser")
 
     async def get_parse_tournament_matches(

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.logging_config import get_logger
 
-logger = get_logger("backend_logger_db_session_manager")
+logger = get_logger("db_session_manager")
 
 T = TypeVar("T")
 

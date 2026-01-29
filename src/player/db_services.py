@@ -46,7 +46,7 @@ class PlayerServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, PlayerDB)
-        self.logger = get_logger("backend_logger_PlayerServiceDB", self)
+        self.logger = get_logger("PlayerServiceDB", self)
         self.logger.debug("Initialized PlayerServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

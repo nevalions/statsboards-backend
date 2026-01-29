@@ -22,7 +22,7 @@ class UploadService:
 
     def __init__(self, fs_service: FileSystemService):
         self.fs_service = fs_service
-        self.logger = get_logger("backend_logger_upload", self)
+        self.logger = get_logger("upload", self)
 
     async def validate_file_size(self, upload_file: UploadFile) -> None:
         upload_file.file.seek(0, 2)  # Seek to end

@@ -37,8 +37,8 @@ from .base import Base, BaseServiceDB, db
 from .football_event import FootballEventDB
 from .gameclock import GameClockDB
 from .global_setting import GlobalSettingDB
-from .match_stats_throttle import MatchStatsThrottleDB
 from .match import MatchDB
+from .match_stats_throttle import MatchStatsThrottleDB
 from .matchdata import MatchDataDB
 from .mixins import SeasonSportRelationMixin
 from .person import PersonDB

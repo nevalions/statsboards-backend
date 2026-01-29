@@ -25,7 +25,7 @@ class SportAPIRouter(
             ["sports"],
             None,
         )
-        self.logger = get_logger("backend_logger_SportAPIRouter", self)
+        self.logger = get_logger("SportAPIRouter", self)
         self.logger.debug("Initialized SportAPIRouter")
 
     def route(self):

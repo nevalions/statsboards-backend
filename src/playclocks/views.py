@@ -34,7 +34,7 @@ class PlayClockAPIRouter(
             ["playclock"],
             service,
         )
-        self.logger = get_logger("backend_logger_PlayClockAPIRouter", self)
+        self.logger = get_logger("PlayClockAPIRouter", self)
         self.logger.debug("Initialized PlayClockAPIRouter")
 
     def create_response_with_server_time(self, item, message: str):

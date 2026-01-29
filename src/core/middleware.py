@@ -1,4 +1,3 @@
-import logging
 import uuid
 from time import perf_counter
 
@@ -6,7 +5,9 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-logger = logging.getLogger("backend_logger_fastapi")
+from src.logging_config import get_logger
+
+logger = get_logger("fastapi")
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -29,18 +30,24 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         method = request.method
 
-        logger.info(f"Request started: {method} {path} - request_id={request_id}")
-
         try:
             response = await call_next(request)
             duration_ms = (perf_counter() - start_time) * 1000
 
-            logger.info(
-                f"Request completed: {method} {path} - "
-                f"status={response.status_code} "
-                f"duration={duration_ms:.2f}ms "
-                f"request_id={request_id}"
-            )
+            if response.status_code >= 400:
+                logger.warning(
+                    f"Request completed: {method} {path} - "
+                    f"status={response.status_code} "
+                    f"duration={duration_ms:.2f}ms "
+                    f"request_id={request_id}"
+                )
+            else:
+                logger.debug(
+                    f"Request completed: {method} {path} - "
+                    f"status={response.status_code} "
+                    f"duration={duration_ms:.2f}ms "
+                    f"request_id={request_id}"
+                )
 
             return response
         except Exception as e:

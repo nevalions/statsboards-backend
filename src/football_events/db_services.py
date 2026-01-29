@@ -17,7 +17,7 @@ class FootballEventServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, FootballEventDB)
-        self.logger = get_logger("backend_logger_FootballEventServiceDB", self)
+        self.logger = get_logger("FootballEventServiceDB", self)
         self.logger.debug("Initialized FootballEventServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

@@ -1,12 +1,13 @@
 import importlib
-import logging
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel
 
-logger = logging.getLogger("backend_logger_router_registry")
+from src.logging_config import get_logger
+
+logger = get_logger("router_registry")
 
 
 class RouterConfig(BaseModel):

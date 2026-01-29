@@ -8,7 +8,7 @@ class FileSystemService:
     def __init__(self, base_upload_dir: Path):
         self.base_upload_dir = base_upload_dir
         self.base_upload_dir.mkdir(parents=True, exist_ok=True)
-        self.logger = get_logger("backend_logger_filesystem", self)
+        self.logger = get_logger("filesystem", self)
 
     async def get_upload_dir(self, sub_folder: str) -> Path:
         self.logger.debug(f"Getting upload directory for subfolder: {sub_folder}")

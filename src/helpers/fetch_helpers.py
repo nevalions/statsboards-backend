@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import logging
 import time
 from typing import Any
 
@@ -11,6 +10,7 @@ from src.core import db
 from src.core.models import TeamDB
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
+from src.logging_config import get_logger
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.playclocks.db_services import PlayClockServiceDB
@@ -19,8 +19,8 @@ from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate
 from src.tournaments.db_services import TournamentServiceDB
 
-logger = logging.getLogger("backend_logger_helpers")
-fetch_data_logger = logging.getLogger("backend_fetch_data_helpers")
+logger = get_logger("helpers")
+fetch_data_logger = get_logger("fetch_data")
 
 
 async def fetch_list_of_matches_data(matches: list[Any]) -> list[dict[str, Any]] | None:

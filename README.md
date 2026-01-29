@@ -406,16 +406,18 @@ Configuration validation also runs automatically on application startup before s
 Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config_info.yaml`). Call `setup_logging()` at module level in services and routers.
 
 **Log Levels:**
-- **debug**: Detailed operation tracking
-- **info**: Significant operations (creates, updates)
-- **warning**: Expected but noteworthy situations (validation errors)
-- **error**: Unexpected errors (database errors)
+- **debug**: Detailed operation tracking and successful HTTP requests
+- **info**: Significant operations (creates, updates, application startup)
+- **warning**: Expected but noteworthy situations (validation errors, 4xx HTTP responses)
+- **error**: Unexpected errors (database errors, 5xx HTTP responses)
 - **critical**: Unexpected errors that should rarely trigger
 
 **Log Format:**
-- Structured logging with consistent format across all services
+- Console: `[LEVEL] HH:MM:SS logger_name - message` (concise, level-first format)
+- File: `YYYY-MM-DD HH:MM:SS [LEVEL] logger_name - message - Class: ClassName - Func: function_name` (detailed with context)
 - Logs written to console and log files in `logs/` directory
 - Use `exc_info=True` for exception logging to capture stack traces
+- Successful HTTP requests logged at DEBUG level; errors logged at WARNING/ERROR level
 
 ## Contributing
 

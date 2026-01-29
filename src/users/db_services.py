@@ -25,7 +25,7 @@ ITEM = "USER"
 class UserServiceDB(BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(database, UserDB)
-        self.logger = get_logger("backend_logger_UserServiceDB", self)
+        self.logger = get_logger("UserServiceDB", self)
         self.logger.debug("Initialized UserServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

@@ -1,18 +1,23 @@
 version: 1
 disable_existing_loggers: false
 formatters:
+  console:
+    format: '[%(levelname)s] %(asctime)s %(name)s - %(message)s'
+    datefmt: '%H:%M:%S'
+  detailed:
+    format: '%(asctime)s [%(levelname)s] %(name)s - %(message)s - Class: %(classname)s - Func: %(funcName)s'
   simple:
     format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s - Class: %(classname)s - Func: %(funcName)s'
 handlers:
   console:
     class: logging.StreamHandler
     level: DEBUG
-    formatter: simple
+    formatter: console
     stream: ext://sys.stdout  # Direct logs to standard output (console)
   file:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
-    formatter: simple
+    formatter: detailed
     filename: backend.log
     maxBytes: 10485760  # 10MB
     backupCount: 5
@@ -20,229 +25,310 @@ filters:
   context_filter:
     (): src.logging_config.ContextFilter
 loggers:
-  backend_logger_fastapi:
+  fastapi:
     level: DEBUG
     handlers: [console, file]
     propagate: no
-  backend_logger_server:
+  server:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_config:
+  config:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_base_db:
+  db:
     level: DEBUG
     handlers: [ console, file ]
     filters: [context_filter]
     propagate: no
-  backend_logger_helpers:
+  helpers:
     level: ERROR
     handlers: [ console, file ]
     propagate: no
-  backend_fetch_data_helpers:
+  fetch_data:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_text_helpers:
+  text_helpers:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_fileservice:
+  file_service:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-
-  backend_logger_MatchDataWebSocketManager:
+  proxy_manager:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ConnectionManager:
+  request_services:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ScoreboardUpdateManager:
+  router_registry:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ScoreboardServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_ClockManager:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayClockServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_GameClockServiceDB:
+  service_registry:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
 
-  backend_logger_SeasonServiceDB:
+  MatchDataWebSocketManager:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SportServiceDB:
+  ConnectionManager:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TournamentServiceDB:
+  MatchWebSocketHandler:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TeamServiceDB:
+  ScoreboardUpdateManager:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TeamTournamentServiceDB:
+  ScoreboardServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_MatchServiceDB:
+  ClockManager:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_MatchDataServiceDB:
+  PlayClockServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PersonServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayerServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PositionServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayerTeamTournamentServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayerMatchServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_SponsorServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_SponsorLineServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_SponsorSponsorLineServiceDB:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_FootballEventServiceDB:
+  GameClockServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
 
-  backend_logger_SeasonAPIRouter:
+  SeasonServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SportAPIRouter:
+  SportServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TournamentAPIRouter:
+  TournamentServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TeamAPIRouter:
+  TeamServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_MatchAPIRouter:
+  TeamTournamentServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PersonAPIRouter:
+  MatchServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayerAPIRouter:
+  MatchDataServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PositionAPIRouter:
+  PersonServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayerTeamTournamentAPIRouter:
+  PlayerServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayerMatchAPIRouter:
+  PositionServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SponsorAPIRouter:
+  PlayerTeamTournamentServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SponsorLineAPIRouter:
+  PlayerMatchServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SponsorSponsorLineAPIRouter:
+  SponsorServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_FootballEventAPIRouter:
+  SponsorLineServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-
-  backend_logger_MatchDataAPIRouter:
+  SponsorSponsorLineServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ScoreboardAPIRouter:
+  FootballEventServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_GameClockAPIRouter:
+  MatchStatsServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayClockAPIRouter:
+  GlobalSettingServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-
-  backend_logger_parser_eesl:
+  RoleServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
-  backend_logger_parse_players_from_eesl:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_parse_players_from_team_tournament_eesl:
-    level: DEBUG
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_parse_match_eesl:
+  UserServiceDB:
     level: DEBUG
     handlers: [ console, file ]
     propagate: no
 
-  backend_logger_tests:
+  SeasonAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  SportAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  TournamentAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  TeamAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  MatchAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  MatchCRUDRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  PersonAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  PlayerAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  PositionAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  PlayerTeamTournamentAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  PlayerMatchAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  SponsorAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  SponsorLineAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  SponsorSponsorLineAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  FootballEventAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
+  MatchDataAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  ScoreboardAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  GameClockAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  PlayClockAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  AuthRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  GlobalSettingAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  RoleAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  UserAPIRouter:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
+  parse_eesl:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  parse_players_from_eesl:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  parse_players_from_team_tournament_eesl:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  parse_match_eesl:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
+  imageprocessing:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  upload:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  download:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  filesystem:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  db_session_manager:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+  MatchDataCacheService:
+    level: DEBUG
+    handlers: [ console, file ]
+    propagate: no
+
+  tests:
     level: WARNING
     handlers: [ console, file ]
     propagate: no
-root:
-  level: WARNING
-  handlers: [console]
+  root:
+    level: WARNING
+    handlers: [console]

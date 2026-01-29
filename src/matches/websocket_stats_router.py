@@ -31,7 +31,7 @@ class MatchStatsWebSocketRouter(
             service,
         )
         self.stats_service = stats_service
-        self.logger = get_logger("backend_logger_MatchStatsWebSocketRouter", self)
+        self.logger = get_logger("MatchStatsWebSocketRouter", self)
         self.stats_handler = MatchStatsWebSocketHandler(stats_service)
         self.logger.debug("Initialized MatchStatsWebSocketRouter")
 

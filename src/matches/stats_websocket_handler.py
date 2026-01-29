@@ -13,7 +13,7 @@ websocket_logger = None
 class MatchStatsWebSocketHandler:
     def __init__(self, stats_service: MatchStatsServiceDB):
         self.stats_service = stats_service
-        self.logger = get_logger("backend_logger_MatchStatsWebSocketHandler", self)
+        self.logger = get_logger("MatchStatsWebSocketHandler", self)
         self.logger.debug("Initialized MatchStatsWebSocketHandler")
 
         self.connected_clients: dict[int, list[tuple[WebSocket, str]]] = {}

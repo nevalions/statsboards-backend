@@ -17,7 +17,7 @@ ITEM = "ROLE"
 class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
     def __init__(self, service: RoleServiceDB):
         super().__init__("/api/roles", ["roles"], service)
-        self.logger = get_logger("backend_logger_RoleAPIRouter", self)
+        self.logger = get_logger("RoleAPIRouter", self)
         self.logger.debug("Initialized RoleAPIRouter")
 
     def route(self):

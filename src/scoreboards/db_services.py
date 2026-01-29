@@ -15,7 +15,7 @@ ITEM = "SCOREBOARD"
 class ScoreboardUpdateManager:
     def __init__(self) -> None:
         self.active_scoreboard_updates: dict[int, asyncio.Queue] = {}
-        self.logger = get_logger("backend_logger_ScoreboardUpdateManager", self)
+        self.logger = get_logger("ScoreboardUpdateManager", self)
         self.logger.debug("Initialized ScoreboardUpdateManager")
 
     async def enable_scoreboard_update_queue(self, scoreboard_id: int) -> None:
@@ -37,7 +37,7 @@ class ScoreboardServiceDB(BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(database, ScoreboardDB)
         self.scoreboard_update_manager = ScoreboardUpdateManager()
-        self.logger = get_logger("backend_logger_ScoreboardServiceDB", self)
+        self.logger = get_logger("ScoreboardServiceDB", self)
         self.logger.debug("Initialized ScoreboardServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

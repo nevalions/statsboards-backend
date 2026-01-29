@@ -24,7 +24,7 @@ class SportServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             database,
             model=SportDB,
         )
-        self.logger = get_logger("backend_logger_SportServiceDB", self)
+        self.logger = get_logger("SportServiceDB", self)
         self.logger.debug("Initialized SportServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

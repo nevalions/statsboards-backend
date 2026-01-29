@@ -12,7 +12,7 @@ ITEM = "MATCH_DATA_CACHE"
 class MatchDataCacheService:
     def __init__(self, database: Database) -> None:
         self.db = database
-        self.logger = get_logger("backend_logger_MatchDataCacheService", self)
+        self.logger = get_logger("MatchDataCacheService", self)
         self.logger.debug("Initialized MatchDataCacheService")
         self._cache: dict[str, dict] = {}
 

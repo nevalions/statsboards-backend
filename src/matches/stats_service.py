@@ -22,7 +22,7 @@ ITEM = "MATCH_STATS"
 class MatchStatsServiceDB(BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(database, MatchDB)
-        self.logger = get_logger("backend_logger_MatchStatsServiceDB", self)
+        self.logger = get_logger("MatchStatsServiceDB", self)
         self.logger.debug("Initialized MatchStatsServiceDB")
         self._cache: dict[int, dict] = {}
 

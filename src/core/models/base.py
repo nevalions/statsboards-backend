@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Callable
 
 from fastapi import HTTPException
@@ -26,12 +25,12 @@ from src.core.models.mixins import (
 )
 from src.logging_config import get_logger
 
-db_logger_helper = logging.getLogger("backend_logger_base_db")
+db_logger_helper = get_logger("db")
 
 
 class Database:
     def __init__(self, db_url: str, echo: bool = False, test_mode: bool = False):
-        self.logger = get_logger("backend_logger_base_db", self)
+        self.logger = get_logger("db", self)
         self.logger.info(f"Initializing Database with URL: {db_url}, Echo: {echo}")
         self.test_mode = test_mode
         self.test_async_session: Any | None = None
@@ -152,7 +151,7 @@ class BaseServiceDB(
     SerializationMixin,
 ):
     def __init__(self, database: Database, model: type):
-        self.logger = get_logger("backend_logger_base_db", self)
+        self.logger = get_logger("db", self)
         self.db = database
         self.model = model
 

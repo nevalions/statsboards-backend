@@ -1,7 +1,6 @@
 """Main FastAPI application entry point."""
 
 import asyncio
-import logging.config
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -18,12 +17,12 @@ from src.core.router_registry import RouterRegistry, configure_routers
 from src.core.service_initialization import register_all_services
 from src.core.service_registry import get_service_registry, init_service_registry
 from src.helpers.request_services_helper import initialize_proxy_manager
-from src.logging_config import logs_dir, setup_logging
+from src.logging_config import get_logger, logs_dir, setup_logging
 from src.utils.websocket.websocket_manager import connection_manager, ws_manager
 from src.websocket.match_handler import match_websocket_handler
 
-logger = logging.getLogger("backend_logger_fastapi")
-db_logger = logging.getLogger("backend_logger_base_db")
+logger = get_logger("fastapi")
+db_logger = get_logger("db")
 setup_logging()
 
 

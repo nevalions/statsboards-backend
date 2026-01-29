@@ -19,7 +19,7 @@ ITEM = "SPONSOR_SPONSOR_LINE"
 class SponsorSponsorLineServiceDB(BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(database, SponsorSponsorLineDB)
-        self.logger = get_logger("backend_logger_SponsorSponsorLineServiceDB", self)
+        self.logger = get_logger("SponsorSponsorLineServiceDB", self)
         self.logger.debug("Initialized SponsorSponsorLineServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating", return_value_on_not_found=None)

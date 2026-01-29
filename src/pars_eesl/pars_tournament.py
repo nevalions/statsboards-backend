@@ -1,4 +1,3 @@
-import logging
 import re
 from datetime import datetime
 from typing import TypedDict
@@ -8,9 +7,10 @@ from bs4 import BeautifulSoup
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import months, safe_int_conversion
+from src.logging_config import get_logger
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
 
-logger = logging.getLogger("backend_logger_parser_eesl")
+logger = get_logger("parser_eesl")
 ITEM_PARSED = "TOURNAMENT"
 ITEM_GOT = "TEAM"
 ITEM_GOT_MATCH = "MATCH"

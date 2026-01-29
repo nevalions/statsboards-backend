@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 from pprint import pprint
 from typing import TypedDict
@@ -8,9 +7,10 @@ from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
 from src.helpers import get_url
+from src.logging_config import get_logger
 from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
 
-logger = logging.getLogger("backend_logger_parse_players_from_team_tournament_eesl")
+logger = get_logger("parse_players_from_team_tournament_eesl")
 
 
 class ParsedPlayerTeamTournament(TypedDict):

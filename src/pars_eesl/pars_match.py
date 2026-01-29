@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 from typing import TypedDict
 
@@ -7,9 +6,10 @@ from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
 from src.helpers import get_url
+from src.logging_config import get_logger
 from src.pars_eesl.pars_settings import BASE_MATCH_URL
 
-logger = logging.getLogger("backend_logger_parse_match_eesl")
+logger = get_logger("parse_match_eesl")
 
 
 class ParsedMatchPlayer(TypedDict):

@@ -1,18 +1,23 @@
 version: 1
 disable_existing_loggers: false
 formatters:
+  console:
+    format: '[%(levelname)s] %(asctime)s %(name)s - %(message)s'
+    datefmt: '%H:%M:%S'
+  detailed:
+    format: '%(asctime)s [%(levelname)s] %(name)s - %(message)s - Class: %(classname)s - Func: %(funcName)s'
   simple:
     format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s - Class: %(classname)s - Func: %(funcName)s'
 handlers:
   console:
     class: logging.StreamHandler
     level: WARNING
-    formatter: simple
+    formatter: console
     stream: ext://sys.stdout  # Direct logs to standard output (console)
   file:
     class: logging.handlers.RotatingFileHandler
     level: INFO
-    formatter: simple
+    formatter: detailed
     filename: backend.log
     maxBytes: 10485760  # 10MB
     backupCount: 5
@@ -20,229 +25,310 @@ filters:
   context_filter:
     (): src.logging_config.ContextFilter
 loggers:
-  backend_logger_fastapi:
+  fastapi:
     level: INFO
     handlers: [console, file]
     propagate: no
-  backend_logger_server:
+  server:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_config:
+  config:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_base_db:
+  db:
     level: INFO
     handlers: [ console, file ]
     filters: [context_filter]
     propagate: no
-  backend_logger_helpers:
+  helpers:
     level: ERROR
     handlers: [ console, file ]
     propagate: no
-  backend_fetch_data_helpers:
+  fetch_data:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_text_helpers:
+  text_helpers:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_fileservice:
+  file_service:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-
-  backend_logger_MatchDataWebSocketManager:
+  proxy_manager:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ConnectionManager:
+  request_services:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ScoreboardUpdateManager:
+  router_registry:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ScoreboardServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_ClockManager:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayClockServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_GameClockServiceDB:
+  service_registry:
     level: INFO
     handlers: [ console, file ]
     propagate: no
 
-  backend_logger_SeasonServiceDB:
+  MatchDataWebSocketManager:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SportServiceDB:
+  ConnectionManager:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TournamentServiceDB:
+  MatchWebSocketHandler:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TeamServiceDB:
+  ScoreboardUpdateManager:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TeamTournamentServiceDB:
+  ScoreboardServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_MatchServiceDB:
+  ClockManager:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_MatchDataServiceDB:
+  PlayClockServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PersonServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayerServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PositionServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayerTeamTournamentServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_PlayerMatchServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_SponsorServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_SponsorLineServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_SponsorSponsorLineServiceDB:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_FootballEventServiceDB:
+  GameClockServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
 
-  backend_logger_SeasonAPIRouter:
+  SeasonServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SportAPIRouter:
+  SportServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TournamentAPIRouter:
+  TournamentServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_TeamAPIRouter:
+  TeamServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_MatchAPIRouter:
+  TeamTournamentServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PersonAPIRouter:
+  MatchServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayerAPIRouter:
+  MatchDataServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PositionAPIRouter:
+  PersonServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayerTeamTournamentAPIRouter:
+  PlayerServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayerMatchAPIRouter:
+  PositionServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SponsorAPIRouter:
+  PlayerTeamTournamentServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SponsorLineAPIRouter:
+  PlayerMatchServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_SponsorSponsorLineAPIRouter:
+  SponsorServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_FootballEventAPIRouter:
+  SponsorLineServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-
-  backend_logger_MatchDataAPIRouter:
+  SponsorSponsorLineServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_ScoreboardAPIRouter:
+  FootballEventServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_GameClockAPIRouter:
+  MatchStatsServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_PlayClockAPIRouter:
+  GlobalSettingServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-
-  backend_logger_parser_eesl:
+  RoleServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
-  backend_logger_parse_players_from_eesl:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_parse_players_from_team_tournament_eesl:
-    level: INFO
-    handlers: [ console, file ]
-    propagate: no
-  backend_logger_parse_match_eesl:
+  UserServiceDB:
     level: INFO
     handlers: [ console, file ]
     propagate: no
 
-  backend_logger_tests:
+  SeasonAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  SportAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  TournamentAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  TeamAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  MatchAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  MatchCRUDRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  PersonAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  PlayerAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  PositionAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  PlayerTeamTournamentAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  PlayerMatchAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  SponsorAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  SponsorLineAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  SponsorSponsorLineAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  FootballEventAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+
+  MatchDataAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  ScoreboardAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  GameClockAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  PlayClockAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  AuthRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  GlobalSettingAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  RoleAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  UserAPIRouter:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+
+  parse_eesl:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  parse_players_from_eesl:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  parse_players_from_team_tournament_eesl:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  parse_match_eesl:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+
+  imageprocessing:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  upload:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  download:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  filesystem:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  db_session_manager:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+  MatchDataCacheService:
+    level: INFO
+    handlers: [ console, file ]
+    propagate: no
+
+  tests:
     level: WARNING
     handlers: [ console, file ]
     propagate: no
-root:
-  level: WARNING
-  handlers: [console]
+  root:
+    level: WARNING
+    handlers: [console]

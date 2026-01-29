@@ -22,7 +22,7 @@ from .schemas import (
 class PersonAPIRouter(BaseRouter[PersonSchema, PersonSchemaCreate, PersonSchemaUpdate]):
     def __init__(self):
         super().__init__("/api/persons", ["persons"], None)
-        self.logger = get_logger("backend_logger_PersonAPIRouter", self)
+        self.logger = get_logger("PersonAPIRouter", self)
         self.logger.debug("Initialized PersonAPIRouter")
 
     def route(self):

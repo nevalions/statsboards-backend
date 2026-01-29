@@ -24,7 +24,7 @@ class SponsorLineAPIRouter(
             ["sponsor_lines"],
             service,
         )
-        self.logger = get_logger("backend_logger_SponsorLineAPIRouter", self)
+        self.logger = get_logger("SponsorLineAPIRouter", self)
         self.logger.debug("Initialized SponsorLineAPIRouter")
 
     def route(self):

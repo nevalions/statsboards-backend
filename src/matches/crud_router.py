@@ -42,7 +42,7 @@ class MatchCRUDRouter(
             ["matches-api"],
             service,
         )
-        self.logger = get_logger("backend_logger_MatchCRUDRouter", self)
+        self.logger = get_logger("MatchCRUDRouter", self)
         self.logger.debug("Initialized MatchCRUDRouter")
 
     def get_match_stats_service(self):

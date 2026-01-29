@@ -11,7 +11,7 @@ from src.logging_config import get_logger
 class DownloadService:
     def __init__(self, fs_service: FileSystemService):
         self.fs_service = fs_service
-        self.logger = get_logger("backend_logger_download", self)
+        self.logger = get_logger("download", self)
 
     async def get_remote_file_size(self, img_url: str) -> int | None:
         """Get remote file size using HEAD request."""

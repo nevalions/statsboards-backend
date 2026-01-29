@@ -36,7 +36,7 @@ class TournamentServiceDB(BaseServiceDB):
             database,
             TournamentDB,
         )
-        self.logger = get_logger("backend_logger_TournamentServiceDB", self)
+        self.logger = get_logger("TournamentServiceDB", self)
         self.logger.debug("Initialized TournamentServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

@@ -24,7 +24,7 @@ class SeasonAPIRouter(
             ["seasons"],
             None,
         )
-        self.logger = get_logger("backend_logger_SeasonAPIRouter", self)
+        self.logger = get_logger("SeasonAPIRouter", self)
         self.logger.debug("Initialized SeasonAPIRouter")
 
     def route(self):

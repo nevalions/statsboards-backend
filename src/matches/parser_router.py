@@ -25,7 +25,7 @@ class MatchParserRouter(
             ["matches-parser"],
             service,
         )
-        self.logger = get_logger("backend_logger_MatchParserRouter", self)
+        self.logger = get_logger("MatchParserRouter", self)
         self.logger.debug("Initialized MatchParserRouter")
 
     def route(self):

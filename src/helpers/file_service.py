@@ -38,7 +38,7 @@ class FileService:
         self.upload_service = UploadService(self.fs_service)
         self.download_service = DownloadService(self.fs_service)
         self.image_service = ImageProcessingService()
-        self.logger = get_logger("backend_logger_fileservice", self)
+        self.logger = get_logger("file_service", self)
         self.logger.debug("Initializing FileService")
 
     async def sanitize_filename(self, filename: str) -> str:

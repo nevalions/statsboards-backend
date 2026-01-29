@@ -23,7 +23,7 @@ class PersonServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, PersonDB)
-        self.logger = get_logger("backend_logger_PersonServiceDB", self)
+        self.logger = get_logger("PersonServiceDB", self)
         self.logger.debug("Initialized PersonServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

@@ -31,7 +31,7 @@ class GlobalSettingAPIRouter(
             ["settings"],
             None,
         )
-        self.logger = get_logger("backend_logger_GlobalSettingAPIRouter", self)
+        self.logger = get_logger("GlobalSettingAPIRouter", self)
         self.logger.debug("Initialized GlobalSettingAPIRouter")
 
     def route(self):

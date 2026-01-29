@@ -84,11 +84,11 @@ Added `validate_all()` method that runs all validations:
 def validate_all(self) -> None:
     """
     Perform all configuration validations.
-    
+
     This should be called during application startup to ensure
     all configuration is valid before the application starts.
     """
-    self.logger = get_logger("backend_logger_config", self)
+    self.logger = get_logger("config", self)
     self.logger.info("Starting configuration validation")
 
     try:

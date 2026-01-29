@@ -1,12 +1,11 @@
-import logging
 
 from uvicorn import run
 
-from src.logging_config import setup_logging
+from src.logging_config import get_logger, setup_logging
 
 if __name__ == "__main__":
     setup_logging()
-    logger = logging.getLogger("backend_logger_server")
+    logger = get_logger("server")
     logger.info("Developer Server Started!")
 
     try:

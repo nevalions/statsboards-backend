@@ -29,7 +29,7 @@ from .schemas import (
 class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
     def __init__(self):
         super().__init__("/api/teams", ["teams"], None)
-        self.logger = get_logger("backend_logger_TeamAPIRouter", self)
+        self.logger = get_logger("TeamAPIRouter", self)
         self.logger.debug("Initialized TeamAPIRouter")
 
     def route(self):

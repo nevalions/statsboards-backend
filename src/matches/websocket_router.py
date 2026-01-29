@@ -25,7 +25,7 @@ class MatchWebSocketRouter(
             ["matches-websocket"],
             service,
         )
-        self.logger = get_logger("backend_logger_MatchWebSocketRouter", self)
+        self.logger = get_logger("MatchWebSocketRouter", self)
         self.logger.debug("Initialized MatchWebSocketRouter")
 
     def route(self):

@@ -24,7 +24,7 @@ class PlayerMatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, PlayerMatchDB)
-        self.logger = get_logger("backend_logger_PlayerMatchServiceDB", self)
+        self.logger = get_logger("PlayerMatchServiceDB", self)
         self.logger.debug("Initialized PlayerMatchServiceDB")
 
     @handle_service_exceptions(

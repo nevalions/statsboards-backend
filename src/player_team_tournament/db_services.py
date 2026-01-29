@@ -40,7 +40,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, PlayerTeamTournamentDB)
-        self.logger = get_logger("backend_logger_PlayerTeamTournamentServiceDB")
+        self.logger = get_logger("PlayerTeamTournamentServiceDB")
         self.logger.debug("Initialized PlayerTeamTournamentServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

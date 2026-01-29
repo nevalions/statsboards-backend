@@ -33,7 +33,7 @@ class SeasonServiceDB(BaseServiceDB, SearchPaginationMixin):
             database,
             model=SeasonDB,
         )
-        self.logger = get_logger("backend_logger_SeasonServiceDB", self)
+        self.logger = get_logger("SeasonServiceDB", self)
         self.logger.debug("Initialized SeasonServiceDB")
 
     async def _set_other_seasons_to_not_current(self, season_id: int) -> None:

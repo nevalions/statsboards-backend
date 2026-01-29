@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 from datetime import datetime
 from pathlib import Path
@@ -13,9 +12,10 @@ from src.core.config import settings
 from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import convert_cyrillic_filename, ru_to_eng_datetime_month
+from src.logging_config import get_logger
 from src.pars_eesl.pars_settings import BASE_ALL_PLAYERS_URL, BASE_PLAYER
 
-logger = logging.getLogger("backend_logger_parse_players_from_eesl")
+logger = get_logger("parse_players_from_eesl")
 ITEM_GOT = "PLAYER"
 
 

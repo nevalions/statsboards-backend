@@ -34,7 +34,7 @@ class PlayerMatchAPIRouter(
 ):
     def __init__(self, service: PlayerMatchServiceDB):
         super().__init__("/api/players_match", ["players_match"], service)
-        self.logger = get_logger("backend_logger_PlayerMatchAPIRouter", self)
+        self.logger = get_logger("PlayerMatchAPIRouter", self)
         self.logger.debug("Initialized PlayerMatchAPIRouter")
 
     def route(self):

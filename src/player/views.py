@@ -27,7 +27,7 @@ from .schemas import (
 class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate]):
     def __init__(self, service: PlayerServiceDB):
         super().__init__("/api/players", ["players"], service)
-        self.logger = get_logger("backend_logger_PlayerAPIRouter", self)
+        self.logger = get_logger("PlayerAPIRouter", self)
         self.logger.debug("Initialized PlayerAPIRouter")
 
     def route(self):

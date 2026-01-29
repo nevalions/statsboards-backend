@@ -1,6 +1,5 @@
 """Application configuration management using Pydantic settings."""
 
-import logging
 import os
 from pathlib import Path
 from typing import Self
@@ -13,7 +12,7 @@ from src.core.exceptions import ConfigurationError
 from src.logging_config import get_logger
 
 load_dotenv()
-logger = logging.getLogger("backend_logger_config")
+logger = get_logger("config")
 
 
 class DbSettings(BaseSettings):
@@ -421,7 +420,7 @@ class Settings(BaseSettings):
         This should be called during application startup to ensure
         all configuration is valid before the application starts.
         """
-        self.logger = get_logger("backend_logger_config", self)
+        self.logger = get_logger("config", self)
         self.logger.info("Starting configuration validation")
 
         try:

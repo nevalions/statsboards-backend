@@ -40,7 +40,7 @@ class PlayerTeamTournamentAPIRouter(
 ):
     def __init__(self, service: PlayerTeamTournamentServiceDB):
         super().__init__("/api/players_team_tournament", ["players_team_tournament"], service)
-        self.logger = get_logger("backend_logger_PlayerTeamTournamentAPIRouter", self)
+        self.logger = get_logger("PlayerTeamTournamentAPIRouter", self)
         self.logger.debug("Initialized PlayerTeamTournamentAPIRouter")
 
     def route(self):

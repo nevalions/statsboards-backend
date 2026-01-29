@@ -20,7 +20,7 @@ class PlayClockServiceDB(BaseServiceDB):
         super().__init__(database, PlayClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
-        self.logger = get_logger("backend_logger_PlayClockServiceDB", self)
+        self.logger = get_logger("PlayClockServiceDB", self)
         self.logger.debug("Initialized PlayClockServiceDB")
         self._setup_orchestrator_callbacks()
 

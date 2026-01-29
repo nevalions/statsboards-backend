@@ -33,7 +33,7 @@ class FootballEventAPIRouter(
             ["football_event"],
             None,
         )
-        self.logger = get_logger("backend_logger_FootballEventAPIRouter", self)
+        self.logger = get_logger("FootballEventAPIRouter", self)
         self.logger.debug("Initialized FootballEventAPIRouter")
 
     def route(self):

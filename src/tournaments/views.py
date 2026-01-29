@@ -45,7 +45,7 @@ class TournamentAPIRouter(
             ["tournaments-api"],
             service,
         )
-        self.logger = get_logger("backend_logger_TournamentAPIRouter", self)
+        self.logger = get_logger("TournamentAPIRouter", self)
         self.logger.debug("Initialized TournamentAPIRouter")
 
     def route(self):

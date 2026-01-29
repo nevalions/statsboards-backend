@@ -32,7 +32,7 @@ class MatchDataAPIRouter(
             ["matchdata"],
             None,
         )
-        self.logger = get_logger("backend_logger_MatchDataAPIRouter", self)
+        self.logger = get_logger("MatchDataAPIRouter", self)
         self.logger.debug("Initialized MatchDataAPIRouter")
 
     def route(self):

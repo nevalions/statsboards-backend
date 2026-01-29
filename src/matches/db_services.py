@@ -34,7 +34,7 @@ ITEM = "MATCH"
 class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
     def __init__(self, database: Database) -> None:
         super().__init__(database, MatchDB)
-        self.logger = get_logger("backend_logger_MatchServiceDB", self)
+        self.logger = get_logger("MatchServiceDB", self)
         self.logger.debug("Initialized MatchServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

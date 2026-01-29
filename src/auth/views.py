@@ -13,7 +13,7 @@ from src.users.schemas import UserSchema
 
 class AuthRouter:
     def __init__(self):
-        self.logger = get_logger("backend_logger_AuthRouter", self)
+        self.logger = get_logger("AuthRouter", self)
         self.logger.debug("Initialized AuthRouter")
         self.router = APIRouter(prefix="/api/auth", tags=["auth"])
 

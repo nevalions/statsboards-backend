@@ -31,7 +31,7 @@ class TeamServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, TeamDB)
-        self.logger = get_logger("backend_logger_TeamServiceDB", self)
+        self.logger = get_logger("TeamServiceDB", self)
         self.logger.debug("Initialized TeamServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

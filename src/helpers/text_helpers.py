@@ -1,9 +1,9 @@
-import logging
 from pathlib import Path
 
 from src.core.enums import RussianDay, RussianMonth
+from src.logging_config import get_logger
 
-logger = logging.getLogger("backend_logger_text_helpers")
+logger = get_logger("text_helpers")
 
 
 months = {

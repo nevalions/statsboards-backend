@@ -10,7 +10,7 @@ class ClockManager:
     def __init__(self) -> None:
         self.active_playclock_matches: dict[int, asyncio.Queue] = {}
         self.clock_state_machines: dict[int, ClockStateMachine] = {}
-        self.logger = get_logger("backend_logger_ClockManager", self)
+        self.logger = get_logger("ClockManager", self)
         self.logger.debug("Initialized ClockManager")
 
     async def start_clock(self, match_id: int, initial_value: int = 0) -> None:

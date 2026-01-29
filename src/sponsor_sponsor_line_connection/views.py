@@ -20,7 +20,7 @@ class SponsorSponsorLineAPIRouter(
 ):
     def __init__(self, service: SponsorSponsorLineServiceDB):
         super().__init__("/api/sponsor_in_sponsor_line", ["sponsor_sponsor_line"], service)
-        self.logger = get_logger("backend_logger_SponsorSponsorLineAPIRouter", self)
+        self.logger = get_logger("SponsorSponsorLineAPIRouter", self)
         self.logger.debug("Initialized SponsorSponsorLineAPIRouter")
 
     def route(self):

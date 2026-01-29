@@ -1,4 +1,3 @@
-import logging
 import re
 from pathlib import Path
 from urllib.parse import urlparse
@@ -7,9 +6,10 @@ from bs4 import BeautifulSoup
 
 from src.helpers import get_url
 from src.helpers.file_service import file_service
+from src.logging_config import get_logger
 from src.pars_eesl.pars_settings import BASE_SEASON_URL, SEASON_ID
 
-logger = logging.getLogger("backend_logger_parser_eesl")
+logger = get_logger("parser_eesl")
 ITEM_PARSED = "SEASON"
 ITEM_GOT = "TOURNAMENT"
 

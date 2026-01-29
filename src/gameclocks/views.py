@@ -27,7 +27,7 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             ["gameclock"],
             None,
         )
-        self.logger = get_logger("backend_logger_GameClockAPIRouter", self)
+        self.logger = get_logger("GameClockAPIRouter", self)
         self.logger.debug("Initialized GameClockAPIRouter")
 
     def create_response_with_server_time(self, item, message: str):

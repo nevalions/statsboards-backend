@@ -11,7 +11,7 @@ from aiohttp import ClientTimeout
 from ..core.config import settings
 from ..logging_config import get_logger
 
-logger = get_logger("backend_logger_proxy_manager")
+logger = get_logger("proxy_manager")
 
 
 class ProxyInfo(NamedTuple):

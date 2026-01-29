@@ -22,7 +22,7 @@ class GlobalSettingServiceDB(BaseServiceDB):
             model=GlobalSettingDB,
         )
         self.season_service = SeasonServiceDB(database)
-        self.logger = get_logger("backend_logger_GlobalSettingServiceDB", self)
+        self.logger = get_logger("GlobalSettingServiceDB", self)
         self.logger.debug("Initialized GlobalSettingServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

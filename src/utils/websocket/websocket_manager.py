@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import time
 from collections.abc import Callable
 from typing import Any
@@ -9,15 +8,16 @@ import asyncpg
 from starlette.websockets import WebSocket, WebSocketState
 
 from src.core.config import settings
+from src.logging_config import get_logger
 
-connection_socket_logger_helper = logging.getLogger("backend_logger_ConnectionManager")
+connection_socket_logger_helper = get_logger("ConnectionManager")
 
 
 class MatchDataWebSocketManager:
     def __init__(self, db_url):
         self.db_url = db_url
         self.connection = None
-        self.logger = logging.getLogger("backend_logger_MatchDataWebSocketManager")
+        self.logger = get_logger("MatchDataWebSocketManager", self)
         self.logger.info("MatchDataWebSocketManager initialized")
         self.is_connected = False
         self._connection_retry_task = None
@@ -267,7 +267,7 @@ class ConnectionManager:
         self.queues: dict[str, asyncio.Queue] = {}
         self.match_subscriptions: dict[str | int, list[str]] = {}
         self.last_activity: dict[str, float] = {}
-        self.logger = logging.getLogger("backend_logger_ConnectionManager")
+        self.logger = get_logger("ConnectionManager", self)
         self.logger.info("ConnectionManager initialized")
 
     async def connect(self, websocket: WebSocket, client_id: str, match_id: int | None = None):

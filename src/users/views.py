@@ -25,7 +25,7 @@ ITEM = "USER"
 class UserAPIRouter(BaseRouter[UserSchema, UserSchemaCreate, UserSchemaUpdate]):
     def __init__(self):
         super().__init__("/api/users", ["users"], None)
-        self.logger = get_logger("backend_logger_UserAPIRouter", self)
+        self.logger = get_logger("UserAPIRouter", self)
         self.logger.debug("Initialized UserAPIRouter")
 
     def route(self):

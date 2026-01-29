@@ -17,7 +17,7 @@ class ClockManager:
     def __init__(self) -> None:
         self.active_gameclock_matches: dict[int, asyncio.Queue] = {}
         self.clock_state_machines: dict[int, ClockStateMachine] = {}
-        self.logger = get_logger("backend_logger_ClockManager", self)
+        self.logger = get_logger("ClockManager", self)
         self.logger.debug("Initialized ClockManager")
 
     async def start_clock(self, gameclock_id: int, initial_value: int = 0) -> None:
@@ -49,7 +49,7 @@ class GameClockServiceDB(BaseServiceDB):
         super().__init__(database, GameClockDB)
         self.clock_manager = ClockManager()
         self.disable_background_tasks = disable_background_tasks
-        self.logger = get_logger("backend_logger_GameClockServiceDB", self)
+        self.logger = get_logger("GameClockServiceDB", self)
         self.logger.debug("Initialized GameClockServiceDB")
         self._setup_orchestrator_callbacks()
 

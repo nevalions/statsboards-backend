@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Callable, TypeVar
 from src.core.models.base import Database
 from src.logging_config import get_logger
 
-logger = get_logger("backend_logger_service_registry")
+logger = get_logger("service_registry")
 
 if TYPE_CHECKING:
     from src.core.models import BaseServiceDB
@@ -19,7 +19,7 @@ class ServiceRegistry:
         self.database = database
         self._services: dict[str, Callable[[Database], Any]] = {}
         self._singletons: dict[str, Any] = {}
-        self._logger = get_logger("backend_logger_service_registry", self)
+        self._logger = get_logger("service_registry", self)
         self._logger.debug("Initialized ServiceRegistry")
 
     def register(

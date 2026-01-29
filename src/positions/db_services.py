@@ -15,7 +15,7 @@ class PositionServiceDB(BaseServiceDB):
         database: Database,
     ) -> None:
         super().__init__(database, PositionDB)
-        self.logger = get_logger("backend_logger_PositionServiceDB", self)
+        self.logger = get_logger("PositionServiceDB", self)
         self.logger.debug("Initialized PositionServiceDB")
 
     @handle_service_exceptions(item_name=ITEM, operation="creating")

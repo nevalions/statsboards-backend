@@ -9,7 +9,7 @@ from src.logging_config import get_logger
 
 class ImageProcessingService:
     def __init__(self):
-        self.logger = get_logger("backend_logger_imageprocessing", self)
+        self.logger = get_logger("imageprocessing", self)
 
     async def open_image_from_file(self, file_data: bytes) -> Image.Image:
         try:

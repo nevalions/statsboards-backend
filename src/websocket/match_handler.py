@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import time
 
 from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
@@ -8,14 +7,14 @@ from websockets import ConnectionClosedError, ConnectionClosedOK
 from ..logging_config import get_logger
 from ..utils.websocket.websocket_manager import connection_manager, ws_manager
 
-websocket_logger = logging.getLogger("backend_logger_MatchDataWebSocketManager")
-connection_socket_logger = logging.getLogger("backend_logger_ConnectionManager")
+websocket_logger = get_logger("MatchDataWebSocketManager")
+connection_socket_logger = get_logger("ConnectionManager")
 
 
 class MatchWebSocketHandler:
     def __init__(self, cache_service=None):
         self.cache_service = cache_service
-        self.logger = get_logger("backend_logger_MatchWebSocketHandler", self)
+        self.logger = get_logger("MatchWebSocketHandler", self)
         self.logger.debug("Initialized MatchWebSocketHandler")
 
     async def send_initial_data(self, websocket: WebSocket, client_id: str, match_id: int):

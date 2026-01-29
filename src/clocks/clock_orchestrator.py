@@ -14,7 +14,7 @@ class ClockOrchestrator:
         self._gameclock_update_callback: callable | None = None
         self._playclock_stop_callback: callable | None = None
         self._gameclock_stop_callback: callable | None = None
-        self.logger = get_logger("backend_logger_ClockOrchestrator", self)
+        self.logger = get_logger("ClockOrchestrator", self)
         self.logger.debug("Initialized ClockOrchestrator")
 
     async def start(self) -> None:
