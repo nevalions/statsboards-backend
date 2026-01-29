@@ -46,7 +46,7 @@ class MatchDataAPIRouter(
         async def create_match_data(
             match_data_service: MatchDataService, match_data: MatchDataSchemaCreate
         ):
-            self.logger.debug(f"Create matchdata endpoint got data: {match_data}")
+            self.logger.debug("Creating match_data")
             try:
                 new_match_data = await match_data_service.create(match_data)
                 return MatchDataSchema.model_validate(new_match_data)
@@ -65,7 +65,7 @@ class MatchDataAPIRouter(
             item_id: int,
             match_data: MatchDataSchemaUpdate,
         ):
-            self.logger.debug(f"Update matchdata endpoint id:{item_id} data: {match_data}")
+            self.logger.debug(f"Updating match_data id:{item_id}")
             try:
                 match_data_update = await match_data_service.update(
                     item_id,

@@ -147,9 +147,9 @@ async def fetch_with_scoreboard_data(
             match_service_db.get_players_with_full_data_optimized(match_id),
             _fetch_events_by_match(match_id, database=_db),
         )
-        fetch_data_logger.debug(f"Scoreboard Data: {scoreboard_data}")
-        fetch_data_logger.debug(f"Match by match_id:{match_id} {match}")
-        fetch_data_logger.debug(f"Match Data by match_id:{match_id} {match_data}")
+        fetch_data_logger.debug(f"Fetched scoreboard for match_id: {match_id}")
+        fetch_data_logger.debug(f"Fetched match for match_id: {match_id}")
+        fetch_data_logger.debug(f"Fetched match_data for match_id: {match_id}")
 
         if match:
             if match_data is None:
@@ -384,7 +384,9 @@ async def fetch_matches_with_data_by_tournament_paginated(
             *[fetch_with_scoreboard_data(match_id, database=_db) for match_id in match_ids]
         )
 
-        fetch_data_logger.debug(f"Fetched matches with fulldata: {full_match_data_list}")
+        fetch_data_logger.debug(
+            f"Fetched {len(match_ids)} matches with full data for tournament_id: {tournament_id}"
+        )
 
         return full_match_data_list
 

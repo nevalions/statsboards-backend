@@ -32,7 +32,7 @@ class MatchDataServiceDB(BaseServiceDB):
         item: MatchDataSchemaUpdate,
         **kwargs,
     ) -> MatchDataDB | None:
-        self.logger.debug(f"Update matchdata with item_id: {item_id}, new matchdata: {item}")
+        self.logger.debug(f"Updating matchdata item_id: {item_id}")
 
         updated_ = await super().update(
             item_id,

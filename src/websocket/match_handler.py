@@ -183,8 +183,11 @@ class MatchWebSocketHandler:
                     full_match_data = data
 
             if websocket.application_state == WebSocketState.CONNECTED:
-                websocket_logger.debug(f"Processing match data type: {full_match_data['type']}")
-                websocket_logger.debug(f"Match data fetched: {full_match_data}")
+                websocket_logger.debug(f"Processing match data type: {full_match_data.get('type')}")
+                match_id = full_match_data.get("match_id", "N/A")
+                websocket_logger.debug(
+                    f"Sending match data for match_id: {match_id}, type: {full_match_data.get('type')}"
+                )
                 try:
                     await websocket.send_json(full_match_data)
                 except ConnectionClosedOK:
@@ -219,8 +222,8 @@ class MatchWebSocketHandler:
             gameclock_data["type"] = "gameclock-update"
 
             if websocket.application_state == WebSocketState.CONNECTED:
-                websocket_logger.debug(f"Processing match data type: {gameclock_data['type']}")
-                websocket_logger.debug(f"Gameclock data fetched: {gameclock_data}")
+                websocket_logger.debug(f"Processing match data type: {gameclock_data.get('type')}")
+                websocket_logger.debug(f"Sending gameclock data for match_id: {match_id}")
                 try:
                     await websocket.send_json(gameclock_data)
                 except ConnectionClosedOK:
@@ -256,8 +259,8 @@ class MatchWebSocketHandler:
             playclock_data["type"] = "playclock-update"
 
             if websocket.application_state == WebSocketState.CONNECTED:
-                websocket_logger.debug(f"Processing match data type: {playclock_data['type']}")
-                websocket_logger.debug(f"Playclock data fetched: {playclock_data}")
+                websocket_logger.debug(f"Processing match data type: {playclock_data.get('type')}")
+                websocket_logger.debug(f"Sending playclock data for match_id: {match_id}")
                 try:
                     await websocket.send_json(playclock_data)
                 except ConnectionClosedOK:
@@ -296,8 +299,11 @@ class MatchWebSocketHandler:
                 event_data = data
 
             if websocket.application_state == WebSocketState.CONNECTED:
-                websocket_logger.debug(f"Processing match data type: {event_data['type']}")
-                websocket_logger.debug(f"Event data fetched: {event_data}")
+                websocket_logger.debug(f"Processing match data type: {event_data.get('type')}")
+                event_id = event_data.get("id", "N/A")
+                websocket_logger.debug(
+                    f"Sending event data for event_id: {event_id}, type: {event_data.get('type')}"
+                )
                 try:
                     await websocket.send_json(event_data)
                 except ConnectionClosedOK:
@@ -336,8 +342,10 @@ class MatchWebSocketHandler:
                 stats_data = data
 
             if websocket.application_state == WebSocketState.CONNECTED:
-                websocket_logger.debug(f"Processing match data type: {stats_data['type']}")
-                websocket_logger.debug(f"Stats data fetched: {stats_data}")
+                websocket_logger.debug(f"Processing match data type: {stats_data.get('type')}")
+                websocket_logger.debug(
+                    f"Sending stats data for match_id: {match_id}, type: {stats_data.get('type')}"
+                )
                 try:
                     await websocket.send_json(stats_data)
                 except ConnectionClosedOK:
