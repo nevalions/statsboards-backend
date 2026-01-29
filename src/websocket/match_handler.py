@@ -60,7 +60,12 @@ class MatchWebSocketHandler:
             },
         }
         websocket_logger.debug("WebSocket Connection sending initial-load message")
-        websocket_logger.info(f"WebSocket Connection combined initial_data: {combined_data}")
+        data_summary = combined_data.get("data", {})
+        websocket_logger.info(
+            f"Sending initial-load for match_id: {match_id}, "
+            f"players: {len(data_summary.get('players', []))}, "
+            f"events: {len(data_summary.get('events', []))}"
+        )
 
         await websocket.send_json(combined_data)
 
