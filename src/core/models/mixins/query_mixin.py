@@ -10,8 +10,6 @@ from src.core.exceptions import NotFoundError
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database
 
-from src.helpers.safe_log import safe_log_obj
-
 
 class QueryMixin:
     if TYPE_CHECKING:
