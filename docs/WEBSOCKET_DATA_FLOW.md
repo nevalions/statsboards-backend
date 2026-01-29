@@ -276,7 +276,94 @@ if (messageType === 'initial-load') {
 
 **Message size:** ~200-400B (partial data - changed row only)
 
-**Message structure (DELETE or legacy trigger - fallback):**
+**Channel-specific behavior:**
+
+#### Scoreboard Update (`scoreboard_change` channel)
+
+When the `scoreboard` table changes (display settings, team settings, scale settings), the backend wraps the data differently:
+
+**Backend flow:**
+1. Database trigger fires: `notify_scoreboard_change()`
+2. Sends pg_notify with payload containing `row_to_json(NEW)` scoreboard data
+3. `match_data_listener()` receives notification with channel `scoreboard_change`
+4. **Wraps data:** Backend wraps scoreboard data under `scoreboard_data` key
+5. **Sends:**
+   ```json
+   {
+     "type": "match-update",
+     "data": {
+       "scoreboard_data": {
+         "id": 67,
+         "match_id": 67,
+         "is_qtr": true,
+         "is_time": true,
+         "is_playclock": true,
+         "is_downdistance": true,
+         "is_tournament_logo": true,
+         "is_main_sponsor": true,
+         "use_team_a_game_color": false,
+         "use_team_b_game_color": false,
+         "team_a_game_color": "#FF0000",
+         "team_b_game_color": "#0000FF",
+         // ... other scoreboard fields
+       }
+     }
+   }
+   ```
+
+**Frontend handling:**
+```typescript
+// WebSocketService.handleMessage() extracts scoreboard_data
+const scoreboardData = data['scoreboard_data'];
+if (scoreboardData) {
+  this.scoreboardPartial.set(scoreboardData);
+}
+```
+
+#### Matchdata Update (`matchdata_change` channel)
+
+When the `matchdata` table changes (scores, game state, play clock info), the backend sends raw data:
+
+**Backend flow:**
+1. Database trigger fires: `notify_matchdata_change()`
+2. Sends pg_notify with payload containing `row_to_json(NEW)` matchdata data
+3. `match_data_listener()` receives notification with channel `matchdata_change`
+4. **Sends raw data:** Backend sends matchdata fields directly (frontend detects by field presence)
+5. **Sends:**
+   ```json
+   {
+     "type": "match-update",
+     "data": {
+       "id": 67,
+       "match_id": 67,
+       "score_team_a": 22,
+       "score_team_b": 40,
+       "qtr": "3rd",
+       "down": "2nd",
+       "distance": "Inches",
+       "ball_on": 20,
+       "game_status": "in-progress",
+       // ... other matchdata fields
+     }
+   }
+   ```
+
+**Frontend handling:**
+```typescript
+// WebSocketService.handleMessage() detects matchdata fields
+const hasMatchDataFields = [
+  'score_team_a', 'score_team_b', 'qtr', 'down', 'distance',
+  'ball_on', 'timeout_team_a', 'timeout_team_b', 'field_length', 'game_status'
+].some(field => field in data);
+
+if (hasMatchDataFields) {
+  this.matchDataPartial.set(data);
+}
+```
+
+**Important:** This is **partial data** (changed row only) for UPDATE/INSERT operations, reducing network payload from ~3-8KB to ~200-400B for score updates. Full data fetch only occurs when trigger data is unavailable (DELETE operations or legacy triggers).
+
+**Message structure (UPDATE/INSERT with trigger data):**
 ```json
 {
   "type": "match-update",

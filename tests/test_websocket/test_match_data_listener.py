@@ -123,3 +123,30 @@ class TestMatchDataListener:
                 assert "data" in message_sent
                 # When fetch fails and no trigger data, send empty dict
                 assert message_sent["data"] == {}
+
+    async def test_match_data_listener_wraps_scoreboard_data(self):
+        manager = MatchDataWebSocketManager(db_url="postgresql://test")
+        manager._cache_service = MagicMock()
+        manager._cache_service.invalidate_match_data = MagicMock()
+        manager.logger = MagicMock()
+
+        payload = json.dumps({"match_id": 67, "data": {"is_qtr": True, "is_time": False}})
+
+        mock_connection = MagicMock()
+
+        with patch("src.utils.websocket.websocket_manager.connection_manager") as mock_conn_mgr:
+            mock_conn_mgr.send_to_all = AsyncMock()
+
+            await manager.match_data_listener(mock_connection, None, "scoreboard_change", payload)
+
+            mock_conn_mgr.send_to_all.assert_called_once()
+            call_args = mock_conn_mgr.send_to_all.call_args
+            message_sent = call_args[0][0]
+
+            assert message_sent["type"] == "match-update"
+            assert "data" in message_sent
+            assert "scoreboard_data" in message_sent["data"]
+            assert message_sent["data"]["scoreboard_data"]["is_qtr"] is True
+            assert message_sent["data"]["scoreboard_data"]["is_time"] is False
+
+            manager._cache_service.invalidate_match_data.assert_called_once_with(67)
