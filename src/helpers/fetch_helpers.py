@@ -182,8 +182,18 @@ async def fetch_with_scoreboard_data(
                     else [],
                 }
             }
+            match_id = final_match_with_scoreboard_data_fetched.get("data", {}).get(
+                "match_id", "N/A"
+            )
+            num_players = len(
+                final_match_with_scoreboard_data_fetched.get("data", {}).get("players", [])
+            )
+            num_events = len(
+                final_match_with_scoreboard_data_fetched.get("data", {}).get("events", [])
+            )
             fetch_data_logger.debug(
-                f"Final match with scoreboard data fetched {final_match_with_scoreboard_data_fetched}"
+                f"Final match with scoreboard fetched for match_id: {match_id}, "
+                f"players: {num_players}, events: {num_events}"
             )
 
             return final_match_with_scoreboard_data_fetched
@@ -399,11 +409,8 @@ async def fetch_matches_with_data_by_tournament_paginated(
 
 
 def instance_to_dict(instance: dict[str, Any]) -> dict[str, Any] | None:
-    logger.debug(f"Instance to dictionary convert instance: {instance}")
-    logger.debug(f"Instance to dictionary convert instance type: {type(instance)}")
     try:
         result_dict = {key: value for key, value in instance.items() if not key.startswith("_")}
-        logger.info(f"Instance to dictionary completed successfully. Result: {result_dict}")
         return result_dict
     except Exception as e:
         logger.error(f"Error converting instance to dictionary: {e}")
@@ -411,20 +418,15 @@ def instance_to_dict(instance: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def deep_dict_convert(obj: dict[str, Any]) -> dict[str, Any] | None:
-    logger.debug(f"Deep dictionary convert object: {obj}")
-    logger.debug(f"Deep dictionary convert object type: {type(obj)}")
     try:
         result_dict = {}
         for key, value in obj.items():
             if not key.startswith("_"):
                 if isinstance(value, datetime.datetime):  # check against datetime.datetime
-                    logger.info(f"Converting {key} to datetime")
                     result_dict[key] = value.isoformat()
                 elif isinstance(value, dict):
-                    logger.info(f"Converting {key} to dict")
                     result_dict[key] = deep_dict_convert(value)
                 elif isinstance(value, list):
-                    logger.info(f"Converting {key} to list")
                     result_dict[key] = [
                         deep_dict_convert(item.__dict__)
                         if hasattr(item, "__dict__")
@@ -434,11 +436,9 @@ def deep_dict_convert(obj: dict[str, Any]) -> dict[str, Any] | None:
                         for item in value
                     ]
                 elif hasattr(value, "__dict__"):
-                    logger.info(f"Converting {key} with __dict__")
                     result_dict[key] = deep_dict_convert(value.__dict__)
                 else:
                     result_dict[key] = value
-        logger.debug(f"Deep dictionary convert completed successfully. Result: {result_dict}")
         return result_dict
     except Exception as e:
         logger.error(f"Error in deep dictionary convert: {e}")

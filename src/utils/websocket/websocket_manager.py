@@ -414,8 +414,10 @@ class ConnectionManager:
             await self.disconnect(client_id)
 
     async def send_to_all(self, data: dict[str, Any] | str, match_id: str | None = None):
-        self.logger.debug(f"Sending data: {data} with match_id: {match_id}")
-        self.logger.debug(f"Current match with match_id: {match_id}")
+        data_type = data.get("type") if isinstance(data, dict) else "unknown"
+        self.logger.debug(
+            f"Sending {data_type} data for match_id: {match_id} to {len(self.match_subscriptions.get(match_id, []))} clients"
+        )
         if match_id:
             for client_id in self.match_subscriptions.get(match_id, []):
                 if client_id in self.queues:
