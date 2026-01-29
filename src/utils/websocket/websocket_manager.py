@@ -290,9 +290,9 @@ class ConnectionManager:
             self.logger.debug(
                 f"Client with client_id:{client_id} in active_connections: {self.active_connections}"
             )
-            self.logger.warning(f"Closing connection for client_id:{client_id}")
-            await self.active_connections[client_id].close()
-            self.logger.debug(f"Active connections: {self.active_connections}")
+            self.logger.warning(f"Disconnecting existing connection for client_id:{client_id}")
+            await self.disconnect(client_id)
+            self.logger.debug(f"Active connections after disconnect: {self.active_connections}")
 
         self.logger.debug(f"Adding new connection for client with client_id: {client_id}")
         self.active_connections[client_id] = websocket
