@@ -16,6 +16,8 @@ SENSITIVE_FIELDS = {
     "bearer_token",
     "private_key",
     "api_secret",
+    "plain_password",
+    "secret_key",
 }
 
 
