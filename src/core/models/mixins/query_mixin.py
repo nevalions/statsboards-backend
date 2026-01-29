@@ -10,6 +10,8 @@ from src.core.exceptions import NotFoundError
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database
 
+from src.helpers.safe_log import safe_log_obj
+
 
 class QueryMixin:
     if TYPE_CHECKING:
@@ -33,7 +35,7 @@ class QueryMixin:
                 )
 
                 result: Result = await session.execute(stmt)
-                self.logger.debug(f"Query result: {result} for model {self.model.__name__}")
+                self.logger.debug(f"Query executed for model {self.model.__name__}")
 
                 return result.scalars().one_or_none()
             except HTTPException:

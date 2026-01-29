@@ -11,6 +11,8 @@ from sqlalchemy.sql import func
 if TYPE_CHECKING:
     from src.core.models.base import Base, Database
 
+from src.helpers.safe_log import safe_log_obj
+
 
 class CRUDMixin:
     if TYPE_CHECKING:
@@ -91,7 +93,9 @@ class CRUDMixin:
                 if result:
                     final_result = result.scalars().one_or_none()
                     if final_result:
-                        self.logger.debug(f"Result found: {final_result.__dict__}")
+                        self.logger.debug(
+                            f"Result found: {safe_log_obj(final_result, max_fields=3)}"
+                        )
                         self.logger.debug(
                             f"Fetched element successfully with ID:{item_id} for {self.model.__name__}"
                         )
@@ -204,7 +208,7 @@ class CRUDMixin:
                 await session.commit()
                 await session.refresh(updated_item)
 
-                self.logger.debug(f"Updated element with ID: {item_id}: {updated_item.__dict__}")
+                self.logger.debug(f"Updated element with ID: {item_id}")
                 return updated_item
             except HTTPException:
                 await session.rollback()
@@ -252,7 +256,7 @@ class CRUDMixin:
                     )
                 await session.delete(db_item)
                 await session.commit()
-                self.logger.info(f"Deleted element with ID: {item_id}: {db_item.__dict__}")
+                self.logger.info(f"Deleted element with ID: {item_id}")
                 return {"id": item_id}
             except HTTPException:
                 await session.rollback()

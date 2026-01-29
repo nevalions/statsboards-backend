@@ -10,6 +10,7 @@ from src.core.models import MatchDB
 from src.core.service_registry import ServiceRegistryAccessorMixin
 from src.gameclocks.schemas import GameClockSchema, GameClockSchemaCreate
 from src.helpers.file_service import file_service
+from src.helpers.safe_log import safe_log_obj
 from src.logging_config import get_logger
 from src.matchdata.schemas import MatchDataSchemaCreate
 from src.playclocks.schemas import PlayClockSchema, PlayClockSchemaCreate
@@ -463,12 +464,7 @@ class MatchCRUDRouter(
                 new_scoreboard = await scoreboard_db_service.create_or_update_scoreboard(
                     scoreboard_schema
                 )
-                self.logger.debug(f"Scoreboard created or updated: {new_scoreboard.__dict__}")
-
-                new_match_data = await match_db_service.create(default_match_data)
-                await self.service.get_teams_by_match(new_match_data.match_id)
-                await playclock_service.create(default_playclock)
-                await gameclock_service.create(default_gameclock)
+                self.logger.debug("Scoreboard created or updated")
                 self.logger.info(
                     f"Created match with full data and scoreboard {MatchSchema.model_validate(new_match)}"
                 )

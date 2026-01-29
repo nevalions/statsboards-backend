@@ -18,6 +18,7 @@ from src.core.models import (
 from src.core.models.base import Database
 from src.core.schema_helpers import PaginationMetadata
 from src.core.service_registry import ServiceRegistryAccessorMixin
+from src.helpers.safe_log import safe_log_obj
 from src.logging_config import get_logger
 
 from .schemas import (
@@ -362,7 +363,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
             match_id,
             "match_scoreboard",
         )
-        self.logger.debug(f"Got scoreboard successfully. Result: {result}")
+        self.logger.debug("Got scoreboard successfully")
         return self.first_or_none(result)
 
     async def _get_available_players(
