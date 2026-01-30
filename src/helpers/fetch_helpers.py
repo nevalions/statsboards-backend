@@ -141,7 +141,7 @@ async def fetch_with_scoreboard_data(
             events,
         ) = await asyncio.gather(
             match_service_db.get_scoreboard_by_match(match_id),
-            match_service_db.get_by_id(match_id),
+            match_service_db.get_match_with_tournament_sponsor(match_id),
             match_service_db.get_teams_by_match(match_id),
             match_service_db.get_matchdata_by_match(match_id),
             match_service_db.get_players_with_full_data_optimized(match_id),
@@ -167,12 +167,17 @@ async def fetch_with_scoreboard_data(
                 fetch_data_logger.debug(f"Schema for scoreboard data {scoreboard_data_schema}")
                 scoreboard_data = await scoreboard_data_service.create(scoreboard_data_schema)
 
+            # Convert match to dict and rename 'tournaments' to 'tournament' for frontend compatibility
+            match_dict = deep_dict_convert(match.__dict__)
+            if match_dict and "tournaments" in match_dict:
+                match_dict["tournament"] = match_dict.pop("tournaments")
+
             final_match_with_scoreboard_data_fetched = {
                 "data": {
                     "match_id": match_id,
                     "id": match_id,
                     "status_code": status.HTTP_200_OK,
-                    "match": deep_dict_convert(match.__dict__),
+                    "match": match_dict,
                     "scoreboard_data": instance_to_dict(dict(scoreboard_data.__dict__)),
                     "teams_data": deep_dict_convert(match_teams_data),
                     "match_data": instance_to_dict(dict(match_data.__dict__)),

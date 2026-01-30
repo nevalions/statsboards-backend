@@ -100,6 +100,35 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
 
     @handle_service_exceptions(
         item_name=ITEM,
+        operation="fetching match with tournament sponsor",
+        return_value_on_not_found=None,
+    )
+    async def get_match_with_tournament_sponsor(
+        self,
+        match_id: int,
+    ) -> MatchDB | None:
+        """Get match with tournament and tournament's main_sponsor loaded for scoreboard display."""
+        from src.core.models.sponsor import SponsorDB
+        from src.core.models.sponsor_line import SponsorLineDB
+        from src.core.models.tournament import TournamentDB
+
+        self.logger.debug(f"Get {ITEM} with tournament sponsor id:{match_id}")
+        async with self.db.get_session_maker()() as session:
+            stmt = (
+                select(MatchDB)
+                .where(MatchDB.id == match_id)
+                .options(
+                    joinedload(MatchDB.tournaments).joinedload(TournamentDB.main_sponsor),
+                    joinedload(MatchDB.tournaments).joinedload(TournamentDB.sponsor_line),
+                    joinedload(MatchDB.main_sponsor),
+                    joinedload(MatchDB.sponsor_line),
+                )
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
+    @handle_service_exceptions(
+        item_name=ITEM,
         operation="fetching sport by match_id",
         return_value_on_not_found=None,
     )
