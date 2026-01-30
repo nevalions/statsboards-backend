@@ -78,15 +78,18 @@ All 1309 tests pass in parallel (~126s with pytest-xdist using 4 workers). Tests
 - For absolute stability (CI, critical debugging), use `pytest -n 0` (sequential)
 - Occasional flakiness with 4 workers is expected due to complex fixture dependencies and async test execution
 
-**Coverage:** ~76% overall (76.32% as of 2026-01-21), with comprehensive coverage of core utilities, error handling, router registry, Redis services, SSE queues, and match parser.
+**Coverage:** ~76% overall (76.32% as of 2026-01-30), with comprehensive coverage of core utilities, error handling, router registry, Redis services, SSE queues, and match parser.
 
 **Modules with low coverage (<50%):**
-- `src/websocket/match_handler.py` (20.50%) - WebSocket match data handler
-- `src/pars_eesl/pars_tournament.py` (42.29%) - EESL tournament parser
 - `src/player_team_tournament/views.py` (44.32%) - Player-team-tournament API endpoints
 - `src/playclocks/views.py` (46.22%) - Play clock API endpoints
-- `src/player/views.py` (50.94%) - Player API endpoints
+- `src/player/views.py` (50.94%) - Player API endpoints (7 new endpoint tests added 2026-01-30)
 - `src/player_match/views.py` (50.34%) - Player-match API endpoints
+
+**Recently improved coverage (2026-01-30):**
+- `src/websocket/match_handler.py` - Added 25 tests for process_data_websocket, error handling, WebSocket state validation, and connection closed scenarios
+- `src/pars_eesl/pars_tournament.py` - Added 5 tests for error handling, multiple weeks parsing, color extraction errors, and empty scores
+- `src/player/views.py` - Added 7 endpoint tests for get_player_by_eesl_id, person_by_player_id, remove_person_from_sport, and update_player
 
 **Modules with high coverage (>90%):**
 - Most schema files have 100% coverage

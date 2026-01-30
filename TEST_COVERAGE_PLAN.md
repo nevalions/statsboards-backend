@@ -1,7 +1,9 @@
 # Test Coverage Improvement Plan
 
-**Generated:** 2026-01-18  
-**Current Coverage:** 71.11% overall (2,451/9,544 statements missing)
+**Generated:** 2026-01-18
+**Current Coverage:** 76.32% overall (as of 2026-01-30)
+**Recent Updates:**
+- 2026-01-30: Added 37 new tests across 3 files (match_handler: 25, pars_tournament: 5, player views: 7)
 
 ## Priority 1 - Critical gaps (<30%)
 
