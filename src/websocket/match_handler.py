@@ -115,6 +115,7 @@ class MatchWebSocketHandler:
             "playclock": self.process_playclock_data,
             "match": self.process_match_data,
             "scoreboard": self.process_match_data,
+            "players-update": self.process_match_data,
         }
 
         while True:

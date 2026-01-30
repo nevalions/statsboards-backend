@@ -188,6 +188,7 @@ class MatchDataWebSocketManager:
 
     async def players_update_listener(self, connection, pid, channel, payload):
         from src.core import db
+        from src.helpers.fetch_helpers import deep_dict_convert
         from src.matches.db_services import MatchServiceDB
 
         try:
@@ -201,8 +202,14 @@ class MatchDataWebSocketManager:
 
             match_service_db = MatchServiceDB(db)
             players = await match_service_db.get_players_with_full_data_optimized(match_id)
+            serialized_players = (
+                [deep_dict_convert(player) for player in players] if players else []
+            )
 
-            message = {"type": "players-update", "data": {"match_id": match_id, "players": players}}
+            message = {
+                "type": "players-update",
+                "data": {"match_id": match_id, "players": serialized_players},
+            }
             await connection_manager.send_to_all(message, match_id=match_id)
             self.logger.debug(f"Sent players update for match {match_id}")
         except json.JSONDecodeError as e:
