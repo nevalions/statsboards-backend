@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from sqlalchemy import select
 
@@ -150,9 +151,28 @@ class GameClockServiceDB(BaseServiceDB):
             await session.refresh(updated_item)
 
             self.logger.debug(f"Updated gameclock: {updated_item}")
+            if update_data.get("gameclock_status") == ClockStatus.RUNNING:
+                await self._register_running_gameclock(updated_item)
             await self.trigger_update_gameclock(item_id)
 
             return updated_item
+
+    async def _register_running_gameclock(self, gameclock: GameClockDB) -> None:
+        state_machine = self.clock_manager.get_clock_state_machine(gameclock.id)
+        if not state_machine:
+            initial_value = gameclock.gameclock if gameclock.gameclock is not None else 0
+            await self.clock_manager.start_clock(gameclock.id, initial_value)
+            state_machine = self.clock_manager.get_clock_state_machine(gameclock.id)
+        if not state_machine:
+            return
+
+        state_machine.value = gameclock.gameclock if gameclock.gameclock is not None else 0
+        if gameclock.started_at_ms is not None:
+            state_machine.started_at_ms = gameclock.started_at_ms
+        elif state_machine.started_at_ms is None:
+            state_machine.started_at_ms = int(time.time() * 1000)
+        state_machine.status = ClockStatus.RUNNING
+        clock_orchestrator.register_gameclock(gameclock.id, state_machine)
 
     async def get_gameclock_status(
         self,

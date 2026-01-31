@@ -388,6 +388,7 @@ class MatchWebSocketHandler:
         await websocket.accept()
         await connection_manager.connect(websocket, client_id, match_id)
         await ws_manager.startup()
+        await self.enable_match_clock_queues(match_id)
 
         async def ping_task():
             while True:
@@ -435,6 +436,29 @@ class MatchWebSocketHandler:
                 f"Background tasks cancelled for client {client_id}, starting cleanup"
             )
             await self.cleanup_websocket(client_id)
+
+    async def enable_match_clock_queues(self, match_id: int) -> None:
+        try:
+            from src.core import db
+            from src.gameclocks.db_services import GameClockServiceDB
+            from src.playclocks.db_services import PlayClockServiceDB
+
+            gameclock_service = GameClockServiceDB(db)
+            playclock_service = PlayClockServiceDB(db)
+
+            gameclock = await gameclock_service.get_gameclock_by_match_id(match_id)
+            if gameclock:
+                await gameclock_service.enable_match_data_gameclock_queues(gameclock.id)
+
+            playclock = await playclock_service.get_playclock_by_match_id(match_id)
+            if playclock:
+                initial_value = playclock.playclock if playclock.playclock is not None else 0
+                await playclock_service.enable_match_data_clock_queues(playclock.id, initial_value)
+        except Exception as e:
+            websocket_logger.error(
+                f"Failed to enable match clock queues for match {match_id}: {e}",
+                exc_info=True,
+            )
 
 
 match_websocket_handler = MatchWebSocketHandler()

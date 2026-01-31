@@ -259,6 +259,38 @@ class TestMatchWebSocketHandler:
         with patch("src.websocket.match_handler.connection_manager") as mock_conn_mgr:
             mock_conn_mgr.get_queue_for_client = AsyncMock(return_value=mock_queue)
 
+    async def test_enable_match_clock_queues_registers_running_clocks(self):
+        handler = MatchWebSocketHandler()
+        match_id = 123
+
+        gameclock = Mock()
+        gameclock.id = 10
+        gameclock.gameclock_status = "running"
+
+        playclock = Mock()
+        playclock.id = 20
+        playclock.playclock_status = "running"
+        playclock.playclock = None
+
+        mock_gameclock_service = AsyncMock()
+        mock_gameclock_service.get_gameclock_by_match_id = AsyncMock(return_value=gameclock)
+        mock_gameclock_service.enable_match_data_gameclock_queues = AsyncMock()
+
+        mock_playclock_service = AsyncMock()
+        mock_playclock_service.get_playclock_by_match_id = AsyncMock(return_value=playclock)
+        mock_playclock_service.enable_match_data_clock_queues = AsyncMock()
+
+        with patch("src.websocket.match_handler.GameClockServiceDB", return_value=mock_gameclock_service):
+            with patch("src.websocket.match_handler.PlayClockServiceDB", return_value=mock_playclock_service):
+                await handler.enable_match_clock_queues(match_id)
+
+        mock_gameclock_service.enable_match_data_gameclock_queues.assert_called_once_with(
+            gameclock.id
+        )
+        mock_playclock_service.enable_match_data_clock_queues.assert_called_once_with(
+            playclock.id, 0
+        )
+
             await handler.process_data_websocket(websocket, client_id, match_id)
 
             websocket.send_json.assert_not_called()

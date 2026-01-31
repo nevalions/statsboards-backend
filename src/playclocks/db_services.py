@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -87,8 +88,6 @@ class PlayClockServiceDB(BaseServiceDB):
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
             if state_machine and playclock and playclock.playclock_status == ClockStatus.RUNNING:
                 state_machine.start()
-            elif initial_value is not None and state_machine:
-                state_machine.start()
 
             if state_machine and state_machine.status == ClockStatus.RUNNING:
                 clock_orchestrator.register_playclock(item_id, state_machine)
@@ -131,9 +130,28 @@ class PlayClockServiceDB(BaseServiceDB):
             await session.refresh(updated_item)
 
             self.logger.debug(f"Updated playclock: {updated_item}")
+            if update_data.get("playclock_status") == ClockStatus.RUNNING:
+                await self._register_running_playclock(updated_item)
             await self.trigger_update_playclock(item_id)
 
             return updated_item
+
+    async def _register_running_playclock(self, playclock: PlayClockDB) -> None:
+        state_machine = self.clock_manager.get_clock_state_machine(playclock.id)
+        if not state_machine:
+            initial_value = playclock.playclock if playclock.playclock is not None else 0
+            await self.clock_manager.start_clock(playclock.id, initial_value)
+            state_machine = self.clock_manager.get_clock_state_machine(playclock.id)
+        if not state_machine:
+            return
+
+        state_machine.value = playclock.playclock if playclock.playclock is not None else 0
+        if playclock.started_at_ms is not None:
+            state_machine.started_at_ms = playclock.started_at_ms
+        elif state_machine.started_at_ms is None:
+            state_machine.started_at_ms = int(time.time() * 1000)
+        state_machine.status = ClockStatus.RUNNING
+        clock_orchestrator.register_playclock(playclock.id, state_machine)
 
     @handle_service_exceptions(item_name=ITEM, operation="updating")
     async def update_with_none(
