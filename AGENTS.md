@@ -62,7 +62,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 1309 tests pass in parallel (~126s with pytest-xdist using 4 workers). Tests use:
+All ~1335 tests pass in parallel (~126s with pytest-xdist using 4 workers). Tests use:
 - Transactional rollback for isolation
 - 4 parallel databases (test_db, test_db2, test_db3, test_db4) distributed across 4 workers
 - Worker-specific lock files for safe table creation
@@ -78,7 +78,7 @@ All 1309 tests pass in parallel (~126s with pytest-xdist using 4 workers). Tests
 - For absolute stability (CI, critical debugging), use `pytest -n 0` (sequential)
 - Occasional flakiness with 4 workers is expected due to complex fixture dependencies and async test execution
 
-**Coverage:** ~76% overall (76.32% as of 2026-01-30), with comprehensive coverage of core utilities, error handling, router registry, Redis services, SSE queues, and match parser.
+**Coverage:** ~76% overall (76.32% as of 2026-01-30). Coverage percentages below should be verified after running tests with coverage.
 
 **Modules with low coverage (<50%):**
 - `src/player_team_tournament/views.py` (44.32%) - Player-team-tournament API endpoints
@@ -86,10 +86,17 @@ All 1309 tests pass in parallel (~126s with pytest-xdist using 4 workers). Tests
 - `src/player/views.py` (50.94%) - Player API endpoints (7 new endpoint tests added 2026-01-30)
 - `src/player_match/views.py` (50.34%) - Player-match API endpoints
 
+**Note:** On 2026-01-31, 26 additional tests were added for error handling and edge cases in playclocks, player_team_tournament, and player_match views. Run `./run-tests.sh --cov=src` to verify updated coverage.
+
 **Recently improved coverage (2026-01-30):**
 - `src/websocket/match_handler.py` - Added 25 tests for process_data_websocket, error handling, WebSocket state validation, and connection closed scenarios
 - `src/pars_eesl/pars_tournament.py` - Added 5 tests for error handling, multiple weeks parsing, color extraction errors, and empty scores
 - `src/player/views.py` - Added 7 endpoint tests for get_player_by_eesl_id, person_by_player_id, remove_person_from_sport, and update_player
+
+**Recently improved coverage (2026-01-31):**
+- `src/playclocks/views.py` - Added 13 tests for error handling (IntegrityError, SQLAlchemyError, general exceptions) and empty result scenarios
+- `src/player_team_tournament/views.py` - Added 13 tests for exception handling, empty results, and edge cases
+- `src/player_match/views.py` - Added 3 tests for exception handling and parsing scenarios
 
 **Modules with high coverage (>90%):**
 - Most schema files have 100% coverage
