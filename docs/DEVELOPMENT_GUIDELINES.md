@@ -45,26 +45,31 @@ docker-compose -f docker-compose.test-db-only.yml up -d && source venv/bin/activ
 docker-compose -f docker-compose.test-db-only.yml up -d
 ```
 
-**Important: Parallel tests now work correctly with 1309 tests passing in ~126s:**
+**Important: Parallel tests now work correctly with 1465 tests passing in ~160s:**
 
 ```bash
-  pytest -n 4  # Run tests in parallel with 4 workers (using 2 databases)
-pytest -n 0  # Run tests sequentially (for debugging)
-```
+  pytest -n 4  # Run tests in parallel with 4 workers (using 4 databases)
+  pytest -n 0  # Run tests sequentially (for debugging)
+  ```
 
 The default pytest.ini configuration uses `-n 4` for parallel test execution. Database connection and deadlock issues have been resolved by:
 - Using worker-specific lock files (`/tmp/test_db_tables_setup_{db_name}.lock`) to coordinate table creation across parallel workers
-- Using 2 parallel databases (test_db, test_db2) distributed across 4 workers:
-  - gw0, gw2 → test_db
-  - gw1, gw3 → test_db2
+- Using `filelock` library (cross-platform, 30s timeout) for reliable file locking
+- Lock scope fixed - entire database setup (tables + indexes + roles) inside lock to prevent race conditions
+- Using 4 parallel databases (test_db, test_db2, test_db3, test_db4) distributed across 4 workers:
+  - gw0 → test_db
+  - gw1 → test_db2
+  - gw2 → test_db3
+  - gw3 → test_db4
 - Using `test_mode=True` in Database class which replaces `commit()` with `flush()` in CRUDMixin to avoid PostgreSQL deadlocks
 - Transactional rollback per test via the outer test fixture
+- PostgreSQL health check using `pg_isready` (30s max wait, no fixed sleep delay)
 
-**Note:** Tests now run cleanly in parallel with no ResourceWarnings, unclosed connection warnings, or deadlocks.
+**Note:** Tests run reliably in parallel with no ResourceWarnings, unclosed connection warnings, deadlocks, or race conditions.
 
 ### Understanding Test Markers
 
-Tests in the suite use markers to categorize test types. All 1309 tests run by default, but markers allow selective execution when needed.
+Tests in the suite use markers to categorize test types. All 1465 tests run by default, but markers allow selective execution when needed.
 
 **Breakdown of Marked Tests:**
 
@@ -129,7 +134,7 @@ pytest -m "not integration"
 pytest -m "not integration and not slow"
 ```
 
-All 1309 tests run by default with `pytest -n 4` in ~126s.
+All 1465 tests run by default with `pytest -n 4` in ~160s.
 
 Then run tests:
 
@@ -188,6 +193,18 @@ pytest -m "not slow"
 # Run specific test types
 pytest -k "property"
 pytest -k "e2e"
+
+# Run tests with random order to detect order-dependent tests
+pytest --random-order
+
+# Run tests with random order using time-based seed
+pytest --random-order --random-order-seed=time
+
+# Re-run tests with same seed for reproducibility
+pytest --random-order --random-order-seed=12345
+
+# Run tests with random order using convenience script
+./run-tests-random.sh
 ```
 
 **Note:** The `pytest.ini` file includes performance optimizations (`-x --tb=short -n 4`) for faster test execution:
@@ -1100,7 +1117,7 @@ async with test_db.get_session_maker()() as db_session:
 
 **Test Results:**
 
-All 1309 tests pass reliably in ~126s with 4 parallel workers (`-n 4`) across 4 databases. Worker-specific lock files ensure tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
+All 1465 tests pass reliably in ~160s with 4 parallel workers (`-n 4`) across 4 databases. Worker-specific lock files ensure tables and indexes are created safely across workers, and using `flush()` in test fixtures eliminates deadlock issues.
 
 **Known Warnings:**
 

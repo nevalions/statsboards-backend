@@ -62,7 +62,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All ~1335 tests pass in parallel (~126s with pytest-xdist using 4 workers). Tests use:
+All 1465 tests pass in parallel (~160s with pytest-xdist using 4 workers). Tests use:
 - Transactional rollback for isolation
 - 4 parallel databases (test_db, test_db2, test_db3, test_db4) distributed across 4 workers
 - Worker-specific lock files for safe table creation
@@ -76,7 +76,7 @@ All ~1335 tests pass in parallel (~126s with pytest-xdist using 4 workers). Test
 **Testing Recommendations:**
 - Use `./run-tests.sh` for most development work (restarts DB before running tests)
 - For absolute stability (CI, critical debugging), use `pytest -n 0` (sequential)
-- Occasional flakiness with 4 workers is expected due to complex fixture dependencies and async test execution
+- Parallel tests (4 workers) are now stable with no race conditions or flakiness
 
 **Coverage:** ~76% overall (76.32% as of 2026-01-30). Coverage percentages below should be verified after running tests with coverage.
 

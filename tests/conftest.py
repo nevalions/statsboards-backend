@@ -63,7 +63,7 @@ def test_db_url(worker_id):
 
 async def _ensure_tables_created(db_url_str: str):
     """Ensure database tables and indexes are created using file-based lock."""
-    import fcntl
+    from filelock import FileLock, Timeout
     import os
 
     # Create lock file based on database name to coordinate workers per database
@@ -71,66 +71,68 @@ async def _ensure_tables_created(db_url_str: str):
     lock_file = f"/tmp/test_db_tables_setup_{db_name}.lock"
     setup_marker = f"/tmp/test_db_setup_complete_{db_name}.marker"
 
-    with open(lock_file, "w") as f:
-        try:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-        except (ImportError, AttributeError):
-            pass
+    try:
+        with FileLock(lock_file, timeout=30):
+            # Check if setup was already completed by another worker
+            if os.path.exists(setup_marker):
+                return
 
-        # Check if setup was already completed by another worker
-        if os.path.exists(setup_marker):
-            return
+            assert "test" in db_url_str, "Test DB URL must contain 'test'"
 
-        assert "test" in db_url_str, "Test DB URL must contain 'test'"
+            database = Database(db_url_str, echo=False)
 
-        database = Database(db_url_str, echo=False)
+            try:
+                # Table and index creation (INSIDE lock)
+                async with database.engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
 
-        try:
-            # Table and index creation (INSIDE lock)
-            async with database.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+                    for index_sql in [
+                        "CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
+                        "CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
+                        "CREATE INDEX IF NOT EXISTS ix_team_title_trgm ON team USING GIN (title gin_trgm_ops)",
+                    ]:
+                        try:
+                            await conn.execute(text(index_sql))
+                        except Exception:
+                            pass
 
-                for index_sql in [
-                    "CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
-                    "CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
-                    "CREATE INDEX IF NOT EXISTS ix_team_title_trgm ON team USING GIN (title gin_trgm_ops)",
-                ]:
-                    try:
-                        await conn.execute(text(index_sql))
-                    except Exception:
-                        pass
+                # Role creation (NOW INSIDE LOCK - NO RACE CONDITION)
+                from sqlalchemy import select
 
-            # Role creation (NOW INSIDE LOCK - NO RACE CONDITION)
-            from sqlalchemy import select
+                from src.core.models.role import RoleDB
 
-            from src.core.models.role import RoleDB
+                async with database.async_session() as session:
+                    existing_roles = await session.execute(select(RoleDB.name))
+                    existing_names = {r[0] for r in existing_roles.fetchall()}
 
-            async with database.async_session() as session:
-                existing_roles = await session.execute(select(RoleDB.name))
-                existing_names = {r[0] for r in existing_roles.fetchall()}
+                    if not existing_names:
+                        default_roles_data = [
+                            ("user", "Basic viewer role"),
+                            ("admin", "Administrator with full access"),
+                            ("editor", "Can edit content"),
+                            ("player", "Player account"),
+                            ("coach", "Coach account"),
+                            ("streamer", "Streamer account"),
+                        ]
 
-                if not existing_names:
-                    default_roles_data = [
-                        ("user", "Basic viewer role"),
-                        ("admin", "Administrator with full access"),
-                        ("editor", "Can edit content"),
-                        ("player", "Player account"),
-                        ("coach", "Coach account"),
-                        ("streamer", "Streamer account"),
-                    ]
+                        for name, description in default_roles_data:
+                            role = RoleDB(name=name, description=description)
+                            session.add(role)
 
-                    for name, description in default_roles_data:
-                        role = RoleDB(name=name, description=description)
-                        session.add(role)
+                        await session.flush()
 
-                    await session.flush()
-
-            # Mark setup as complete to prevent redundant operations
-            Path(setup_marker).touch()
-        finally:
-            await database.close()
+                # Mark setup as complete to prevent redundant operations
+                Path(setup_marker).touch()
+            finally:
+                await database.close()
     # Lock released here AFTER all setup complete
+    except Timeout:
+        raise RuntimeError(
+            f"Timeout waiting for database setup lock: {lock_file}. "
+            "Another process may be holding the lock. "
+            "Try clearing lock files: rm -f /tmp/test_db_*.lock"
+        )
 
 
 @pytest_asyncio.fixture(scope="function")

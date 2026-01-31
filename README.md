@@ -92,10 +92,10 @@ Once running, visit:
 ### Running Tests
 
 ```bash
-# Start test database (creates test_db and test_db2 for parallel execution)
+# Start test database (creates 4 databases for parallel execution: test_db, test_db2, test_db3, test_db4)
 docker-compose -f docker-compose.test-db-only.yml up -d
 
-# Run all tests (4 workers across 2 databases by default)
+# Run all tests (4 workers across 4 databases by default)
 pytest
 
 # Run tests for specific directory
@@ -117,9 +117,9 @@ pytest tests/test_db_services/test_tournament_service.py::TestTournamentServiceD
 
 **Important:**
 - Test database must be started before running tests: `docker-compose -f docker-compose.test-db-only.yml up -d`
-- Tests use 2 parallel databases (test_db, test_db2) with 4 workers for faster execution
+- Tests use 4 parallel databases (test_db, test_db2, test_db3, test_db4) with 4 workers for faster execution
 - Tests use PostgreSQL (not SQLite) to ensure production compatibility
-- The `pytest.ini` file includes performance optimizations: `-x -v --tb=short -n 4`
+- The `pytest.ini` file includes performance optimizations: `-x --tb=short -n 4`
 - Database echo is disabled in test fixtures for faster execution
 
 ### Code Quality
@@ -271,7 +271,7 @@ docs/                          # Documentation
 ### Code Quality
 - Consistent service layer pattern with `BaseServiceDB`
 - Service registry pattern for dependency injection and decoupling
-- Comprehensive test coverage (~76% overall, 1207 tests passing in ~91s with 4 parallel workers)
+- Comprehensive test coverage (~76% overall, 1465 tests passing in ~160s with 4 parallel workers)
 - Type hints throughout codebase
 - Async/await for all database operations
 - Mixin-based CRUD, query, and relationship operations
@@ -460,10 +460,10 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
     - Improved exception handling for connection failure scenarios
   - **test_views/test_websocket_views.py**: Fixed WebSocket functionality tests (47 tests passing)
     - Corrected import path for MatchDataWebSocketManager
-    - Marked integration test requiring real database connections
-    - **test_pars_integration.py**: Integration tests working with proper markers (5 tests passing)
-     - Tests run correctly with `-m integration` flag
-   - All 1207 tests now passing when excluding integration tests (in ~91s with 4 parallel workers)
+     - Marked integration test requiring real database connections
+     - **test_pars_integration.py**: Integration tests working with proper markers (5 tests passing)
+      - Tests run correctly with `-m integration` flag
+    - All 1465 tests now passing when excluding integration tests (in ~160s with 4 parallel workers)
 - Integration tests pass when run with appropriate markers
 
 ### Exception Handling Refactoring
@@ -489,12 +489,18 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 - Improved query performance in service layer
 
 ### Testing Improvements
-- 1207 comprehensive tests passing (in ~91s with 4 parallel workers across 2 databases)
-- Test database optimization with Docker (creates test_db and test_db2)
+- 1465 comprehensive tests passing (in ~160s with 4 parallel workers across 4 databases)
+- Test database optimization with Docker (creates test_db, test_db2, test_db3, test_db4)
 - PostgreSQL requirement for tests (not SQLite)
 - Factory pattern for test data generation
 - Comprehensive test coverage across all services
 - Added 56 new tests for parser and service layer coverage (STAB-85, STAB-82, STAB-87, STAB-86)
+- Parallel testing stability improvements (STAB-174):
+  - Replaced fcntl with filelock library for cross-platform compatibility
+  - Fixed lock scope to prevent race conditions
+  - Added PostgreSQL health check with pg_isready
+  - Added stale lock file cleanup
+  - Added pytest-random-order for detecting order-dependent tests
 
 ### Service Layer Decoupling
 - Implemented service registry pattern for dependency injection
