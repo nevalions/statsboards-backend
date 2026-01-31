@@ -64,10 +64,12 @@ def test_db_url(worker_id):
 async def _ensure_tables_created(db_url_str: str):
     """Ensure database tables and indexes are created using file-based lock."""
     import fcntl
+    import os
 
     # Create lock file based on database name to coordinate workers per database
     db_name = db_url_str.split("/")[-1]
     lock_file = f"/tmp/test_db_tables_setup_{db_name}.lock"
+    setup_marker = f"/tmp/test_db_setup_complete_{db_name}.marker"
 
     with open(lock_file, "w") as f:
         try:
@@ -75,11 +77,16 @@ async def _ensure_tables_created(db_url_str: str):
         except (ImportError, AttributeError):
             pass
 
+        # Check if setup was already completed by another worker
+        if os.path.exists(setup_marker):
+            return
+
         assert "test" in db_url_str, "Test DB URL must contain 'test'"
 
         database = Database(db_url_str, echo=False)
 
         try:
+            # Table and index creation (INSIDE lock)
             async with database.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
@@ -94,6 +101,7 @@ async def _ensure_tables_created(db_url_str: str):
                     except Exception:
                         pass
 
+            # Role creation (NOW INSIDE LOCK - NO RACE CONDITION)
             from sqlalchemy import select
 
             from src.core.models.role import RoleDB
@@ -117,8 +125,12 @@ async def _ensure_tables_created(db_url_str: str):
                         session.add(role)
 
                     await session.flush()
+
+            # Mark setup as complete to prevent redundant operations
+            Path(setup_marker).touch()
         finally:
             await database.close()
+    # Lock released here AFTER all setup complete
 
 
 @pytest_asyncio.fixture(scope="function")
