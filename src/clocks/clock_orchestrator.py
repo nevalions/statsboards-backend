@@ -8,6 +8,7 @@ class ClockOrchestrator:
     def __init__(self) -> None:
         self.running_playclocks: dict[int, object] = {}
         self.running_gameclocks: dict[int, object] = {}
+        self._last_updated_second: dict[int, int] = {}  # clock_id -> last second updated
         self._task: asyncio.Task | None = None
         self._is_running = False
         self._playclock_update_callback: callable | None = None
@@ -43,30 +44,35 @@ class ClockOrchestrator:
         """Single loop checking all clocks every 100ms"""
         self.logger.debug("ClockOrchestrator loop started")
         while self._is_running:
-            now = time.monotonic()
-
             for clock_id, state_machine in list(self.running_playclocks.items()):
-                if self._should_update(now, state_machine):
+                if self._should_update(clock_id, state_machine):
                     await self._update_playclock(clock_id, state_machine)
 
             for clock_id, state_machine in list(self.running_gameclocks.items()):
-                if self._should_update(now, state_machine):
+                if self._should_update(clock_id, state_machine):
                     await self._update_gameclock(clock_id, state_machine)
 
             await asyncio.sleep(0.1)
 
         self.logger.debug("ClockOrchestrator loop stopped")
 
-    def _should_update(self, now: float, state_machine: object) -> bool:
-        """Check if clock needs to decrement at this moment"""
+    def _should_update(self, clock_id: int, state_machine: object) -> bool:
+        """Check if clock needs to update at this moment (once per second)"""
         if not hasattr(state_machine, "started_at_ms") or state_machine.started_at_ms is None:
             return False
 
-        elapsed = now - (state_machine.started_at_ms / 1000.0)
-        current_second = int(elapsed)
-        next_update = current_second + 1
-        time_until_next = next_update - elapsed
-        return time_until_next <= 0.1
+        # Use time.time() to match state_machine.started_at_ms which uses time.time() * 1000
+        now_ms = time.time() * 1000
+        elapsed_ms = now_ms - state_machine.started_at_ms
+        elapsed_sec = elapsed_ms / 1000.0
+        current_second = int(elapsed_sec)
+
+        # Only update if we haven't updated for this second yet
+        last_second = self._last_updated_second.get(clock_id, -1)
+        if current_second > last_second:
+            self._last_updated_second[clock_id] = current_second
+            return True
+        return False
 
     async def _update_playclock(self, clock_id: int, state_machine: object) -> None:
         """Update playclock and trigger NOTIFY"""
@@ -98,6 +104,7 @@ class ClockOrchestrator:
     def unregister_playclock(self, clock_id: int) -> None:
         """Unregister a playclock from the orchestrator"""
         self.running_playclocks.pop(clock_id, None)
+        self._last_updated_second.pop(clock_id, None)
         self.logger.debug(f"Unregistered playclock {clock_id}")
 
     def register_gameclock(self, clock_id: int, state_machine: object) -> None:
@@ -108,6 +115,7 @@ class ClockOrchestrator:
     def unregister_gameclock(self, clock_id: int) -> None:
         """Unregister a gameclock from the orchestrator"""
         self.running_gameclocks.pop(clock_id, None)
+        self._last_updated_second.pop(clock_id, None)
         self.logger.debug(f"Unregistered gameclock {clock_id}")
 
     def set_playclock_update_callback(self, callback: callable) -> None:

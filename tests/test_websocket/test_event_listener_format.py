@@ -195,3 +195,105 @@ class TestEventListenerFormat:
 
                 second_call_args = calls[1][0][0]
                 assert second_call_args["type"] == "statistics-update"
+
+    async def test_gameclock_listener_sends_data_at_top_level(
+        self, ws_manager, mock_connection, mock_cache_service
+    ):
+        """
+        Verify gameclock_listener sends gameclock data at message top level.
+
+        This is critical because frontend expects:
+        message['gameclock'] NOT message['data']['gameclock']
+
+        Reference: frontend-angular-signals/src/app/core/services/websocket.service.ts:356
+        """
+        import src.utils.websocket.websocket_manager as ws_module
+
+        trigger_payload = json.dumps(
+            {
+                "table": "gameclock",
+                "operation": "UPDATE",
+                "match_id": 100,
+                "data": {
+                    "id": 1,
+                    "match_id": 100,
+                    "gameclock": 600,
+                    "gameclock_time_remaining": 600,
+                    "gameclock_max": 720,
+                    "gameclock_status": "running",
+                    "version": 1,
+                },
+            }
+        )
+        mock_pid = 12345
+        mock_channel = "gameclock_change"
+
+        with patch.object(ws_module, "connection_manager") as mock_conn_mgr:
+            mock_conn_mgr.send_to_all = AsyncMock()
+
+            await ws_manager.gameclock_listener(
+                mock_connection, mock_pid, mock_channel, trigger_payload
+            )
+
+            call_args = mock_conn_mgr.send_to_all.call_args[0][0]
+
+            assert call_args["type"] == "gameclock-update"
+            assert call_args["match_id"] == 100
+
+            gameclock = call_args.get("gameclock")
+            assert gameclock is not None, "Gameclock should be at top level of message"
+            assert isinstance(gameclock, dict), "Gameclock should be a dict"
+            assert gameclock["id"] == 1
+            assert gameclock["gameclock"] == 600
+            assert gameclock["gameclock_status"] == "running"
+            assert "data" not in call_args, "Data should be moved to gameclock key"
+
+    async def test_playclock_listener_sends_data_at_top_level(
+        self, ws_manager, mock_connection, mock_cache_service
+    ):
+        """
+        Verify playclock_listener sends playclock data at message top level.
+
+        This is critical because frontend expects:
+        message['playclock'] NOT message['data']['playclock']
+
+        Reference: frontend-angular-signals/src/app/core/services/websocket.service.ts:333
+        """
+        import src.utils.websocket.websocket_manager as ws_module
+
+        trigger_payload = json.dumps(
+            {
+                "table": "playclock",
+                "operation": "UPDATE",
+                "match_id": 200,
+                "data": {
+                    "id": 2,
+                    "match_id": 200,
+                    "playclock": 25,
+                    "playclock_status": "running",
+                    "version": 1,
+                },
+            }
+        )
+        mock_pid = 12345
+        mock_channel = "playclock_change"
+
+        with patch.object(ws_module, "connection_manager") as mock_conn_mgr:
+            mock_conn_mgr.send_to_all = AsyncMock()
+
+            await ws_manager.playclock_listener(
+                mock_connection, mock_pid, mock_channel, trigger_payload
+            )
+
+            call_args = mock_conn_mgr.send_to_all.call_args[0][0]
+
+            assert call_args["type"] == "playclock-update"
+            assert call_args["match_id"] == 200
+
+            playclock = call_args.get("playclock")
+            assert playclock is not None, "Playclock should be at top level of message"
+            assert isinstance(playclock, dict), "Playclock should be a dict"
+            assert playclock["id"] == 2
+            assert playclock["playclock"] == 25
+            assert playclock["playclock_status"] == "running"
+            assert "data" not in call_args, "Data should be moved to playclock key"

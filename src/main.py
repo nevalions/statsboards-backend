@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from src.clocks import clock_orchestrator
 from src.core.config import settings
 from src.core.exception_handler import register_exception_handlers
 from src.core.middleware import LoggingMiddleware, RequestIDMiddleware
@@ -108,6 +109,9 @@ async def lifespan(_app: FastAPI):
         stale_websocket_task = asyncio.create_task(cleanup_stale_websocket_connections_task())
         logger.info("Stale WebSocket connections cleanup task started")
 
+        await clock_orchestrator.start()
+        logger.info("Clock orchestrator started")
+
         yield
     except Exception as ex:
         db_logger.critical(f"Critical error during startup: {ex}", exc_info=True)
@@ -133,6 +137,9 @@ async def lifespan(_app: FastAPI):
                 await stale_websocket_task
             except asyncio.CancelledError:
                 pass
+
+        await clock_orchestrator.stop()
+        logger.info("Clock orchestrator stopped")
 
         await ws_manager.shutdown()
         logger.info("WebSocket manager stopped")

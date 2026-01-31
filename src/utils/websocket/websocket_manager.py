@@ -104,6 +104,10 @@ class MatchDataWebSocketManager:
         try:
             data = json.loads(payload.strip())
             match_id = data["match_id"]
+
+            if "data" in data and update_type in ["gameclock-update", "playclock-update"]:
+                data[update_type.replace("-update", "")] = data.pop("data")
+
             data["type"] = update_type
 
             self.logger.debug(f"Processing {update_type} for match {match_id}")

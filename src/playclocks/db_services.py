@@ -42,23 +42,17 @@ class PlayClockServiceDB(BaseServiceDB):
     async def _stop_playclock_internal(self, playclock_id: int) -> None:
         """Handle playclock stop when it reaches 0"""
         self.logger.debug(f"Stopping playclock {playclock_id} (reached 0)")
-        clock_orchestrator.unregister_playclock(playclock_id)
-        await self.clock_manager.end_clock(playclock_id)
-        await self.update(
+        state_machine = self.clock_manager.get_clock_state_machine(playclock_id)
+        if state_machine:
+            state_machine.stop()
+        await self.update_with_none(
             playclock_id,
             PlayClockSchemaUpdate(
-                playclock_status="stopping",
-                playclock=0,
-            ),
-        )
-        await asyncio.sleep(2)
-        await self.update(
-            playclock_id,
-            PlayClockSchemaUpdate(
-                playclock=None,
                 playclock_status="stopped",
+                playclock=None,
             ),
         )
+        await self.clock_manager.end_clock(playclock_id)
 
     async def stop_playclock(self, playclock_id: int) -> None:
         """Manually stop playclock and unregister from orchestrator"""
