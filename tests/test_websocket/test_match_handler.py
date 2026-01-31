@@ -235,6 +235,10 @@ class TestMatchWebSocketHandler:
 
             await handler.process_data_websocket(websocket, client_id, match_id)
 
+            websocket.send_json.assert_not_called()
+
+            await handler.process_data_websocket(websocket, client_id, match_id)
+
     async def test_process_data_websocket_unknown_message_type(self):
         handler = MatchWebSocketHandler()
         websocket = AsyncMock()
@@ -280,8 +284,13 @@ class TestMatchWebSocketHandler:
         mock_playclock_service.get_playclock_by_match_id = AsyncMock(return_value=playclock)
         mock_playclock_service.enable_match_data_clock_queues = AsyncMock()
 
-        with patch("src.websocket.match_handler.GameClockServiceDB", return_value=mock_gameclock_service):
-            with patch("src.websocket.match_handler.PlayClockServiceDB", return_value=mock_playclock_service):
+        with patch(
+            "src.websocket.match_handler.GameClockServiceDB", return_value=mock_gameclock_service
+        ):
+            with patch(
+                "src.websocket.match_handler.PlayClockServiceDB",
+                return_value=mock_playclock_service,
+            ):
                 await handler.enable_match_clock_queues(match_id)
 
         mock_gameclock_service.enable_match_data_gameclock_queues.assert_called_once_with(
@@ -290,10 +299,6 @@ class TestMatchWebSocketHandler:
         mock_playclock_service.enable_match_data_clock_queues.assert_called_once_with(
             playclock.id, 0
         )
-
-            await handler.process_data_websocket(websocket, client_id, match_id)
-
-            websocket.send_json.assert_not_called()
 
     async def test_process_data_websocket_non_dict_data(self):
         handler = MatchWebSocketHandler()

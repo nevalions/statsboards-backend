@@ -1,5 +1,7 @@
 import pytest
 
+from typing import TypeVar
+
 from src.person.db_services import PersonServiceDB
 from src.player.db_services import PlayerServiceDB
 from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
@@ -19,36 +21,45 @@ from tests.factories import (
     TournamentFactory,
 )
 
+T = TypeVar("T")
+
+
+def _require(value: T | None) -> T:
+    assert value is not None
+    return value
+
 
 @pytest.mark.asyncio
 class TestPlayerTeamTournamentViewsAdditional:
     async def test_get_player_team_tournament_by_eesl_id_endpoint(self, client, test_db):
         """Test get player team tournament by eesl_id endpoint."""
         sport_service = SportServiceDB(test_db)
-        sport = await sport_service.create(SportFactorySample.build())
+        sport = _require(await sport_service.create(SportFactorySample.build()))
 
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create(SeasonFactorySample.build())
+        season = _require(await season_service.create(SeasonFactorySample.build()))
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team = _require(await team_service.create(TeamFactory.build(sport_id=sport.id)))
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         person_service = PersonServiceDB(test_db)
-        person = await person_service.create_or_update_person(PersonFactory.build())
+        person = _require(await person_service.create_or_update_person(PersonFactory.build()))
 
         player_service = PlayerServiceDB(test_db)
-        player = await player_service.create_or_update_player(
-            PlayerFactory.build(person_id=person.id)
+        player = _require(
+            await player_service.create_or_update_player(PlayerFactory.build(person_id=person.id))
         )
 
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
@@ -75,26 +86,28 @@ class TestPlayerTeamTournamentViewsAdditional:
     async def test_get_player_team_tournament_by_id_endpoint(self, client, test_db):
         """Test get player team tournament by id endpoint."""
         sport_service = SportServiceDB(test_db)
-        sport = await sport_service.create(SportFactorySample.build())
+        sport = _require(await sport_service.create(SportFactorySample.build()))
 
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create(SeasonFactorySample.build())
+        season = _require(await season_service.create(SeasonFactorySample.build()))
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team = _require(await team_service.create(TeamFactory.build(sport_id=sport.id)))
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         player_service = PlayerServiceDB(test_db)
-        player = await player_service.create_or_update_player(PlayerFactory.build())
+        player = _require(await player_service.create_or_update_player(PlayerFactory.build()))
 
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
         ptt_data = PlayerTeamTournamentSchemaCreate(
@@ -125,18 +138,20 @@ class TestPlayerTeamTournamentViewsAdditional:
     async def test_get_parse_player_to_team_tournament_endpoint(self, client, test_db):
         """Test parse player to team tournament endpoint."""
         sport_service = SportServiceDB(test_db)
-        sport = await sport_service.create(SportFactorySample.build())
+        sport = _require(await sport_service.create(SportFactorySample.build()))
 
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create(SeasonFactorySample.build())
+        season = _require(await season_service.create(SeasonFactorySample.build()))
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team = _require(await team_service.create(TeamFactory.build(sport_id=sport.id)))
 
         response = await client.get(
             f"/api/players_team_tournament/pars/tournament/{tournament.id}/team/{team.id}"
@@ -153,32 +168,38 @@ class TestPlayerTeamTournamentViewsAdditional:
         season = await season_service.create(SeasonFactorySample.build())
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team = _require(await team_service.create(TeamFactory.build(sport_id=sport.id)))
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         person_service = PersonServiceDB(test_db)
-        person1 = await person_service.create_or_update_person(
-            PersonFactory.build(first_name="John", second_name="Doe")
+        person1 = _require(
+            await person_service.create_or_update_person(
+                PersonFactory.build(first_name="John", second_name="Doe")
+            )
         )
-        person2 = await person_service.create_or_update_person(
-            PersonFactory.build(first_name="Jane", second_name="Smith")
+        person2 = _require(
+            await person_service.create_or_update_person(
+                PersonFactory.build(first_name="Jane", second_name="Smith")
+            )
         )
 
         player_service = PlayerServiceDB(test_db)
-        player1 = await player_service.create_or_update_player(
-            PlayerFactory.build(person_id=person1.id)
+        player1 = _require(
+            await player_service.create_or_update_player(PlayerFactory.build(person_id=person1.id))
         )
-        player2 = await player_service.create_or_update_player(
-            PlayerFactory.build(person_id=person2.id)
+        player2 = _require(
+            await player_service.create_or_update_player(PlayerFactory.build(person_id=person2.id))
         )
 
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
@@ -212,28 +233,34 @@ class TestPlayerTeamTournamentViewsAdditional:
     async def test_get_tournament_players_paginated_with_team_filter(self, client, test_db):
         """Test paginated tournament players with team filter."""
         sport_service = SportServiceDB(test_db)
-        sport = await sport_service.create(SportFactorySample.build())
+        sport = _require(await sport_service.create(SportFactorySample.build()))
 
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create(SeasonFactorySample.build())
+        season = _require(await season_service.create(SeasonFactorySample.build()))
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team1 = await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team A"))
-        team2 = await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team B"))
+        team1 = _require(
+            await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team A"))
+        )
+        team2 = _require(
+            await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team B"))
+        )
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         player_service = PlayerServiceDB(test_db)
-        player1 = await player_service.create_or_update_player(PlayerFactory.build())
-        player2 = await player_service.create_or_update_player(PlayerFactory.build())
+        player1 = _require(await player_service.create_or_update_player(PlayerFactory.build()))
+        player2 = _require(await player_service.create_or_update_player(PlayerFactory.build()))
 
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
         await ptt_service.create(
@@ -263,7 +290,7 @@ class TestPlayerTeamTournamentViewsAdditional:
         data = response.json()
         assert data["metadata"]["total_items"] >= 1
         for player in data["data"]:
-            assert player["team_title"] == "Team A"
+            assert player["team_id"] == team1.id
 
     async def test_get_tournament_players_paginated_with_sorting(self, client, test_db):
         """Test paginated tournament players with sorting."""
@@ -282,13 +309,13 @@ class TestPlayerTeamTournamentViewsAdditional:
         team = await team_service.create(TeamFactory.build(sport_id=sport.id))
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         player_service = PlayerServiceDB(test_db)
-        player1 = await player_service.create_or_update_player(PlayerFactory.build())
-        player2 = await player_service.create_or_update_player(PlayerFactory.build())
+        player1 = _require(await player_service.create_or_update_player(PlayerFactory.build()))
+        player2 = _require(await player_service.create_or_update_player(PlayerFactory.build()))
 
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
         await ptt_service.create(
@@ -321,27 +348,29 @@ class TestPlayerTeamTournamentViewsAdditional:
     async def test_get_tournament_players_paginated_with_pagination(self, client, test_db):
         """Test paginated tournament players with pagination."""
         sport_service = SportServiceDB(test_db)
-        sport = await sport_service.create(SportFactorySample.build())
+        sport = _require(await sport_service.create(SportFactorySample.build()))
 
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create(SeasonFactorySample.build())
+        season = _require(await season_service.create(SeasonFactorySample.build()))
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team = _require(await team_service.create(TeamFactory.build(sport_id=sport.id)))
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         player_service = PlayerServiceDB(test_db)
         for _ in range(5):
-            player = await player_service.create_or_update_player(PlayerFactory.build())
+            player = _require(await player_service.create_or_update_player(PlayerFactory.build()))
             await PlayerTeamTournamentServiceDB(test_db).create(
                 PlayerTeamTournamentSchemaCreate(
                     player_id=player.id,
@@ -365,26 +394,28 @@ class TestPlayerTeamTournamentViewsAdditional:
     async def test_get_tournament_players_paginated_details_endpoint(self, client, test_db):
         """Test paginated tournament players with details endpoint."""
         sport_service = SportServiceDB(test_db)
-        sport = await sport_service.create(SportFactorySample.build())
+        sport = _require(await sport_service.create(SportFactorySample.build()))
 
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create(SeasonFactorySample.build())
+        season = _require(await season_service.create(SeasonFactorySample.build()))
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team = _require(await team_service.create(TeamFactory.build(sport_id=sport.id)))
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         player_service = PlayerServiceDB(test_db)
-        player = await player_service.create_or_update_player(PlayerFactory.build())
+        player = _require(await player_service.create_or_update_player(PlayerFactory.build()))
 
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
         await ptt_service.create(
@@ -409,26 +440,28 @@ class TestPlayerTeamTournamentViewsAdditional:
     async def test_get_tournament_players_paginated_full_details_endpoint(self, client, test_db):
         """Test paginated tournament players with full details endpoint."""
         sport_service = SportServiceDB(test_db)
-        sport = await sport_service.create(SportFactorySample.build())
+        sport = _require(await sport_service.create(SportFactorySample.build()))
 
         season_service = SeasonServiceDB(test_db)
-        season = await season_service.create(SeasonFactorySample.build())
+        season = _require(await season_service.create(SeasonFactorySample.build()))
 
         tournament_service = TournamentServiceDB(test_db)
-        tournament = await tournament_service.create(
-            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        tournament = _require(
+            await tournament_service.create(
+                TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+            )
         )
 
         team_service = TeamServiceDB(test_db)
-        team = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team = _require(await team_service.create(TeamFactory.build(sport_id=sport.id)))
 
         position_service = PositionServiceDB(test_db)
-        position = await position_service.create(
-            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        position = _require(
+            await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
         )
 
         player_service = PlayerServiceDB(test_db)
-        player = await player_service.create_or_update_player(PlayerFactory.build())
+        player = _require(await player_service.create_or_update_player(PlayerFactory.build()))
 
         ptt_service = PlayerTeamTournamentServiceDB(test_db)
         await ptt_service.create(

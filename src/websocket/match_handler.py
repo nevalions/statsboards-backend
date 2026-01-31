@@ -4,6 +4,9 @@ import time
 from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 from websockets import ConnectionClosedError, ConnectionClosedOK
 
+from src.gameclocks.db_services import GameClockServiceDB
+from src.playclocks.db_services import PlayClockServiceDB
+
 from ..logging_config import get_logger
 from ..utils.websocket.websocket_manager import connection_manager, ws_manager
 
@@ -440,8 +443,6 @@ class MatchWebSocketHandler:
     async def enable_match_clock_queues(self, match_id: int) -> None:
         try:
             from src.core import db
-            from src.gameclocks.db_services import GameClockServiceDB
-            from src.playclocks.db_services import PlayClockServiceDB
 
             gameclock_service = GameClockServiceDB(db)
             playclock_service = PlayClockServiceDB(db)

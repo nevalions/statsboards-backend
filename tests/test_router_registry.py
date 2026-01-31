@@ -192,18 +192,34 @@ class TestRouterRegistry:
             def capture_include(router):
                 included_routers.append(router)
 
-            app.include_router = capture_include
+            app.include_router = capture_include  # type: ignore[assignment]
 
             registry.register_all(app)
 
             assert included_routers[0] is router2
             assert included_routers[1] is router1
 
-    def test_discover_routers_non_existent_src(self, tmp_path, caplog):
-        registry = RouterRegistry(src_path=tmp_path / "non_existent")
-        registry.discover_routers()
+    def test_discover_routers_non_existent_src(self, tmp_path):
+        import logging
 
-        assert "not found" in caplog.text.lower()
+        registry = RouterRegistry(src_path=tmp_path / "non_existent")
+
+        records: list[logging.LogRecord] = []
+
+        class ListHandler(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                records.append(record)
+
+        logger = logging.getLogger("router_registry")
+        handler = ListHandler()
+        logger.addHandler(handler)
+
+        try:
+            registry.discover_routers()
+        finally:
+            logger.removeHandler(handler)
+
+        assert any("not found" in record.getMessage().lower() for record in records)
 
     def test_discover_routers_no_init_file(self, tmp_path, caplog):
         domain_dir = tmp_path / "src" / "no_init"

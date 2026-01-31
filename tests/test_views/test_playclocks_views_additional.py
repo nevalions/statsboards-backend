@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from src.matches.db_services import MatchServiceDB
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
+from src.core.enums import ClockStatus
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
@@ -44,17 +45,18 @@ class TestPlayClockViewsAdditional:
         )
 
         playclock_data = PlayClockSchemaCreate(
-            match_id=match.id, playclock=60, playclock_status="stopped"
+            match_id=match.id, playclock=60, playclock_status=ClockStatus.STOPPED
         )
 
-        with pytest.raises(Exception):
-            from unittest.mock import patch
+        from unittest.mock import patch
 
-            async def mock_create(*args, **kwargs):
-                raise IntegrityError("INSERT INTO", "params", "orig")
+        async def mock_create(*args, **kwargs):
+            raise IntegrityError("INSERT INTO", "params", Exception("orig"))
 
-            with patch.object(PlayClockServiceDB, "create", side_effect=mock_create):
-                await client.post("/api/playclock/", json=playclock_data.model_dump())
+        with patch.object(PlayClockServiceDB, "create", side_effect=mock_create):
+            response = await client.post("/api/playclock/", json=playclock_data.model_dump())
+
+        assert response.status_code == 500
 
     async def test_create_playclock_endpoint_sqlalchemy_error(self, client, test_db):
         """Test create playclock with SQLAlchemy error."""
@@ -81,17 +83,18 @@ class TestPlayClockViewsAdditional:
         )
 
         playclock_data = PlayClockSchemaCreate(
-            match_id=match.id, playclock=60, playclock_status="stopped"
+            match_id=match.id, playclock=60, playclock_status=ClockStatus.STOPPED
         )
 
-        with pytest.raises(Exception):
-            from unittest.mock import patch
+        from unittest.mock import patch
 
-            async def mock_create(*args, **kwargs):
-                raise SQLAlchemyError("Database error")
+        async def mock_create(*args, **kwargs):
+            raise SQLAlchemyError("Database error")
 
-            with patch.object(PlayClockServiceDB, "create", side_effect=mock_create):
-                await client.post("/api/playclock/", json=playclock_data.model_dump())
+        with patch.object(PlayClockServiceDB, "create", side_effect=mock_create):
+            response = await client.post("/api/playclock/", json=playclock_data.model_dump())
+
+        assert response.status_code == 500
 
     async def test_update_playclock_endpoint_not_found(self, client, test_db):
         """Test update playclock when not found."""
@@ -133,7 +136,7 @@ class TestPlayClockViewsAdditional:
 
         playclock_service = PlayClockServiceDB(test_db)
         playclock_data = PlayClockSchemaCreate(
-            match_id=match.id, playclock=60, playclock_status="stopped"
+            match_id=match.id, playclock=60, playclock_status=ClockStatus.STOPPED
         )
         created = await playclock_service.create(playclock_data)
 
@@ -178,7 +181,7 @@ class TestPlayClockViewsAdditional:
 
         playclock_service = PlayClockServiceDB(test_db)
         playclock_data = PlayClockSchemaCreate(
-            match_id=match.id, playclock=60, playclock_status="running"
+            match_id=match.id, playclock=60, playclock_status=ClockStatus.RUNNING
         )
         created = await playclock_service.create(playclock_data)
 
@@ -222,7 +225,7 @@ class TestPlayClockViewsAdditional:
 
         playclock_service = PlayClockServiceDB(test_db)
         playclock_data = PlayClockSchemaCreate(
-            match_id=match.id, playclock=60, playclock_status="running"
+            match_id=match.id, playclock=60, playclock_status=ClockStatus.RUNNING
         )
         created = await playclock_service.create(playclock_data)
 
@@ -272,7 +275,7 @@ class TestPlayClockViewsAdditional:
 
         playclock_service = PlayClockServiceDB(test_db)
         playclock_data = PlayClockSchemaCreate(
-            match_id=match.id, playclock=60, playclock_status="stopped"
+            match_id=match.id, playclock=60, playclock_status=ClockStatus.STOPPED
         )
         created = await playclock_service.create(playclock_data)
 

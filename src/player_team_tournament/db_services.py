@@ -216,7 +216,6 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 select(PlayerTeamTournamentDB)
                 .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
                 .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
-                .join(PersonDB, PlayerDB.person_id == PersonDB.id)
                 .outerjoin(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
                 .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
                 .options(
@@ -227,6 +226,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
             )
 
             if search_query:
+                base_query = base_query.join(PersonDB, PlayerDB.person_id == PersonDB.id)
                 base_query = await self._apply_search_filters(
                     base_query,
                     search_fields,
@@ -655,7 +655,6 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                     select(PlayerTeamTournamentDB)
                     .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
                     .join(PlayerDB, PlayerTeamTournamentDB.player_id == PlayerDB.id)
-                    .join(PersonDB, PlayerDB.person_id == PersonDB.id)
                     .outerjoin(TeamDB, PlayerTeamTournamentDB.team_id == TeamDB.id)
                     .join(TournamentDB, PlayerTeamTournamentDB.tournament_id == TournamentDB.id)
                     .outerjoin(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
@@ -668,6 +667,7 @@ class PlayerTeamTournamentServiceDB(BaseServiceDB):
                 )
 
                 if search_query:
+                    base_query = base_query.join(PersonDB, PlayerDB.person_id == PersonDB.id)
                     base_query = await self._apply_search_filters(
                         base_query,
                         search_fields,

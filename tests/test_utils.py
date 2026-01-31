@@ -260,4 +260,4 @@ class TestWebSocketManager:
         manager = MatchDataWebSocketManager(db_url)
 
         assert manager.logger is not None
-        assert manager.logger.name == "backend_logger_MatchDataWebSocketManager"
+        assert manager.logger.name == "MatchDataWebSocketManager"

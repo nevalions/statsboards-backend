@@ -1,20 +1,28 @@
 import asyncio
 import time
+from typing import Awaitable, Callable, Protocol
 
 from src.logging_config import get_logger
 
 
+class ClockStateMachineProtocol(Protocol):
+    started_at_ms: int | None
+
+    def get_current_value(self) -> int: ...
+
+
 class ClockOrchestrator:
     def __init__(self) -> None:
-        self.running_playclocks: dict[int, object] = {}
-        self.running_gameclocks: dict[int, object] = {}
+        self.running_playclocks: dict[int, ClockStateMachineProtocol] = {}
+        self.running_gameclocks: dict[int, ClockStateMachineProtocol] = {}
         self._last_updated_second: dict[int, int] = {}  # clock_id -> last second updated
         self._task: asyncio.Task | None = None
         self._is_running = False
-        self._playclock_update_callback: callable | None = None
-        self._gameclock_update_callback: callable | None = None
-        self._playclock_stop_callback: callable | None = None
-        self._gameclock_stop_callback: callable | None = None
+        self._is_stopping = False
+        self._playclock_update_callback: Callable[[int], Awaitable[None]] | None = None
+        self._gameclock_update_callback: Callable[[int], Awaitable[None]] | None = None
+        self._playclock_stop_callback: Callable[[int], Awaitable[None]] | None = None
+        self._gameclock_stop_callback: Callable[[int], Awaitable[None]] | None = None
         self.logger = get_logger("ClockOrchestrator", self)
         self.logger.debug("Initialized ClockOrchestrator")
 
@@ -24,20 +32,32 @@ class ClockOrchestrator:
             self.logger.warning("ClockOrchestrator already running")
             return
 
+        self._is_stopping = False
         self._is_running = True
         self._task = asyncio.create_task(self._run_loop())
         self.logger.info("ClockOrchestrator started")
 
     async def stop(self) -> None:
         """Stop the single timer loop"""
+        self._is_stopping = True
         self._is_running = False
+        self._playclock_update_callback = None
+        self._gameclock_update_callback = None
+        self._playclock_stop_callback = None
+        self._gameclock_stop_callback = None
+        self.running_playclocks.clear()
+        self.running_gameclocks.clear()
+        self._last_updated_second.clear()
         if self._task:
             self._task.cancel()
             try:
                 await self._task
             except asyncio.CancelledError:
                 pass
+            except Exception as exc:
+                self.logger.warning("ClockOrchestrator loop stopped with error: %s", exc)
             self._task = None
+        self._is_stopping = False
         self.logger.info("ClockOrchestrator stopped")
 
     async def _run_loop(self) -> None:
@@ -56,7 +76,7 @@ class ClockOrchestrator:
 
         self.logger.debug("ClockOrchestrator loop stopped")
 
-    def _should_update(self, clock_id: int, state_machine: object) -> bool:
+    def _should_update(self, clock_id: int, state_machine: ClockStateMachineProtocol) -> bool:
         """Check if clock needs to update at this moment (once per second)"""
         if not hasattr(state_machine, "started_at_ms") or state_machine.started_at_ms is None:
             return False
@@ -74,8 +94,12 @@ class ClockOrchestrator:
             return True
         return False
 
-    async def _update_playclock(self, clock_id: int, state_machine: object) -> None:
+    async def _update_playclock(
+        self, clock_id: int, state_machine: ClockStateMachineProtocol
+    ) -> None:
         """Update playclock and trigger NOTIFY"""
+        if self._is_stopping or not self._is_running:
+            return
         current_value = state_machine.get_current_value()
         if current_value == 0:
             if self._playclock_stop_callback:
@@ -85,8 +109,12 @@ class ClockOrchestrator:
             if self._playclock_update_callback:
                 await self._playclock_update_callback(clock_id)
 
-    async def _update_gameclock(self, clock_id: int, state_machine: object) -> None:
+    async def _update_gameclock(
+        self, clock_id: int, state_machine: ClockStateMachineProtocol
+    ) -> None:
         """Update gameclock and trigger NOTIFY"""
+        if self._is_stopping or not self._is_running:
+            return
         current_value = state_machine.get_current_value()
         if current_value == 0:
             if self._gameclock_stop_callback:
@@ -96,7 +124,7 @@ class ClockOrchestrator:
             if self._gameclock_update_callback:
                 await self._gameclock_update_callback(clock_id)
 
-    def register_playclock(self, clock_id: int, state_machine: object) -> None:
+    def register_playclock(self, clock_id: int, state_machine: ClockStateMachineProtocol) -> None:
         """Register a playclock with the orchestrator"""
         self.running_playclocks[clock_id] = state_machine
         self.logger.debug(f"Registered playclock {clock_id}")
@@ -107,7 +135,7 @@ class ClockOrchestrator:
         self._last_updated_second.pop(clock_id, None)
         self.logger.debug(f"Unregistered playclock {clock_id}")
 
-    def register_gameclock(self, clock_id: int, state_machine: object) -> None:
+    def register_gameclock(self, clock_id: int, state_machine: ClockStateMachineProtocol) -> None:
         """Register a gameclock with the orchestrator"""
         self.running_gameclocks[clock_id] = state_machine
         self.logger.debug(f"Registered gameclock {clock_id}")
@@ -118,22 +146,22 @@ class ClockOrchestrator:
         self._last_updated_second.pop(clock_id, None)
         self.logger.debug(f"Unregistered gameclock {clock_id}")
 
-    def set_playclock_update_callback(self, callback: callable) -> None:
+    def set_playclock_update_callback(self, callback: Callable[[int], Awaitable[None]]) -> None:
         """Set callback for playclock updates (triggers NOTIFY)"""
         self._playclock_update_callback = callback
         self.logger.debug("Set playclock update callback")
 
-    def set_gameclock_update_callback(self, callback: callable) -> None:
+    def set_gameclock_update_callback(self, callback: Callable[[int], Awaitable[None]]) -> None:
         """Set callback for gameclock updates (triggers NOTIFY)"""
         self._gameclock_update_callback = callback
         self.logger.debug("Set gameclock update callback")
 
-    def set_playclock_stop_callback(self, callback: callable) -> None:
+    def set_playclock_stop_callback(self, callback: Callable[[int], Awaitable[None]]) -> None:
         """Set callback for playclock stop (when clock reaches 0)"""
         self._playclock_stop_callback = callback
         self.logger.debug("Set playclock stop callback")
 
-    def set_gameclock_stop_callback(self, callback: callable) -> None:
+    def set_gameclock_stop_callback(self, callback: Callable[[int], Awaitable[None]]) -> None:
         """Set callback for gameclock stop (when clock reaches 0)"""
         self._gameclock_stop_callback = callback
         self.logger.debug("Set gameclock stop callback")

@@ -1,9 +1,11 @@
 import shutil
 from pathlib import Path
+from typing import cast
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
@@ -203,6 +205,8 @@ async def test_app(test_db):
     from src.playclocks.views import PlayClockAPIRouter
     from src.player.db_services import PlayerServiceDB
     from src.player.views import PlayerAPIRouter
+    from src.player_match.db_services import PlayerMatchServiceDB
+    from src.player_match.views import PlayerMatchAPIRouter
     from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
     from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
     from src.positions.db_services import PositionServiceDB
@@ -238,6 +242,7 @@ async def test_app(test_db):
     app.include_router(PersonAPIRouter().route())
     app.include_router(PlayClockAPIRouter(PlayClockServiceDB(test_db)).route())
     app.include_router(PlayerAPIRouter(PlayerServiceDB(test_db)).route())
+    app.include_router(PlayerMatchAPIRouter(PlayerMatchServiceDB(test_db)).route())
     app.include_router(
         PlayerTeamTournamentAPIRouter(PlayerTeamTournamentServiceDB(test_db)).route()
     )
@@ -259,7 +264,8 @@ async def test_app(test_db):
         app.include_router(role_router)
         print("Role routes:")
         for route in role_router.routes:
-            print(f"  {route.path} - {route.methods}")
+            api_route = cast(APIRoute, route)
+            print(f"  {api_route.path} - {api_route.methods}")
     except Exception as e:
         print(f"Error including role router: {e}")
         import traceback
@@ -268,7 +274,8 @@ async def test_app(test_db):
 
     print("All app routes:")
     for route in app.routes:
-        print(f"  {route.path}")
+        api_route = cast(APIRoute, route)
+        print(f"  {api_route.path}")
 
     yield app
 

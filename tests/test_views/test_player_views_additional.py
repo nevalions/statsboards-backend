@@ -4,6 +4,8 @@ from src.person.db_services import PersonServiceDB
 from src.player.db_services import PlayerServiceDB
 from src.player.schemas import PlayerSchemaCreate
 from src.sports.db_services import SportServiceDB
+from src.users.db_services import UserServiceDB
+from src.users.schemas import UserSchemaCreate
 from tests.factories import PersonFactory, SportFactorySample
 
 
@@ -26,7 +28,8 @@ class TestPlayerViewsAdditional:
 
         assert response.status_code == 200
         data = response.json()
-        assert "player" in data
+        assert "career_by_team" in data
+        assert "career_by_tournament" in data
 
     async def test_get_player_career_not_found(self, client):
         """Test get player career when player not found."""
@@ -58,7 +61,7 @@ class TestPlayerViewsAdditional:
             mock_parse,
         )
 
-        response = await client.get(
+        response = await client.post(
             "/api/players/pars_and_create/all_eesl/start_page/0/season_id/8/"
         )
 
@@ -123,9 +126,7 @@ class TestPlayerViewsAdditional:
         assert "data" in data
         for player in data["data"]:
             person_name = (
-                player.get("person", {}).get("first_name", "")
-                + " "
-                + player.get("person", {}).get("second_name", "")
+                player.get("first_name", "") + " " + player.get("second_name", "")
             ).lower()
             assert "john" in person_name
 
@@ -282,12 +283,21 @@ class TestPlayerViewsAdditional:
         person_service = PersonServiceDB(test_db)
         person = await person_service.create_or_update_person(PersonFactory.build())
 
+        user_service = UserServiceDB(test_db)
+        user = await user_service.create(
+            UserSchemaCreate(
+                username="user123",
+                email="user123@example.com",
+                password="SecurePass123!",
+            )
+        )
+
         response = await client.post(
             "/api/players/add-person-to-sport",
             json={
                 "person_id": person.id,
                 "sport_id": sport.id,
-                "user_id": 123,
+                "user_id": user.id,
             },
         )
 

@@ -1,4 +1,6 @@
 import asyncio
+import gc
+import weakref
 
 from src.gameclocks.clock_state_machine import ClockStateMachine
 from src.gameclocks.db_services import ClockManager
@@ -161,6 +163,9 @@ class TestGameClockManager:
         sm1 = manager.get_clock_state_machine(1)
         sm2 = manager.get_clock_state_machine(2)
 
+        assert sm1 is not None
+        assert sm2 is not None
+
         sm1.start()
         assert sm1.status == "running"
         assert sm2.status == "stopped"
@@ -172,3 +177,27 @@ class TestGameClockManager:
         sm1.stop()
         assert sm1.status == "stopped"
         assert sm2.status == "running"
+
+    async def test_end_clock_releases_references(self):
+        manager = ClockManager()
+        gameclock_id = 1
+
+        await manager.start_clock(gameclock_id, 720)
+        state_machine = manager.get_clock_state_machine(gameclock_id)
+        queue = manager.active_gameclock_matches[gameclock_id]
+
+        assert state_machine is not None
+
+        state_machine_ref = weakref.ref(state_machine)
+        queue_ref = weakref.ref(queue)
+
+        await manager.end_clock(gameclock_id)
+        del state_machine
+        del queue
+
+        gc.collect()
+
+        assert gameclock_id not in manager.active_gameclock_matches
+        assert gameclock_id not in manager.clock_state_machines
+        assert state_machine_ref() is None
+        assert queue_ref() is None

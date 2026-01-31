@@ -158,6 +158,8 @@ class PlayClockAPIRouter(
             try:
                 item_status = ClockStatus.RUNNING
                 item = await self.service.get_by_id(item_id)
+                if item is None:
+                    raise HTTPException(status_code=404, detail="Playclock not found")
                 present_playclock_status = item.playclock_status
 
                 await self.service.enable_match_data_clock_queues(item_id, sec)

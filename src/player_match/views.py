@@ -102,8 +102,13 @@ class PlayerMatchAPIRouter(
                         detail=f"Player team tournament id {item_id} not found",
                     )
                 return PlayerMatchSchema.model_validate(update_)
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(f"Error updating player in match with data: {item}", exc_info=ex)
+                raise HTTPException(
+                    status_code=500, detail="Internal server error updating player match"
+                ) from ex
 
         @router.get(
             "/id/{player_id}/player_in_sport/",
