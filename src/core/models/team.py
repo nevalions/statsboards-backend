@@ -113,10 +113,11 @@ class TeamDB(Base):
         viewonly=True,
     )
 
-    matches: Mapped["MatchDB"] = relationship(
+    matches: Mapped[list["MatchDB"]] = relationship(
         "MatchDB",
         back_populates="teams",
         primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+        uselist=True,
     )
 
     sponsor_line_id: Mapped[int] = mapped_column(

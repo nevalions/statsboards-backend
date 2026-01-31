@@ -628,10 +628,11 @@ class MatchDB(Base):
 **Custom Join Condition** (OR condition):
 ```python
 # src/core/models/team.py
-matches: Mapped["MatchDB"] = relationship(
+matches: Mapped[list["MatchDB"]] = relationship(
     "MatchDB",
     primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
     back_populates="teams",
+    uselist=True,
 )
 ```
 

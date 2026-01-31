@@ -96,10 +96,11 @@ class MatchDB(Base):
         back_populates="matches",
     )
 
-    teams: Mapped["TeamDB"] = relationship(
+    teams: Mapped[list["TeamDB"]] = relationship(
         "TeamDB",
         back_populates="matches",
         primaryjoin="or_(TeamDB.id==MatchDB.team_a_id, TeamDB.id==MatchDB.team_b_id)",
+        uselist=True,
     )
 
     team_a: Mapped["TeamDB"] = relationship(
