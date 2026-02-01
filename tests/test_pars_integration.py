@@ -57,6 +57,7 @@ class TestParsAllPlayersIntegration:
         assert result.year > 1990
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(120)
     async def test_parse_all_players_from_eesl_index_page_eesl_real_limit_2(
         self, test_uploads_path
     ):

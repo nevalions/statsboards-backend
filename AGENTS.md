@@ -121,6 +121,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 |------|----------|----------|
 | pytest | Test runner | `pytest` |
 | pytest-xdist | Parallel test execution (4 workers using 4 databases) | `pytest -n 4` |
+| pytest-timeout | Test timeout to prevent hung tests | Default 30s timeout |
 | run-tests.sh | Run tests with DB restart (recommended) | `./run-tests.sh` |
 | pytest-cov | Coverage reporting | `./run-tests.sh --cov=src` |
 | Hypothesis | Property-based testing | `pytest tests/test_property_based.py` |
@@ -133,6 +134,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 - `@pytest.mark.e2e` - End-to-end integration tests
 - `@pytest.mark.slow` - Slow-running tests
 - `@pytest.mark.property` - Property-based tests
+- `@pytest.mark.timeout(N)` - Override default timeout for specific tests (in seconds)
 
 ### Important Notes
 
@@ -145,6 +147,8 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 **Note:** Tests use transactional rollback for isolation. Always use `flush()` instead of `commit()` in test fixtures to avoid deadlocks during parallel execution.
 
 **Note:** Parallel testing with 4 workers on 2 databases may have occasional flaky tests due to race conditions between workers sharing the same database. Use `./run-tests.sh` for stable results, or `pytest -n 0` for absolute stability.
+
+**Note:** pytest-timeout is configured with a 30s default timeout (thread method) to prevent hung tests from blocking workers. Integration tests that legitimately take longer should be marked with `@pytest.mark.timeout(N)` where N is the timeout in seconds. Typical timeouts: unit tests 10s, database tests 30s (default), WebSocket tests 60s, integration tests 120s.
 
 ### Workflow References
 
