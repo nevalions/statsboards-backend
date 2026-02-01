@@ -1,6 +1,7 @@
 """Test user views/endpoints."""
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import select
 
@@ -10,7 +11,7 @@ from src.core.models.base import Database
 from src.users.schemas import UserSchemaCreate
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user(test_db: Database):
     """Create a test user."""
     async with test_db.get_session_maker()() as db_session:

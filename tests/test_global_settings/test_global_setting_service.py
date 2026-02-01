@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 
 from src.global_settings.schemas import GlobalSettingSchemaCreate, GlobalSettingSchemaUpdate
 
@@ -47,7 +48,7 @@ def global_setting_json_sample():
     )
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def global_setting(test_global_setting_service, global_setting_sample):
     return await test_global_setting_service.create(global_setting_sample)
 

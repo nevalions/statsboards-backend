@@ -22,9 +22,10 @@ from tests.factories import (
     TournamentFactory,
 )
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 @pytest.mark.e2e
-@pytest.mark.asyncio
 class TestTournamentManagementE2E:
     """End-to-end tests for tournament management workflow."""
 
@@ -143,7 +144,6 @@ class TestTournamentManagementE2E:
 
 
 @pytest.mark.e2e
-@pytest.mark.asyncio
 class TestPlayerManagementE2E:
     """End-to-end tests for player management workflow."""
 
@@ -216,7 +216,6 @@ class TestPlayerManagementE2E:
 
 
 @pytest.mark.e2e
-@pytest.mark.asyncio
 class TestPositionManagementE2E:
     """End-to-end tests for position management workflow."""
 
@@ -247,7 +246,6 @@ class TestPositionManagementE2E:
 
 
 @pytest.mark.e2e
-@pytest.mark.asyncio
 class TestSponsorManagementE2E:
     """End-to-end tests for sponsor management workflow."""
 
@@ -283,7 +281,6 @@ class TestSponsorManagementE2E:
 
 
 @pytest.mark.e2e
-@pytest.mark.asyncio
 class TestErrorHandlingE2E:
     """End-to-end tests for error handling across the application."""
 
@@ -324,7 +321,6 @@ class TestErrorHandlingE2E:
 
 
 @pytest.mark.e2e
-@pytest.mark.asyncio
 class TestSearchAndFilteringE2E:
     """End-to-end tests for search and filtering functionality."""
 

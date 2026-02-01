@@ -1,6 +1,7 @@
 """Test role views/endpoints."""
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
 from src.auth.security import create_access_token
@@ -9,7 +10,7 @@ from src.core.models.base import Database
 from src.users.schemas import UserSchemaCreate
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_role(test_db: Database):
     """Create a test role."""
     async with test_db.get_session_maker()() as db_session:
@@ -23,7 +24,7 @@ async def test_role(test_db: Database):
         await db_session.delete(role)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_admin_user(test_db: Database):
     """Create a test admin user."""
     async with test_db.get_session_maker()() as db_session:
@@ -55,7 +56,7 @@ async def test_admin_user(test_db: Database):
         await db_session.delete(role)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_token(test_admin_user: UserDB) -> str:
     """Get admin token for authenticated requests."""
     return create_access_token(data={"sub": str(test_admin_user.id)})

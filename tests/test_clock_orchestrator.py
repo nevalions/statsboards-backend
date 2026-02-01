@@ -2,11 +2,15 @@ import gc
 import time
 import weakref
 
+import pytest
+
 from src.clocks.clock_orchestrator import ClockOrchestrator
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
 class FakeStateMachine:
-    def __init__(self, started_at_ms: int) -> None:
+    def __init__(self, started_at_ms: int | None) -> None:
         self.started_at_ms = started_at_ms
 
     def get_current_value(self) -> int:
@@ -25,7 +29,7 @@ class TestClockOrchestrator:
         assert orchestrator._task is None
         assert orchestrator._is_running is False
 
-    def test_unregister_playclock_releases_references(self):
+    async def test_unregister_playclock_releases_references(self):
         orchestrator = ClockOrchestrator()
         clock_id = 1
         state_machine = FakeStateMachine(int(time.time() * 1000) - 1500)
@@ -45,7 +49,7 @@ class TestClockOrchestrator:
         assert clock_id not in orchestrator._last_updated_second
         assert state_machine_ref() is None
 
-    def test_unregister_gameclock_releases_references(self):
+    async def test_unregister_gameclock_releases_references(self):
         orchestrator = ClockOrchestrator()
         clock_id = 2
         state_machine = FakeStateMachine(int(time.time() * 1000) - 1500)

@@ -18,6 +18,8 @@ from tests.factories import (
     TournamentFactory,
 )
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 @pytest.fixture(scope="function")
 def sport(test_db: Database):
@@ -60,7 +62,6 @@ async def teams_data(test_db: Database, sport: SportSchemaCreate):
     return created_team1, created_team2
 
 
-@pytest.mark.asyncio
 class TestMatchServiceDBFullContext:
     """Test get_match_full_context functionality."""
 

@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+import pytest_asyncio
 
 from src.auth.security import create_access_token, get_password_hash
 from src.core.models import RoleDB, UserDB
@@ -8,7 +9,7 @@ from src.global_settings.schemas import GlobalSettingSchemaUpdate
 from src.users.schemas import UserSchemaCreate
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_user(test_db):
     """Create a test admin user."""
     from src.users.db_services import UserServiceDB
@@ -41,13 +42,13 @@ async def admin_user(test_db):
         yield {"user": user_obj, "token": token, "headers": {"Authorization": f"Bearer {token}"}}
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_token(admin_user):
     """Get admin token for authenticated requests."""
     return admin_user["token"]
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_headers(admin_user):
     """Get admin headers for authenticated requests."""
     return admin_user["headers"]

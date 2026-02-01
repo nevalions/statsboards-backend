@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import pytest
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -18,9 +19,11 @@ from src.core.exceptions import (
     ValidationError,
 )
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 class TestCreateErrorResponse:
-    def test_create_error_response_basic(self):
+    async def test_create_error_response_basic(self):
         from src.core.exception_handler import create_error_response
 
         request = MagicMock(spec=Request)
@@ -28,10 +31,10 @@ class TestCreateErrorResponse:
         response = create_error_response(request, 400, "Bad Request", "TestError")
         assert isinstance(response, JSONResponse)
         assert response.status_code == 400
-        content = response.body.decode()
+        content = bytes(response.body).decode()
         assert "test-request-123" in content
 
-    def test_create_error_response_without_exc_type(self):
+    async def test_create_error_response_without_exc_type(self):
         from src.core.exception_handler import create_error_response
 
         request = MagicMock(spec=Request)
@@ -282,7 +285,7 @@ class TestGlobalExceptionHandler:
 
 
 class TestRegisterExceptionHandlers:
-    def test_register_exception_handlers(self):
+    async def test_register_exception_handlers(self):
         from fastapi import FastAPI
 
         from src.core.exception_handler import register_exception_handlers

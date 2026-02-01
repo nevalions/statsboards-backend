@@ -1,6 +1,6 @@
 import fcntl
-
 from pathlib import Path
+from typing import AsyncGenerator
 
 import pytest_asyncio
 from fastapi import FastAPI
@@ -83,17 +83,30 @@ async def _ensure_tables_created(db_url: str):
         )
 
 
-@pytest_asyncio.fixture(scope="function")
-async def test_db(test_db_url):
-    """Database fixture for view tests using transactions."""
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def session_database(test_db_url: str) -> AsyncGenerator[Database, None]:
+    """Session-scoped database instance shared within a worker."""
     await _ensure_tables_created(test_db_url)
 
     assert "test" in test_db_url, "Test DB URL must contain 'test'"
     database = Database(test_db_url, echo=False, test_mode=True)
 
-    # Initialize service registry for each test with fresh database
     init_service_registry(database)
     register_all_services(database)
+
+    try:
+        yield database
+    finally:
+        await database.close()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_db(session_database: Database) -> AsyncGenerator[Database, None]:
+    """Database fixture for view tests using transactions."""
+    from src.core.service_registry import get_service_registry
+
+    database = session_database
+    get_service_registry().clear_singletons()
 
     # Use a transactional connection for tests
     async with database.engine.connect() as connection:
@@ -109,11 +122,11 @@ async def test_db(test_db_url):
 
         try:
             yield database
+        finally:
             if transaction.is_active:
                 await transaction.rollback()
-        finally:
+            database.test_async_session = None
             await connection.close()
-            await database.close()
 
 
 @pytest_asyncio.fixture(scope="function")

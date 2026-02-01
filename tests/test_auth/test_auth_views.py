@@ -1,6 +1,7 @@
 """Test auth views/endpoints."""
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
 from src.auth.security import create_access_token
@@ -9,8 +10,10 @@ from src.core.models.base import Database
 from src.users.db_services import UserServiceDB
 from src.users.schemas import UserSchemaCreate
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
-@pytest.fixture
+
+@pytest_asyncio.fixture
 async def test_user_with_role(test_db: Database):
     """Create a test user with a role."""
     from src.auth.security import get_password_hash
@@ -51,7 +54,6 @@ async def test_user_with_role(test_db: Database):
 class TestAuthViews:
     """Test authentication API endpoints."""
 
-    @pytest.mark.asyncio
     async def test_login_success(self, client: AsyncClient, test_db):
         """Test successful login returns token."""
         user_data = UserSchemaCreate(
@@ -73,7 +75,6 @@ class TestAuthViews:
         assert "access_token" in data
         assert data["token_type"] == "bearer"
 
-    @pytest.mark.asyncio
     async def test_login_invalid_credentials(self, client: AsyncClient):
         """Test login fails with invalid credentials."""
         response = await client.post(
@@ -85,7 +86,6 @@ class TestAuthViews:
         data = response.json()
         assert "detail" in data
 
-    @pytest.mark.asyncio
     async def test_me_authenticated(self, client: AsyncClient, test_user_with_role):
         """Test /me endpoint with valid token."""
         token = create_access_token(data={"sub": str(test_user_with_role.id)})
@@ -104,14 +104,12 @@ class TestAuthViews:
         assert "is_online" in data
         assert isinstance(data["created"], str)
 
-    @pytest.mark.asyncio
     async def test_me_no_token(self, client: AsyncClient):
         """Test /me endpoint without token returns 401."""
         response = await client.get("/api/auth/me")
 
         assert response.status_code == 401
 
-    @pytest.mark.asyncio
     async def test_login_inactive_user(self, client: AsyncClient, test_db):
         """Test login fails for inactive user."""
         from src.users.db_services import UserServiceDB
@@ -135,7 +133,6 @@ class TestAuthViews:
 
         assert response.status_code == 403
 
-    @pytest.mark.asyncio
     async def test_heartbeat_success(self, client: AsyncClient, test_user_with_role, test_db):
         """Test heartbeat endpoint updates last_online and is_online."""
 
@@ -154,7 +151,6 @@ class TestAuthViews:
         assert user.last_online is not None
         assert user.is_online is True
 
-    @pytest.mark.asyncio
     async def test_heartbeat_no_token(self, client: AsyncClient):
         """Test heartbeat endpoint without token returns 401."""
         response = await client.post("/api/auth/heartbeat")

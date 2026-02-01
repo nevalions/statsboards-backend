@@ -1,11 +1,12 @@
+import asyncio
+import inspect
 import shutil
 from pathlib import Path
-from typing import cast
+from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from fastapi.routing import APIRoute
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
@@ -17,6 +18,8 @@ from src.core.service_registry import init_service_registry
 # Import fixtures from fixtures.py
 pytest_plugins = ["tests.fixtures"]
 
+_SESSION_LOOP: asyncio.AbstractEventLoop | None = None
+
 
 def pytest_configure(config):
     """Configure custom pytest markers."""
@@ -25,6 +28,22 @@ def pytest_configure(config):
     )
     config.addinivalue_line("markers", "e2e: marks test as end-to-end integration test")
     config.addinivalue_line("markers", "slow: marks test as slow-running")
+
+
+def pytest_collection_modifyitems(config, items):
+    """Ensure async tests use a session-scoped event loop."""
+    for item in items:
+        test_func = getattr(item, "obj", None) or getattr(item, "function", None)
+        if test_func is not None and inspect.iscoroutinefunction(test_func):
+            existing = item.get_closest_marker("asyncio")
+            if existing is None or existing.kwargs.get("loop_scope") != "session":
+                item.add_marker(pytest.mark.asyncio(loop_scope="session"), append=False)
+
+
+def pytest_runtest_setup(item):
+    """Ensure the session event loop is active for async tests."""
+    if _SESSION_LOOP is not None:
+        asyncio.set_event_loop(_SESSION_LOOP)
 
 
 def get_db_url_for_worker(worker_id: str):
@@ -63,8 +82,9 @@ def test_db_url(worker_id):
 
 async def _ensure_tables_created(db_url_str: str):
     """Ensure database tables and indexes are created using file-based lock."""
-    from filelock import FileLock, Timeout
     import os
+
+    from filelock import FileLock, Timeout
 
     # Create lock file based on database name to coordinate workers per database
     db_name = db_url_str.split("/")[-1]
@@ -135,20 +155,35 @@ async def _ensure_tables_created(db_url_str: str):
         )
 
 
-@pytest_asyncio.fixture(scope="function")
-async def test_db(test_db_url):
-    """Database fixture that ensures a clean state using transactions."""
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def session_database(test_db_url: str) -> AsyncGenerator[Database, None]:
+    """Session-scoped database instance shared within a worker."""
     await _ensure_tables_created(test_db_url)
 
     database = Database(test_db_url, echo=False, test_mode=True)
-
     init_service_registry(database)
     register_all_services(database)
+    global _SESSION_LOOP
+    _SESSION_LOOP = asyncio.get_running_loop()
+
+    try:
+        yield database
+    finally:
+        await database.close()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_db(session_database: Database) -> AsyncGenerator[Database, None]:
+    """Database fixture that ensures a clean state using transactions."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from src.core.service_registry import get_service_registry
+
+    database = session_database
+    get_service_registry().clear_singletons()
 
     async with database.engine.connect() as connection:
         transaction = await connection.begin()
-
-        from sqlalchemy.ext.asyncio import async_sessionmaker
 
         test_session_maker = async_sessionmaker(
             bind=connection,
@@ -160,11 +195,11 @@ async def test_db(test_db_url):
 
         try:
             yield database
+        finally:
             if transaction.is_active:
                 await transaction.rollback()
-        finally:
+            database.test_async_session = None
             await connection.close()
-            await database.close()
 
 
 @pytest.fixture(scope="session")
@@ -276,20 +311,11 @@ async def test_app(test_db):
     try:
         role_router = RoleAPIRouter(RoleServiceDB(test_db)).route()
         app.include_router(role_router)
-        print("Role routes:")
-        for route in role_router.routes:
-            api_route = cast(APIRoute, route)
-            print(f"  {api_route.path} - {api_route.methods}")
     except Exception as e:
         print(f"Error including role router: {e}")
         import traceback
 
         traceback.print_exc()
-
-    print("All app routes:")
-    for route in app.routes:
-        api_route = cast(APIRoute, route)
-        print(f"  {api_route.path}")
 
     yield app
 

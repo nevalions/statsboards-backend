@@ -1088,15 +1088,15 @@ Current optimizations implemented:
 - Database echo disabled in test fixtures (tests/conftest.py)
 - Transaction rollback per test: Fast cleanup without table drops
 - No Alembic migrations: Direct table creation with file-based lock coordination
-- Parallel test execution with pytest-xdist: `-n 4` uses 4 workers across 2 databases (test_db, test_db2)
+- Parallel test execution with pytest-xdist: `-n 4` uses 4 workers across 4 databases (test_db, test_db2, test_db3, test_db4)
 - PostgreSQL performance tuning in docker-compose.test-db-only.yml:
   - fsync=off, synchronous_commit=off, full_page_writes=off
   - wal_level=minimal, max_wal_senders=0
   - autovacuum=off, track_functions=none, track_counts=off
   - tmpfs for PostgreSQL data (in-memory storage)
-  - Creates both test_db and test_db2 databases on startup
+  - Creates test_db, test_db2, test_db3, test_db4 databases on startup
 - Worker-specific lock files (`/tmp/test_db_tables_setup_{db_name}.lock`) coordinate table creation across parallel workers
-- Worker distribution: gw0, gw2 → test_db; gw1, gw3 → test_db2
+- Worker distribution: gw0 → test_db; gw1 → test_db2; gw2 → test_db3; gw3 → test_db4
 - Database connections properly closed after each test to prevent ResourceWarnings
 
 **Important:** Test fixtures use `test_mode=True` in Database class, which automatically replaces `commit()` with `flush()` in CRUDMixin to avoid deadlocks during parallel execution. The outer test fixture handles rollback automatically:

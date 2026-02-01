@@ -5,6 +5,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from src.core.db_session_manager import db_session_context, with_db_session
 from src.core.models import SportDB
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 class TestDBSessionManager:
     async def test_db_session_context_commit_success(self, test_db, worker_id, request):

@@ -1,6 +1,7 @@
 """Test role service layer."""
 
 import pytest
+import pytest_asyncio
 from fastapi import HTTPException
 
 from src.auth.security import get_password_hash
@@ -10,13 +11,13 @@ from src.roles.db_services import RoleServiceDB
 from src.roles.schemas import RoleSchemaCreate, RoleSchemaUpdate
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def role_service(test_db: Database):
     """Get role service instance."""
     return RoleServiceDB(test_db)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_role(test_db: Database):
     """Create a test role."""
     async with test_db.get_session_maker()() as db_session:

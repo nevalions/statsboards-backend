@@ -1,19 +1,20 @@
 """Test role search functionality."""
 
 import pytest
+import pytest_asyncio
 
 from src.core.models import RoleDB
 from src.core.models.base import Database
 from src.roles.db_services import RoleServiceDB
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def role_service(test_db: Database):
     """Get role service instance."""
     return RoleServiceDB(test_db)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sample_roles(test_db: Database):
     """Create sample roles for search testing."""
     async with test_db.get_session_maker()() as db_session:

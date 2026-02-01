@@ -12,7 +12,7 @@ from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 from src.users.schemas import UserSchemaCreate
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_user(test_db: Database):
     """Create a test admin user."""
     async with test_db.get_session_maker()() as db_session:

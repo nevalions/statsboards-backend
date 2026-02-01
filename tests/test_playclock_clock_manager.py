@@ -2,12 +2,16 @@ import asyncio
 import gc
 import weakref
 
+import pytest
+
 from src.playclocks.clock_manager import ClockManager
 from src.playclocks.clock_state_machine import ClockStateMachine
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 class TestPlayClockManager:
-    def test_initial_state(self):
+    async def test_initial_state(self):
         manager = ClockManager()
         assert manager.active_playclock_matches == {}
         assert manager.clock_state_machines == {}
