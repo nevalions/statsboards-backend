@@ -41,6 +41,10 @@ until docker-compose -f docker-compose.test-db-only.yml exec -T postgres_test \
     sleep 1
 done
 
+# Give workers time to set up tables (file-based lock will handle coordination)
+echo "Waiting 3 seconds for database initialization to complete..."
+sleep 3
+
 echo "=========================================="
 echo "Database ready! Running tests..."
 echo "=========================================="

@@ -185,8 +185,12 @@ class TestPlayerTeamTournamentSearch:
         position = await position_service.create(PositionFactory.build(sport_id=sport.id))
         team = await team_service.create(TeamFactory.build(sport_id=sport.id))
 
-        person1 = await person_service.create(PersonFactory.build())
-        person2 = await person_service.create(PersonFactory.build())
+        person1 = await person_service.create(
+            PersonFactory.build(first_name="Alice", second_name="Johnson")
+        )
+        person2 = await person_service.create(
+            PersonFactory.build(first_name="Bob", second_name="Smith")
+        )
 
         player1 = await player_service.create(
             PlayerFactory.build(person_id=person1.id, sport_id=sport.id)
