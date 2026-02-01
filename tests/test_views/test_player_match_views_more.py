@@ -271,7 +271,9 @@ class TestPlayerMatchViewsMore:
         )
 
         position_service = PositionServiceDB(test_db)
-        await position_service.create(PositionSchemaCreate(title="QB", sport_id=sport.id))
+        position = await position_service.create(
+            PositionSchemaCreate(title="QB", sport_id=sport.id)
+        )
 
         person_service = PersonServiceDB(test_db)
         person = await person_service.create(
@@ -291,7 +293,7 @@ class TestPlayerMatchViewsMore:
         await ptt_service.create(
             PlayerTeamTournamentSchemaCreate(
                 player_id=player.id,
-                position_id=1,
+                position_id=position.id,
                 team_id=team_a.id,
                 tournament_id=tournament.id,
                 player_team_tournament_eesl_id=1000,

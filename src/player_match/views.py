@@ -54,6 +54,8 @@ class PlayerMatchAPIRouter(
                     return PlayerMatchSchema.model_validate(new_player_match)
                 else:
                     raise HTTPException(status_code=409, detail="Player in match creation fail")
+            except HTTPException:
+                raise
             except Exception as ex:
                 self.logger.error(
                     f"Error creating player in match endpoint with data: {player_match}",

@@ -98,7 +98,7 @@ class TestPositionViews:
         position_data = PositionSchemaCreate(title="Test Position", sport_id=sport.id)
         position = await position_service.create(position_data)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             role = RoleDB(name="admin", description="Admin role")
             session.add(role)
             await session.flush()

@@ -148,7 +148,7 @@ class TestTournamentViews:
 
         from src.core.models.team_tournament import TeamTournamentDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
@@ -219,7 +219,7 @@ class TestTournamentViews:
             PlayerSchemaCreate(sport_id=sport.id, person_id=person3.id)
         )
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             ptt1 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player1.id)
             ptt2 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player2.id)
             ptt3 = PlayerTeamTournamentDB(tournament_id=tournament.id, player_id=player3.id)
@@ -382,7 +382,7 @@ class TestTournamentViews:
 
         from src.core.models.team_tournament import TeamTournamentDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
@@ -438,7 +438,7 @@ class TestTournamentViews:
 
         from src.core.models.team_tournament import TeamTournamentDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             tt1 = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
             tt2 = TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id)
             tt3 = TeamTournamentDB(tournament_id=tournament.id, team_id=team3.id)
@@ -487,7 +487,7 @@ class TestTournamentViews:
 
         from src.core.models.team_tournament import TeamTournamentDB
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             tt_entries = [
                 TeamTournamentDB(tournament_id=tournament.id, team_id=team.id) for team in teams_db
             ]
@@ -549,7 +549,7 @@ class TestTournamentViews:
             PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id)
         )
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             ptt = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
             session.add(ptt)
             await session.flush()
@@ -615,7 +615,7 @@ class TestTournamentViews:
         )
         team_db = await team_service.create_or_update_team(team_data)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             ptt1 = PlayerTeamTournamentDB(
                 player_id=player1.id, tournament_id=tournament.id, team_id=team_db.id
             )
@@ -678,7 +678,7 @@ class TestTournamentViews:
             PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id, player_eesl_id=8003)
         )
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             ptt1 = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
             ptt2 = PlayerTeamTournamentDB(player_id=player2.id, tournament_id=tournament.id)
             ptt3 = PlayerTeamTournamentDB(player_id=player3.id, tournament_id=tournament.id)
@@ -726,7 +726,7 @@ class TestTournamentViews:
             PlayerSchemaCreateType(sport_id=sport.id, person_id=person2.id, player_eesl_id=8002)
         )
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             ptt1 = PlayerTeamTournamentDB(player_id=player1.id, tournament_id=tournament.id)
             ptt2 = PlayerTeamTournamentDB(player_id=player2.id, tournament_id=tournament.id)
             session.add_all([ptt1, ptt2])
@@ -781,7 +781,7 @@ class TestTournamentViews:
             PlayerSchemaCreateType(sport_id=sport.id, person_id=person3.id, player_eesl_id=8003)
         )
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             ptt1 = PlayerTeamTournamentDB(
                 player_id=player1.id, tournament_id=tournament.id, team_id=None
             )
@@ -842,7 +842,7 @@ class TestTournamentViews:
         )
         team3 = await team_service.create_or_update_team(team3_data)
 
-        async with test_db.async_session() as session:
+        async with test_db.get_session_maker()() as session:
             tt = TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id)
             session.add(tt)
             await session.flush()

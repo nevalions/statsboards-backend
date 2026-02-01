@@ -1,92 +1,95 @@
 import fcntl
 
+from pathlib import Path
+
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from src.core.config import settings
 from src.core.models.base import Base, Database
 from src.core.service_initialization import register_all_services
 from src.core.service_registry import init_service_registry
 
-db_url = str(settings.test_db.test_db_url)
 
-
-async def _ensure_tables_created():
+async def _ensure_tables_created(db_url: str):
     """Ensure database tables and indexes are created using file-based lock."""
-    lock_file = "/tmp/test_db_tables_setup.lock"
+    from filelock import FileLock, Timeout
 
-    # Use file-based lock for cross-process coordination
-    with open(lock_file, "w") as f:
-        try:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-        except (ImportError, AttributeError):
-            # Windows doesn't have fcntl, try msvcrt
+    db_name = db_url.rsplit("/", 1)[-1]
+    lock_file = f"/tmp/test_db_tables_setup_{db_name}.lock"
+    setup_marker = f"/tmp/test_db_setup_complete_{db_name}.marker"
+
+    if Path(setup_marker).exists():
+        return
+
+    try:
+        with FileLock(lock_file, timeout=30):
+            if Path(setup_marker).exists():
+                return
+
+            assert "test" in db_url, "Test DB URL must contain 'test'"
+
+            database = Database(db_url, echo=False)
+
             try:
-                import msvcrt
+                async with database.engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
 
-                msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
-            except (ImportError, OSError):
-                pass
+                    for index_sql in [
+                        "CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
+                        "CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
+                        "CREATE INDEX IF NOT EXISTS ix_team_title_trgm ON team USING GIN (title gin_trgm_ops)",
+                    ]:
+                        try:
+                            await conn.execute(text(index_sql))
+                        except Exception:
+                            pass
 
-        db_url_str = str(db_url)
-        assert "test" in db_url_str, "Test DB URL must contain 'test'"
+                from sqlalchemy import select
 
-        database = Database(db_url_str, echo=False)
+                from src.core.models.role import RoleDB
 
-        try:
-            # Create tables
-            async with database.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+                async with database.async_session() as session:
+                    existing_roles = await session.execute(select(RoleDB.name))
+                    existing_names = {r[0] for r in existing_roles.fetchall()}
 
-                # Create GIN indexes
-                for index_sql in [
-                    "CREATE INDEX IF NOT EXISTS ix_person_first_name_trgm ON person USING GIN (first_name gin_trgm_ops)",
-                    "CREATE INDEX IF NOT EXISTS ix_person_second_name_trgm ON person USING GIN (second_name gin_trgm_ops)",
-                    "CREATE INDEX IF NOT EXISTS ix_team_title_trgm ON team USING GIN (title gin_trgm_ops)",
-                ]:
-                    try:
-                        await conn.execute(text(index_sql))
-                    except Exception:
-                        pass
+                    if not existing_names:
+                        default_roles_data = [
+                            ("user", "Basic viewer role"),
+                            ("admin", "Administrator with full access"),
+                            ("editor", "Can edit content"),
+                            ("player", "Player account"),
+                            ("coach", "Coach account"),
+                            ("streamer", "Streamer account"),
+                        ]
 
-            # Seed default roles
-            from sqlalchemy import select
+                        for name, description in default_roles_data:
+                            role = RoleDB(name=name, description=description)
+                            session.add(role)
 
-            from src.core.models.role import RoleDB
+                        await session.flush()
 
-            async with database.async_session() as session:
-                existing_roles = await session.execute(select(RoleDB.name))
-                existing_names = {r[0] for r in existing_roles.fetchall()}
-
-                if not existing_names:
-                    default_roles_data = [
-                        ("user", "Basic viewer role"),
-                        ("admin", "Administrator with full access"),
-                        ("editor", "Can edit content"),
-                        ("player", "Player account"),
-                        ("coach", "Coach account"),
-                        ("streamer", "Streamer account"),
-                    ]
-
-                    for name, description in default_roles_data:
-                        role = RoleDB(name=name, description=description)
-                        session.add(role)
-
-                    await session.flush()
-        finally:
-            await database.close()
+                Path(setup_marker).touch()
+            finally:
+                await database.close()
+    except Timeout:
+        raise RuntimeError(
+            f"Timeout waiting for database setup lock: {lock_file}. "
+            "Another process may be holding the lock. "
+            "Try clearing lock files: rm -f /tmp/test_db_*.lock"
+        )
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_db():
+async def test_db(test_db_url):
     """Database fixture for view tests using transactions."""
-    await _ensure_tables_created()
+    await _ensure_tables_created(test_db_url)
 
-    assert "test" in db_url, "Test DB URL must contain 'test'"
-    database = Database(db_url, echo=False, test_mode=True)
+    assert "test" in test_db_url, "Test DB URL must contain 'test'"
+    database = Database(test_db_url, echo=False, test_mode=True)
 
     # Initialize service registry for each test with fresh database
     init_service_registry(database)
@@ -95,7 +98,14 @@ async def test_db():
     # Use a transactional connection for tests
     async with database.engine.connect() as connection:
         transaction = await connection.begin()
-        database.async_session.configure(bind=connection)
+
+        test_session_maker = async_sessionmaker(
+            bind=connection,
+            class_=database.async_session.class_,
+            expire_on_commit=False,
+        )
+
+        database.test_async_session = test_session_maker
 
         try:
             yield database
