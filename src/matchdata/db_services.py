@@ -4,7 +4,6 @@ from sqlalchemy import select
 from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, MatchDataDB
 from src.core.models.base import Database
-from src.helpers.safe_log import safe_log_obj
 
 from ..logging_config import get_logger
 from .schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
