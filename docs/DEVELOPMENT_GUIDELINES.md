@@ -1102,7 +1102,7 @@ Current optimizations implemented:
 **Important:** Test fixtures use `test_mode=True` in Database class, which automatically replaces `commit()` with `flush()` in CRUDMixin to avoid deadlocks during parallel execution. The outer test fixture handles rollback automatically:
 
 ```python
-# Test fixtures in tests/conftest.py and tests/test_views/conftest.py
+# Test fixtures in tests/conftest.py
 database = Database(test_db_url, echo=False, test_mode=True)
 ```
 

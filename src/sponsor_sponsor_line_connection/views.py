@@ -18,8 +18,10 @@ class SponsorSponsorLineAPIRouter(
         SponsorSponsorLineSchemaUpdate,
     ]
 ):
-    def __init__(self, service: SponsorSponsorLineServiceDB):
-        super().__init__("/api/sponsor_in_sponsor_line", ["sponsor_sponsor_line"], service)
+    def __init__(self, service: SponsorSponsorLineServiceDB, service_name: str | None = None):
+        super().__init__(
+            "/api/sponsor_in_sponsor_line", ["sponsor_sponsor_line"], service, service_name
+        )
         self.logger = get_logger("SponsorSponsorLineAPIRouter", self)
         self.logger.debug("Initialized SponsorSponsorLineAPIRouter")
 
@@ -37,7 +39,7 @@ class SponsorSponsorLineAPIRouter(
                     sponsor_line_id=sponsor_line_id,
                     sponsor_id=sponsor_id,
                 )
-                new_ = await self.service.create(sponsor_sponsor_line_schema_create)
+                new_ = await self.loaded_service.create(sponsor_sponsor_line_schema_create)
                 if new_:
                     return new_
                 else:
@@ -63,7 +65,7 @@ class SponsorSponsorLineAPIRouter(
         ):
             try:
                 self.logger.debug("Updating sponsor sponsor line endpoint")
-                update_ = await self.service.update(item_id, item)
+                update_ = await self.loaded_service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,
@@ -85,7 +87,7 @@ class SponsorSponsorLineAPIRouter(
         async def get_sponsor_sponsor_line_relation_endpoint(sponsor_id: int, sponsor_line_id: int):
             try:
                 self.logger.debug("Getting sponsor sponsor line relation endpoint")
-                sponsor_sponsor_line = await self.service.get_sponsor_sponsor_line_relation(
+                sponsor_sponsor_line = await self.loaded_service.get_sponsor_sponsor_line_relation(
                     sponsor_id, sponsor_line_id
                 )
                 if not sponsor_sponsor_line:
@@ -108,7 +110,7 @@ class SponsorSponsorLineAPIRouter(
                 self.logger.debug(
                     f"Getting sponsor from sponsor line id: {sponsor_line_id} endpoint"
                 )
-                sponsors = await self.service.get_related_sponsors(sponsor_line_id)
+                sponsors = await self.loaded_service.get_related_sponsors(sponsor_line_id)
                 return sponsors
             except Exception as e:
                 self.logger.error(
@@ -122,7 +124,7 @@ class SponsorSponsorLineAPIRouter(
         ):
             try:
                 self.logger.debug("Deleting sponsor sponsor line relation endpoint")
-                await self.service.delete_relation_by_sponsor_and_sponsor_line_id(
+                await self.loaded_service.delete_relation_by_sponsor_and_sponsor_line_id(
                     sponsor_id, sponsor_line_id
                 )
             except Exception as e:

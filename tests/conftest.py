@@ -256,6 +256,7 @@ async def session_app(session_database):
     from src.scoreboards.views import ScoreboardAPIRouter
     from src.seasons.views import SeasonAPIRouter
     from src.sponsor_lines.views import SponsorLineAPIRouter
+    from src.sponsor_sponsor_line_connection.views import SponsorSponsorLineAPIRouter
     from src.sponsors.views import SponsorAPIRouter
     from src.sports.views import SportAPIRouter
     from src.team_tournament.views import TeamTournamentRouter
@@ -283,6 +284,9 @@ async def session_app(session_database):
     app.include_router(SeasonAPIRouter().route())
     app.include_router(SponsorLineAPIRouter(None, service_name="sponsor_line").route())
     app.include_router(SponsorAPIRouter().route())
+    app.include_router(
+        SponsorSponsorLineAPIRouter(None, service_name="sponsor_sponsor_line").route()
+    )
     app.include_router(SportAPIRouter().route())
     app.include_router(TeamTournamentRouter(None, service_name="team_tournament").route())
     app.include_router(TeamAPIRouter().route())
