@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import os
 import shutil
 from pathlib import Path
 from typing import AsyncGenerator
@@ -54,7 +55,7 @@ def get_db_url_for_worker(worker_id: str):
         return base_url
 
     worker_num = int(worker_id.replace("gw", ""))
-    db_num = worker_num % 4
+    db_num = worker_num % 8
 
     if db_num == 1:
         return base_url.replace(settings.test_db.name, f"{settings.test_db.name}2")
@@ -62,13 +63,23 @@ def get_db_url_for_worker(worker_id: str):
         return base_url.replace(settings.test_db.name, f"{settings.test_db.name}3")
     elif db_num == 3:
         return base_url.replace(settings.test_db.name, f"{settings.test_db.name}4")
-
+    elif db_num == 4:
+        return base_url.replace(settings.test_db.name, f"{settings.test_db.name}5")
+    elif db_num == 5:
+        return base_url.replace(settings.test_db.name, f"{settings.test_db.name}6")
+    elif db_num == 6:
+        return base_url.replace(settings.test_db.name, f"{settings.test_db.name}7")
+    elif db_num == 7:
+        return base_url.replace(settings.test_db.name, f"{settings.test_db.name}8")
     return base_url
 
 
 @pytest.fixture(scope="session")
 def worker_id(request):
     """Get the current worker ID."""
+    env_worker_id = os.environ.get("PYTEST_XDIST_WORKER")
+    if env_worker_id:
+        return env_worker_id
     if hasattr(request, "node") and hasattr(request.node, "workerinput"):
         return request.node.workerinput.get("workerid", "master")
     return "master"

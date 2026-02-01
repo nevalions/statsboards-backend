@@ -190,6 +190,7 @@ class CRUDMixin:
         self.logger.debug(f"Starting to update element with ID: {item_id}")
         async with self.db.get_session_maker()() as session:
             try:
+                is_test_mode = hasattr(self.db, "test_mode") and self.db.test_mode
                 result = await session.execute(select(self.model).where(self.model.id == item_id))
                 updated_item = result.scalars().one_or_none()
 
@@ -205,7 +206,8 @@ class CRUDMixin:
                     setattr(updated_item, key, value)
 
                 await session.flush()
-                await session.commit()
+                if not is_test_mode:
+                    await session.commit()
                 await session.refresh(updated_item)
 
                 self.logger.debug(f"Updated element with ID: {item_id}")
@@ -248,6 +250,7 @@ class CRUDMixin:
         self.logger.debug(f"Starting to delete element with ID: {item_id}")
         async with self.db.get_session_maker()() as session:
             try:
+                is_test_mode = hasattr(self.db, "test_mode") and self.db.test_mode
                 db_item = await self.get_by_id(item_id)
                 if not db_item:
                     raise HTTPException(
@@ -255,7 +258,9 @@ class CRUDMixin:
                         detail=f"{self.model.__name__} not found",
                     )
                 await session.delete(db_item)
-                await session.commit()
+                await session.flush()
+                if not is_test_mode:
+                    await session.commit()
                 self.logger.info(f"Deleted element with ID: {item_id}")
                 return {"id": item_id}
             except HTTPException:
