@@ -19,11 +19,12 @@ class MatchWebSocketRouter(
         MatchSchemaUpdate,
     ]
 ):
-    def __init__(self, service: MatchServiceDB):
+    def __init__(self, service: MatchServiceDB | None = None, service_name: str | None = None):
         super().__init__(
             "/api/matches",
             ["matches-websocket"],
             service,
+            service_name=service_name,
         )
         self.logger = get_logger("MatchWebSocketRouter", self)
         self.logger.debug("Initialized MatchWebSocketRouter")

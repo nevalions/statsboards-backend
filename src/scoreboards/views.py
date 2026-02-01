@@ -19,8 +19,8 @@ class ScoreboardAPIRouter(
         ScoreboardSchemaUpdate,
     ]
 ):
-    def __init__(self, service: ScoreboardServiceDB):
-        super().__init__("/api/scoreboards", ["scoreboards"], service)
+    def __init__(self, service: ScoreboardServiceDB | None = None, service_name: str | None = None):
+        super().__init__("/api/scoreboards", ["scoreboards"], service, service_name=service_name)
         self.logger = get_logger("ScoreboardAPIRouter", self)
         self.logger.debug("Initialized ScoreboardAPIRouter")
 
@@ -37,7 +37,7 @@ class ScoreboardAPIRouter(
         )
         async def create_scoreboard(scoreboard_data: ScoreboardSchemaCreate):
             self.logger.debug(f"Create scoreboard endpoint got data: {scoreboard_data}")
-            new_scoreboard = await self.service.create(scoreboard_data)
+            new_scoreboard = await self.loaded_service.create(scoreboard_data)
             return ScoreboardSchema.model_validate(new_scoreboard)
 
         @router.put(
@@ -53,7 +53,7 @@ class ScoreboardAPIRouter(
             item: ScoreboardSchemaUpdate,
         ):
             self.logger.debug(f"Update scoreboard endpoint id:{item_id} data: {item}")
-            scoreboard_update = await self.service.update(
+            scoreboard_update = await self.loaded_service.update(
                 item_id,
                 item,
             )
@@ -88,7 +88,7 @@ class ScoreboardAPIRouter(
         )
         async def get_scoreboard_by_match_id_endpoint(match_id: int):
             self.logger.debug(f"Get scoreboard by match id: {match_id} endpoint")
-            scoreboard = await self.service.get_scoreboard_by_match_id(value=match_id)
+            scoreboard = await self.loaded_service.get_scoreboard_by_match_id(value=match_id)
             if scoreboard is None:
                 self.logger.warning(f"No scoreboard found for match id: {match_id}")
                 raise HTTPException(
@@ -103,7 +103,7 @@ class ScoreboardAPIRouter(
         )
         async def get_scoreboard_by_id(item_id: int):
             self.logger.debug(f"Get scoreboard by id: {item_id} endpoint")
-            scoreboard = await self.service.get_by_id(item_id)
+            scoreboard = await self.loaded_service.get_by_id(item_id)
             if scoreboard is None:
                 self.logger.warning(f"No scoreboard found for id: {item_id}")
                 raise HTTPException(
@@ -118,7 +118,7 @@ class ScoreboardAPIRouter(
         )
         async def get_scoreboard_by_matchdata_id_endpoint(matchdata_id: int):
             self.logger.debug(f"Get scoreboard by matchdata id: {matchdata_id} endpoint")
-            scoreboard = await self.service.get_scoreboard_by_matchdata_id(matchdata_id)
+            scoreboard = await self.loaded_service.get_scoreboard_by_matchdata_id(matchdata_id)
             if scoreboard is None:
                 self.logger.warning(f"No scoreboard found for matchdata id: {matchdata_id}")
                 raise HTTPException(
@@ -131,16 +131,16 @@ class ScoreboardAPIRouter(
         # @router.get("/matchdata/id/{match_data_id}/events/scoreboard_data/")
         # async def sse_scoreboard_data_endpoint(match_data_id: int):
         #     print("SSE Scoreboard Starts")
-        #     scoreboard = await self.service.get_scoreboard_by_matchdata_id(
+        #     scoreboard = await self.loaded_service.get_scoreboard_by_matchdata_id(
         #         match_data_id
         #     )
         #     print(scoreboard)
-        #     # scoreboard = await self.service.get_scoreboard_by_match_id(5)
+        #     # scoreboard = await self.loaded_service.get_scoreboard_by_match_id(5)
         #     print(scoreboard)
         #     if scoreboard:
         #         print(scoreboard)
         #         return StreamingResponse(
-        #             self.service.event_generator_get_scoreboard_data(scoreboard.id),
+        #             self.loaded_service.event_generator_get_scoreboard_data(scoreboard.id),
         #             media_type="text/event-stream",
         #         )
         #     else:
@@ -209,7 +209,7 @@ class ScoreboardAPIRouter(
             _: Annotated[ScoreboardDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete scoreboard endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await self.loaded_service.delete(model_id)
             return {"detail": f"Scoreboard {model_id} deleted successfully"}
 
         return router

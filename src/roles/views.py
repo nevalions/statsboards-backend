@@ -15,8 +15,8 @@ ITEM = "ROLE"
 
 
 class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
-    def __init__(self, service: RoleServiceDB):
-        super().__init__("/api/roles", ["roles"], service)
+    def __init__(self, service: RoleServiceDB | None = None, service_name: str | None = None):
+        super().__init__("/api/roles", ["roles"], service, service_name=service_name)
         self.logger = get_logger("RoleAPIRouter", self)
         self.logger.debug("Initialized RoleAPIRouter")
 
@@ -41,8 +41,8 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
             _: Annotated[RoleDB, Depends(require_roles("admin"))],
         ) -> RoleSchema:
             self.logger.debug(f"Create role endpoint: {role_data}")
-            new_role = await self.service.create(role_data)
-            role = await self.service.get_by_id_with_user_count(new_role.id)
+            new_role = await self.loaded_service.create(role_data)
+            role = await self.loaded_service.get_by_id_with_user_count(new_role.id)
             if role is None:
                 raise HTTPException(
                     status_code=500,
@@ -74,8 +74,8 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
             _: Annotated[RoleDB, Depends(require_roles("admin"))],
         ) -> RoleSchema:
             self.logger.debug(f"Update role endpoint id:{item_id}")
-            updated_role = await self.service.update(item_id, role_data)
-            role = await self.service.get_by_id_with_user_count(updated_role.id)
+            updated_role = await self.loaded_service.update(item_id, role_data)
+            role = await self.loaded_service.get_by_id_with_user_count(updated_role.id)
             if role is None:
                 raise HTTPException(
                     status_code=500,
@@ -100,7 +100,7 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
         )
         async def get_role_by_id_endpoint(item_id: int) -> RoleSchema:
             self.logger.debug(f"Get role by id endpoint: {item_id}")
-            role = await self.service.get_by_id_with_user_count(item_id)
+            role = await self.loaded_service.get_by_id_with_user_count(item_id)
             if role is None:
                 raise HTTPException(
                     status_code=404,
@@ -132,7 +132,7 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_roles_with_pagination(
+            response = await self.loaded_service.search_roles_with_pagination(
                 search_query=search,
                 skip=skip,
                 limit=items_per_page,
@@ -160,7 +160,7 @@ class RoleAPIRouter(BaseRouter[RoleSchema, RoleSchemaCreate, RoleSchemaUpdate]):
             _: Annotated[RoleDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete role endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await self.loaded_service.delete(model_id)
             return {"detail": f"{ITEM} {model_id} deleted successfully"}
 
         return router

@@ -18,7 +18,6 @@ from src.core.models import (
 from src.core.models.base import Database
 from src.core.schema_helpers import PaginationMetadata
 from src.core.service_registry import ServiceRegistryAccessorMixin
-from src.helpers.safe_log import safe_log_obj
 from src.logging_config import get_logger
 
 from .schemas import (
@@ -108,8 +107,6 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         match_id: int,
     ) -> MatchDB | None:
         """Get match with tournament and tournament's main_sponsor loaded for scoreboard display."""
-        from src.core.models.sponsor import SponsorDB
-        from src.core.models.sponsor_line import SponsorLineDB
         from src.core.models.tournament import TournamentDB
 
         self.logger.debug(f"Get {ITEM} with tournament sponsor id:{match_id}")

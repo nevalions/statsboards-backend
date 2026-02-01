@@ -28,11 +28,12 @@ class PlayClockAPIRouter(
         PlayClockSchemaUpdate,
     ]
 ):
-    def __init__(self, service: PlayClockServiceDB):
+    def __init__(self, service: PlayClockServiceDB | None = None, service_name: str | None = None):
         super().__init__(
             "/api/playclock",
             ["playclock"],
             service,
+            service_name=service_name,
         )
         self.logger = get_logger("PlayClockAPIRouter", self)
         self.logger.debug("Initialized PlayClockAPIRouter")
@@ -58,7 +59,7 @@ class PlayClockAPIRouter(
         async def create_playclock_endpoint(playclock_data: PlayClockSchemaCreate):
             self.logger.debug(f"Create playclock endpoint got data: {playclock_data}")
             try:
-                new_playclock = await self.service.create(playclock_data)
+                new_playclock = await self.loaded_service.create(playclock_data)
                 return PlayClockSchema.model_validate(new_playclock)
             except HTTPException:
                 raise
@@ -91,7 +92,7 @@ class PlayClockAPIRouter(
         ):
             self.logger.debug(f"Update playclock endpoint id:{item_id} data: {item}")
             try:
-                playclock_update = await self.service.update(
+                playclock_update = await self.loaded_service.update(
                     item_id,
                     item,
                 )
@@ -134,7 +135,7 @@ class PlayClockAPIRouter(
             response_class=JSONResponse,
         )
         async def get_playclock_by_id(
-            item=Depends(self.service.get_by_id),
+            item=Depends(self.loaded_service.get_by_id),
         ):
             self.logger.debug("Get playclock endpoint by ID")
             if item is None:
@@ -157,16 +158,16 @@ class PlayClockAPIRouter(
             self.logger.debug(f"Start playclock endpoint with id: {item_id}")
             try:
                 item_status = ClockStatus.RUNNING
-                item = await self.service.get_by_id(item_id)
+                item = await self.loaded_service.get_by_id(item_id)
                 if item is None:
                     raise HTTPException(status_code=404, detail="Playclock not found")
                 present_playclock_status = item.playclock_status
 
-                await self.service.enable_match_data_clock_queues(item_id, sec)
+                await self.loaded_service.enable_match_data_clock_queues(item_id, sec)
                 if present_playclock_status != ClockStatus.RUNNING:
                     started_at_ms = int(time.time() * 1000)
 
-                    await self.service.update(
+                    await self.loaded_service.update(
                         item_id,
                         PlayClockSchemaUpdate(
                             playclock=sec,
@@ -175,14 +176,14 @@ class PlayClockAPIRouter(
                         ),
                     )
 
-                    state_machine = self.service.clock_manager.get_clock_state_machine(item_id)
+                    state_machine = self.loaded_service.clock_manager.get_clock_state_machine(item_id)
                     if not state_machine:
-                        await self.service.clock_manager.start_clock(item_id, sec)
+                        await self.loaded_service.clock_manager.start_clock(item_id, sec)
                     if state_machine:
                         state_machine.started_at_ms = started_at_ms
                         state_machine.status = ClockStatus.RUNNING
 
-                updated = await self.service.get_by_id(item_id)
+                updated = await self.loaded_service.get_by_id(item_id)
                 return self.create_response_with_server_time(
                     updated,
                     f"Playclock ID:{item_id} {item_status}",
@@ -222,7 +223,7 @@ class PlayClockAPIRouter(
         ):
             self.logger.debug(f"Resetting playclock endpoint with id: {item_id}")
             try:
-                updated = await self.service.update(
+                updated = await self.loaded_service.update(
                     item_id,
                     PlayClockSchemaUpdate(
                         playclock=sec,
@@ -258,7 +259,7 @@ class PlayClockAPIRouter(
         async def reset_playclock_stopped_endpoint(item_id: int):
             self.logger.debug(f"Resetting playclock to stopped endpoint with id: {item_id}")
             try:
-                updated = await self.service.update_with_none(
+                updated = await self.loaded_service.update_with_none(
                     item_id,
                     PlayClockSchemaUpdate(
                         playclock=None,
@@ -304,7 +305,7 @@ class PlayClockAPIRouter(
             _: Annotated[PlayClockDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete playclock endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await self.loaded_service.delete(model_id)
             return {"detail": f"Playclock {model_id} deleted successfully"}
 
         return router

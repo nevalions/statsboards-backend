@@ -32,8 +32,12 @@ class PlayerMatchAPIRouter(
         PlayerMatchSchemaUpdate,
     ]
 ):
-    def __init__(self, service: PlayerMatchServiceDB):
-        super().__init__("/api/players_match", ["players_match"], service)
+    def __init__(
+        self, service: PlayerMatchServiceDB | None = None, service_name: str | None = None
+    ):
+        super().__init__(
+            "/api/players_match", ["players_match"], service, service_name=service_name
+        )
         self.logger = get_logger("PlayerMatchAPIRouter", self)
         self.logger.debug("Initialized PlayerMatchAPIRouter")
 
@@ -49,7 +53,7 @@ class PlayerMatchAPIRouter(
         ):
             try:
                 self.logger.debug(f"Create player in match endpoint with data: {player_match}")
-                new_player_match = await self.service.create_or_update_player_match(player_match)
+                new_player_match = await self.loaded_service.create_or_update_player_match(player_match)
                 if new_player_match:
                     return PlayerMatchSchema.model_validate(new_player_match)
                 else:
@@ -71,7 +75,7 @@ class PlayerMatchAPIRouter(
         ):
             try:
                 self.logger.debug(f"Get player in match endpoint with eesl_id:{eesl_id}")
-                player_match = await self.service.get_player_match_by_eesl_id(value=eesl_id)
+                player_match = await self.loaded_service.get_player_match_by_eesl_id(value=eesl_id)
                 if player_match is None:
                     raise HTTPException(
                         status_code=404,
@@ -97,7 +101,7 @@ class PlayerMatchAPIRouter(
         ):
             try:
                 self.logger.debug(f"Update player in match endpoint with data: {item}")
-                update_ = await self.service.update(item_id, item)
+                update_ = await self.loaded_service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,
@@ -118,7 +122,7 @@ class PlayerMatchAPIRouter(
         )
         async def get_player_in_sport_endpoint(player_id: int):
             self.logger.debug(f"Get player in sport endpoint with player id:{player_id}")
-            return await self.service.get_player_in_sport(player_id)
+            return await self.loaded_service.get_player_in_sport(player_id)
 
         @router.get(
             "/id/{player_id}/player_in_team_tournament/",
@@ -126,7 +130,7 @@ class PlayerMatchAPIRouter(
         )
         async def get_player_in_team_tournament_endpoint(player_id: int):
             self.logger.debug(f"Get player in tournament endpoint with player id:{player_id}")
-            return await self.service.get_player_in_team_tournament(player_id)
+            return await self.loaded_service.get_player_in_team_tournament(player_id)
 
         @router.get(
             "/id/{player_id}/full_data/",
@@ -134,7 +138,7 @@ class PlayerMatchAPIRouter(
         )
         async def get_player_in_match_full_data_endpoint(player_id: int):
             self.logger.debug(f"Get player in match full data endpoint with player id:{player_id}")
-            return await self.service.get_player_in_match_full_data(player_id)
+            return await self.loaded_service.get_player_in_match_full_data(player_id)
 
         @router.get(
             "/pars/match/{eesl_match_id}",
@@ -307,7 +311,7 @@ class PlayerMatchAPIRouter(
                         }
 
                         exist_player_in_match = (
-                            await self.service.get_player_match_by_match_id_and_eesl_id(
+                            await self.loaded_service.get_player_match_by_match_id_and_eesl_id(
                                 player_schema["match_id"],
                                 player_schema["player_match_eesl_id"],
                             )
@@ -335,7 +339,7 @@ class PlayerMatchAPIRouter(
                                 )
 
                         player = PlayerMatchSchemaCreate(**player_schema)
-                        created_player = await self.service.create_or_update_player_match(player)
+                        created_player = await self.loaded_service.create_or_update_player_match(player)
                         created_players_match.append(
                             {
                                 "match_player": created_player,
@@ -473,7 +477,7 @@ class PlayerMatchAPIRouter(
                         }
 
                         exist_player_in_match = (
-                            await self.service.get_player_match_by_match_id_and_eesl_id(
+                            await self.loaded_service.get_player_match_by_match_id_and_eesl_id(
                                 player_schema["match_id"],
                                 player_schema["player_match_eesl_id"],
                             )
@@ -502,7 +506,7 @@ class PlayerMatchAPIRouter(
 
                         self.logger.debug("Creating player in match")
                         player = PlayerMatchSchemaCreate(**player_schema)
-                        created_player = await self.service.create_or_update_player_match(player)
+                        created_player = await self.loaded_service.create_or_update_player_match(player)
                         created_players_match.append(
                             {
                                 "match_player": created_player,
@@ -538,7 +542,7 @@ class PlayerMatchAPIRouter(
             _: Annotated[PlayerMatchDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete player match endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await self.loaded_service.delete(model_id)
             return {"detail": f"PlayerMatch {model_id} deleted successfully"}
 
         return router

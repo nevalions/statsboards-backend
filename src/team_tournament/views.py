@@ -14,8 +14,12 @@ from .schemas import (
 class TeamTournamentRouter(
     BaseRouter[TeamTournamentSchema, TeamTournamentSchemaCreate, TeamTournamentSchemaUpdate]
 ):
-    def __init__(self, service: TeamTournamentServiceDB):
-        super().__init__("/api/team_in_tournament", ["team_tournament"], service)
+    def __init__(
+        self, service: TeamTournamentServiceDB | None = None, service_name: str | None = None
+    ):
+        super().__init__(
+            "/api/team_in_tournament", ["team_tournament"], service, service_name=service_name
+        )
 
     def route(self):
         router = super().route()
@@ -29,7 +33,7 @@ class TeamTournamentRouter(
                 tournament_id=tournament_id,
                 team_id=team_id,
             )
-            new_ = await self.service.create(team_tournament_schema_create)
+            new_ = await self.loaded_service.create(team_tournament_schema_create)
             print(new_)
             if new_:
                 return new_
@@ -49,7 +53,7 @@ class TeamTournamentRouter(
             item_id: int,
             item: TeamTournamentSchemaUpdate,
         ):
-            update_ = await self.service.update(item_id, item)
+            update_ = await self.loaded_service.update(item_id, item)
             if update_ is None:
                 raise HTTPException(
                     status_code=404, detail=f"Team Tournament id {item_id} not found"
@@ -58,7 +62,7 @@ class TeamTournamentRouter(
 
         @router.get("/{team_id}in{tournament_id}")
         async def get_team_tournament_relation_endpoint(team_id: int, tournament_id: int):
-            team_tournament = await self.service.get_team_tournament_relation(
+            team_tournament = await self.loaded_service.get_team_tournament_relation(
                 team_id, tournament_id
             )
             if not team_tournament:
@@ -67,14 +71,14 @@ class TeamTournamentRouter(
 
         @router.get("/tournament/id/{tournament_id}/teams")
         async def get_teams_in_tournament_endpoint(tournament_id: int):
-            teams = await self.service.get_related_teams(tournament_id)
+            teams = await self.loaded_service.get_related_teams(tournament_id)
             return teams
 
         @router.delete("/{team_id}in{tournament_id}")
         async def delete_relation_by_team_id_tournament_id_endpoint(
             team_id: int, tournament_id: int
         ):
-            await self.service.delete_relation_by_team_and_tournament_id(team_id, tournament_id)
+            await self.loaded_service.delete_relation_by_team_and_tournament_id(team_id, tournament_id)
 
         return router
 

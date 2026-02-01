@@ -38,8 +38,15 @@ class PlayerTeamTournamentAPIRouter(
         PlayerTeamTournamentSchemaUpdate,
     ]
 ):
-    def __init__(self, service: PlayerTeamTournamentServiceDB):
-        super().__init__("/api/players_team_tournament", ["players_team_tournament"], service)
+    def __init__(
+        self, service: PlayerTeamTournamentServiceDB | None = None, service_name: str | None = None
+    ):
+        super().__init__(
+            "/api/players_team_tournament",
+            ["players_team_tournament"],
+            service,
+            service_name=service_name,
+        )
         self.logger = get_logger("PlayerTeamTournamentAPIRouter", self)
         self.logger.debug("Initialized PlayerTeamTournamentAPIRouter")
 
@@ -58,7 +65,7 @@ class PlayerTeamTournamentAPIRouter(
                     f"Create or update player_team_tournament endpoint got data {player_team_tournament}"
                 )
                 new_player_team_tournament = (
-                    await self.service.create_or_update_player_team_tournament(
+                    await self.loaded_service.create_or_update_player_team_tournament(
                         player_team_tournament
                     )
                 )
@@ -89,7 +96,7 @@ class PlayerTeamTournamentAPIRouter(
         ):
             try:
                 self.logger.debug(f"Getting player_team_tournament endpoint by eesl_id {eesl_id}")
-                tournament = await self.service.get_player_team_tournament_by_eesl_id(value=eesl_id)
+                tournament = await self.loaded_service.get_player_team_tournament_by_eesl_id(value=eesl_id)
                 if tournament is None:
                     raise HTTPException(
                         status_code=404,
@@ -118,7 +125,7 @@ class PlayerTeamTournamentAPIRouter(
         ):
             try:
                 self.logger.debug(f"Update player_team_tournament endpoint got data {item}")
-                update_ = await self.service.update(item_id, item)
+                update_ = await self.loaded_service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,
@@ -159,7 +166,7 @@ class PlayerTeamTournamentAPIRouter(
                 f"ascending={ascending}, search={search}, team_title={team_title}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_tournament_players_with_pagination(
+            response = await self.loaded_service.search_tournament_players_with_pagination(
                 tournament_id=tournament_id,
                 search_query=search,
                 team_title=team_title,
@@ -194,7 +201,7 @@ class PlayerTeamTournamentAPIRouter(
                 f"ascending={ascending}, search={search}, team_title={team_title}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_tournament_players_with_pagination_details(
+            response = await self.loaded_service.search_tournament_players_with_pagination_details(
                 tournament_id=tournament_id,
                 search_query=search,
                 team_title=team_title,
@@ -229,7 +236,7 @@ class PlayerTeamTournamentAPIRouter(
                 f"ascending={ascending}, search={search}, team_title={team_title}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_tournament_players_with_pagination_full_details(
+            response = await self.loaded_service.search_tournament_players_with_pagination_full_details(
                 tournament_id=tournament_id,
                 search_query=search,
                 team_title=team_title,
@@ -265,7 +272,7 @@ class PlayerTeamTournamentAPIRouter(
             )
             skip = (page - 1) * items_per_page
             response = (
-                await self.service.search_tournament_players_with_pagination_details_and_photos(
+                await self.loaded_service.search_tournament_players_with_pagination_details_and_photos(
                     tournament_id=tournament_id,
                     search_query=search,
                     team_title=team_title,
@@ -283,7 +290,7 @@ class PlayerTeamTournamentAPIRouter(
         #     # response_model=List[PlayerTeamTournamentSchema],
         # )
         # async def get_all_players_by_tournament_endpoint(tournament_id: int):
-        #     return await self.service.get_all_players_by_tournament(tournament_id)
+        #     return await self.loaded_service.get_all_players_by_tournament(tournament_id)
 
         @router.get(
             "/id/{player_id}/person/",
@@ -291,7 +298,7 @@ class PlayerTeamTournamentAPIRouter(
         )
         async def get_player_team_tournament_with_person_endpoint(player_id: int):
             try:
-                person = await self.service.get_player_team_tournament_with_person(player_id)
+                person = await self.loaded_service.get_player_team_tournament_with_person(player_id)
                 if person is None:
                     raise HTTPException(
                         status_code=404,
@@ -383,7 +390,7 @@ class PlayerTeamTournamentAPIRouter(
                                         **p
                                     )
                                     created_player_in_team = (
-                                        await self.service.create_or_update_player_team_tournament(
+                                        await self.loaded_service.create_or_update_player_team_tournament(
                                             created_player_in_team_dict
                                         )
                                     )
@@ -408,7 +415,7 @@ class PlayerTeamTournamentAPIRouter(
                                         **p
                                     )
                                     created_player_in_team = (
-                                        await self.service.create_or_update_player_team_tournament(
+                                        await self.loaded_service.create_or_update_player_team_tournament(
                                             created_player_in_team_dict
                                         )
                                     )
@@ -455,7 +462,7 @@ class PlayerTeamTournamentAPIRouter(
             _: Annotated[PlayerTeamTournamentDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete player team tournament endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await self.loaded_service.delete(model_id)
             return {"detail": f"PlayerTeamTournament {model_id} deleted successfully"}
 
         return router

@@ -39,11 +39,12 @@ from .schemas import (
 class TournamentAPIRouter(
     BaseRouter[TournamentSchema, TournamentSchemaCreate, TournamentSchemaUpdate]
 ):
-    def __init__(self, service: TournamentServiceDB):
+    def __init__(self, service: TournamentServiceDB | None = None, service_name: str | None = None):
         super().__init__(
             "/api/tournaments",
             ["tournaments-api"],
             service,
+            service_name=service_name,
         )
         self.logger = get_logger("TournamentAPIRouter", self)
         self.logger.debug("Initialized TournamentAPIRouter")
@@ -63,7 +64,7 @@ class TournamentAPIRouter(
         )
         async def create_tournament_endpoint(item: TournamentSchemaCreate):
             self.logger.debug(f"Create or update tournament endpoint got data: {item}")
-            new_ = await self.service.create_or_update_tournament(item)
+            new_ = await self.loaded_service.create_or_update_tournament(item)
             return TournamentSchema.model_validate(new_)
 
         @router.put(
@@ -82,7 +83,7 @@ class TournamentAPIRouter(
             item: TournamentSchemaUpdate,
         ):
             self.logger.debug(f"Update tournament endpoint id:{item_id} data: {item}")
-            update_ = await self.service.update(item_id, item)
+            update_ = await self.loaded_service.update(item_id, item)
             if update_ is None:
                 raise HTTPException(status_code=404, detail=f"Tournament id {item_id} not found")
             return TournamentSchema.model_validate(update_)
@@ -99,7 +100,7 @@ class TournamentAPIRouter(
         )
         async def get_tournament_by_eesl_id_endpoint(eesl_id: int):
             self.logger.debug(f"Get tournament by eesl_id endpoint got eesl_id:{eesl_id}")
-            tournament = await self.service.get_tournament_by_eesl_id(value=eesl_id)
+            tournament = await self.loaded_service.get_tournament_by_eesl_id(value=eesl_id)
             if tournament is None:
                 raise HTTPException(
                     status_code=404,
@@ -119,7 +120,7 @@ class TournamentAPIRouter(
         )
         async def get_tournament_with_details_endpoint(tournament_id: int):
             self.logger.debug(f"Get tournament with full details endpoint id:{tournament_id}")
-            tournament = await self.service.get_tournament_with_details(tournament_id)
+            tournament = await self.loaded_service.get_tournament_with_details(tournament_id)
             if tournament is None:
                 raise HTTPException(
                     status_code=404,
@@ -153,7 +154,7 @@ class TournamentAPIRouter(
                 f"user_id={user_id}, isprivate={isprivate}, sport_id={sport_id}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_tournaments_with_details_pagination(
+            response = await self.loaded_service.search_tournaments_with_details_pagination(
                 search_query=search,
                 user_id=user_id,
                 isprivate=isprivate,
@@ -177,7 +178,7 @@ class TournamentAPIRouter(
         )
         async def get_teams_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get teams by tournament id:{tournament_id} endpoint")
-            return await self.service.get_teams_by_tournament(tournament_id)
+            return await self.loaded_service.get_teams_by_tournament(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/teams/paginated",
@@ -203,7 +204,7 @@ class TournamentAPIRouter(
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.get_teams_by_tournament_with_pagination(
+            response = await self.loaded_service.get_teams_by_tournament_with_pagination(
                 tournament_id=tournament_id,
                 search_query=search,
                 skip=skip,
@@ -225,7 +226,7 @@ class TournamentAPIRouter(
         )
         async def get_players_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get players by tournament id:{tournament_id} endpoint")
-            return await self.service.get_players_by_tournament(tournament_id)
+            return await self.loaded_service.get_players_by_tournament(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/players/paginated",
@@ -251,7 +252,7 @@ class TournamentAPIRouter(
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
-            return await self.service.get_players_by_tournament_with_pagination(
+            return await self.loaded_service.get_players_by_tournament_with_pagination(
                 tournament_id=tournament_id,
                 search_query=search,
                 skip=skip,
@@ -272,7 +273,7 @@ class TournamentAPIRouter(
         )
         async def get_available_players_for_tournament_endpoint(tournament_id: int):
             self.logger.debug(f"Get available players for tournament id:{tournament_id} endpoint")
-            return await self.service.get_available_players_for_tournament(tournament_id)
+            return await self.loaded_service.get_available_players_for_tournament(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/teams/available",
@@ -285,7 +286,7 @@ class TournamentAPIRouter(
         )
         async def get_available_teams_for_tournament_endpoint(tournament_id: int):
             self.logger.debug(f"Get available teams for tournament id:{tournament_id} endpoint")
-            return await self.service.get_available_teams_for_tournament(tournament_id)
+            return await self.loaded_service.get_available_teams_for_tournament(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/players/without-team",
@@ -311,7 +312,7 @@ class TournamentAPIRouter(
                 f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
             )
             skip = (page - 1) * items_per_page
-            return await self.service.get_players_without_team_in_tournament(
+            return await self.loaded_service.get_players_without_team_in_tournament(
                 tournament_id=tournament_id,
                 search_query=search,
                 skip=skip,
@@ -333,17 +334,17 @@ class TournamentAPIRouter(
         )
         async def get_players_without_team_in_tournament_all_endpoint(tournament_id: int):
             self.logger.debug(f"Get all players without team in tournament id:{tournament_id}")
-            return await self.service.get_players_without_team_in_tournament_simple(tournament_id)
+            return await self.loaded_service.get_players_without_team_in_tournament_simple(tournament_id)
 
         @router.get("/id/{tournament_id}/matches/count")
         async def get_count_of_matches_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get count of matches by tournament id:{tournament_id} endpoint")
-            return await self.service.get_count_of_matches_by_tournament(tournament_id)
+            return await self.loaded_service.get_count_of_matches_by_tournament(tournament_id)
 
         @router.get("/id/{tournament_id}/matches/")
         async def get_matches_by_tournament_id_endpoint(tournament_id: int):
             self.logger.debug(f"Get matches by tournament id:{tournament_id} endpoint")
-            return await self.service.get_matches_by_tournament(tournament_id)
+            return await self.loaded_service.get_matches_by_tournament(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/matches/page/{page}/items_per_page/{items_per_page}/order_one/{order_exp}/order_two/{order_exp_two}"
@@ -359,7 +360,7 @@ class TournamentAPIRouter(
                 f"Get matches by tournament id:{tournament_id} with pagination and order endpoint"
             )
             skip = (page - 1) * items_per_page
-            matches = await self.service.get_matches_by_tournament_with_pagination(
+            matches = await self.loaded_service.get_matches_by_tournament_with_pagination(
                 tournament_id=tournament_id,
                 skip=skip,
                 limit=items_per_page,
@@ -373,7 +374,7 @@ class TournamentAPIRouter(
             self.logger.debug(
                 f"Get main_tournament_sponsor by tournament id:{tournament_id} endpoint"
             )
-            return await self.service.get_main_tournament_sponsor(tournament_id)
+            return await self.loaded_service.get_main_tournament_sponsor(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/sponsor_line/",
@@ -383,7 +384,7 @@ class TournamentAPIRouter(
             self.logger.debug(
                 f"Get tournament_sponsor_line by tournament id:{tournament_id} endpoint"
             )
-            return await self.service.get_tournament_sponsor_line(tournament_id)
+            return await self.loaded_service.get_tournament_sponsor_line(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/sponsors/",
@@ -395,7 +396,7 @@ class TournamentAPIRouter(
             self.logger.debug(
                 f"Get sponsors_from_sponsor_line by tournament id:{tournament_id} endpoint"
             )
-            return await self.service.get_sponsors_of_tournament_sponsor_line(tournament_id)
+            return await self.loaded_service.get_sponsors_of_tournament_sponsor_line(tournament_id)
 
         @router.get(
             "/id/{tournament_id}/matches/all/data/",
@@ -403,7 +404,7 @@ class TournamentAPIRouter(
         )
         async def all_tournament_matches_data_endpoint(
             tournament_id: int,
-            all_matches: list = Depends(self.service.get_matches_by_tournament),
+            all_matches: list = Depends(self.loaded_service.get_matches_by_tournament),
         ):
             if not all_matches:
                 return []
@@ -522,7 +523,7 @@ class TournamentAPIRouter(
             _: Annotated[TournamentDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete tournament endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await self.loaded_service.delete(model_id)
             return {"detail": f"Tournament {model_id} deleted successfully"}
 
         return router
@@ -549,10 +550,10 @@ class TournamentAPIRouter(
 #         #     tournament_id: int,
 #         #     request: Request,
 #         # ):
-#         #     tournament = await self.service.get_by_id(tournament_id)
+#         #     tournament = await self.loaded_service.get_by_id(tournament_id)
 #         #     season_service_db = SeasonServiceDB(db)
 #         #     season = await season_service_db.get_by_id(tournament.season_id)
-#         #     tournament_dict = self.service.to_dict(tournament)
+#         #     tournament_dict = self.loaded_service.to_dict(tournament)
 #         #     season_dict = season_service_db.to_dict(season)
 #         #
 #         #     return templates.TemplateResponse(
@@ -576,7 +577,7 @@ class TournamentAPIRouter(
 #         #     tournament_id: int,
 #         #     request: Request,
 #         # ):
-#         #     tournament = await self.service.get_by_id(tournament_id)
+#         #     tournament = await self.loaded_service.get_by_id(tournament_id)
 #         #     if tournament is None:
 #         #         raise HTTPException(
 #         #             status_code=404,

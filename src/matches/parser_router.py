@@ -19,11 +19,12 @@ class MatchParserRouter(
         MatchSchemaUpdate,
     ]
 ):
-    def __init__(self, service: MatchServiceDB):
+    def __init__(self, service: MatchServiceDB | None = None, service_name: str | None = None):
         super().__init__(
             "/api/matches",
             ["matches-parser"],
             service,
+            service_name=service_name,
         )
         self.logger = get_logger("MatchParserRouter", self)
         self.logger.debug("Initialized MatchParserRouter")
@@ -44,8 +45,6 @@ class MatchParserRouter(
             self.logger.debug(
                 f"Get and Save parsed matches from tournament eesl_id:{eesl_tournament_id} endpoint"
             )
-            return await match_parser.create_parsed_matches(
-                eesl_tournament_id, self.service
-            )
+            return await match_parser.create_parsed_matches(eesl_tournament_id, self.loaded_service)
 
         return router

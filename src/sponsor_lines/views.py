@@ -18,11 +18,14 @@ class SponsorLineAPIRouter(
         SponsorLineSchemaUpdate,
     ]
 ):
-    def __init__(self, service: SponsorLineServiceDB):
+    def __init__(
+        self, service: SponsorLineServiceDB | None = None, service_name: str | None = None
+    ):
         super().__init__(
             "/api/sponsor_lines",
             ["sponsor_lines"],
             service,
+            service_name=service_name,
         )
         self.logger = get_logger("SponsorLineAPIRouter", self)
         self.logger.debug("Initialized SponsorLineAPIRouter")
@@ -37,7 +40,7 @@ class SponsorLineAPIRouter(
         async def create_sponsor_line_endpoint(item: SponsorLineSchemaCreate):
             try:
                 self.logger.debug("Create sponsor line endpoint")
-                new_ = await self.service.create(item)
+                new_ = await self.loaded_service.create(item)
                 return SponsorLineSchema.model_validate(new_)
             except Exception as e:
                 self.logger.error(f"Error creating sponsor line endpoint {e}", exc_info=True)
@@ -52,7 +55,7 @@ class SponsorLineAPIRouter(
         ):
             self.logger.debug("Update sponsor line endpoint")
             try:
-                update_ = await self.service.update(item_id, item)
+                update_ = await self.loaded_service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(
                         status_code=404,
@@ -75,7 +78,7 @@ class SponsorLineAPIRouter(
         async def get_sponsor_line_by_id_endpoint(item_id: int):
             try:
                 self.logger.debug(f"Get sponsor line endpoint by id {item_id}")
-                item = await self.service.get_by_id(item_id)
+                item = await self.loaded_service.get_by_id(item_id)
                 if item is None:
                     raise HTTPException(
                         status_code=404,
@@ -111,7 +114,7 @@ class SponsorLineAPIRouter(
             _: Annotated[SponsorLineDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete sponsor line endpoint id:{model_id}")
-            await self.service.delete(model_id)
+            await self.loaded_service.delete(model_id)
             return {"detail": f"SponsorLine {model_id} deleted successfully"}
 
         return router

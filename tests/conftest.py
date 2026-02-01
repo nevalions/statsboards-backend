@@ -227,89 +227,73 @@ def test_uploads_path(test_downloads_dir, monkeypatch):
     return test_downloads_dir
 
 
-@pytest_asyncio.fixture(scope="function")
-async def test_app(test_db):
-    """Create FastAPI test app with all routers."""
-    from src.core.service_registry import init_service_registry
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def session_app(session_database):
+    """Session-scoped FastAPI app - created once per worker.
 
-    init_service_registry(test_db)
+    Routers are created with service=None and service_name, allowing lazy loading
+    from the service registry which gets updated per test.
 
+    Args:
+        session_database: Session-scoped database that initializes the service registry
+    """
     from src.auth.views import api_auth_router
     from src.core import health
-    from src.football_events.db_services import FootballEventServiceDB
     from src.football_events.views import FootballEventAPIRouter
-    from src.gameclocks.db_services import GameClockServiceDB
     from src.gameclocks.views import GameClockAPIRouter
-    from src.global_settings.db_services import GlobalSettingServiceDB
     from src.global_settings.views import GlobalSettingAPIRouter
-    from src.matchdata.db_services import MatchDataServiceDB
     from src.matchdata.views import MatchDataAPIRouter
     from src.matches.crud_router import MatchCRUDRouter
-    from src.matches.db_services import MatchServiceDB
     from src.matches.parser_router import MatchParserRouter
     from src.matches.websocket_router import MatchWebSocketRouter
-    from src.person.db_services import PersonServiceDB
     from src.person.views import PersonAPIRouter
-    from src.playclocks.db_services import PlayClockServiceDB
     from src.playclocks.views import PlayClockAPIRouter
-    from src.player.db_services import PlayerServiceDB
     from src.player.views import PlayerAPIRouter
-    from src.player_match.db_services import PlayerMatchServiceDB
     from src.player_match.views import PlayerMatchAPIRouter
-    from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
     from src.player_team_tournament.views import PlayerTeamTournamentAPIRouter
-    from src.positions.db_services import PositionServiceDB
     from src.positions.views import PositionAPIRouter
-    from src.roles.db_services import RoleServiceDB
     from src.roles.views import RoleAPIRouter
-    from src.scoreboards.db_services import ScoreboardServiceDB
     from src.scoreboards.views import ScoreboardAPIRouter
-    from src.seasons.db_services import SeasonServiceDB
     from src.seasons.views import SeasonAPIRouter
-    from src.sponsor_lines.db_services import SponsorLineServiceDB
     from src.sponsor_lines.views import SponsorLineAPIRouter
-    from src.sponsors.db_services import SponsorServiceDB
     from src.sponsors.views import SponsorAPIRouter
-    from src.sports.db_services import SportServiceDB
     from src.sports.views import SportAPIRouter
-    from src.team_tournament.db_services import TeamTournamentServiceDB
     from src.team_tournament.views import TeamTournamentRouter
-    from src.teams.db_services import TeamServiceDB
     from src.teams.views import TeamAPIRouter
-    from src.tournaments.db_services import TournamentServiceDB
     from src.tournaments.views import TournamentAPIRouter
     from src.users.views import get_user_router
 
     app = FastAPI()
-    match_service = MatchServiceDB(test_db)
-    app.include_router(MatchCRUDRouter(match_service).route())
-    app.include_router(MatchWebSocketRouter(match_service).route())
-    app.include_router(MatchParserRouter(match_service).route())
+
+    app.include_router(MatchCRUDRouter(None, service_name="match").route())
+    app.include_router(MatchWebSocketRouter(None, service_name="match").route())
+    app.include_router(MatchParserRouter(None, service_name="match").route())
     app.include_router(FootballEventAPIRouter().route())
     app.include_router(GameClockAPIRouter().route())
     app.include_router(MatchDataAPIRouter().route())
     app.include_router(PersonAPIRouter().route())
-    app.include_router(PlayClockAPIRouter(PlayClockServiceDB(test_db)).route())
-    app.include_router(PlayerAPIRouter(PlayerServiceDB(test_db)).route())
-    app.include_router(PlayerMatchAPIRouter(PlayerMatchServiceDB(test_db)).route())
+    app.include_router(PlayClockAPIRouter(None, service_name="playclock").route())
+    app.include_router(PlayerAPIRouter(None, service_name="player").route())
+    app.include_router(PlayerMatchAPIRouter(None, service_name="player_match").route())
     app.include_router(
-        PlayerTeamTournamentAPIRouter(PlayerTeamTournamentServiceDB(test_db)).route()
+        PlayerTeamTournamentAPIRouter(None, service_name="player_team_tournament").route()
     )
     app.include_router(PositionAPIRouter().route())
-    app.include_router(ScoreboardAPIRouter(ScoreboardServiceDB(test_db)).route())
+    app.include_router(ScoreboardAPIRouter(None, service_name="scoreboard").route())
     app.include_router(SeasonAPIRouter().route())
-    app.include_router(SponsorLineAPIRouter(SponsorLineServiceDB(test_db)).route())
+    app.include_router(SponsorLineAPIRouter(None, service_name="sponsor_line").route())
     app.include_router(SponsorAPIRouter().route())
     app.include_router(SportAPIRouter().route())
-    app.include_router(TeamTournamentRouter(TeamTournamentServiceDB(test_db)).route())
+    app.include_router(TeamTournamentRouter(None, service_name="team_tournament").route())
     app.include_router(TeamAPIRouter().route())
-    app.include_router(TournamentAPIRouter(TournamentServiceDB(test_db)).route())
+    app.include_router(TournamentAPIRouter(None, service_name="tournament").route())
     app.include_router(api_auth_router)
     app.include_router(GlobalSettingAPIRouter().route())
     app.include_router(get_user_router())
     app.include_router(health.router)
+
     try:
-        role_router = RoleAPIRouter(RoleServiceDB(test_db)).route()
+        role_router = RoleAPIRouter(None, service_name="role").route()
         app.include_router(role_router)
     except Exception as e:
         print(f"Error including role router: {e}")
@@ -318,6 +302,20 @@ async def test_app(test_db):
         traceback.print_exc()
 
     yield app
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_app(session_app, test_db):
+    """FastAPI test app with test database injected.
+
+    Uses session-scoped app with service registry updated per test.
+    """
+    from src.core.service_registry import get_service_registry
+
+    registry = get_service_registry()
+    registry.update_database(test_db)
+
+    yield session_app
 
 
 @pytest_asyncio.fixture(scope="function")

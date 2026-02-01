@@ -25,8 +25,8 @@ from .schemas import (
 
 
 class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaUpdate]):
-    def __init__(self, service: PlayerServiceDB):
-        super().__init__("/api/players", ["players"], service)
+    def __init__(self, service: PlayerServiceDB | None = None, service_name: str | None = None):
+        super().__init__("/api/players", ["players"], service, service_name=service_name)
         self.logger = get_logger("PlayerAPIRouter", self)
         self.logger.debug("Initialized PlayerAPIRouter")
 
@@ -41,7 +41,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             player: PlayerSchemaCreate,
         ):
             self.logger.debug(f"Create or update player endpoint got data: {player}")
-            new_player = await self.service.create_or_update_player(player)
+            new_player = await self.loaded_service.create_or_update_player(player)
             if new_player:
                 return PlayerSchema.model_validate(new_player)
             else:
@@ -53,7 +53,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
             eesl_id: int,
         ):
             self.logger.debug(f"Get player by eesl_id: {eesl_id} endpoint")
-            player = await self.service.get_player_by_eesl_id(value=eesl_id)
+            player = await self.loaded_service.get_player_by_eesl_id(value=eesl_id)
             if player is None:
                 raise HTTPException(
                     status_code=404,
@@ -71,7 +71,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         ):
             try:
                 self.logger.debug(f"Update player endpoint got data: {item}")
-                update_ = await self.service.update(item_id, item)
+                update_ = await self.loaded_service.update(item_id, item)
                 if update_ is None:
                     raise HTTPException(status_code=404, detail=f"Player id {item_id} not found")
                 return PlayerSchema.model_validate(update_)
@@ -83,7 +83,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         async def person_by_player_id(player_id: int):
             self.logger.debug(f"Get person by player id: {player_id} endpoint")
             try:
-                return await self.service.get_player_with_person(player_id)
+                return await self.loaded_service.get_player_with_person(player_id)
             except HTTPException:
                 raise
             except Exception as ex:
@@ -100,7 +100,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         async def player_career_endpoint(player_id: int):
             self.logger.debug(f"Get player career for player_id:{player_id} endpoint")
             try:
-                return await self.service.get_player_career(player_id)
+                return await self.loaded_service.get_player_career(player_id)
             except HTTPException:
                 raise
             except Exception as ex:
@@ -122,7 +122,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 f"Get player {player_id} detail in tournament {tournament_id} endpoint"
             )
             try:
-                return await self.service.get_player_detail_in_tournament(player_id, tournament_id)
+                return await self.loaded_service.get_player_detail_in_tournament(player_id, tournament_id)
             except HTTPException:
                 raise
             except Exception as ex:
@@ -172,7 +172,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 f"user_id={user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_players_with_pagination_details(
+            response = await self.loaded_service.search_players_with_pagination_details(
                 sport_id=sport_id,
                 team_id=team_id,
                 search_query=search,
@@ -212,7 +212,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 f"user_id={user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_players_with_pagination_details_and_photos(
+            response = await self.loaded_service.search_players_with_pagination_details_and_photos(
                 sport_id=sport_id,
                 team_id=team_id,
                 search_query=search,
@@ -252,7 +252,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 f"user_id={user_id}, isprivate={isprivate}"
             )
             skip = (page - 1) * items_per_page
-            response = await self.service.search_players_with_pagination_full_details(
+            response = await self.loaded_service.search_players_with_pagination_full_details(
                 sport_id=sport_id,
                 team_id=team_id,
                 search_query=search,
@@ -272,7 +272,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 f"Add person to sport: person_id={data.person_id}, sport_id={data.sport_id}"
             )
             try:
-                player = await self.service.add_person_to_sport(
+                player = await self.loaded_service.add_person_to_sport(
                     person_id=data.person_id,
                     sport_id=data.sport_id,
                     isprivate=data.isprivate,
@@ -298,7 +298,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         ):
             self.logger.debug(f"Remove person {person_id} from sport {sport_id}")
             try:
-                success = await self.service.remove_person_from_sport(
+                success = await self.loaded_service.remove_person_from_sport(
                     person_id=person_id,
                     sport_id=sport_id,
                 )
@@ -337,7 +337,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                             player_data_dict = player_with_person["player"]
                             player_data_dict["person_id"] = created_person.id
                             player = PlayerSchemaCreate(**player_data_dict)
-                            created_player = await self.service.create_or_update_player(player)
+                            created_player = await self.loaded_service.create_or_update_player(player)
                             created_players.append(created_player)
                             self.logger.debug(f"Player created successfully: {created_player}")
                     self.logger.debug(f"Created parsed persons number:{len(created_persons)}")

@@ -153,6 +153,12 @@ def _global_setting_factory(database: Database) -> BaseServiceDB:
     return GlobalSettingServiceDB(database)
 
 
+def _role_factory(database: Database) -> BaseServiceDB:
+    from src.roles.db_services import RoleServiceDB
+
+    return RoleServiceDB(database)
+
+
 def register_all_services(database: Database) -> ServiceRegistry:
     """Register all service factories with the global registry.
 
@@ -191,6 +197,7 @@ def register_all_services(database: Database) -> ServiceRegistry:
         ("match_data_cache", _match_data_cache_factory, True),
         ("user", _user_factory, False),
         ("global_setting", _global_setting_factory, False),
+        ("role", _role_factory, False),
     )
 
     for service_name, factory, singleton in services:
