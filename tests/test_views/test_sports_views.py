@@ -9,93 +9,95 @@ from tests.factories import SportFactorySample, TeamFactory
 
 @pytest.mark.asyncio
 class TestSportViews:
-    async def test_create_sport_endpoint(self, client, test_db):
+    async def test_create_sport_endpoint(self, client_sport, test_db):
         sport_data = SportFactorySample.build()
 
-        response = await client.post("/api/sports/", json=sport_data.model_dump())
+        response = await client_sport.post("/api/sports/", json=sport_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_update_sport_endpoint(self, client, test_db):
+    async def test_update_sport_endpoint(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         sport_data = SportFactorySample.build()
         created = await sport_service.create(sport_data)
 
         update_data = SportSchemaUpdate(title="Updated Title")
 
-        response = await client.put(
+        response = await client_sport.put(
             f"/api/sports/{created.id}/",
             json=update_data.model_dump(),
         )
 
         assert response.status_code == 200
 
-    async def test_update_sport_not_found(self, client):
+    async def test_update_sport_not_found(self, client_sport):
         update_data = SportSchemaUpdate(title="Updated Title")
 
-        response = await client.put("/api/sports/99999/", json=update_data.model_dump())
+        response = await client_sport.put("/api/sports/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
-    async def test_get_sport_by_id_endpoint(self, client, test_db):
+    async def test_get_sport_by_id_endpoint(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         sport_data = SportFactorySample.build()
         created = await sport_service.create(sport_data)
 
-        response = await client.get(f"/api/sports/id/{created.id}/")
+        response = await client_sport.get(f"/api/sports/id/{created.id}/")
 
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
-    async def test_get_sport_by_id_not_found(self, client):
-        response = await client.get("/api/sports/id/99999/")
+    async def test_get_sport_by_id_not_found(self, client_sport):
+        response = await client_sport.get("/api/sports/id/99999/")
 
         assert response.status_code == 404
 
-    async def test_get_all_sports_endpoint(self, client, test_db):
+    async def test_get_all_sports_endpoint(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         await sport_service.create(SportFactorySample.build())
         await sport_service.create(SportFactorySample.build())
 
-        response = await client.get("/api/sports/")
+        response = await client_sport.get("/api/sports/")
 
         assert response.status_code == 200
         assert len(response.json()) >= 2
 
-    async def test_get_tournaments_by_sport_endpoint(self, client, test_db):
+    async def test_get_tournaments_by_sport_endpoint(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
-        response = await client.get(f"/api/sports/id/{sport.id}/tournaments")
+        response = await client_sport.get(f"/api/sports/id/{sport.id}/tournaments")
 
         assert response.status_code == 200
 
-    async def test_get_teams_by_sport_endpoint(self, client, test_db):
+    async def test_get_teams_by_sport_endpoint(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
-        response = await client.get(f"/api/sports/id/{sport.id}/teams")
+        response = await client_sport.get(f"/api/sports/id/{sport.id}/teams")
 
         assert response.status_code == 200
 
-    async def test_get_players_by_sport_endpoint(self, client, test_db):
+    async def test_get_players_by_sport_endpoint(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
-        response = await client.get(f"/api/sports/id/{sport.id}/players")
+        response = await client_sport.get(f"/api/sports/id/{sport.id}/players")
 
         assert response.status_code == 200
 
-    async def test_get_positions_by_sport_endpoint(self, client, test_db):
+    async def test_get_positions_by_sport_endpoint(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
-        response = await client.get(f"/api/sports/id/{sport.id}/positions")
+        response = await client_sport.get(f"/api/sports/id/{sport.id}/positions")
 
         assert response.status_code == 200
 
-    async def test_get_positions_by_sport_endpoint_sorted_alphabetically(self, client, test_db):
+    async def test_get_positions_by_sport_endpoint_sorted_alphabetically(
+        self, client_sport, test_db
+    ):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -156,7 +158,7 @@ class TestSportViews:
         assert result.metadata.items_per_page == 2
         assert result.metadata.total_items == 3
 
-    async def test_get_teams_by_sport_paginated_endpoint_http(self, client, test_db):
+    async def test_get_teams_by_sport_paginated_endpoint_http(self, client_sport, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -165,7 +167,7 @@ class TestSportViews:
         await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team B"))
         await team_service.create(TeamFactory.build(sport_id=sport.id, title="Team C"))
 
-        response = await client.get(f"/api/sports/id/{sport.id}/teams/paginated")
+        response = await client_sport.get(f"/api/sports/id/{sport.id}/teams/paginated")
 
         assert response.status_code == 200
         data = response.json()

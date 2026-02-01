@@ -18,7 +18,7 @@ from tests.factories import (
 
 @pytest.mark.asyncio
 class TestMatchDataViews:
-    async def test_create_match_data_endpoint(self, client, test_db):
+    async def test_create_match_data_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -43,12 +43,12 @@ class TestMatchDataViews:
 
         match_data = MatchDataSchemaCreate(match_id=match.id, score_team_a=0, score_team_b=0)
 
-        response = await client.post("/api/matchdata/", json=match_data.model_dump())
+        response = await client_match.post("/api/matchdata/", json=match_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_update_match_data_endpoint(self, client, test_db):
+    async def test_update_match_data_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -77,18 +77,18 @@ class TestMatchDataViews:
 
         update_data = MatchDataSchemaUpdate(score_team_a=7, score_team_b=3)
 
-        response = await client.put(f"/api/matchdata/{created.id}/", json=update_data.model_dump())
+        response = await client_match.put(f"/api/matchdata/{created.id}/", json=update_data.model_dump())
 
         assert response.status_code == 200
 
-    async def test_update_match_data_not_found(self, client):
+    async def test_update_match_data_not_found(self, client_match):
         update_data = MatchDataSchemaUpdate(score_team_a=7)
 
-        response = await client.put("/api/matchdata/99999/", json=update_data.model_dump())
+        response = await client_match.put("/api/matchdata/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
-    async def test_update_matchdata_by_id_endpoint(self, client, test_db):
+    async def test_update_matchdata_by_id_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -117,14 +117,14 @@ class TestMatchDataViews:
 
         update_data = MatchDataSchemaUpdate(score_team_a=7)
 
-        response = await client.put(
+        response = await client_match.put(
             f"/api/matchdata/id/{created.id}/", json=update_data.model_dump()
         )
 
         assert response.status_code == 200
         assert response.json()["score_team_a"] == 7
 
-    async def test_get_matchdata_by_id_endpoint(self, client, test_db):
+    async def test_get_matchdata_by_id_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -151,11 +151,11 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
 
-        response = await client.get(f"/api/matchdata/id/{created.id}/")
+        response = await client_match.get(f"/api/matchdata/id/{created.id}/")
 
         assert response.status_code == 200
 
-    async def test_start_gameclock_endpoint(self, client, test_db):
+    async def test_start_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -182,11 +182,11 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
 
-        response = await client.put(f"/api/matchdata/id/{created.id}/gameclock/running/")
+        response = await client_match.put(f"/api/matchdata/id/{created.id}/gameclock/running/")
 
         assert response.status_code == 200
 
-    async def test_pause_gameclock_endpoint(self, client, test_db):
+    async def test_pause_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -213,11 +213,11 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
 
-        response = await client.put(f"/api/matchdata/id/{created.id}/gameclock/paused/")
+        response = await client_match.put(f"/api/matchdata/id/{created.id}/gameclock/paused/")
 
         assert response.status_code == 200
 
-    async def test_reset_gameclock_endpoint(self, client, test_db):
+    async def test_reset_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -244,11 +244,11 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
 
-        response = await client.put(f"/api/matchdata/id/{created.id}/gameclock/stopped/720/")
+        response = await client_match.put(f"/api/matchdata/id/{created.id}/gameclock/stopped/720/")
 
         assert response.status_code == 200
 
-    async def test_start_playclock_endpoint(self, client, test_db):
+    async def test_start_playclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -275,11 +275,11 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
 
-        response = await client.put(f"/api/matchdata/id/{created.id}/playclock/running/40/")
+        response = await client_match.put(f"/api/matchdata/id/{created.id}/playclock/running/40/")
 
         assert response.status_code == 200
 
-    async def test_reset_playclock_endpoint(self, client, test_db):
+    async def test_reset_playclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -306,6 +306,6 @@ class TestMatchDataViews:
         match_data = MatchDataSchemaCreate(match_id=match.id)
         created = await match_data_service.create(match_data)
 
-        response = await client.put(f"/api/matchdata/id/{created.id}/playclock/stopped/")
+        response = await client_match.put(f"/api/matchdata/id/{created.id}/playclock/stopped/")
 
         assert response.status_code == 200

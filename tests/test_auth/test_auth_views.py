@@ -18,7 +18,6 @@ async def test_user_with_role(test_db: Database):
     """Create a test user with a role."""
     from src.auth.security import get_password_hash
     from src.users.db_services import UserServiceDB
-    from src.core.models import RoleDB
 
     service = UserServiceDB(test_db)
 

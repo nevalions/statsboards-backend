@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.helpers.request_services_helper import Response, get_url
-from src.helpers.user_agent_rotator import UserAgentRotator
 
 
 class TestResponse:

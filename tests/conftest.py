@@ -15,6 +15,12 @@ from src.core import settings
 from src.core.models.base import Base, Database
 from src.core.service_initialization import register_all_services
 from src.core.service_registry import init_service_registry
+from tests.fixtures.app_fixtures import (
+    MATCH_ROUTERS,
+    PLAYER_ROUTERS,
+    SPORT_ROUTERS,
+    create_test_app,
+)
 
 # Import fixtures from fixtures.py
 pytest_plugins = ["tests.fixtures"]
@@ -334,8 +340,65 @@ async def test_app(session_app, test_db):
 
 
 @pytest_asyncio.fixture(scope="function")
+async def test_app_match(test_db):
+    """FastAPI app with match-related routers (match, matchdata, gameclock, playclock, scoreboard, football_events)."""
+    from src.core.service_registry import get_service_registry
+
+    registry = get_service_registry()
+    registry.update_database(test_db)
+
+    yield create_test_app(MATCH_ROUTERS)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_app_player(test_db):
+    """FastAPI app with player-related routers (players, persons, positions, player_match, player_team_tournament)."""
+    from src.core.service_registry import get_service_registry
+
+    registry = get_service_registry()
+    registry.update_database(test_db)
+
+    yield create_test_app(PLAYER_ROUTERS)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_app_sport(test_db):
+    """FastAPI app with sport-related routers (sports, teams, tournaments, seasons, team_tournament)."""
+    from src.core.service_registry import get_service_registry
+
+    registry = get_service_registry()
+    registry.update_database(test_db)
+
+    yield create_test_app(SPORT_ROUTERS)
+
+
+@pytest_asyncio.fixture(scope="function")
 async def client(test_app):
     """Create test client that uses app with test database."""
     transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client_match(test_app_match):
+    """Create test client that uses match app with test database."""
+    transport = ASGITransport(app=test_app_match)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client_player(test_app_player):
+    """Create test client that uses player app with test database."""
+    transport = ASGITransport(app=test_app_player)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client_sport(test_app_sport):
+    """Create test client that uses sport app with test database."""
+    transport = ASGITransport(app=test_app_sport)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

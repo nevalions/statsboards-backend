@@ -1,6 +1,6 @@
-import pytest
-
 from typing import TypeVar
+
+import pytest
 
 from src.matches.db_services import MatchServiceDB
 from src.person.db_services import PersonServiceDB

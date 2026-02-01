@@ -1123,6 +1123,106 @@ All 1465 tests pass reliably in ~160s with 4 parallel workers (`-n 4`) across 4 
 
 None. Previously had deprecation warnings from `passlib` library (using deprecated `crypt` module). These were resolved by removing `passlib` and using `bcrypt` directly (v4.3.0) for password hashing.
 
+### Minimal Test App Fixtures
+
+**Overview:**
+
+Tests can now use specialized, minimal test app fixtures that only initialize required routers instead of loading all 26 routers for every test. This significantly improves test performance for tests that only exercise a subset of endpoints.
+
+**Router Groups:**
+
+| Group | Routers Included | Count | Use For |
+|-------|-----------------|--------|----------|
+| `CORE` | health, auth, global_settings, users, roles | 5 | Minimal infrastructure tests |
+| `SPORT` | CORE + sports, teams, tournaments, seasons, team_tournament | 10 | Sport/team/tournament domain tests |
+| `PLAYER` | CORE + players, persons, positions, player_match, player_team_tournament | 10 | Player/person/position domain tests |
+| `MATCH` | CORE + match (3), matchdata, gameclock, playclock, scoreboard, football_events | 13 | Match/clock/scoreboard domain tests |
+| `SPONSOR` | CORE + sponsors, sponsor_lines, sponsor_sponsor_line_connection | 8 | Sponsor domain tests |
+
+**Available Fixtures:**
+
+| Fixture | Description | Routers |
+|---------|-------------|----------|
+| `client` | Full app with all 26 routers (legacy) | ALL |
+| `client_minimal` | Minimal app with core routers only | 5 |
+| `client_sport` | App with sport-related routers | 10 |
+| `client_player` | App with player-related routers | 10 |
+| `client_match` | App with match-related routers | 13 |
+| `client_sponsor` | App with sponsor-related routers | 8 |
+
+**Usage Examples:**
+
+```python
+# Use client_sport for sport/team/tournament endpoints
+async def test_create_sport(self, client_sport, test_db):
+    response = await client_sport.post("/api/sports/", json={...})
+
+# Use client_player for player/person/position endpoints
+async def test_create_player(self, client_player, test_db):
+    response = await client_player.post("/api/players/", json={...})
+
+# Use client_match for match/clock/scoreboard endpoints
+async def test_start_gameclock(self, client_match, test_db):
+    response = await client_match.put(f"/api/matchdata/{id}/gameclock/running/")
+```
+
+**Factory Function:**
+
+For custom router combinations, use `create_test_app()` directly:
+
+```python
+from tests.fixtures.app_fixtures import create_test_app, CORE_ROUTERS, MATCH_ROUTERS
+
+# Create app with specific router groups
+custom_app = create_test_app([CORE_ROUTERS, MATCH_ROUTERS])
+```
+
+**Performance Impact:**
+
+- Router count reduced from 26 to 5-13 routers (50-80% reduction per test)
+- Memory usage reduced due to fewer service instances per test
+- Better code organization and test clarity
+
+**Important:** The full `session_app` fixture is already session-scoped (created once per worker), so test execution time differences are minimal. The primary benefits of minimal fixtures are:
+1. **Reduced memory footprint** - Fewer service instances loaded simultaneously
+2. **Better code organization** - Clear indication of which domain a test belongs to
+3. **Scalability** - As test suite grows, memory usage grows more slowly
+4. **New test development** - Faster fixture selection for domain-specific tests
+
+**Migration Status:**
+
+- ✅ Migrated: 11 test files (143 tests)
+- ⏳ Pending: Additional test files for further optimization
+
+Migrated test files:
+- `test_sports_views.py`
+- `test_player_views.py`
+- `test_matchdata_views.py`
+- `test_gameclocks_views.py`
+- `test_playclocks_views.py`
+- `test_football_events_views.py`
+- `test_scoreboards_views.py`
+- `test_person_views.py`
+- `test_positions_views.py`
+- `test_player_match_views.py`
+- `test_player_team_tournament_views.py`
+
+**Choosing the Right Fixture:**
+
+1. Check which endpoints your test uses (look at HTTP calls)
+2. Map endpoints to router groups using the table above
+3. Use the corresponding `client_*` fixture
+4. If in doubt, start with `client` (full app) and optimize later
+
+**Note:** Tests that use endpoints from multiple domains may need to use the full `client` fixture or combine multiple router groups via `create_test_app()`.
+
+**Fixture Implementation Notes:**
+
+All minimal fixtures follow the same pattern as `session_app`:
+- Session-scoped app fixtures (`session_app_sport`, `session_app_player`, etc.) are created once per worker
+- Function-scoped test fixtures (`test_app_sport`, `test_app_player`, etc.) update the service registry per test
+- This ensures optimal performance while maintaining test isolation
+
 ## Database Operations
 
 - Always use async context managers: `async with self.db.get_session_maker()() as session:`

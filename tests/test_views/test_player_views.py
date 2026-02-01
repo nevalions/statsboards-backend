@@ -22,7 +22,7 @@ from tests.factories import (
 
 @pytest.mark.asyncio
 class TestPlayerViews:
-    async def test_create_player_endpoint(self, client, test_db):
+    async def test_create_player_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -31,12 +31,12 @@ class TestPlayerViews:
 
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id, player_eesl_id=100)
 
-        response = await client.post("/api/players/", json=player_data.model_dump())
+        response = await client_player.post("/api/players/", json=player_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_get_player_by_eesl_id_endpoint(self, client, test_db):
+    async def test_get_player_by_eesl_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -49,17 +49,17 @@ class TestPlayerViews:
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id, player_eesl_id=100)
         created = await player_service.create_or_update_player(player_data)
 
-        response = await client.get("/api/players/eesl_id/100")
+        response = await client_player.get("/api/players/eesl_id/100")
 
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
-    async def test_get_player_by_eesl_id_not_found(self, client):
-        response = await client.get("/api/players/eesl_id/99999")
+    async def test_get_player_by_eesl_id_not_found(self, client_player):
+        response = await client_player.get("/api/players/eesl_id/99999")
 
         assert response.status_code == 404
 
-    async def test_update_player_endpoint(self, client, test_db):
+    async def test_update_player_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -72,11 +72,11 @@ class TestPlayerViews:
 
         update_data = PlayerSchemaUpdate(player_eesl_id=200)
 
-        response = await client.put(f"/api/players/{created.id}/", json=update_data.model_dump())
+        response = await client_player.put(f"/api/players/{created.id}/", json=update_data.model_dump())
 
         assert response.status_code == 200
 
-    async def test_get_all_players_endpoint(self, client, test_db):
+    async def test_get_all_players_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -92,12 +92,12 @@ class TestPlayerViews:
             PlayerSchemaCreate(sport_id=sport.id, person_id=person2.id)
         )
 
-        response = await client.get("/api/players/")
+        response = await client_player.get("/api/players/")
 
         assert response.status_code == 200
         assert len(response.json()) >= 2
 
-    async def test_get_player_by_id_endpoint(self, client, test_db):
+    async def test_get_player_by_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -108,16 +108,16 @@ class TestPlayerViews:
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id)
         created = await player_service.create_or_update_player(player_data)
 
-        response = await client.get(f"/api/players/id/{created.id}")
+        response = await client_player.get(f"/api/players/id/{created.id}")
 
         assert response.status_code == 200
 
-    async def test_get_player_by_id_not_found(self, client):
-        response = await client.get("/api/players/id/99999")
+    async def test_get_player_by_id_not_found(self, client_player):
+        response = await client_player.get("/api/players/id/99999")
 
         assert response.status_code == 404
 
-    async def test_get_person_by_player_id_endpoint(self, client, test_db):
+    async def test_get_person_by_player_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -128,14 +128,14 @@ class TestPlayerViews:
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id)
         created = await player_service.create_or_update_player(player_data)
 
-        response = await client.get(f"/api/players/id/{created.id}/person")
+        response = await client_player.get(f"/api/players/id/{created.id}/person")
 
         assert response.status_code == 200
 
 
 @pytest.mark.asyncio
 class TestPlayerSportManagement:
-    async def test_add_person_to_sport_success(self, client, test_db):
+    async def test_add_person_to_sport_success(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -151,7 +151,7 @@ class TestPlayerSportManagement:
         assert player.person_id == person.id
         assert player.sport_id == sport.id
 
-    async def test_add_person_to_sport_duplicate_fails(self, client, test_db):
+    async def test_add_person_to_sport_duplicate_fails(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -171,7 +171,7 @@ class TestPlayerSportManagement:
             )
         assert exc_info.value.status_code == 409
 
-    async def test_remove_person_from_sport_success(self, client, test_db):
+    async def test_remove_person_from_sport_success(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -191,7 +191,7 @@ class TestPlayerSportManagement:
 
         assert result is True
 
-    async def test_remove_person_from_sport_not_found(self, client, test_db):
+    async def test_remove_person_from_sport_not_found(self, client_player, test_db):
         player_service = PlayerServiceDB(test_db)
 
         with pytest.raises(Exception) as exc_info:
@@ -201,7 +201,7 @@ class TestPlayerSportManagement:
             )
         assert exc_info.value.status_code == 404
 
-    async def test_multiple_players_for_same_person_different_sports(self, client, test_db):
+    async def test_multiple_players_for_same_person_different_sports(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport1 = await sport_service.create(SportFactorySample.build(title="Sport 1"))
         sport2 = await sport_service.create(SportFactorySample.build(title="Sport 2"))
@@ -223,14 +223,14 @@ class TestPlayerSportManagement:
         assert player1.person_id == person.id
         assert player2.person_id == person.id
 
-    async def test_add_person_to_sport_endpoint(self, client, test_db):
+    async def test_add_person_to_sport_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
         person_service = PersonServiceDB(test_db)
         person = await person_service.create_or_update_person(PersonFactory.build())
 
-        response = await client.post(
+        response = await client_player.post(
             "/api/players/add-person-to-sport",
             json={"person_id": person.id, "sport_id": sport.id},
         )
@@ -239,7 +239,7 @@ class TestPlayerSportManagement:
         assert response.json()["person_id"] == person.id
         assert response.json()["sport_id"] == sport.id
 
-    async def test_remove_person_from_sport_endpoint(self, client, test_db):
+    async def test_remove_person_from_sport_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -252,7 +252,7 @@ class TestPlayerSportManagement:
             sport_id=sport.id,
         )
 
-        response = await client.delete(
+        response = await client_player.delete(
             f"/api/players/remove-person-from-sport/personid/{person.id}/sportid/{sport.id}"
         )
 
@@ -262,7 +262,7 @@ class TestPlayerSportManagement:
 
 @pytest.mark.asyncio
 class TestPlayerDetailInTournament:
-    async def test_get_player_detail_in_tournament_success(self, client, test_db):
+    async def test_get_player_detail_in_tournament_success(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -297,7 +297,7 @@ class TestPlayerDetailInTournament:
         )
         await ptt_service.create(ptt_data)
 
-        response = await client.get(f"/api/players/id/{player.id}/in-tournament/{tournament.id}")
+        response = await client_player.get(f"/api/players/id/{player.id}/in-tournament/{tournament.id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -314,12 +314,12 @@ class TestPlayerDetailInTournament:
         assert data["tournament_assignment"]["tournament_id"] == tournament.id
         assert len(data["career_by_team"]) > 0
 
-    async def test_get_player_detail_in_tournament_player_not_found(self, client):
-        response = await client.get("/api/players/id/99999/in-tournament/1")
+    async def test_get_player_detail_in_tournament_player_not_found(self, client_player):
+        response = await client_player.get("/api/players/id/99999/in-tournament/1")
 
         assert response.status_code == 404
 
-    async def test_get_player_detail_in_tournament_not_in_tournament(self, client, test_db):
+    async def test_get_player_detail_in_tournament_not_in_tournament(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -330,6 +330,6 @@ class TestPlayerDetailInTournament:
         player_data = PlayerSchemaCreate(sport_id=sport.id, person_id=person.id, player_eesl_id=100)
         player = await player_service.create_or_update_player(player_data)
 
-        response = await client.get(f"/api/players/id/{player.id}/in-tournament/99999")
+        response = await client_player.get(f"/api/players/id/{player.id}/in-tournament/99999")
 
         assert response.status_code == 404

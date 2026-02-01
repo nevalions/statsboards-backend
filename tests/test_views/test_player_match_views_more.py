@@ -16,7 +16,6 @@ from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
     MatchFactory,
-    PersonFactory,
     PlayerFactory,
     SeasonFactorySample,
     SportFactorySample,

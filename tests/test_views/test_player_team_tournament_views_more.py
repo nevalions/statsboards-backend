@@ -1,6 +1,5 @@
 import pytest
 
-from src.person.db_services import PersonServiceDB
 from src.player.db_services import PlayerServiceDB
 from src.player_team_tournament.db_services import PlayerTeamTournamentServiceDB
 from src.player_team_tournament.schemas import (
@@ -14,7 +13,6 @@ from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
-    PersonFactory,
     PlayerFactory,
     SeasonFactorySample,
     SportFactorySample,
@@ -277,7 +275,6 @@ class TestPlayerTeamTournamentViewsMore:
         self, client, test_db, monkeypatch
     ):
         """Test create parsed players when no players found."""
-        from src.pars_eesl.parse_player_team_tournament import ParsedPlayerTeamTournament
 
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -311,7 +308,6 @@ class TestPlayerTeamTournamentViewsMore:
         self, client, test_db, monkeypatch
     ):
         """Test create parsed players with exception."""
-        from src.pars_eesl.parse_player_team_tournament import ParsedPlayerTeamTournament
 
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())

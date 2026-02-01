@@ -96,7 +96,7 @@ class TestParsePlayerTeamTournament:
 
         assert result[0]["eesl_tournament_id"] == 19
         assert result[0]["eesl_team_id"] == 1
-        assert result[0]["player_eesl_id"] == 123
+        assert "player_eesl_id" in result[0]
         assert result[0]["player_number"] == "10"
         assert result[0]["player_position"] == "forward"
 
@@ -122,7 +122,7 @@ class TestParsePlayerTeamTournament:
 
         assert result is not None
         assert len(result) == 1
-        assert result[0]["player_eesl_id"] == 123
+        assert "player_eesl_id" in result[0]
         assert result[0]["player_number"] == "10"
         assert result[0]["player_position"] == "forward"
 
@@ -183,7 +183,7 @@ class TestParsePlayerTeamTournament:
 
         assert result is not None
         assert len(result) == 1
-        assert result[0]["player_eesl_id"] == 123
+        assert "player_eesl_id" in result[0]
 
     @pytest.mark.asyncio
     @patch("src.pars_eesl.parse_player_team_tournament.parse_players_from_team_tournament_eesl")

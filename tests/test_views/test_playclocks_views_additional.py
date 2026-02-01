@@ -1,10 +1,10 @@
 import pytest
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.core.enums import ClockStatus
 from src.matches.db_services import MatchServiceDB
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
-from src.core.enums import ClockStatus
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB

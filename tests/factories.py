@@ -1,3 +1,4 @@
+import random
 from typing import TYPE_CHECKING
 
 import factory
@@ -23,44 +24,58 @@ class SportFactorySample(factory.Factory):
     class Meta:
         model = SportSchemaCreate
 
-    title = factory.Sequence(lambda n: f"{TestData.get_sport_data().title}")
-    description = factory.Sequence(lambda n: f"{TestData.get_sport_data().description}")
+    title = factory.LazyFunction(lambda: f"{TestData.get_sport_data().title}")
+    description = factory.LazyFunction(lambda: f"{TestData.get_sport_data().description}")
 
 
 class SportFactoryAny(factory.Factory):
     class Meta:
         model = SportSchemaCreate
 
-    title = factory.Sequence(lambda n: f"{TestData.get_sport_data().title} + {n}")
-    description = factory.Sequence(lambda n: f"{TestData.get_sport_data().description} + {n}")
+    title = factory.LazyFunction(
+        lambda: f"{TestData.get_sport_data().title} + {random.randint(100000, 999999)}"
+    )
+    description = factory.LazyFunction(
+        lambda: f"{TestData.get_sport_data().description} + {random.randint(100000, 999999)}"
+    )
 
 
 class SeasonFactorySample(factory.Factory):
     class Meta:
         model = SeasonSchemaCreate
 
-    year = factory.Sequence(lambda n: TestData.get_season_data().year)
-    description = factory.Sequence(lambda n: f"{TestData.get_season_data().description}")
+    year = factory.LazyFunction(lambda: TestData.get_season_data().year)
+    description = factory.LazyFunction(lambda: f"{TestData.get_season_data().description}")
 
 
 class SeasonFactoryAny(factory.Factory):
     class Meta:
         model = SeasonSchemaCreate
 
-    year = factory.Sequence(lambda n: TestData.get_season_data().year + 10)
-    description = factory.Sequence(lambda n: f"{TestData.get_season_data().description} + {n}")
+    year = factory.LazyFunction(lambda: TestData.get_season_data().year)
+    description = factory.LazyFunction(
+        lambda: f"{TestData.get_season_data().description} {random.randint(100000, 999999)}"
+    )
 
 
 class TournamentFactory(factory.Factory):
     class Meta:
         model = TournamentSchemaCreate
 
-    tournament_eesl_id = factory.Sequence(lambda n: n + 100)
-    title = factory.Sequence(lambda n: f"Tournament {n}")
-    description = factory.Sequence(lambda n: f"Description for Tournament {n}")
-    tournament_logo_url = factory.Sequence(lambda n: f"logo_url_{n}")
-    tournament_logo_icon_url = factory.Sequence(lambda n: f"icon_url_{n}")
-    tournament_logo_web_url = factory.Sequence(lambda n: f"web_url_{n}")
+    tournament_eesl_id = factory.LazyFunction(lambda: random.randint(1000000, 999999999))
+    title = factory.LazyFunction(lambda: f"Tournament {random.randint(100000, 999999)}")
+    description = factory.LazyFunction(
+        lambda: f"Description for Tournament {random.randint(100000, 999999)}"
+    )
+    tournament_logo_url = factory.LazyFunction(
+        lambda: f"logo_url_{random.randint(100000, 999999)}"
+    )
+    tournament_logo_icon_url = factory.LazyFunction(
+        lambda: f"icon_url_{random.randint(100000, 999999)}"
+    )
+    tournament_logo_web_url = factory.LazyFunction(
+        lambda: f"web_url_{random.randint(100000, 999999)}"
+    )
     sport_id = None
     season_id = None
     sponsor_line_id = None
@@ -71,12 +86,20 @@ class TournamentFactoryWithRelations(factory.Factory):
     class Meta:
         model = TournamentSchemaCreate
 
-    tournament_eesl_id = factory.Sequence(lambda n: n + 100)
-    title = factory.Sequence(lambda n: f"Tournament {n}")
-    description = factory.Sequence(lambda n: f"Description for Tournament {n}")
-    tournament_logo_url = factory.Sequence(lambda n: f"logo_url_{n}")
-    tournament_logo_icon_url = factory.Sequence(lambda n: f"icon_url_{n}")
-    tournament_logo_web_url = factory.Sequence(lambda n: f"web_url_{n}")
+    tournament_eesl_id = factory.LazyFunction(lambda: random.randint(1000000, 999999999))
+    title = factory.LazyFunction(lambda: f"Tournament {random.randint(100000, 999999)}")
+    description = factory.LazyFunction(
+        lambda: f"Description for Tournament {random.randint(100000, 999999)}"
+    )
+    tournament_logo_url = factory.LazyFunction(
+        lambda: f"logo_url_{random.randint(100000, 999999)}"
+    )
+    tournament_logo_icon_url = factory.LazyFunction(
+        lambda: f"icon_url_{random.randint(100000, 999999)}"
+    )
+    tournament_logo_web_url = factory.LazyFunction(
+        lambda: f"web_url_{random.randint(100000, 999999)}"
+    )
     sport_id = factory.SelfAttribute("sport.id")
     season_id = factory.SelfAttribute("season.id")
     sponsor_line_id = None
@@ -89,14 +112,16 @@ class TeamFactory(factory.Factory):
     class Meta:
         model = TeamSchemaCreate
 
-    team_eesl_id = factory.Sequence(lambda n: n + 1000)
-    title = factory.Sequence(lambda n: f"Team {n}")
-    description = factory.Sequence(lambda n: f"Description for Team {n}")
-    team_logo_url = factory.Sequence(lambda n: f"team_logo_url_{n}")
-    team_logo_icon_url = factory.Sequence(lambda n: f"team_icon_url_{n}")
-    team_logo_web_url = factory.Sequence(lambda n: f"team_web_url_{n}")
-    team_color = factory.Sequence(lambda n: f"color_{n}")
-    city = factory.Sequence(lambda n: f"City {n}")
+    team_eesl_id = factory.LazyFunction(lambda: random.randint(10000000, 999999999))
+    title = factory.LazyFunction(lambda: f"Team {random.randint(100000, 999999)}")
+    description = factory.LazyFunction(lambda: f"Description for Team {random.randint(100000, 999999)}")
+    team_logo_url = factory.LazyFunction(lambda: f"team_logo_url_{random.randint(100000, 999999)}")
+    team_logo_icon_url = factory.LazyFunction(
+        lambda: f"team_icon_url_{random.randint(100000, 999999)}"
+    )
+    team_logo_web_url = factory.LazyFunction(lambda: f"team_web_url_{random.randint(100000, 999999)}")
+    team_color = factory.LazyFunction(lambda: random.choice(["red", "blue", "green", "yellow"]))
+    city = factory.LazyFunction(lambda: f"City {random.randint(100000, 999999)}")
     sport_id = None
     sponsor_line_id = None
     main_sponsor_id = None
@@ -106,14 +131,16 @@ class TeamFactoryWithRelations(factory.Factory):
     class Meta:
         model = TeamSchemaCreate
 
-    team_eesl_id = factory.Sequence(lambda n: n + 1000)
-    title = factory.Sequence(lambda n: f"Team {n}")
-    description = factory.Sequence(lambda n: f"Description for Team {n}")
-    team_logo_url = factory.Sequence(lambda n: f"team_logo_url_{n}")
-    team_logo_icon_url = factory.Sequence(lambda n: f"team_icon_url_{n}")
-    team_logo_web_url = factory.Sequence(lambda n: f"team_web_url_{n}")
-    team_color = factory.Sequence(lambda n: f"color_{n}")
-    city = factory.Sequence(lambda n: f"City {n}")
+    team_eesl_id = factory.LazyFunction(lambda: random.randint(10000000, 999999999))
+    title = factory.LazyFunction(lambda: f"Team {random.randint(100000, 999999)}")
+    description = factory.LazyFunction(lambda: f"Description for Team {random.randint(100000, 999999)}")
+    team_logo_url = factory.LazyFunction(lambda: f"team_logo_url_{random.randint(100000, 999999)}")
+    team_logo_icon_url = factory.LazyFunction(
+        lambda: f"team_icon_url_{random.randint(100000, 999999)}"
+    )
+    team_logo_web_url = factory.LazyFunction(lambda: f"team_web_url_{random.randint(100000, 999999)}")
+    team_color = factory.LazyFunction(lambda: random.choice(["red", "blue", "green", "yellow"]))
+    city = factory.LazyFunction(lambda: f"City {random.randint(100000, 999999)}")
     sport_id = factory.SelfAttribute("sport.id")
     sponsor_line_id = None
     main_sponsor_id = None
@@ -124,12 +151,18 @@ class PersonFactory(factory.Factory):
     class Meta:
         model = PersonSchemaCreate
 
-    person_eesl_id = factory.Sequence(lambda n: n + 2000)
-    first_name = factory.Sequence(lambda n: f"First{n}")
-    second_name = factory.Sequence(lambda n: f"Second{n}")
-    person_photo_url = factory.Sequence(lambda n: f"person_photo_url_{n}")
-    person_photo_icon_url = factory.Sequence(lambda n: f"person_icon_url_{n}")
-    person_photo_web_url = factory.Sequence(lambda n: f"person_web_url_{n}")
+    person_eesl_id = factory.LazyFunction(lambda: random.randint(1000000, 9999999))
+    first_name = factory.LazyFunction(lambda: f"First{random.randint(100000, 999999)}")
+    second_name = factory.LazyFunction(lambda: f"Second{random.randint(100000, 999999)}")
+    person_photo_url = factory.LazyFunction(
+        lambda: f"person_photo_url_{random.randint(100000, 999999)}"
+    )
+    person_photo_icon_url = factory.LazyFunction(
+        lambda: f"person_icon_url_{random.randint(100000, 999999)}"
+    )
+    person_photo_web_url = factory.LazyFunction(
+        lambda: f"person_web_url_{random.randint(100000, 999999)}"
+    )
     person_dob = factory.LazyFunction(lambda: "2000-01-01")
 
 
@@ -137,7 +170,7 @@ class PlayerFactory(factory.Factory):
     class Meta:
         model = PlayerSchemaCreate
 
-    player_eesl_id = factory.Sequence(lambda n: n + 3000)
+    player_eesl_id = factory.LazyFunction(lambda: random.randint(1000000, 9999999))
     sport_id = None
     person_id = None
 
@@ -146,7 +179,7 @@ class PlayerFactoryWithRelations(factory.Factory):
     class Meta:
         model = PlayerSchemaCreate
 
-    player_eesl_id = factory.Sequence(lambda n: n + 3000)
+    player_eesl_id = factory.LazyFunction(lambda: random.randint(1000000, 9999999))
     sport_id = factory.SelfAttribute("sport.id")
     person_id = factory.SelfAttribute("person.id")
     sport = factory.SubFactory(SportFactoryAny)
@@ -157,9 +190,9 @@ class MatchFactory(factory.Factory):
     class Meta:
         model = MatchSchemaCreate
 
-    match_eesl_id = factory.Sequence(lambda n: n + 4000)
+    match_eesl_id = factory.LazyFunction(lambda: random.randint(1000000, 999999999))
     match_date = factory.LazyFunction(lambda: "2025-01-01")
-    week = factory.Sequence(lambda n: n + 1)
+    week = factory.LazyFunction(lambda: random.randint(1, 52))
     tournament_id = None
     team_a_id = None
     team_b_id = None
@@ -171,9 +204,9 @@ class MatchFactoryWithRelations(factory.Factory):
     class Meta:
         model = MatchSchemaCreate
 
-    match_eesl_id = factory.Sequence(lambda n: n + 4000)
+    match_eesl_id = factory.LazyFunction(lambda: random.randint(1000000, 999999999))
     match_date = factory.LazyFunction(lambda: "2025-01-01")
-    week = factory.Sequence(lambda n: n + 1)
+    week = factory.LazyFunction(lambda: random.randint(1, 52))
     tournament_id = factory.SelfAttribute("tournament.id")
     team_a_id = factory.SelfAttribute("team_a.id")
     team_b_id = factory.SelfAttribute("team_b.id")
@@ -188,7 +221,7 @@ class PositionFactory(factory.Factory):
     class Meta:
         model = PositionSchemaCreate
 
-    title = factory.Sequence(lambda n: f"Position {n}")
+    title = factory.LazyFunction(lambda: f"Position {random.randint(100000, 999999)}")
     sport_id = 1
 
 
@@ -196,8 +229,8 @@ class SponsorFactory(factory.Factory):
     class Meta:
         model = SponsorSchemaCreate
 
-    title = factory.Sequence(lambda n: f"Sponsor {n}")
-    logo_url = factory.Sequence(lambda n: f"logo_url_{n}")
+    title = factory.LazyFunction(lambda: f"Sponsor {random.randint(100000, 999999)}")
+    logo_url = factory.LazyFunction(lambda: f"logo_url_{random.randint(100000, 999999)}")
     scale_logo = 1.0
 
 
@@ -205,7 +238,7 @@ class SponsorLineFactory(factory.Factory):
     class Meta:
         model = SponsorLineSchemaCreate
 
-    title = factory.Sequence(lambda n: f"Sponsor Line {n}")
+    title = factory.LazyFunction(lambda: f"Sponsor Line {random.randint(100000, 999999)}")
     is_visible = False
 
 
@@ -213,8 +246,8 @@ class UserFactory(factory.Factory):
     class Meta:
         model = "UserSchemaCreate"
 
-    username = factory.Sequence(lambda n: f"user{n}")
-    email = factory.Sequence(lambda n: f"user{n}@example.com")
+    username = factory.LazyFunction(lambda: f"user{random.randint(100000, 999999)}")
+    email = factory.LazyFunction(lambda: f"user{random.randint(100000, 999999)}@example.com")
     password = "SecurePass123!"
     person_id = None
     is_active = True
@@ -232,7 +265,7 @@ class PlayerTeamTournamentFactory(factory.Factory):
     class Meta:
         model = PlayerTeamTournamentSchemaCreate
 
-    player_team_tournament_eesl_id = factory.Sequence(lambda n: n + 5000)
+    player_team_tournament_eesl_id = factory.LazyFunction(lambda: random.randint(100000, 999999999))
     player_id = None
     position_id = None
     team_id = None

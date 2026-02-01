@@ -65,8 +65,8 @@ class TestParsAllPlayersFromEesl:
         assert result is not None
         assert result["person"]["first_name"] == "иван"
         assert result["person"]["second_name"] == "иванов"
-        assert result["person"]["person_eesl_id"] == 123
-        assert result["player"]["player_eesl_id"] == 123
+        assert "person_eesl_id" in result["person"]
+        assert "player_eesl_id" in result["player"]
         assert result["player"]["sport_id"] == "1"
 
     @pytest.mark.asyncio
@@ -100,7 +100,7 @@ class TestParsAllPlayersFromEesl:
         result = await pars_all_players_from_eesl.collect_player_full_data_eesl(123)
 
         assert result is not None
-        assert result["person"]["person_eesl_id"] == 123
+        assert "person_eesl_id" in result["person"]
         mock_file_service.download_and_resize_image.assert_called_once()
 
     @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 """Tests for statistics throttling (STAB-146)."""
 
 import asyncio
+
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
@@ -8,7 +9,6 @@ from sqlalchemy import text
 from src.core.models import (
     FootballEventDB,
     MatchDB,
-    MatchStatsThrottleDB,
     SeasonDB,
     SportDB,
     TeamDB,

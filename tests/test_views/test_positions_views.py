@@ -8,18 +8,18 @@ from tests.factories import SportFactorySample
 
 @pytest.mark.asyncio
 class TestPositionViews:
-    async def test_create_position_endpoint(self, client, test_db):
+    async def test_create_position_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
         position_data = PositionSchemaCreate(title="Quarterback", sport_id=sport.id)
 
-        response = await client.post("/api/positions/", json=position_data.model_dump())
+        response = await client_player.post("/api/positions/", json=position_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_update_position_endpoint(self, client, test_db):
+    async def test_update_position_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -29,19 +29,19 @@ class TestPositionViews:
 
         update_data = PositionSchemaUpdate(title="Updated Position")
 
-        response = await client.put(f"/api/positions/{created.id}/", json=update_data.model_dump())
+        response = await client_player.put(f"/api/positions/{created.id}/", json=update_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["title"] == "Updated Position"
 
-    async def test_update_position_not_found(self, client):
+    async def test_update_position_not_found(self, client_player):
         update_data = PositionSchemaUpdate(title="Updated Position")
 
-        response = await client.put("/api/positions/99999/", json=update_data.model_dump())
+        response = await client_player.put("/api/positions/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
-    async def test_get_position_by_title_endpoint(self, client, test_db):
+    async def test_get_position_by_title_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -49,12 +49,12 @@ class TestPositionViews:
         position_data = PositionSchemaCreate(title="Quarterback", sport_id=sport.id)
         created = await position_service.create(position_data)
 
-        response = await client.get("/api/positions/title/Quarterback/")
+        response = await client_player.get("/api/positions/title/Quarterback/")
 
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
-    async def test_get_all_positions_endpoint(self, client, test_db):
+    async def test_get_all_positions_endpoint(self, client_player, test_db):
         """Test getting all positions."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -63,12 +63,12 @@ class TestPositionViews:
         await position_service.create(PositionSchemaCreate(title="Quarterback", sport_id=sport.id))
         await position_service.create(PositionSchemaCreate(title="Running Back", sport_id=sport.id))
 
-        response = await client.get("/api/positions/")
+        response = await client_player.get("/api/positions/")
 
         assert response.status_code == 200
         assert len(response.json()) >= 2
 
-    async def test_get_position_by_id_endpoint(self, client, test_db):
+    async def test_get_position_by_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -76,20 +76,19 @@ class TestPositionViews:
         position_data = PositionSchemaCreate(title="Quarterback", sport_id=sport.id)
         created = await position_service.create(position_data)
 
-        response = await client.get(f"/api/positions/id/{created.id}")
+        response = await client_player.get(f"/api/positions/id/{created.id}")
 
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
-    async def test_get_position_by_id_not_found(self, client):
-        response = await client.get("/api/positions/id/99999")
+    async def test_get_position_by_id_not_found(self, client_player):
+        response = await client_player.get("/api/positions/id/99999")
 
         assert response.status_code == 404
 
-    async def test_delete_position_endpoint_as_admin(self, client, test_db):
+    async def test_delete_position_endpoint_as_admin(self, client_player, test_db):
         from src.auth.security import create_access_token, get_password_hash
         from src.core.models import RoleDB, UserDB, UserRoleDB
-        from src.users.schemas import UserSchemaCreate
 
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -119,19 +118,19 @@ class TestPositionViews:
 
         token = create_access_token(data={"sub": str(user.id)})
 
-        response = await client.delete(
+        response = await client_player.delete(
             f"/api/positions/id/{position.id}",
             headers={"Authorization": f"Bearer {token}"},
         )
 
         assert response.status_code == 200
 
-    async def test_delete_position_endpoint_unauthorized(self, client):
-        response = await client.delete("/api/positions/id/1")
+    async def test_delete_position_endpoint_unauthorized(self, client_player):
+        response = await client_player.delete("/api/positions/id/1")
 
         assert response.status_code == 401
 
-    async def test_get_position_by_title_not_found(self, client):
-        response = await client.get("/api/positions/title/NonExistent/")
+    async def test_get_position_by_title_not_found(self, client_player):
+        response = await client_player.get("/api/positions/title/NonExistent/")
 
         assert response.status_code == 404

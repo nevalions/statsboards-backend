@@ -1,9 +1,9 @@
 import pytest
 
+from src.core.enums import ClockStatus
 from src.matches.db_services import MatchServiceDB
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate, PlayClockSchemaUpdate
-from src.core.enums import ClockStatus
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
@@ -132,6 +132,7 @@ class TestPlayClockViewsMore:
         created = await playclock_service.create(playclock_data)
 
         from unittest.mock import patch
+
         from sqlalchemy.exc import IntegrityError
 
         async def mock_update_integrity(*args, **kwargs):
@@ -173,6 +174,7 @@ class TestPlayClockViewsMore:
         created = await playclock_service.create(playclock_data)
 
         from unittest.mock import patch
+
         from sqlalchemy.exc import SQLAlchemyError
 
         async def mock_update_sqlalchemy(*args, **kwargs):
@@ -254,6 +256,7 @@ class TestPlayClockViewsMore:
         created = await playclock_service.create(playclock_data)
 
         from unittest.mock import patch
+
         from sqlalchemy.exc import IntegrityError
 
         async def mock_update_integrity(*args, **kwargs):
@@ -295,6 +298,7 @@ class TestPlayClockViewsMore:
         created = await playclock_service.create(playclock_data)
 
         from unittest.mock import patch
+
         from sqlalchemy.exc import SQLAlchemyError
 
         async def mock_update_sqlalchemy(*args, **kwargs):
@@ -376,6 +380,7 @@ class TestPlayClockViewsMore:
         created = await playclock_service.create(playclock_data)
 
         from unittest.mock import patch
+
         from sqlalchemy.exc import IntegrityError
 
         async def mock_update_integrity(*args, **kwargs):
@@ -419,6 +424,7 @@ class TestPlayClockViewsMore:
         created = await playclock_service.create(playclock_data)
 
         from unittest.mock import patch
+
         from sqlalchemy.exc import SQLAlchemyError
 
         async def mock_update_sqlalchemy(*args, **kwargs):

@@ -2,10 +2,10 @@
 Test to verify match_handler handles players-update messages correctly.
 """
 
-from starlette.websockets import WebSocketState
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from starlette.websockets import WebSocketState
 
 from src.websocket.match_handler import MatchWebSocketHandler
 
@@ -53,7 +53,6 @@ class TestPlayersUpdateHandler:
 
     async def test_players_update_in_handlers(self, handler):
         """Verify players-update is in the handlers dictionary."""
-        from starlette.websockets import WebSocketState
 
         handler_class = MatchWebSocketHandler
         handler_instance = handler_class()

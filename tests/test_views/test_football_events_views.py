@@ -21,7 +21,7 @@ from tests.factories import (
 
 @pytest.mark.asyncio
 class TestFootballEventViews:
-    async def test_create_football_event_endpoint(self, client, test_db):
+    async def test_create_football_event_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -52,12 +52,12 @@ class TestFootballEventViews:
             event_distance=10,
         )
 
-        response = await client.post("/api/football_event/", json=football_event_data.model_dump())
+        response = await client_match.post("/api/football_event/", json=football_event_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_update_football_event_endpoint(self, client, test_db):
+    async def test_update_football_event_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -92,20 +92,20 @@ class TestFootballEventViews:
 
         update_data = FootballEventSchemaUpdate(event_distance=20)
 
-        response = await client.put(
+        response = await client_match.put(
             f"/api/football_event/{created.id}/", json=update_data.model_dump()
         )
 
         assert response.status_code == 200
 
-    async def test_update_football_event_not_found(self, client):
+    async def test_update_football_event_not_found(self, client_match):
         update_data = FootballEventSchemaUpdate(event_distance=20)
 
-        response = await client.put("/api/football_event/99999/", json=update_data.model_dump())
+        response = await client_match.put("/api/football_event/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
-    async def test_get_football_events_by_match_id_endpoint(self, client, test_db):
+    async def test_get_football_events_by_match_id_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -136,12 +136,12 @@ class TestFootballEventViews:
             FootballEventSchemaCreate(match_id=match.id, event_number=2, event_qtr=1)
         )
 
-        response = await client.get(f"/api/football_event/match_id/{match.id}/")
+        response = await client_match.get(f"/api/football_event/match_id/{match.id}/")
 
         assert response.status_code == 200
         assert len(response.json()) == 2
 
-    async def test_get_football_events_by_match_id_empty(self, client, test_db):
+    async def test_get_football_events_by_match_id_empty(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -164,12 +164,12 @@ class TestFootballEventViews:
             )
         )
 
-        response = await client.get(f"/api/football_event/match_id/{match.id}/")
+        response = await client_match.get(f"/api/football_event/match_id/{match.id}/")
 
         assert response.status_code == 200
         assert len(response.json()) == 0
 
-    async def test_get_events_with_players_endpoint(self, client, test_db):
+    async def test_get_events_with_players_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -203,14 +203,14 @@ class TestFootballEventViews:
             )
         )
 
-        response = await client.get(f"/api/football_event/matches/{match.id}/events-with-players/")
+        response = await client_match.get(f"/api/football_event/matches/{match.id}/events-with-players/")
 
         assert response.status_code == 200
         data = response.json()
         assert data["match_id"] == match.id
         assert len(data["events"]) == 1
 
-    async def test_get_events_with_players_empty(self, client, test_db):
+    async def test_get_events_with_players_empty(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -233,7 +233,7 @@ class TestFootballEventViews:
             )
         )
 
-        response = await client.get(f"/api/football_event/matches/{match.id}/events-with-players/")
+        response = await client_match.get(f"/api/football_event/matches/{match.id}/events-with-players/")
 
         assert response.status_code == 200
         data = response.json()

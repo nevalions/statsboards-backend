@@ -26,7 +26,7 @@ from tests.factories import (
 
 @pytest.mark.asyncio
 class TestPlayerMatchViews:
-    async def test_create_player_match_endpoint(self, client, test_db):
+    async def test_create_player_match_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -72,12 +72,12 @@ class TestPlayerMatchViews:
             team_id=team.id,
         )
 
-        response = await client.post("/api/players_match/", json=player_match_data.model_dump())
+        response = await client_player.post("/api/players_match/", json=player_match_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_get_player_match_by_eesl_id_endpoint(self, client, test_db):
+    async def test_get_player_match_by_eesl_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -125,17 +125,17 @@ class TestPlayerMatchViews:
         )
         created = await player_match_service.create_or_update_player_match(player_match_data)
 
-        response = await client.get("/api/players_match/eesl_id/100")
+        response = await client_player.get("/api/players_match/eesl_id/100")
 
         assert response.status_code == 200
         assert response.json()["id"] == created.id
 
-    async def test_get_player_match_by_eesl_id_not_found(self, client):
-        response = await client.get("/api/players_match/eesl_id/99999")
+    async def test_get_player_match_by_eesl_id_not_found(self, client_player):
+        response = await client_player.get("/api/players_match/eesl_id/99999")
 
         assert response.status_code == 404
 
-    async def test_update_player_match_endpoint(self, client, test_db):
+    async def test_update_player_match_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -185,13 +185,13 @@ class TestPlayerMatchViews:
 
         update_data = PlayerMatchSchemaUpdate(match_number="99")
 
-        response = await client.put(
+        response = await client_player.put(
             f"/api/players_match/{created.id}/", json=update_data.model_dump()
         )
 
         assert response.status_code == 200
 
-    async def test_get_all_player_matches_endpoint(self, client, test_db):
+    async def test_get_all_player_matches_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -249,12 +249,12 @@ class TestPlayerMatchViews:
             )
         )
 
-        response = await client.get("/api/players_match/")
+        response = await client_player.get("/api/players_match/")
 
         assert response.status_code == 200
         assert len(response.json()) >= 2
 
-    async def test_get_player_match_by_id_endpoint(self, client, test_db):
+    async def test_get_player_match_by_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -302,16 +302,16 @@ class TestPlayerMatchViews:
         )
         created = await player_match_service.create_or_update_player_match(player_match_data)
 
-        response = await client.get(f"/api/players_match/id/{created.id}")
+        response = await client_player.get(f"/api/players_match/id/{created.id}")
 
         assert response.status_code == 200
 
-    async def test_get_player_match_by_id_not_found(self, client):
-        response = await client.get("/api/players_match/id/99999")
+    async def test_get_player_match_by_id_not_found(self, client_player):
+        response = await client_player.get("/api/players_match/id/99999")
 
         assert response.status_code == 404
 
-    async def test_create_parsed_eesl_match_with_timeout_skip(self, client, test_db, monkeypatch):
+    async def test_create_parsed_eesl_match_with_timeout_skip(self, client_player, test_db, monkeypatch):
         """Test that match parsing skips players when collect_player_full_data_eesl times out."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -348,11 +348,11 @@ class TestPlayerMatchViews:
             mock_timeout_return_none,
         )
 
-        response = await client.get("/api/players_match/pars_and_create/match/123")
+        response = await client_player.get("/api/players_match/pars_and_create/match/123")
 
         assert response.status_code == 200
 
-    async def test_get_player_match_by_eesl_id_exception(self, client, test_db):
+    async def test_get_player_match_by_eesl_id_exception(self, client_player, test_db):
         """Test get by eesl_id handles non-HTTPException errors."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -411,11 +411,11 @@ class TestPlayerMatchViews:
             "get_player_match_by_eesl_id",
             mock_get_raises_exception,
         ):
-            response = await client.get("/api/players_match/eesl_id/100")
+            response = await client_player.get("/api/players_match/eesl_id/100")
 
         assert response.status_code == 500
 
-    async def test_get_parsed_eesl_match_endpoint(self, client, test_db, monkeypatch):
+    async def test_get_parsed_eesl_match_endpoint(self, client_player, test_db, monkeypatch):
         """Test get parsed eesl match endpoint."""
         from src.pars_eesl.pars_match import ParsedMatch
 
@@ -440,11 +440,11 @@ class TestPlayerMatchViews:
             mock_parse,
         )
 
-        response = await client.get("/api/players_match/pars/match/123")
+        response = await client_player.get("/api/players_match/pars/match/123")
 
         assert response.status_code == 200
 
-    async def test_create_parsed_eesl_match_endpoint_success(self, client, test_db, monkeypatch):
+    async def test_create_parsed_eesl_match_endpoint_success(self, client_player, test_db, monkeypatch):
         """Test create parsed eesl match endpoint with successful parsing."""
         from src.pars_eesl.pars_match import ParsedMatch, ParsedMatchPlayer
 
@@ -544,12 +544,12 @@ class TestPlayerMatchViews:
             mock_collect_player,
         )
 
-        response = await client.get("/api/players_match/pars_and_create/match/123")
+        response = await client_player.get("/api/players_match/pars_and_create/match/123")
 
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
-    async def test_create_parsed_eesl_match_endpoint_no_match(self, client, test_db, monkeypatch):
+    async def test_create_parsed_eesl_match_endpoint_no_match(self, client_player, test_db, monkeypatch):
         """Test create parsed eesl match endpoint when match not found."""
         from src.pars_eesl.pars_match import ParsedMatch
 
@@ -588,12 +588,12 @@ class TestPlayerMatchViews:
             mock_parse,
         )
 
-        response = await client.get("/api/players_match/pars_and_create/match/999")
+        response = await client_player.get("/api/players_match/pars_and_create/match/999")
 
         assert response.status_code == 200
         assert response.json() == []
 
-    async def test_create_parsed_eesl_match_endpoint_error(self, client, test_db, monkeypatch):
+    async def test_create_parsed_eesl_match_endpoint_error(self, client_player, test_db, monkeypatch):
         """Test create parsed eesl match endpoint error handling."""
 
         async def mock_parse_raises(*args, **kwargs):
@@ -604,11 +604,11 @@ class TestPlayerMatchViews:
             mock_parse_raises,
         )
 
-        response = await client.get("/api/players_match/pars_and_create/match/123")
+        response = await client_player.get("/api/players_match/pars_and_create/match/123")
 
         assert response.status_code == 200
 
-    async def test_get_player_in_sport_endpoint(self, client, test_db):
+    async def test_get_player_in_sport_endpoint(self, client_player, test_db):
         """Test get player in sport endpoint."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -657,11 +657,11 @@ class TestPlayerMatchViews:
         )
         created = await player_match_service.create_or_update_player_match(player_match_data)
 
-        response = await client.get(f"/api/players_match/id/{created.id}/player_in_sport/")
+        response = await client_player.get(f"/api/players_match/id/{created.id}/player_in_sport/")
 
         assert response.status_code == 200
 
-    async def test_get_player_in_team_tournament_endpoint(self, client, test_db):
+    async def test_get_player_in_team_tournament_endpoint(self, client_player, test_db):
         """Test get player in team tournament endpoint."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -710,14 +710,14 @@ class TestPlayerMatchViews:
         )
         created = await player_match_service.create_or_update_player_match(player_match_data)
 
-        response = await client.get(
+        response = await client_player.get(
             f"/api/players_match/id/{created.id}/player_in_team_tournament/"
         )
 
         assert response.status_code == 200
 
-    async def test_delete_player_match_endpoint_unauthorized(self, client, test_db):
+    async def test_delete_player_match_endpoint_unauthorized(self, client_player, test_db):
         """Test delete player match endpoint without authentication."""
-        response = await client.delete("/api/players_match/id/1")
+        response = await client_player.delete("/api/players_match/id/1")
 
         assert response.status_code == 401

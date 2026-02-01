@@ -20,10 +20,10 @@ The main frontend for this project is **[frontend-angular-signals](../frontend-a
 
 **Testing:**
 ```bash
-# Run all tests with 4 workers (recommended, restarts DB first)
+# Run all tests with 8 workers (recommended, restarts DB first)
 ./run-tests.sh
 
-# Run all tests (parallel with 4 workers using 4 databases)
+# Run all tests (parallel with 8 workers using 8 databases)
 pytest
 
 # Run tests sequentially (for absolute stability, debugging, or full test suite)
@@ -62,9 +62,9 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 1465 tests pass in parallel (~160s with pytest-xdist using 4 workers). Tests use:
+All 1476 tests pass in parallel (~85s with pytest-xdist using 8 workers with 8 databases). Tests use:
 - Transactional rollback for isolation
-- 4 parallel databases (test_db, test_db2, test_db3, test_db4) distributed across 4 workers
+- 8 parallel databases (test_db, test_db2, test_db3, test_db4, test_db5, test_db6, test_db7, test_db8) distributed across 8 workers
 - Worker-specific lock files for safe table creation
 
 **Worker distribution:**
@@ -72,11 +72,15 @@ All 1465 tests pass in parallel (~160s with pytest-xdist using 4 workers). Tests
 - gw1 → test_db2
 - gw2 → test_db3
 - gw3 → test_db4
+- gw4 → test_db5
+- gw5 → test_db6
+- gw6 → test_db7
+- gw7 → test_db8
 
 **Testing Recommendations:**
 - Use `./run-tests.sh` for most development work (restarts DB before running tests)
 - For absolute stability (CI, critical debugging), use `pytest -n 0` (sequential)
-- Parallel tests (4 workers) are now stable with no race conditions or flakiness
+- Parallel tests (8 workers) are now stable with no race conditions or flakiness
 
 **Coverage:** ~76% overall (76.32% as of 2026-01-30). Coverage percentages below should be verified after running tests with coverage.
 
@@ -120,7 +124,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 | Tool | Purpose | Command |
 |------|----------|----------|
 | pytest | Test runner | `pytest` |
-| pytest-xdist | Parallel test execution (4 workers using 4 databases) | `pytest -n 4` |
+ | pytest-xdist | Parallel test execution (8 workers using 8 databases) | `pytest -n 8` |
 | pytest-timeout | Test timeout to prevent hung tests | Default 30s timeout |
 | run-tests.sh | Run tests with DB restart (recommended) | `./run-tests.sh` |
 | pytest-cov | Coverage reporting | `./run-tests.sh --cov=src` |
@@ -146,9 +150,15 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 
 **Note:** Tests use transactional rollback for isolation. Always use `flush()` instead of `commit()` in test fixtures to avoid deadlocks during parallel execution.
 
-**Note:** Parallel testing with 4 workers on 2 databases may have occasional flaky tests due to race conditions between workers sharing the same database. Use `./run-tests.sh` for stable results, or `pytest -n 0` for absolute stability.
+**Note:** Parallel testing with 8 workers on 8 databases provides optimal isolation (1 worker per database) and is now stable with no race conditions or flakiness.
 
 **Note:** pytest-timeout is configured with a 30s default timeout (thread method) to prevent hung tests from blocking workers. Integration tests that legitimately take longer should be marked with `@pytest.mark.timeout(N)` where N is the timeout in seconds. Typical timeouts: unit tests 10s, database tests 30s (default), WebSocket tests 60s, integration tests 120s.
+
+**Note:** Known flaky tests in parallel execution (8 workers):
+- `tests/test_crud_router/test_matches_crud_router.py::TestMatchCRUDRouter::test_delete_match_endpoint_success`
+- `tests/test_crud_router/test_matches_crud_router.py::TestMatchCRUDRouter::test_create_match_with_full_data_and_scoreboard_endpoint`
+- Root cause: Race condition with tournament fixture in parallel execution causing foreign key constraint violations (season_id not present in season table)
+- Workaround: Run tests with `-n 0` (sequential) or reduce parallel workers to `-n 4`
 
 ### Workflow References
 

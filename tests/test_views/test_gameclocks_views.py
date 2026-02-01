@@ -21,7 +21,7 @@ from tests.factories import (
 
 @pytest.mark.asyncio
 class TestGameClockViews:
-    async def test_create_gameclock_endpoint(self, client, test_db):
+    async def test_create_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -46,12 +46,12 @@ class TestGameClockViews:
 
         gameclock_data = GameClockSchemaCreate(match_id=match.id, gameclock=600)
 
-        response = await client.post("/api/gameclock/", json=gameclock_data.model_dump())
+        response = await client_match.post("/api/gameclock/", json=gameclock_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_update_gameclock_endpoint(self, client, test_db):
+    async def test_update_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -80,18 +80,18 @@ class TestGameClockViews:
 
         update_data = GameClockSchemaUpdate(gameclock=500)
 
-        response = await client.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
+        response = await client_match.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
 
         assert response.status_code == 200
 
-    async def test_update_gameclock_not_found(self, client):
+    async def test_update_gameclock_not_found(self, client_match):
         update_data = GameClockSchemaUpdate(gameclock=500)
 
-        response = await client.put("/api/gameclock/99999/", json=update_data.model_dump())
+        response = await client_match.put("/api/gameclock/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
-    async def test_update_gameclock_by_id_endpoint(self, client, test_db):
+    async def test_update_gameclock_by_id_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -120,14 +120,14 @@ class TestGameClockViews:
 
         update_data = GameClockSchemaUpdate(gameclock=500)
 
-        response = await client.put(
+        response = await client_match.put(
             f"/api/gameclock/id/{created.id}/", json=update_data.model_dump()
         )
 
         assert response.status_code == 200
         assert response.json()["success"]
 
-    async def test_start_gameclock_endpoint(self, client, test_db):
+    async def test_start_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -156,11 +156,11 @@ class TestGameClockViews:
         )
         created = await gameclock_service.create(gameclock_data)
 
-        response = await client.put(f"/api/gameclock/id/{created.id}/running/")
+        response = await client_match.put(f"/api/gameclock/id/{created.id}/running/")
 
         assert response.status_code == 200
 
-    async def test_pause_gameclock_endpoint(self, client, test_db):
+    async def test_pause_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -189,12 +189,12 @@ class TestGameClockViews:
         )
         created = await gameclock_service.create(gameclock_data)
 
-        response = await client.put(f"/api/gameclock/id/{created.id}/paused/")
+        response = await client_match.put(f"/api/gameclock/id/{created.id}/paused/")
 
         assert response.status_code == 200
         assert response.json()["content"]["gameclock_status"] == "paused"
 
-    async def test_pause_gameclock_updates_db_with_remaining_time(self, client, test_db):
+    async def test_pause_gameclock_updates_db_with_remaining_time(self, client_match, test_db):
         """Test that pausing a running gameclock updates DB with remaining time."""
         import asyncio
 
@@ -224,13 +224,13 @@ class TestGameClockViews:
         gameclock_data = GameClockSchemaCreate(match_id=match.id, gameclock=600)
         created = await gameclock_service.create(gameclock_data)
 
-        start_response = await client.put(f"/api/gameclock/id/{created.id}/running/")
+        start_response = await client_match.put(f"/api/gameclock/id/{created.id}/running/")
         assert start_response.status_code == 200
         assert start_response.json()["content"]["gameclock_status"] == "running"
 
         await asyncio.sleep(2)
 
-        pause_response = await client.put(f"/api/gameclock/id/{created.id}/paused/")
+        pause_response = await client_match.put(f"/api/gameclock/id/{created.id}/paused/")
 
         assert pause_response.status_code == 200
         assert pause_response.json()["content"]["gameclock_status"] == "paused"
@@ -242,7 +242,7 @@ class TestGameClockViews:
         assert gameclock_after_pause.gameclock_status == "paused"
         assert gameclock_after_pause.gameclock == paused_gameclock_value
 
-    async def test_reset_gameclock_endpoint(self, client, test_db):
+    async def test_reset_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -269,11 +269,11 @@ class TestGameClockViews:
         gameclock_data = GameClockSchemaCreate(match_id=match.id, gameclock=300)
         created = await gameclock_service.create(gameclock_data)
 
-        response = await client.put(f"/api/gameclock/id/{created.id}/stopped/720/")
+        response = await client_match.put(f"/api/gameclock/id/{created.id}/stopped/720/")
 
         assert response.status_code == 200
 
-    async def test_gameclock_update_increments_version(self, client, test_db):
+    async def test_gameclock_update_increments_version(self, client_match, test_db):
         """Test that gameclock update increments version in REST response."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -303,12 +303,12 @@ class TestGameClockViews:
         initial_version = created.version
 
         update_data = GameClockSchemaUpdate(gameclock=500)
-        response = await client.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
+        response = await client_match.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["version"] == initial_version + 1
 
-    async def test_gameclock_update_websocket_broadcasts_version(self, client, test_db):
+    async def test_gameclock_update_websocket_broadcasts_version(self, client_match, test_db):
         """Test that gameclock update broadcasts new version via WebSocket."""
         from src.core.config import settings
         from src.utils.websocket.websocket_manager import (
@@ -381,7 +381,7 @@ class TestGameClockViews:
         await ws_manager.shutdown()
         await connection_manager.disconnect(client_id)
 
-    async def test_gameclock_pause_state_reflected_in_ws(self, client, test_db):
+    async def test_gameclock_pause_state_reflected_in_ws(self, client_match, test_db):
         """Test that paused gameclock state is reflected in WebSocket payload."""
         from src.core.config import settings
         from src.utils.websocket.websocket_manager import (
@@ -456,7 +456,7 @@ class TestGameClockViews:
         await ws_manager.shutdown()
         await connection_manager.disconnect(client_id)
 
-    async def test_gameclock_reset_state_reflected_in_ws(self, client, test_db):
+    async def test_gameclock_reset_state_reflected_in_ws(self, client_match, test_db):
         """Test that reset gameclock state is reflected in WebSocket payload."""
         from src.core.config import settings
         from src.utils.websocket.websocket_manager import (
@@ -531,7 +531,7 @@ class TestGameClockViews:
         await ws_manager.shutdown()
         await connection_manager.disconnect(client_id)
 
-    async def test_multiple_rapid_updates_increment_version_correctly(self, client, test_db):
+    async def test_multiple_rapid_updates_increment_version_correctly(self, client_match, test_db):
         """Test that multiple rapid updates increment version correctly."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())

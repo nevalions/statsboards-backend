@@ -25,7 +25,7 @@ from tests.factories import (
 
 @pytest.mark.asyncio
 class TestPlayerTeamTournamentViews:
-    async def test_create_player_team_tournament_endpoint(self, client, test_db):
+    async def test_create_player_team_tournament_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -56,12 +56,12 @@ class TestPlayerTeamTournamentViews:
             player_team_tournament_eesl_id=100,
         )
 
-        response = await client.post("/api/players_team_tournament/", json=ptt_data.model_dump())
+        response = await client_player.post("/api/players_team_tournament/", json=ptt_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
 
-    async def test_get_player_team_tournament_by_eesl_id_endpoint(self, client, test_db):
+    async def test_get_player_team_tournament_by_eesl_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -103,13 +103,13 @@ class TestPlayerTeamTournamentViews:
 
         update_data = PlayerTeamTournamentSchemaUpdate(player_number="99")
 
-        response = await client.put(
+        response = await client_player.put(
             f"/api/players_team_tournament/{created.id}/", json=update_data.model_dump()
         )
 
         assert response.status_code == 200
 
-    async def test_get_all_player_team_tournaments_endpoint(self, client, test_db):
+    async def test_get_all_player_team_tournaments_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -154,12 +154,12 @@ class TestPlayerTeamTournamentViews:
             )
         )
 
-        response = await client.get("/api/players_team_tournament/")
+        response = await client_player.get("/api/players_team_tournament/")
 
         assert response.status_code == 200
         assert len(response.json()) >= 2
 
-    async def test_get_player_team_tournament_by_id_endpoint(self, client, test_db):
+    async def test_get_player_team_tournament_by_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -191,16 +191,16 @@ class TestPlayerTeamTournamentViews:
         )
         created = await ptt_service.create_or_update_player_team_tournament(ptt_data)
 
-        response = await client.get(f"/api/players_team_tournament/id/{created.id}")
+        response = await client_player.get(f"/api/players_team_tournament/id/{created.id}")
 
         assert response.status_code == 200
 
-    async def test_get_player_team_tournament_by_id_not_found(self, client):
-        response = await client.get("/api/players_team_tournament/id/99999")
+    async def test_get_player_team_tournament_by_id_not_found(self, client_player):
+        response = await client_player.get("/api/players_team_tournament/id/99999")
 
         assert response.status_code == 404
 
-    async def test_get_person_by_player_team_tournament_id_endpoint(self, client, test_db):
+    async def test_get_person_by_player_team_tournament_id_endpoint(self, client_player, test_db):
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
 
@@ -237,11 +237,11 @@ class TestPlayerTeamTournamentViews:
         )
         created = await ptt_service.create_or_update_player_team_tournament(ptt_data)
 
-        response = await client.get(f"/api/players_team_tournament/id/{created.id}/person/")
+        response = await client_player.get(f"/api/players_team_tournament/id/{created.id}/person/")
 
         assert response.status_code == 200
 
-    async def test_paginated_players_includes_team_null(self, client, test_db):
+    async def test_paginated_players_includes_team_null(self, client_player, test_db):
         """Test that paginated endpoint returns players with team_id: null."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -288,7 +288,7 @@ class TestPlayerTeamTournamentViews:
             )
         )
 
-        response = await client.get(
+        response = await client_player.get(
             f"/api/players_team_tournament/tournament/{tournament.id}/players/paginated"
         )
 
@@ -301,7 +301,7 @@ class TestPlayerTeamTournamentViews:
         assert team.id in team_ids
         assert None in team_ids
 
-    async def test_paginated_details_with_photos_includes_team_null(self, client, test_db):
+    async def test_paginated_details_with_photos_includes_team_null(self, client_player, test_db):
         """Test that paginated with details and photos endpoint returns players with team_id: null."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -348,7 +348,7 @@ class TestPlayerTeamTournamentViews:
             )
         )
 
-        response = await client.get(
+        response = await client_player.get(
             f"/api/players_team_tournament/tournament/{tournament.id}/players/paginated/details-with-photos"
         )
 
@@ -361,7 +361,7 @@ class TestPlayerTeamTournamentViews:
         assert team.title in team_titles
         assert None in team_titles
 
-    async def test_paginated_full_details_includes_team_null(self, client, test_db):
+    async def test_paginated_full_details_includes_team_null(self, client_player, test_db):
         """Test that paginated with full details endpoint returns players with team_id: null."""
         sport_service = SportServiceDB(test_db)
         sport = await sport_service.create(SportFactorySample.build())
@@ -408,7 +408,7 @@ class TestPlayerTeamTournamentViews:
             )
         )
 
-        response = await client.get(
+        response = await client_player.get(
             f"/api/players_team_tournament/tournament/{tournament.id}/players/paginated/full-details"
         )
 
