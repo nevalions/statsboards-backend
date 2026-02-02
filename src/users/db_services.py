@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from src.auth.security import get_password_hash, verify_password
@@ -369,7 +369,12 @@ class UserServiceDB(BaseServiceDB):
             cutoff_time = datetime.now(UTC) - timedelta(minutes=timeout_minutes)
             stmt = (
                 update(UserDB)
-                .where(UserDB.last_online < cutoff_time)
+                .where(
+                    or_(
+                        UserDB.last_online < cutoff_time,
+                        UserDB.last_online.is_(None),  # Include users who never had a heartbeat
+                    )
+                )
                 .where(UserDB.is_online.is_(True))
                 .values(is_online=False)
             )

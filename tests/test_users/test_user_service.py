@@ -239,3 +239,49 @@ class TestUserServiceDB:
             result = await session.execute(stmt)
             active_user = result.scalar_one()
             assert active_user.is_online is True
+
+    @pytest.mark.asyncio
+    async def test_mark_stale_users_offline_with_null_last_online(self, test_db: Database):
+        """Test marking users with NULL last_online as offline."""
+        from src.auth.security import get_password_hash
+        from src.core.models import UserDB
+
+        service = UserServiceDB(test_db)
+
+        async with test_db.get_session_maker()() as session:
+            # User with is_online=True but last_online=NULL (never had heartbeat)
+            user_null = UserDB(
+                username="null_last_online_user",
+                email="null_last_online@example.com",
+                hashed_password=get_password_hash("password123"),
+                is_online=True,
+                last_online=None,  # Never had a heartbeat
+            )
+            # User already offline with NULL last_online (should not be affected)
+            user_offline = UserDB(
+                username="offline_null_user",
+                email="offline_null@example.com",
+                hashed_password=get_password_hash("password123"),
+                is_online=False,
+                last_online=None,
+            )
+            session.add_all([user_null, user_offline])
+            await session.flush()
+
+        count = await service.mark_stale_users_offline(timeout_minutes=2)
+
+        # Should mark the user with NULL last_online and is_online=True as offline
+        assert count == 1
+
+        async with test_db.get_session_maker()() as session:
+            from sqlalchemy import select
+
+            stmt = select(UserDB).where(UserDB.username == "null_last_online_user")
+            result = await session.execute(stmt)
+            null_user = result.scalar_one()
+            assert null_user.is_online is False
+
+            stmt = select(UserDB).where(UserDB.username == "offline_null_user")
+            result = await session.execute(stmt)
+            offline_user = result.scalar_one()
+            assert offline_user.is_online is False  # Should still be offline
