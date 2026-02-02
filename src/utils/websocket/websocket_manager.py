@@ -203,6 +203,7 @@ class MatchDataWebSocketManager:
 
             if self._cache_service:
                 self._cache_service.invalidate_players(match_id)
+                self._cache_service.invalidate_match_data(match_id)
 
             match_service_db = MatchServiceDB(db)
             players = await match_service_db.get_players_with_full_data_optimized(match_id)
@@ -434,12 +435,13 @@ class ConnectionManager:
             await self.disconnect(client_id)
 
     async def send_to_all(self, data: dict[str, Any] | str, match_id: str | None = None):
-        data_type = data.get("type") if isinstance(data, dict) else "unknown"
+        data_type = data["type"] if isinstance(data, dict) and "type" in data else "unknown"
+        match_key = match_id or ""
         self.logger.debug(
-            f"Sending {data_type} data for match_id: {match_id} to {len(self.match_subscriptions.get(match_id, []))} clients"
+            f"Sending {data_type} data for match_id: {match_id} to {len(self.match_subscriptions.get(match_key, []))} clients"
         )
         if match_id:
-            for client_id in self.match_subscriptions.get(match_id, []):
+            for client_id in self.match_subscriptions.get(match_key, []):
                 if client_id in self.queues:
                     self.logger.debug(
                         f"Client with client_id: {client_id} in queues: {self.queues[client_id]}"

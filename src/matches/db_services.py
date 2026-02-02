@@ -286,6 +286,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
                             else None
                         ),
                         "team": player.team,
+                        "match_number": player.match_number,
                         "position": (
                             {
                                 **player.match_position.__dict__,
@@ -305,7 +306,6 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
                         "starting_type": player.starting_type,
                     }
                 )
-
             return players_with_data
 
     @handle_service_exceptions(
@@ -353,6 +353,7 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
                             else None
                         ),
                         "team": player.team,
+                        "match_number": player.match_number,
                         "position": (
                             {
                                 **player.match_position.__dict__,
@@ -372,7 +373,6 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
                         "starting_type": player.starting_type,
                     }
                 )
-
             return players_with_data
 
     @handle_service_exceptions(
