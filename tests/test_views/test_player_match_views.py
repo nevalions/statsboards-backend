@@ -311,6 +311,7 @@ class TestPlayerMatchViews:
 
         assert response.status_code == 404
 
+    @pytest.mark.slow
     async def test_create_parsed_eesl_match_with_timeout_skip(self, client_player, test_db, monkeypatch):
         """Test that match parsing skips players when collect_player_full_data_eesl times out."""
         sport_service = SportServiceDB(test_db)

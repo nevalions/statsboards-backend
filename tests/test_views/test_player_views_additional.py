@@ -37,6 +37,7 @@ class TestPlayerViewsAdditional:
 
         assert response.status_code == 404
 
+    @pytest.mark.slow
     @pytest.mark.timeout(120)
     async def test_get_parse_player_with_person_endpoint(self, client):
         """Test get parse player with person endpoint."""

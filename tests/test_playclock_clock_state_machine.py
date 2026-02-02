@@ -3,6 +3,10 @@ import time
 from src.playclocks.clock_state_machine import ClockStateMachine
 
 
+import pytest
+
+
+@pytest.mark.slow
 class TestClockStateMachine:
     def test_initial_state(self):
         state_machine = ClockStateMachine(1, 100)

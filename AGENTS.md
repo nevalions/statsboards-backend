@@ -20,13 +20,19 @@ The main frontend for this project is **[frontend-angular-signals](../frontend-a
 
 **Testing:**
 ```bash
-# Run all tests with 8 workers (recommended, restarts DB first)
+# Run fast tests with 8 workers (recommended, restarts DB first)
 ./run-tests.sh
 
-# Run all tests (parallel with 8 workers using 8 databases)
+# Run fast tests (parallel with 8 workers, skips slow/integration tests)
 pytest
 
-# Run tests sequentially (for absolute stability, debugging, or full test suite)
+# Run ALL tests including slow tests
+pytest -m ""
+
+# Run only slow tests
+pytest -m "slow"
+
+# Run tests sequentially (for debugging)
 pytest -n 0
 
 # Run with coverage
@@ -62,7 +68,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-All 1472 tests pass in parallel (~86s with pytest-xdist using 8 workers with 8 databases). Tests use:
+Fast tests: 1373 tests pass in ~16s (8 workers). Full suite: ~1477 tests in ~90s. Tests use:
 - Transactional rollback for isolation
 - 8 parallel databases (test_db, test_db2, test_db3, test_db4, test_db5, test_db6, test_db7, test_db8) distributed across 8 workers
 - Worker-specific lock files for safe table creation
@@ -136,7 +142,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 
 - `@pytest.mark.integration` - Tests that hit external websites or write to production folders
 - `@pytest.mark.e2e` - End-to-end integration tests
-- `@pytest.mark.slow` - Slow-running tests
+- `@pytest.mark.slow` - Slow-running tests (skipped by default, run with `-m slow` or `-m ""` to include)
 - `@pytest.mark.property` - Property-based tests
 - `@pytest.mark.timeout(N)` - Override default timeout for specific tests (in seconds)
 

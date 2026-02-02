@@ -135,6 +135,7 @@ class TestPlayerTeamTournamentViewsAdditional:
 
         assert response.status_code == 401
 
+    @pytest.mark.slow
     async def test_get_parse_player_to_team_tournament_endpoint(self, client, test_db):
         """Test parse player to team tournament endpoint."""
         sport_service = SportServiceDB(test_db)

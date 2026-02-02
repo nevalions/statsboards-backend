@@ -15,6 +15,7 @@ async def is_website_reachable(url: str, timeout: int = 5) -> bool:
 
 
 @pytest.mark.integration
+@pytest.mark.slow
 class TestParsAllPlayersIntegration:
     """Integration tests for parsing players from real EESL website."""
 
@@ -77,6 +78,7 @@ class TestParsAllPlayersIntegration:
 
 
 @pytest.mark.integration
+@pytest.mark.slow
 class TestParsTournamentIntegration:
     """Integration tests for parsing tournaments from real EESL website."""
 
@@ -100,6 +102,7 @@ class TestParsTournamentIntegration:
 
 
 @pytest.mark.integration
+@pytest.mark.slow
 class TestParsSeasonIntegration:
     """Integration tests for parsing seasons from real EESL website."""
 

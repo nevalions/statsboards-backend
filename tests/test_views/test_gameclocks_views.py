@@ -20,6 +20,7 @@ from tests.factories import (
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 class TestGameClockViews:
     async def test_create_gameclock_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)

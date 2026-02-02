@@ -13,6 +13,7 @@ import pytest
 from src.helpers.rate_limiter import TokenBucket
 
 
+@pytest.mark.slow
 class TestTokenBucket:
     """Tests for TokenBucket rate limiter."""
 

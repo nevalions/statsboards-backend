@@ -3,6 +3,10 @@ import asyncio
 from src.gameclocks.clock_state_machine import ClockStateMachine
 
 
+import pytest
+
+
+@pytest.mark.slow
 class TestClockStateMachine:
     """Test gameclock state machine behavior - pause/resume/stop operations."""
 
