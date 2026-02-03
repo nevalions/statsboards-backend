@@ -76,14 +76,22 @@ class GameClockServiceDB(BaseServiceDB):
 
     async def _stop_gameclock_internal(self, gameclock_id: int) -> None:
         """Handle gameclock stop when it reaches 0"""
-        self.logger.debug(f"Stopping gameclock {gameclock_id} (reached 0)")
+        self.logger.info("Stopping gameclock %s (reached 0)", gameclock_id)
         state_machine = self.clock_manager.get_clock_state_machine(gameclock_id)
         if state_machine:
+            self.logger.debug(
+                "Gameclock %s state before stop: status=%s value=%s started_at_ms=%s",
+                gameclock_id,
+                state_machine.status,
+                state_machine.value,
+                state_machine.started_at_ms,
+            )
             state_machine.stop()
         await self.update(
             gameclock_id,
             GameClockSchemaUpdate(
                 gameclock=0,
+                gameclock_time_remaining=0,
                 gameclock_status="stopped",
                 started_at_ms=None,
             ),
