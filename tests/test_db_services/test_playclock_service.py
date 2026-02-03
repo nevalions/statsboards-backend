@@ -246,3 +246,91 @@ class TestPlayClockServiceDB:
         result = await playclock_service.decrement_playclock_one_second(created.id)
 
         assert result == 9
+
+    async def test_delete_playclock_cleans_up_resources(self, test_db):
+        """Test that deleting a playclock cleans up clock resources."""
+        from src.clocks import clock_orchestrator
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        playclock_service = PlayClockServiceDB(test_db)
+        playclock_data = PlayClockSchemaCreate(
+            match_id=match.id, playclock=40, playclock_status="stopped"
+        )
+
+        created = await playclock_service.create(playclock_data)
+
+        await playclock_service.enable_match_data_clock_queues(created.id)
+
+        assert created.id in playclock_service.clock_manager.active_playclock_matches
+        assert created.id in playclock_service.clock_manager.clock_state_machines
+
+        await playclock_service.delete(created.id)
+
+        assert created.id not in playclock_service.clock_manager.active_playclock_matches
+        assert created.id not in playclock_service.clock_manager.clock_state_machines
+        assert created.id not in clock_orchestrator.running_playclocks
+
+    async def test_stop_playclock_internal_unregisters_from_orchestrator(self, test_db):
+        """Test that _stop_playclock_internal properly unregisters from orchestrator (STAB-191)."""
+        from src.clocks import clock_orchestrator
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        playclock_service = PlayClockServiceDB(test_db)
+        playclock_data = PlayClockSchemaCreate(
+            match_id=match.id, playclock=40, playclock_status="running"
+        )
+
+        created = await playclock_service.create(playclock_data)
+
+        await playclock_service.enable_match_data_clock_queues(created.id)
+
+        assert created.id in playclock_service.clock_manager.active_playclock_matches
+        assert created.id in playclock_service.clock_manager.clock_state_machines
+        assert created.id in clock_orchestrator.running_playclocks
+
+        await playclock_service._stop_playclock_internal(created.id)
+
+        assert created.id not in clock_orchestrator.running_playclocks
+        assert created.id not in playclock_service.clock_manager.clock_state_machines

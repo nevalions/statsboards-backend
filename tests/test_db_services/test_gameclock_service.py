@@ -272,3 +272,94 @@ class TestGameClockServiceDB:
 
         assert paused.started_at_ms is None
         assert paused.gameclock_status == "paused"
+
+    async def test_delete_gameclock_cleans_up_resources(self, test_db):
+        """Test that deleting a gameclock cleans up clock resources."""
+        from src.clocks import clock_orchestrator
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        gameclock_service = GameClockServiceDB(test_db)
+        gameclock_data = GameClockSchemaCreate(
+            match_id=match.id,
+            gameclock=720,
+            gameclock_max=720,
+            gameclock_status="stopped",
+        )
+
+        created = await gameclock_service.create(gameclock_data)
+
+        await gameclock_service.enable_match_data_gameclock_queues(created.id)
+
+        assert created.id in gameclock_service.clock_manager.active_gameclock_matches
+        assert created.id in gameclock_service.clock_manager.clock_state_machines
+
+        await gameclock_service.delete(created.id)
+
+        assert created.id not in gameclock_service.clock_manager.active_gameclock_matches
+        assert created.id not in gameclock_service.clock_manager.clock_state_machines
+        assert created.id not in clock_orchestrator.running_gameclocks
+
+    async def test_stop_gameclock_internal_unregisters_from_orchestrator(self, test_db):
+        """Test that _stop_gameclock_internal properly unregisters from orchestrator (STAB-191)."""
+        from src.clocks import clock_orchestrator
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        gameclock_service = GameClockServiceDB(test_db)
+        gameclock_data = GameClockSchemaCreate(
+            match_id=match.id, gameclock=720, gameclock_status="running"
+        )
+
+        created = await gameclock_service.create(gameclock_data)
+
+        await gameclock_service.enable_match_data_gameclock_queues(created.id)
+
+        assert created.id in gameclock_service.clock_manager.active_gameclock_matches
+        assert created.id in gameclock_service.clock_manager.clock_state_machines
+        assert created.id in clock_orchestrator.running_gameclocks
+
+        await gameclock_service._stop_gameclock_internal(created.id)
+
+        assert created.id not in clock_orchestrator.running_gameclocks
+        assert created.id not in gameclock_service.clock_manager.clock_state_machines

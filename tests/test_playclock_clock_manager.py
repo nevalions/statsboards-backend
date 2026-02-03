@@ -203,3 +203,51 @@ class TestPlayClockManager:
         assert match_id not in manager.clock_state_machines
         assert state_machine_ref() is None
         assert queue_ref() is None
+
+    async def test_end_clock_drains_queue_with_pending_messages(self):
+        from src.core.models import PlayClockDB
+
+        manager = ClockManager()
+        match_id = 1
+
+        await manager.start_clock(match_id, 100)
+
+        queue = manager.active_playclock_matches[match_id]
+
+        for i in range(5):
+            mock_playclock = PlayClockDB(
+                id=i, playclock=100 - i * 5, playclock_status="running", match_id=match_id
+            )
+            await manager.update_queue_clock(match_id, mock_playclock)
+
+        assert queue.qsize() == 5
+
+        await manager.end_clock(match_id)
+
+        assert match_id not in manager.active_playclock_matches
+        assert match_id not in manager.clock_state_machines
+
+    async def test_end_clock_memory_leak_prevention(self):
+        from src.core.models import PlayClockDB
+
+        manager = ClockManager()
+        match_id = 1
+
+        await manager.start_clock(match_id, 100)
+
+        queue = manager.active_playclock_matches[match_id]
+
+        for i in range(10):
+            mock_playclock = PlayClockDB(
+                id=i, playclock=100 - i, playclock_status="running", match_id=match_id
+            )
+            await manager.update_queue_clock(match_id, mock_playclock)
+
+        queue_ref = weakref.ref(queue)
+
+        await manager.end_clock(match_id)
+        del queue
+        gc.collect()
+
+        assert match_id not in manager.active_playclock_matches
+        assert queue_ref() is None

@@ -18,13 +18,17 @@ class ClockManager:
         if match_id not in self.active_playclock_matches:
             self.active_playclock_matches[match_id] = asyncio.Queue()
         if match_id not in self.clock_state_machines:
-            self.clock_state_machines[match_id] = ClockStateMachine(
-                match_id, initial_value
-            )
+            self.clock_state_machines[match_id] = ClockStateMachine(match_id, initial_value)
 
     async def end_clock(self, match_id: int) -> None:
         if match_id in self.active_playclock_matches:
             self.logger.debug("Stop clock in clock manager")
+            queue = self.active_playclock_matches[match_id]
+            while not queue.empty():
+                try:
+                    queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
             del self.active_playclock_matches[match_id]
         if match_id in self.clock_state_machines:
             del self.clock_state_machines[match_id]

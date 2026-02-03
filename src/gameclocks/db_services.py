@@ -31,6 +31,12 @@ class ClockManager:
     async def end_clock(self, gameclock_id: int) -> None:
         self.logger.debug("Stop clock in clock manager")
         if gameclock_id in self.active_gameclock_matches:
+            queue = self.active_gameclock_matches[gameclock_id]
+            while not queue.empty():
+                try:
+                    queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
             del self.active_gameclock_matches[gameclock_id]
         if gameclock_id in self.clock_state_machines:
             del self.clock_state_machines[gameclock_id]
@@ -82,6 +88,7 @@ class GameClockServiceDB(BaseServiceDB):
                 started_at_ms=None,
             ),
         )
+        clock_orchestrator.unregister_gameclock(gameclock_id)
         await self.clock_manager.end_clock(gameclock_id)
 
     async def stop_gameclock(self, gameclock_id: int) -> None:
@@ -203,6 +210,12 @@ class GameClockServiceDB(BaseServiceDB):
                     self.logger.debug(f"Gameclock found: {gameclock}")
                     return gameclock
         return None
+
+    async def delete(self, item_id: int) -> dict:
+        """Delete gameclock and clean up clock resources."""
+        self.logger.debug(f"Deleting gameclock with ID: {item_id}")
+        await self.stop_gameclock(item_id)
+        return await super().delete(item_id)
 
     async def trigger_update_gameclock(
         self,

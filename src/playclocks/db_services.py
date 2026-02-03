@@ -53,6 +53,7 @@ class PlayClockServiceDB(BaseServiceDB):
                 playclock=None,
             ),
         )
+        clock_orchestrator.unregister_playclock(playclock_id)
         await self.clock_manager.end_clock(playclock_id)
 
     async def stop_playclock(self, playclock_id: int) -> None:
@@ -246,6 +247,12 @@ class PlayClockServiceDB(BaseServiceDB):
                 status_code=404,
                 detail=f"Playclock id:{item_id} not found",
             )
+
+    async def delete(self, item_id: int) -> dict:
+        """Delete playclock and clean up clock resources."""
+        self.logger.debug(f"Deleting playclock with ID: {item_id}")
+        await self.stop_playclock(item_id)
+        return await super().delete(item_id)
 
     async def trigger_update_playclock(
         self,

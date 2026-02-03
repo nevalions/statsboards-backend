@@ -205,3 +205,51 @@ class TestGameClockManager:
         assert gameclock_id not in manager.clock_state_machines
         assert state_machine_ref() is None
         assert queue_ref() is None
+
+    async def test_end_clock_drains_queue_with_pending_messages(self):
+        from src.core.models import GameClockDB
+
+        manager = ClockManager()
+        gameclock_id = 1
+
+        await manager.start_clock(gameclock_id, 720)
+
+        queue = manager.active_gameclock_matches[gameclock_id]
+
+        for i in range(5):
+            mock_gameclock = GameClockDB(
+                id=i, gameclock=720 - i * 10, gameclock_status="running", match_id=gameclock_id
+            )
+            await manager.update_queue_clock(gameclock_id, mock_gameclock)
+
+        assert queue.qsize() == 5
+
+        await manager.end_clock(gameclock_id)
+
+        assert gameclock_id not in manager.active_gameclock_matches
+        assert gameclock_id not in manager.clock_state_machines
+
+    async def test_end_clock_memory_leak_prevention(self):
+        from src.core.models import GameClockDB
+
+        manager = ClockManager()
+        gameclock_id = 1
+
+        await manager.start_clock(gameclock_id, 720)
+
+        queue = manager.active_gameclock_matches[gameclock_id]
+
+        for i in range(10):
+            mock_gameclock = GameClockDB(
+                id=i, gameclock=720 - i, gameclock_status="running", match_id=gameclock_id
+            )
+            await manager.update_queue_clock(gameclock_id, mock_gameclock)
+
+        queue_ref = weakref.ref(queue)
+
+        await manager.end_clock(gameclock_id)
+        del queue
+        gc.collect()
+
+        assert gameclock_id not in manager.active_gameclock_matches
+        assert queue_ref() is None

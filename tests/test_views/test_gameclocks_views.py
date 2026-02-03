@@ -81,7 +81,9 @@ class TestGameClockViews:
 
         update_data = GameClockSchemaUpdate(gameclock=500)
 
-        response = await client_match.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
+        response = await client_match.put(
+            f"/api/gameclock/{created.id}/", json=update_data.model_dump()
+        )
 
         assert response.status_code == 200
 
@@ -304,7 +306,9 @@ class TestGameClockViews:
         initial_version = created.version
 
         update_data = GameClockSchemaUpdate(gameclock=500)
-        response = await client_match.put(f"/api/gameclock/{created.id}/", json=update_data.model_dump())
+        response = await client_match.put(
+            f"/api/gameclock/{created.id}/", json=update_data.model_dump()
+        )
 
         assert response.status_code == 200
         assert response.json()["version"] == initial_version + 1
