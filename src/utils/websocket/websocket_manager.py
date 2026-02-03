@@ -426,15 +426,7 @@ class ConnectionManager:
                         self.logger.debug(f"WebSocket already closed for client {client_id}: {e}")
                     else:
                         raise
-            del self.active_connections[client_id]
-            del self.queues[client_id]
-
-            if client_id in self.last_activity:
-                del self.last_activity[client_id]
-
-            for match_id in self.match_subscriptions:
-                if client_id in self.match_subscriptions[match_id]:
-                    self.match_subscriptions[match_id].remove(client_id)
+            await self.cleanup_connection_resources(client_id)
 
     async def get_active_connections(self):
         return self.active_connections
