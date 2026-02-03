@@ -44,13 +44,15 @@ class MatchDataWebSocketManager:
                     except (asyncpg.PostgresConnectionError, OSError):
                         pass
 
-                self.connection = await asyncpg.connect(self.db_url)
+                self.connection = await asyncio.wait_for(
+                    asyncpg.connect(self.db_url, command_timeout=30), timeout=30.0
+                )
                 self.logger.info("Successfully connected to database")
 
                 await self.setup_listeners()
                 self.is_connected = True
 
-            except (asyncpg.PostgresConnectionError, OSError) as e:
+            except (asyncpg.PostgresConnectionError, OSError, asyncio.TimeoutError) as e:
                 self.logger.error(f"Database connection error: {str(e)}", exc_info=True)
                 self.is_connected = False
                 raise
@@ -69,6 +71,7 @@ class MatchDataWebSocketManager:
             "player_match_change": self.players_update_listener,
         }
 
+        failed_channels = []
         for channel, listener in listeners.items():
             try:
                 await self.connection.add_listener(channel, listener)
@@ -77,17 +80,36 @@ class MatchDataWebSocketManager:
                 self.logger.error(
                     f"Error setting up listener for {channel}: {str(e)}", exc_info=True
                 )
-                raise
+                failed_channels.append(channel)
+
+        if failed_channels:
+            self.logger.warning(f"Failed to set up listeners for channels: {failed_channels}")
+            if len(failed_channels) == len(listeners):
+                raise RuntimeError(f"All listeners failed to setup: {failed_channels}")
 
     def set_cache_service(self, cache_service):
         self._cache_service = cache_service
         self.logger.info("Cache service set for WebSocket manager")
 
     async def startup(self):
+        async with self._connection_lock:
+            if (
+                self.is_connected
+                and self._connection_retry_task
+                and not self._connection_retry_task.done()
+            ):
+                self.logger.debug("WebSocket manager already started, skipping duplicate startup")
+                return
+
         try:
             await self.connect_to_db()
-            self._connection_retry_task = asyncio.create_task(self.maintain_connection())
-            self.logger.info("WebSocket manager startup complete")
+            if not self._connection_retry_task or self._connection_retry_task.done():
+                self._connection_retry_task = asyncio.create_task(self.maintain_connection())
+                self.logger.info("WebSocket manager startup complete")
+            else:
+                self.logger.debug(
+                    "Connection retry task already exists, skipping duplicate task creation"
+                )
         except Exception as e:
             self.logger.error(f"Startup error: {str(e)}", exc_info=True)
             raise

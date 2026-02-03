@@ -78,6 +78,13 @@ class PaginatedTournamentWithDetailsResponse(BaseModel):
 
 class MoveTournamentToSportRequest(BaseModel):
     target_sport_id: int = Field(..., examples=[2])
+    move_conflicting_tournaments: bool = Field(
+        False,
+        description="Move all tournaments that share teams/players with target tournament",
+    )
+    preview: bool = Field(
+        False, description="If true, only returns what would be moved without making changes"
+    )
 
 
 class MoveTournamentConflictEntry(BaseModel):
@@ -110,3 +117,8 @@ class MoveTournamentToSportResponse(BaseModel):
     updated_counts: MoveTournamentUpdatedCounts
     conflicts: MoveTournamentConflicts
     missing_positions: list[MoveTournamentMissingPosition] = Field(default_factory=list)
+    moved_tournaments: list[int] = Field(
+        default_factory=list,
+        description="List of tournament IDs that would be or were moved (including conflicting tournaments)",
+    )
+    preview: bool = Field(False, description="True if this is a preview only")

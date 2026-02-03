@@ -390,7 +390,13 @@ class MatchWebSocketHandler:
 
         await websocket.accept()
         await connection_manager.connect(websocket, client_id, match_id)
-        await ws_manager.startup()
+        if not ws_manager.is_connected:
+            try:
+                await ws_manager.startup()
+            except Exception as e:
+                websocket_logger.warning(
+                    f"WebSocket manager startup failed, continuing without real-time notifications: {e}"
+                )
         await self.enable_match_clock_queues(match_id)
 
         async def ping_task():

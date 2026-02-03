@@ -1,15 +1,15 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Query
+from fastapi import HTTPException, Query
 
 from src.core import BaseRouter
-from src.core.dependencies import PersonService, PlayerService
-from src.core.models import handle_view_exceptions
+from src.core.dependencies import PersonService
 from src.pars_eesl.pars_all_players_from_eesl import (
     parse_all_players_from_eesl_index_page_eesl,
 )
 
 from ..logging_config import get_logger
+from ..person.schemas import PersonSchemaCreate
 from .db_services import PlayerServiceDB
 from .schemas import (
     PaginatedPlayerWithDetailsAndPhotosResponse,
@@ -364,4 +364,4 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         return router
 
 
-api_player_router = PlayerAPIRouter().route()
+api_player_router = PlayerAPIRouter(service_name="player").route()

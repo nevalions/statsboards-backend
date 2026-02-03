@@ -205,7 +205,7 @@ class TestWebSocketManager:
 
             await manager.connect_to_db()
 
-            mock_connect.assert_called_once_with(db_url)
+            mock_connect.assert_called_once_with(db_url, command_timeout=30)
             assert manager.connection == mock_connection
             assert manager.is_connected is True
 

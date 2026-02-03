@@ -108,11 +108,13 @@ class TournamentAPIRouter(
             _: Annotated[TournamentDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(
-                f"Move tournament id:{tournament_id} to sport id:{request.target_sport_id}"
+                f"Move tournament id:{tournament_id} to sport id:{request.target_sport_id}, move_conflicting:{request.move_conflicting_tournaments}, preview:{request.preview}"
             )
             return await self.loaded_service.move_tournament_to_sport(
                 tournament_id=tournament_id,
                 target_sport_id=request.target_sport_id,
+                move_conflicting_tournaments=request.move_conflicting_tournaments,
+                preview=request.preview,
             )
 
         @router.get(

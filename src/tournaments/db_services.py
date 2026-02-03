@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import not_, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql import func
 
@@ -521,11 +522,47 @@ class TournamentServiceDB(BaseServiceDB):
     def _normalize_position_title(title: str) -> str:
         return title.strip().lower()
 
+    async def _move_single_tournament_to_sport(
+        self,
+        session: AsyncSession,
+        tournament_id: int,
+        target_sport_id: int,
+        team_ids: list[int],
+        player_ids: list[int],
+    ) -> tuple[int, int]:
+        """Move a single tournament to a new sport. Returns (teams_updated, players_updated)."""
+        tournament = await session.get(TournamentDB, tournament_id)
+        if tournament is None:
+            return 0, 0
+
+        if tournament.sport_id == target_sport_id:
+            return 0, 0
+
+        tournament.sport_id = target_sport_id
+
+        teams_updated = 0
+        if team_ids:
+            team_update_result = await session.execute(
+                update(TeamDB).where(TeamDB.id.in_(team_ids)).values(sport_id=target_sport_id)
+            )
+            teams_updated = team_update_result.rowcount
+
+        players_updated = 0
+        if player_ids:
+            player_update_result = await session.execute(
+                update(PlayerDB).where(PlayerDB.id.in_(player_ids)).values(sport_id=target_sport_id)
+            )
+            players_updated = player_update_result.rowcount
+
+        return teams_updated, players_updated
+
     @handle_service_exceptions(item_name=ITEM, operation="moving tournament to another sport")
     async def move_tournament_to_sport(
         self,
         tournament_id: int,
         target_sport_id: int,
+        move_conflicting_tournaments: bool = False,
+        preview: bool = False,
     ) -> MoveTournamentToSportResponse:
         self.logger.debug(f"Move tournament {tournament_id} to sport {target_sport_id}")
         async with self.db.get_session_maker()() as session:
@@ -565,6 +602,9 @@ class TournamentServiceDB(BaseServiceDB):
                 team_ids = sorted(
                     {team_id for (team_id,) in team_ids_result if team_id is not None}
                 )
+                self.logger.debug(
+                    f"Found {len(team_ids)} teams in tournament {tournament_id}: {team_ids}"
+                )
 
                 player_ids_result = await session.execute(
                     select(PlayerTeamTournamentDB.player_id).where(
@@ -574,6 +614,9 @@ class TournamentServiceDB(BaseServiceDB):
                 )
                 player_ids = sorted(
                     {player_id for (player_id,) in player_ids_result if player_id is not None}
+                )
+                self.logger.debug(
+                    f"Found {len(player_ids)} players in tournament {tournament_id}: {player_ids}"
                 )
 
                 team_conflicts: dict[int, set[int]] = {}
@@ -602,53 +645,178 @@ class TournamentServiceDB(BaseServiceDB):
                         player_conflicts.setdefault(player_id, set()).add(other_tournament_id)
 
                 if team_conflicts or player_conflicts:
+                    conflicting_tournament_ids: set[int] = set()
+                    for tournament_ids in team_conflicts.values():
+                        conflicting_tournament_ids.update(tournament_ids)
+                    for tournament_ids in player_conflicts.values():
+                        conflicting_tournament_ids.update(tournament_ids)
+
+                    if preview:
+                        self.logger.info(
+                            f"Preview mode: would move tournaments {sorted(conflicting_tournament_ids) + [tournament_id]} -> sport {target_sport_id}"
+                        )
+                        return MoveTournamentToSportResponse(
+                            moved=False,
+                            preview=True,
+                            updated_counts=MoveTournamentUpdatedCounts(
+                                tournament=len(conflicting_tournament_ids) + 1,
+                                teams=len(team_ids),
+                                players=len(player_ids),
+                                player_team_tournaments=0,
+                                player_matches=0,
+                            ),
+                            conflicts=MoveTournamentConflicts(
+                                teams=[
+                                    MoveTournamentConflictEntry(
+                                        entity_id=team_id,
+                                        tournament_ids=sorted(tournament_ids),
+                                    )
+                                    for team_id, tournament_ids in sorted(team_conflicts.items())
+                                ],
+                                players=[
+                                    MoveTournamentConflictEntry(
+                                        entity_id=player_id,
+                                        tournament_ids=sorted(tournament_ids),
+                                    )
+                                    for player_id, tournament_ids in sorted(
+                                        player_conflicts.items()
+                                    )
+                                ],
+                            ),
+                            missing_positions=[],
+                            moved_tournaments=sorted(conflicting_tournament_ids) + [tournament_id],
+                        )
+
+                    if move_conflicting_tournaments:
+                        self.logger.info(
+                            f"Moving conflicting tournaments: {sorted(conflicting_tournament_ids)}"
+                        )
+
+                        for conflicting_tid in sorted(conflicting_tournament_ids):
+                            await self._move_single_tournament_to_sport(
+                                session, conflicting_tid, target_sport_id, team_ids, player_ids
+                            )
+
+                        await self._move_single_tournament_to_sport(
+                            session, tournament_id, target_sport_id, team_ids, player_ids
+                        )
+
+                        self.logger.info(
+                            f"All tournaments moved: {sorted(conflicting_tournament_ids) + [tournament_id]} -> sport {target_sport_id}"
+                        )
+
+                        return MoveTournamentToSportResponse(
+                            moved=True,
+                            preview=False,
+                            updated_counts=MoveTournamentUpdatedCounts(
+                                tournament=len(conflicting_tournament_ids) + 1,
+                                teams=len(team_ids),
+                                players=len(player_ids),
+                                player_team_tournaments=0,
+                                player_matches=0,
+                            ),
+                            conflicts=MoveTournamentConflicts(),
+                            missing_positions=[],
+                            moved_tournaments=sorted(conflicting_tournament_ids) + [tournament_id],
+                        )
+                    else:
+                        conflict_details = []
+                        if team_conflicts:
+                            for team_id, tournament_ids in sorted(team_conflicts.items()):
+                                conflict_details.append(
+                                    f"Team {team_id} is in tournaments {sorted(tournament_ids)}"
+                                )
+                        if player_conflicts:
+                            for player_id, tournament_ids in sorted(player_conflicts.items()):
+                                conflict_details.append(
+                                    f"Player {player_id} is in tournaments {sorted(tournament_ids)}"
+                                )
+
+                        raise HTTPException(
+                            status_code=409,
+                            detail={
+                                "message": "Cannot move tournament: some teams or players are in multiple tournaments. Set move_conflicting_tournaments=true to move all affected tournaments.",
+                                "conflicts": {
+                                    "teams": [
+                                        MoveTournamentConflictEntry(
+                                            entity_id=team_id,
+                                            tournament_ids=sorted(tournament_ids),
+                                        )
+                                        for team_id, tournament_ids in sorted(
+                                            team_conflicts.items()
+                                        )
+                                    ],
+                                    "players": [
+                                        MoveTournamentConflictEntry(
+                                            entity_id=player_id,
+                                            tournament_ids=sorted(tournament_ids),
+                                        )
+                                        for player_id, tournament_ids in sorted(
+                                            player_conflicts.items()
+                                        )
+                                    ],
+                                },
+                            },
+                        )
+
+                if preview:
+                    self.logger.info(
+                        f"Preview mode: would move tournament {tournament_id} -> sport {target_sport_id}"
+                    )
                     return MoveTournamentToSportResponse(
                         moved=False,
+                        preview=True,
                         updated_counts=MoveTournamentUpdatedCounts(
-                            tournament=0,
-                            teams=0,
-                            players=0,
+                            tournament=1,
+                            teams=len(team_ids),
+                            players=len(player_ids),
                             player_team_tournaments=0,
                             player_matches=0,
                         ),
-                        conflicts=MoveTournamentConflicts(
-                            teams=[
-                                MoveTournamentConflictEntry(
-                                    entity_id=team_id,
-                                    tournament_ids=sorted(tournament_ids),
-                                )
-                                for team_id, tournament_ids in sorted(team_conflicts.items())
-                            ],
-                            players=[
-                                MoveTournamentConflictEntry(
-                                    entity_id=player_id,
-                                    tournament_ids=sorted(tournament_ids),
-                                )
-                                for player_id, tournament_ids in sorted(player_conflicts.items())
-                            ],
-                        ),
+                        conflicts=MoveTournamentConflicts(),
                         missing_positions=[],
+                        moved_tournaments=[tournament_id],
                     )
 
                 tournament.sport_id = target_sport_id
 
                 teams_updated = 0
                 if team_ids:
-                    await session.execute(
+                    self.logger.debug(f"Updating {len(team_ids)} teams to sport {target_sport_id}")
+                    team_update_result = await session.execute(
                         update(TeamDB)
                         .where(TeamDB.id.in_(team_ids))
                         .values(sport_id=target_sport_id)
                     )
-                    teams_updated = len(team_ids)
+                    teams_updated = team_update_result.rowcount
+                    self.logger.debug(
+                        f"Team update affected {teams_updated} rows (expected {len(team_ids)})"
+                    )
+                    if teams_updated != len(team_ids):
+                        self.logger.warning(
+                            f"Team update rowcount mismatch: {teams_updated} updated vs {len(team_ids)} expected"
+                        )
+                else:
+                    self.logger.warning(f"No teams found in tournament {tournament_id} to update")
 
                 players_updated = 0
                 if player_ids:
-                    await session.execute(
+                    self.logger.debug(
+                        f"Updating {len(player_ids)} players to sport {target_sport_id}"
+                    )
+                    player_update_result = await session.execute(
                         update(PlayerDB)
                         .where(PlayerDB.id.in_(player_ids))
                         .values(sport_id=target_sport_id)
                     )
-                    players_updated = len(player_ids)
+                    players_updated = player_update_result.rowcount
+                    self.logger.debug(
+                        f"Player update affected {players_updated} rows (expected {len(player_ids)})"
+                    )
+                    if players_updated != len(player_ids):
+                        self.logger.warning(
+                            f"Player update rowcount mismatch: {players_updated} updated vs {len(player_ids)} expected"
+                        )
 
                 target_positions_result = await session.execute(
                     select(PositionDB.id, PositionDB.title).where(
@@ -728,8 +896,15 @@ class TournamentServiceDB(BaseServiceDB):
                         )
                         player_matches_updated += 1
 
+                self.logger.info(
+                    f"Tournament move completed: tournament={tournament_id} -> sport={target_sport_id}, "
+                    f"updated teams={teams_updated}, players={players_updated}, "
+                    f"player_team_tournaments={player_team_tournaments_updated}, "
+                    f"player_matches={player_matches_updated}"
+                )
                 return MoveTournamentToSportResponse(
                     moved=True,
+                    preview=False,
                     updated_counts=MoveTournamentUpdatedCounts(
                         tournament=1,
                         teams=teams_updated,
@@ -739,6 +914,7 @@ class TournamentServiceDB(BaseServiceDB):
                     ),
                     conflicts=MoveTournamentConflicts(),
                     missing_positions=missing_positions,
+                    moved_tournaments=[tournament_id],
                 )
 
     @handle_service_exceptions(

@@ -31,11 +31,14 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if self._lazy_service is not None:
             return self._lazy_service
         if self._service_name is not None:
-            from .service_registry import get_service_registry
+            try:
+                from .service_registry import get_service_registry
 
-            registry = get_service_registry()
-            self._lazy_service = registry.get(self._service_name)
-            return self._lazy_service
+                registry = get_service_registry()
+                self._lazy_service = registry.get(self._service_name)
+                return self._lazy_service
+            except RuntimeError:
+                pass
         return None
 
     @staticmethod

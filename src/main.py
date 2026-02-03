@@ -101,7 +101,7 @@ async def lifespan(_app: FastAPI):
         await db.validate_database_connection()
 
         await ws_manager.startup()
-        ws_task = asyncio.create_task(ws_manager.maintain_connection())
+        ws_task = ws_manager._connection_retry_task
         logger.info("WebSocket manager started")
 
         stale_users_task = asyncio.create_task(mark_stale_users_offline_task())
