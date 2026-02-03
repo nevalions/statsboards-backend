@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import Depends, HTTPException
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter, db
-from src.core.models import SponsorLineDB
+from src.core import BaseRouter
+from src.core.dependencies import SponsorLineService
+from src.core.models import SponsorLineDB, handle_view_exceptions
 
 from ..logging_config import get_logger
-from .db_services import SponsorLineServiceDB
 from .schemas import SponsorLineSchema, SponsorLineSchemaCreate, SponsorLineSchemaUpdate
 
 
@@ -18,13 +18,11 @@ class SponsorLineAPIRouter(
         SponsorLineSchemaUpdate,
     ]
 ):
-    def __init__(
-        self, service: SponsorLineServiceDB | None = None, service_name: str | None = None
-    ):
+    def __init__(self, service_name: str | None = None):
         super().__init__(
             "/api/sponsor_lines",
             ["sponsor_lines"],
-            service,
+            None,
             service_name=service_name,
         )
         self.logger = get_logger("SponsorLineAPIRouter", self)
@@ -37,48 +35,47 @@ class SponsorLineAPIRouter(
             "/",
             response_model=SponsorLineSchema,
         )
-        async def create_sponsor_line_endpoint(item: SponsorLineSchemaCreate):
-            try:
-                self.logger.debug("Create sponsor line endpoint")
-                new_ = await self.loaded_service.create(item)
-                return SponsorLineSchema.model_validate(new_)
-            except Exception as e:
-                self.logger.error(f"Error creating sponsor line endpoint {e}", exc_info=True)
+        @handle_view_exceptions(error_message="Error creating sponsor line", status_code=500)
+        async def create_sponsor_line_endpoint(
+            sponsor_line_service: SponsorLineService, item: SponsorLineSchemaCreate
+        ):
+            self.logger.debug("Create sponsor line endpoint")
+            new_ = await sponsor_line_service.create(item)
+            if new_ is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Failed to create sponsor line. Check input data.",
+                )
+            return SponsorLineSchema.model_validate(new_)
 
         @router.put(
             "/{item_id}/",
             response_model=SponsorLineSchema,
         )
         async def update_sponsor_line_endpoint(
+            sponsor_line_service: SponsorLineService,
             item_id: int,
             item: SponsorLineSchemaUpdate,
         ):
             self.logger.debug("Update sponsor line endpoint")
-            try:
-                update_ = await self.loaded_service.update(item_id, item)
-                if update_ is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"SponsorLine id:{item_id} not found",
-                    )
-                return SponsorLineSchema.model_validate(update_)
-            except HTTPException:
-                raise
-            except Exception as e:
-                self.logger.error(f"Error updating sponsor line endpoint {e}", exc_info=True)
+            update_ = await sponsor_line_service.update(item_id, item)
+            if update_ is None:
                 raise HTTPException(
-                    status_code=409,
-                    detail="Error updating sponsor line",
+                    status_code=404,
+                    detail=f"SponsorLine id:{item_id} not found",
                 )
+            return SponsorLineSchema.model_validate(update_)
 
         @router.get(
             "/id/{item_id}/",
             response_model=SponsorLineSchema,
         )
-        async def get_sponsor_line_by_id_endpoint(item_id: int):
+        async def get_sponsor_line_by_id_endpoint(
+            sponsor_line_service: SponsorLineService, item_id: int
+        ):
             try:
                 self.logger.debug(f"Get sponsor line endpoint by id {item_id}")
-                item = await self.loaded_service.get_by_id(item_id)
+                item = await sponsor_line_service.get_by_id(item_id)
                 if item is None:
                     raise HTTPException(
                         status_code=404,
@@ -110,14 +107,15 @@ class SponsorLineAPIRouter(
             },
         )
         async def delete_sponsor_line_endpoint(
+            sponsor_line_service: SponsorLineService,
             model_id: int,
             _: Annotated[SponsorLineDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete sponsor line endpoint id:{model_id}")
-            await self.loaded_service.delete(model_id)
+            await sponsor_line_service.delete(model_id)
             return {"detail": f"SponsorLine {model_id} deleted successfully"}
 
         return router
 
 
-api_sponsor_line_router = SponsorLineAPIRouter(SponsorLineServiceDB(db)).route()
+api_sponsor_line_router = SponsorLineAPIRouter().route()

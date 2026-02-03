@@ -1,13 +1,13 @@
 from typing import Annotated
 
-from fastapi import HTTPException, Query
+from fastapi import Depends, HTTPException, Query
 
-from src.core import BaseRouter, db
+from src.core import BaseRouter
+from src.core.dependencies import PersonService, PlayerService
+from src.core.models import handle_view_exceptions
 from src.pars_eesl.pars_all_players_from_eesl import (
     parse_all_players_from_eesl_index_page_eesl,
 )
-from src.person.db_services import PersonServiceDB
-from src.person.schemas import PersonSchemaCreate
 
 from ..logging_config import get_logger
 from .db_services import PlayerServiceDB
@@ -122,7 +122,9 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 f"Get player {player_id} detail in tournament {tournament_id} endpoint"
             )
             try:
-                return await self.loaded_service.get_player_detail_in_tournament(player_id, tournament_id)
+                return await self.loaded_service.get_player_detail_in_tournament(
+                    player_id, tournament_id
+                )
             except HTTPException:
                 raise
             except Exception as ex:
@@ -317,7 +319,7 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
 
         @router.post("/pars_and_create/all_eesl/start_page/{start_page}/season_id/{season_id}/")
         async def create_parsed_players_with_person_endpoint(
-            start_page: int = 0, season_id: int = 8
+            person_service: PersonService, start_page: int = 0, season_id: int = 8
         ):
             try:
                 self.logger.debug("Create parsed players with person from all eesl endpoint")
@@ -330,14 +332,16 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
                 if players:
                     for player_with_person in players:
                         person = PersonSchemaCreate(**player_with_person["person"])
-                        created_person = await PersonServiceDB(db).create_or_update_person(person)
+                        created_person = await person_service.create_or_update_person(person)
                         created_persons.append(created_person)
                         if created_person:
                             self.logger.debug(f"Person created successfully: {created_person}")
                             player_data_dict = player_with_person["player"]
                             player_data_dict["person_id"] = created_person.id
                             player = PlayerSchemaCreate(**player_data_dict)
-                            created_player = await self.loaded_service.create_or_update_player(player)
+                            created_player = await self.loaded_service.create_or_update_player(
+                                player
+                            )
                             created_players.append(created_player)
                             self.logger.debug(f"Player created successfully: {created_player}")
                     self.logger.debug(f"Created parsed persons number:{len(created_persons)}")
@@ -360,4 +364,4 @@ class PlayerAPIRouter(BaseRouter[PlayerSchema, PlayerSchemaCreate, PlayerSchemaU
         return router
 
 
-api_player_router = PlayerAPIRouter(PlayerServiceDB(db)).route()
+api_player_router = PlayerAPIRouter().route()

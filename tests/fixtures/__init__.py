@@ -104,9 +104,15 @@ async def tournament(test_tournament_service, sport, season):
 @pytest_asyncio.fixture
 async def teams_data(test_team_service, sport):
     """Create and return two test teams in the database."""
+    import random
+
     test_logger.info(f"Creating test teams with sport_id: {sport.id}")
-    team1 = TeamFactory.build(sport_id=sport.id, team_eesl_id=801, title="Team A")
-    team2 = TeamFactory.build(sport_id=sport.id, team_eesl_id=802, title="Team B")
+    team1 = TeamFactory.build(
+        sport_id=sport.id, team_eesl_id=random.randint(100000, 999999), title="Team A"
+    )
+    team2 = TeamFactory.build(
+        sport_id=sport.id, team_eesl_id=random.randint(100000, 999999), title="Team B"
+    )
     created_team1 = await test_team_service.create_or_update_team(team1)
     created_team2 = await test_team_service.create_or_update_team(team2)
     return created_team1, created_team2

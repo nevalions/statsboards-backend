@@ -59,8 +59,15 @@ class Database:
         Returns test_async_session if available (for test transaction isolation),
         otherwise returns default async_session.
         """
-        return (
-            self.test_async_session if self.test_async_session is not None else self.async_session
+        if self.test_async_session is not None:
+            return self.test_async_session
+
+        if hasattr(self, "async_session"):
+            return self.async_session
+
+        raise AttributeError(
+            "Database object has neither test_async_session nor async_session. "
+            "Database may not be properly initialized."
         )
 
     async def test_connection(self, test_query: str = "SELECT 1"):

@@ -49,8 +49,10 @@ class MatchCRUDRouter(
     def get_match_stats_service(self):
         """Get match stats service using this router's database."""
         from src.matches.stats_service import MatchStatsServiceDB
+        from src.core.service_registry import get_service_registry
 
-        return MatchStatsServiceDB(self.loaded_service.db)
+        registry = get_service_registry()
+        return MatchStatsServiceDB(registry.database)
 
     def route(self):
         router = super().route()
@@ -249,7 +251,9 @@ class MatchCRUDRouter(
             self.logger.debug(
                 f"Get available players for team id:{team_id} in match id:{match_id} endpoint"
             )
-            return await self.loaded_service.get_available_players_for_team_in_match(match_id, team_id)
+            return await self.loaded_service.get_available_players_for_team_in_match(
+                match_id, team_id
+            )
 
         @router.get(
             "/id/{match_id}/team-rosters/",
