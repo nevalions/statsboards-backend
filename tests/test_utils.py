@@ -191,6 +191,7 @@ class TestWebSocketManager:
         assert manager.is_connected is False
         assert manager._connection_retry_task is None
         assert manager._cache_service is None
+        assert manager._listeners == {}
 
     @pytest.mark.asyncio
     async def test_connect_to_db_success(self):
@@ -208,6 +209,7 @@ class TestWebSocketManager:
             mock_connect.assert_called_once_with(db_url, command_timeout=30)
             assert manager.connection == mock_connection
             assert manager.is_connected is True
+            assert len(manager._listeners) == 7
 
     @pytest.mark.asyncio
     async def test_connect_to_db_failure(self):
@@ -261,3 +263,56 @@ class TestWebSocketManager:
 
         assert manager.logger is not None
         assert manager.logger.name == "MatchDataWebSocketManager"
+
+    @pytest.mark.asyncio
+    async def test_shutdown_removes_listeners(self):
+        """Test that shutdown removes all database listeners."""
+        db_url = "postgresql://test:test@localhost/test"
+        manager = MatchDataWebSocketManager(db_url)
+
+        with patch("asyncpg.connect") as mock_connect:
+            mock_connection = Mock()
+            mock_connection.add_listener = AsyncMock()
+            mock_connection.remove_listener = Mock()
+            mock_connection.close = AsyncMock()
+            mock_connect.return_value = mock_connection
+
+            await manager.connect_to_db()
+
+            assert len(manager._listeners) == 7
+
+            await manager.shutdown()
+
+            assert mock_connection.remove_listener.call_count == 7
+            assert len(manager._listeners) == 0
+            mock_connection.close.assert_called_once()
+            assert manager.is_connected is False
+
+    @pytest.mark.asyncio
+    async def test_shutdown_handles_listener_removal_errors(self):
+        """Test that shutdown handles errors during listener removal gracefully."""
+        db_url = "postgresql://test:test@localhost/test"
+        manager = MatchDataWebSocketManager(db_url)
+
+        with patch("asyncpg.connect") as mock_connect:
+            mock_connection = Mock()
+            mock_connection.add_listener = AsyncMock()
+
+            def side_effect_remove(channel, listener):
+                if channel == "matchdata_change":
+                    raise Exception("Test error")
+                return None
+
+            mock_connection.remove_listener = Mock(side_effect=side_effect_remove)
+            mock_connection.close = AsyncMock()
+            mock_connect.return_value = mock_connection
+
+            await manager.connect_to_db()
+
+            assert len(manager._listeners) == 7
+
+            await manager.shutdown()
+
+            assert mock_connection.remove_listener.call_count == 7
+            assert len(manager._listeners) == 0
+            mock_connection.close.assert_called_once()

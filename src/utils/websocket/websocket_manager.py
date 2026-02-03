@@ -23,6 +23,7 @@ class MatchDataWebSocketManager:
         self._connection_retry_task = None
         self._cache_service = None
         self._connection_lock = asyncio.Lock()
+        self._listeners: dict[str, Callable] = {}
 
     async def maintain_connection(self):
         while True:
@@ -71,6 +72,7 @@ class MatchDataWebSocketManager:
             "player_match_change": self.players_update_listener,
         }
 
+        self._listeners = listeners.copy()
         failed_channels = []
         for channel, listener in listeners.items():
             try:
@@ -292,6 +294,14 @@ class MatchDataWebSocketManager:
                         pass
 
                 if self.connection:
+                    for channel, listener in self._listeners.items():
+                        try:
+                            self.connection.remove_listener(channel, listener)
+                            self.logger.debug(f"Removed listener for channel: {channel}")
+                        except Exception as e:
+                            self.logger.warning(f"Error removing listener for {channel}: {str(e)}")
+                    self._listeners.clear()
+
                     await self.connection.close()
                     self.logger.info("Database connection closed")
 
