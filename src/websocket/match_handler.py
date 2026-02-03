@@ -401,13 +401,18 @@ class MatchWebSocketHandler:
 
         async def ping_task():
             while True:
-                await asyncio.sleep(30)
+                await asyncio.sleep(60)
                 try:
+                    if websocket.application_state != WebSocketState.CONNECTED:
+                        websocket_logger.debug(
+                            f"WebSocket disconnected, stopping ping task for client {client_id}"
+                        )
+                        break
                     ping_message = {"type": "ping", "timestamp": time.time()}
                     await websocket.send_json(ping_message)
                     websocket_logger.debug(f"Sent ping to client {client_id}")
                 except Exception as e:
-                    websocket_logger.error(f"Error sending ping to client {client_id}: {e}")
+                    websocket_logger.debug(f"Error sending ping to client {client_id}: {e}")
                     break
 
         ping_handle = asyncio.create_task(ping_task())
