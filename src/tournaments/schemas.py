@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict, Field
@@ -74,3 +74,39 @@ class TournamentWithDetailsSchema(TournamentSchema):
 class PaginatedTournamentWithDetailsResponse(BaseModel):
     data: list[TournamentWithDetailsSchema]
     metadata: PaginationMetadata
+
+
+class MoveTournamentToSportRequest(BaseModel):
+    target_sport_id: int = Field(..., examples=[2])
+
+
+class MoveTournamentConflictEntry(BaseModel):
+    entity_id: int = Field(..., examples=[1])
+    tournament_ids: list[int] = Field(default_factory=list, examples=[[2, 3]])
+
+
+class MoveTournamentConflicts(BaseModel):
+    teams: list[MoveTournamentConflictEntry] = Field(default_factory=list)
+    players: list[MoveTournamentConflictEntry] = Field(default_factory=list)
+
+
+class MoveTournamentUpdatedCounts(BaseModel):
+    tournament: int = Field(0, examples=[1])
+    teams: int = Field(0, examples=[4])
+    players: int = Field(0, examples=[25])
+    player_team_tournaments: int = Field(0, examples=[25])
+    player_matches: int = Field(0, examples=[40])
+
+
+class MoveTournamentMissingPosition(BaseModel):
+    title: str = Field(..., examples=["GOALIE"])
+    source_position_id: int | None = Field(None, examples=[12])
+    entity: Literal["player_team_tournament", "player_match"]
+    record_id: int = Field(..., examples=[55])
+
+
+class MoveTournamentToSportResponse(BaseModel):
+    moved: bool = Field(..., examples=[True])
+    updated_counts: MoveTournamentUpdatedCounts
+    conflicts: MoveTournamentConflicts
+    missing_positions: list[MoveTournamentMissingPosition] = Field(default_factory=list)

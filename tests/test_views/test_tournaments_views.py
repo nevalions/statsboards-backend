@@ -16,6 +16,7 @@ from src.tournaments.schemas import TournamentSchemaUpdate
 from tests.factories import (
     PersonFactory,
     SeasonFactorySample,
+    SportFactoryAny,
     SportFactorySample,
     TournamentFactory,
 )
@@ -27,6 +28,31 @@ def create_test_image():
     img.save(buf, format="PNG")
     buf.seek(0)
     return buf.getvalue()
+
+
+async def create_admin_headers(test_db) -> dict[str, str]:
+    from src.auth.security import create_access_token, get_password_hash
+    from src.core.models import RoleDB, UserDB, UserRoleDB
+
+    async with test_db.get_session_maker()() as session:
+        role = RoleDB(name="admin", description="Admin role")
+        session.add(role)
+        await session.flush()
+
+        user = UserDB(
+            username="test_admin",
+            email="admin@test.com",
+            hashed_password=get_password_hash("SecurePass123!"),
+        )
+        session.add(user)
+        await session.flush()
+
+        session.add(UserRoleDB(user_id=user.id, role_id=role.id))
+        await session.flush()
+        await session.refresh(user, ["roles"])
+
+    token = create_access_token(data={"sub": str(user.id)})
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.mark.asyncio
@@ -858,3 +884,28 @@ class TestTournamentViews:
         assert team3.id in team_ids
         assert team1.id not in team_ids
         assert teams[0]["title"] < teams[1]["title"]
+
+    async def test_move_tournament_to_sport_endpoint(self, client, test_db):
+        sport_service = SportServiceDB(test_db)
+        source_sport = await sport_service.create(SportFactorySample.build())
+        target_sport = await sport_service.create(SportFactoryAny.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=source_sport.id, season_id=season.id)
+        )
+
+        headers = await create_admin_headers(test_db)
+        response = await client.post(
+            f"/api/tournaments/id/{tournament.id}/move-sport",
+            json={"target_sport_id": target_sport.id},
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert response_data["moved"] is True
+        assert response_data["updated_counts"]["tournament"] == 1

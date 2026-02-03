@@ -26,6 +26,8 @@ from ..sponsors.schemas import SponsorSchema
 from ..teams.schemas import PaginatedTeamResponse
 from .db_services import TournamentServiceDB
 from .schemas import (
+    MoveTournamentToSportRequest,
+    MoveTournamentToSportResponse,
     PaginatedTournamentWithDetailsResponse,
     TournamentSchema,
     TournamentSchemaCreate,
@@ -87,6 +89,31 @@ class TournamentAPIRouter(
             if update_ is None:
                 raise HTTPException(status_code=404, detail=f"Tournament id {item_id} not found")
             return TournamentSchema.model_validate(update_)
+
+        @router.post(
+            "/id/{tournament_id}/move-sport",
+            response_model=MoveTournamentToSportResponse,
+            summary="Move tournament to another sport",
+            description="Moves a tournament to another sport with conflict checks on shared teams and players.",
+            responses={
+                200: {"description": "Move operation completed"},
+                401: {"description": "Unauthorized"},
+                403: {"description": "Forbidden - requires admin role"},
+                404: {"description": "Tournament or sport not found"},
+            },
+        )
+        async def move_tournament_to_sport_endpoint(
+            tournament_id: int,
+            request: MoveTournamentToSportRequest,
+            _: Annotated[TournamentDB, Depends(require_roles("admin"))],
+        ):
+            self.logger.debug(
+                f"Move tournament id:{tournament_id} to sport id:{request.target_sport_id}"
+            )
+            return await self.loaded_service.move_tournament_to_sport(
+                tournament_id=tournament_id,
+                target_sport_id=request.target_sport_id,
+            )
 
         @router.get(
             "/eesl_id/{eesl_id}",
@@ -334,7 +361,9 @@ class TournamentAPIRouter(
         )
         async def get_players_without_team_in_tournament_all_endpoint(tournament_id: int):
             self.logger.debug(f"Get all players without team in tournament id:{tournament_id}")
-            return await self.loaded_service.get_players_without_team_in_tournament_simple(tournament_id)
+            return await self.loaded_service.get_players_without_team_in_tournament_simple(
+                tournament_id
+            )
 
         @router.get("/id/{tournament_id}/matches/count")
         async def get_count_of_matches_by_tournament_id_endpoint(tournament_id: int):

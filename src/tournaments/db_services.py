@@ -1,4 +1,5 @@
-from sqlalchemy import not_, select
+from fastapi import HTTPException
+from sqlalchemy import not_, select, update
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql import func
 
@@ -7,9 +8,12 @@ from src.core.models import (
     BaseServiceDB,
     MatchDB,
     PlayerDB,
+    PlayerMatchDB,
     PlayerTeamTournamentDB,
+    PositionDB,
     SponsorDB,
     SponsorLineDB,
+    SportDB,
     TeamDB,
     TeamTournamentDB,
     TournamentDB,
@@ -22,6 +26,11 @@ from ..player.schemas import PaginatedPlayerWithDetailsResponse, PlayerWithDetai
 from ..sponsor_lines.db_services import SponsorLineServiceDB
 from ..teams.schemas import PaginatedTeamResponse, TeamSchema
 from .schemas import (
+    MoveTournamentConflictEntry,
+    MoveTournamentConflicts,
+    MoveTournamentMissingPosition,
+    MoveTournamentToSportResponse,
+    MoveTournamentUpdatedCounts,
     PaginatedTournamentWithDetailsResponse,
     TournamentSchemaCreate,
     TournamentSchemaUpdate,
@@ -507,6 +516,230 @@ class TournamentServiceDB(BaseServiceDB):
             "sponsor_line",
             "sponsors",
         )
+
+    @staticmethod
+    def _normalize_position_title(title: str) -> str:
+        return title.strip().lower()
+
+    @handle_service_exceptions(item_name=ITEM, operation="moving tournament to another sport")
+    async def move_tournament_to_sport(
+        self,
+        tournament_id: int,
+        target_sport_id: int,
+    ) -> MoveTournamentToSportResponse:
+        self.logger.debug(f"Move tournament {tournament_id} to sport {target_sport_id}")
+        async with self.db.get_session_maker()() as session:
+            async with session.begin():
+                tournament = await session.get(TournamentDB, tournament_id)
+                if tournament is None:
+                    raise HTTPException(
+                        status_code=404, detail=f"Tournament id {tournament_id} not found"
+                    )
+
+                target_sport = await session.get(SportDB, target_sport_id)
+                if target_sport is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Sport id {target_sport_id} not found",
+                    )
+
+                if tournament.sport_id == target_sport_id:
+                    return MoveTournamentToSportResponse(
+                        moved=True,
+                        updated_counts=MoveTournamentUpdatedCounts(
+                            tournament=0,
+                            teams=0,
+                            players=0,
+                            player_team_tournaments=0,
+                            player_matches=0,
+                        ),
+                        conflicts=MoveTournamentConflicts(),
+                        missing_positions=[],
+                    )
+
+                team_ids_result = await session.execute(
+                    select(TeamTournamentDB.team_id).where(
+                        TeamTournamentDB.tournament_id == tournament_id
+                    )
+                )
+                team_ids = sorted(
+                    {team_id for (team_id,) in team_ids_result if team_id is not None}
+                )
+
+                player_ids_result = await session.execute(
+                    select(PlayerTeamTournamentDB.player_id).where(
+                        PlayerTeamTournamentDB.tournament_id == tournament_id,
+                        PlayerTeamTournamentDB.player_id.is_not(None),
+                    )
+                )
+                player_ids = sorted(
+                    {player_id for (player_id,) in player_ids_result if player_id is not None}
+                )
+
+                team_conflicts: dict[int, set[int]] = {}
+                if team_ids:
+                    team_conflict_result = await session.execute(
+                        select(TeamTournamentDB.team_id, TeamTournamentDB.tournament_id)
+                        .where(TeamTournamentDB.team_id.in_(team_ids))
+                        .where(TeamTournamentDB.tournament_id != tournament_id)
+                    )
+                    for team_id, other_tournament_id in team_conflict_result:
+                        team_conflicts.setdefault(team_id, set()).add(other_tournament_id)
+
+                player_conflicts: dict[int, set[int]] = {}
+                if player_ids:
+                    player_conflict_result = await session.execute(
+                        select(
+                            PlayerTeamTournamentDB.player_id,
+                            PlayerTeamTournamentDB.tournament_id,
+                        )
+                        .where(PlayerTeamTournamentDB.player_id.in_(player_ids))
+                        .where(PlayerTeamTournamentDB.tournament_id != tournament_id)
+                    )
+                    for player_id, other_tournament_id in player_conflict_result:
+                        if player_id is None:
+                            continue
+                        player_conflicts.setdefault(player_id, set()).add(other_tournament_id)
+
+                if team_conflicts or player_conflicts:
+                    return MoveTournamentToSportResponse(
+                        moved=False,
+                        updated_counts=MoveTournamentUpdatedCounts(
+                            tournament=0,
+                            teams=0,
+                            players=0,
+                            player_team_tournaments=0,
+                            player_matches=0,
+                        ),
+                        conflicts=MoveTournamentConflicts(
+                            teams=[
+                                MoveTournamentConflictEntry(
+                                    entity_id=team_id,
+                                    tournament_ids=sorted(tournament_ids),
+                                )
+                                for team_id, tournament_ids in sorted(team_conflicts.items())
+                            ],
+                            players=[
+                                MoveTournamentConflictEntry(
+                                    entity_id=player_id,
+                                    tournament_ids=sorted(tournament_ids),
+                                )
+                                for player_id, tournament_ids in sorted(player_conflicts.items())
+                            ],
+                        ),
+                        missing_positions=[],
+                    )
+
+                tournament.sport_id = target_sport_id
+
+                teams_updated = 0
+                if team_ids:
+                    await session.execute(
+                        update(TeamDB)
+                        .where(TeamDB.id.in_(team_ids))
+                        .values(sport_id=target_sport_id)
+                    )
+                    teams_updated = len(team_ids)
+
+                players_updated = 0
+                if player_ids:
+                    await session.execute(
+                        update(PlayerDB)
+                        .where(PlayerDB.id.in_(player_ids))
+                        .values(sport_id=target_sport_id)
+                    )
+                    players_updated = len(player_ids)
+
+                target_positions_result = await session.execute(
+                    select(PositionDB.id, PositionDB.title).where(
+                        PositionDB.sport_id == target_sport_id
+                    )
+                )
+                target_positions: dict[str, int] = {}
+                for position_id, title in target_positions_result:
+                    normalized_title = self._normalize_position_title(title)
+                    target_positions.setdefault(normalized_title, position_id)
+
+                missing_positions: list[MoveTournamentMissingPosition] = []
+                player_team_tournaments_updated = 0
+                ptt_positions_result = await session.execute(
+                    select(
+                        PlayerTeamTournamentDB.id,
+                        PlayerTeamTournamentDB.position_id,
+                        PositionDB.title,
+                    )
+                    .join(PositionDB, PlayerTeamTournamentDB.position_id == PositionDB.id)
+                    .where(PlayerTeamTournamentDB.tournament_id == tournament_id)
+                )
+                for ptt_id, position_id, title in ptt_positions_result:
+                    normalized_title = self._normalize_position_title(title)
+                    target_position_id = target_positions.get(normalized_title)
+                    new_position_id = target_position_id
+                    if target_position_id is None:
+                        missing_positions.append(
+                            MoveTournamentMissingPosition(
+                                title=title,
+                                source_position_id=position_id,
+                                entity="player_team_tournament",
+                                record_id=ptt_id,
+                            )
+                        )
+                        new_position_id = None
+
+                    if new_position_id != position_id:
+                        await session.execute(
+                            update(PlayerTeamTournamentDB)
+                            .where(PlayerTeamTournamentDB.id == ptt_id)
+                            .values(position_id=new_position_id)
+                        )
+                        player_team_tournaments_updated += 1
+
+                player_matches_updated = 0
+                match_positions_result = await session.execute(
+                    select(
+                        PlayerMatchDB.id,
+                        PlayerMatchDB.match_position_id,
+                        PositionDB.title,
+                    )
+                    .join(PositionDB, PlayerMatchDB.match_position_id == PositionDB.id)
+                    .join(MatchDB, PlayerMatchDB.match_id == MatchDB.id)
+                    .where(MatchDB.tournament_id == tournament_id)
+                )
+                for player_match_id, position_id, title in match_positions_result:
+                    normalized_title = self._normalize_position_title(title)
+                    target_position_id = target_positions.get(normalized_title)
+                    new_position_id = target_position_id
+                    if target_position_id is None:
+                        missing_positions.append(
+                            MoveTournamentMissingPosition(
+                                title=title,
+                                source_position_id=position_id,
+                                entity="player_match",
+                                record_id=player_match_id,
+                            )
+                        )
+                        new_position_id = None
+
+                    if new_position_id != position_id:
+                        await session.execute(
+                            update(PlayerMatchDB)
+                            .where(PlayerMatchDB.id == player_match_id)
+                            .values(match_position_id=new_position_id)
+                        )
+                        player_matches_updated += 1
+
+                return MoveTournamentToSportResponse(
+                    moved=True,
+                    updated_counts=MoveTournamentUpdatedCounts(
+                        tournament=1,
+                        teams=teams_updated,
+                        players=players_updated,
+                        player_team_tournaments=player_team_tournaments_updated,
+                        player_matches=player_matches_updated,
+                    ),
+                    conflicts=MoveTournamentConflicts(),
+                    missing_positions=missing_positions,
+                )
 
     @handle_service_exceptions(
         item_name=ITEM,

@@ -1,17 +1,29 @@
 import pytest
 from fastapi import HTTPException
 
+from src.matches.db_services import MatchServiceDB
+from src.matches.schemas import MatchSchemaCreate
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate as PersonSchemaCreateType
 from src.player.db_services import PlayerServiceDB
 from src.player.schemas import PlayerSchemaCreate as PlayerSchemaCreateType
+from src.positions.db_services import PositionServiceDB
+from src.positions.schemas import PositionSchemaCreate
+from src.seasons.db_services import SeasonServiceDB
 from src.seasons.schemas import SeasonSchemaCreate
+from src.sports.db_services import SportServiceDB
 from src.sports.schemas import SportSchemaCreate
 from src.teams.db_services import TeamServiceDB
 from src.teams.schemas import TeamSchemaCreate as TeamSchemaCreateType
 from src.tournaments.db_services import TournamentServiceDB
 from src.tournaments.schemas import TournamentSchemaCreate
-from tests.factories import TournamentFactory
+from tests.factories import (
+    SeasonFactorySample,
+    SportFactoryAny,
+    SportFactorySample,
+    TeamFactory,
+    TournamentFactory,
+)
 from tests.testhelpers import (
     assert_http_exception_on_create,
     assert_tournament_equal,
@@ -412,3 +424,253 @@ class TestTournamentServiceDBPlayersWithoutTeam:
         assert result.metadata.page == 2
         assert result.metadata.has_next is True
         assert result.metadata.has_previous is True
+
+
+@pytest.mark.asyncio
+class TestTournamentServiceDBMoveSport:
+    async def test_move_tournament_to_sport_updates_relations_and_positions(self, test_db):
+        sport_service = SportServiceDB(test_db)
+        source_sport = await sport_service.create(SportFactorySample.build())
+        target_sport = await sport_service.create(SportFactoryAny.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=source_sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team1 = await team_service.create_or_update_team(
+            TeamFactory.build(sport_id=source_sport.id, team_eesl_id=3001, title="Team A")
+        )
+        team2 = await team_service.create_or_update_team(
+            TeamFactory.build(sport_id=source_sport.id, team_eesl_id=3002, title="Team B")
+        )
+
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+        person1 = await person_service.create(
+            PersonSchemaCreateType(first_name="Alex", second_name="Forward")
+        )
+        person2 = await person_service.create(
+            PersonSchemaCreateType(first_name="Blake", second_name="Goalie")
+        )
+        player1 = await player_service.create(
+            PlayerSchemaCreateType(
+                sport_id=source_sport.id, person_id=person1.id, player_eesl_id=9001
+            )
+        )
+        player2 = await player_service.create(
+            PlayerSchemaCreateType(
+                sport_id=source_sport.id, person_id=person2.id, player_eesl_id=9002
+            )
+        )
+
+        position_service = PositionServiceDB(test_db)
+        source_forward = await position_service.create(
+            PositionSchemaCreate(title="Forward", sport_id=source_sport.id)
+        )
+        source_goalie = await position_service.create(
+            PositionSchemaCreate(title="Goalie", sport_id=source_sport.id)
+        )
+        target_forward = await position_service.create(
+            PositionSchemaCreate(title="Forward", sport_id=target_sport.id)
+        )
+
+        from src.core.models.player_match import PlayerMatchDB
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        async with test_db.get_session_maker()() as session:
+            session.add_all(
+                [
+                    TeamTournamentDB(tournament_id=tournament.id, team_id=team1.id),
+                    TeamTournamentDB(tournament_id=tournament.id, team_id=team2.id),
+                ]
+            )
+            await session.flush()
+
+            ptt_forward = PlayerTeamTournamentDB(
+                player_id=player1.id,
+                team_id=team1.id,
+                tournament_id=tournament.id,
+                position_id=source_forward.id,
+            )
+            ptt_goalie = PlayerTeamTournamentDB(
+                player_id=player2.id,
+                team_id=team1.id,
+                tournament_id=tournament.id,
+                position_id=source_goalie.id,
+            )
+            session.add_all([ptt_forward, ptt_goalie])
+            await session.flush()
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchSchemaCreate(
+                team_a_id=team1.id,
+                team_b_id=team2.id,
+                tournament_id=tournament.id,
+            )
+        )
+
+        async with test_db.get_session_maker()() as session:
+            player_match = PlayerMatchDB(
+                player_team_tournament_id=ptt_goalie.id,
+                match_id=match.id,
+                team_id=team1.id,
+                match_position_id=source_goalie.id,
+            )
+            session.add(player_match)
+            await session.flush()
+
+        result = await tournament_service.move_tournament_to_sport(
+            tournament_id=tournament.id,
+            target_sport_id=target_sport.id,
+        )
+
+        assert result.moved is True
+        assert result.updated_counts.tournament == 1
+        assert result.updated_counts.teams == 2
+        assert result.updated_counts.players == 2
+        assert result.updated_counts.player_team_tournaments == 2
+        assert result.updated_counts.player_matches == 1
+        assert result.conflicts.teams == []
+        assert result.conflicts.players == []
+
+        missing_titles = sorted([missing.title for missing in result.missing_positions])
+        assert missing_titles == ["GOALIE", "GOALIE"]
+
+        async with test_db.get_session_maker()() as session:
+            updated_tournament = await session.get(type(tournament), tournament.id)
+            assert updated_tournament is not None
+            assert updated_tournament.sport_id == target_sport.id
+
+            updated_team1 = await session.get(type(team1), team1.id)
+            updated_team2 = await session.get(type(team2), team2.id)
+            assert updated_team1 is not None
+            assert updated_team2 is not None
+            assert updated_team1.sport_id == target_sport.id
+            assert updated_team2.sport_id == target_sport.id
+
+            updated_player1 = await session.get(type(player1), player1.id)
+            updated_player2 = await session.get(type(player2), player2.id)
+            assert updated_player1 is not None
+            assert updated_player2 is not None
+            assert updated_player1.sport_id == target_sport.id
+            assert updated_player2.sport_id == target_sport.id
+
+            refreshed_ptt_forward = await session.get(PlayerTeamTournamentDB, ptt_forward.id)
+            refreshed_ptt_goalie = await session.get(PlayerTeamTournamentDB, ptt_goalie.id)
+            assert refreshed_ptt_forward is not None
+            assert refreshed_ptt_goalie is not None
+            assert refreshed_ptt_forward.position_id == target_forward.id
+            assert refreshed_ptt_goalie.position_id is None
+
+            refreshed_player_match = await session.get(PlayerMatchDB, player_match.id)
+            assert refreshed_player_match is not None
+            assert refreshed_player_match.match_position_id is None
+
+    async def test_move_tournament_to_sport_blocks_team_conflicts(self, test_db):
+        sport_service = SportServiceDB(test_db)
+        source_sport = await sport_service.create(SportFactorySample.build())
+        target_sport = await sport_service.create(SportFactoryAny.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=source_sport.id, season_id=season.id)
+        )
+        other_tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=source_sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        shared_team = await team_service.create_or_update_team(
+            TeamFactory.build(sport_id=source_sport.id, team_eesl_id=4001, title="Shared Team")
+        )
+
+        from src.core.models.team_tournament import TeamTournamentDB
+
+        async with test_db.get_session_maker()() as session:
+            session.add_all(
+                [
+                    TeamTournamentDB(tournament_id=tournament.id, team_id=shared_team.id),
+                    TeamTournamentDB(tournament_id=other_tournament.id, team_id=shared_team.id),
+                ]
+            )
+            await session.flush()
+
+        result = await tournament_service.move_tournament_to_sport(
+            tournament_id=tournament.id,
+            target_sport_id=target_sport.id,
+        )
+
+        assert result.moved is False
+        assert result.conflicts.teams[0].entity_id == shared_team.id
+        assert other_tournament.id in result.conflicts.teams[0].tournament_ids
+
+        async with test_db.get_session_maker()() as session:
+            unchanged = await session.get(type(tournament), tournament.id)
+            assert unchanged is not None
+            assert unchanged.sport_id == source_sport.id
+
+    async def test_move_tournament_to_sport_blocks_player_conflicts(self, test_db):
+        sport_service = SportServiceDB(test_db)
+        source_sport = await sport_service.create(SportFactorySample.build())
+        target_sport = await sport_service.create(SportFactoryAny.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=source_sport.id, season_id=season.id)
+        )
+        other_tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=source_sport.id, season_id=season.id)
+        )
+
+        person_service = PersonServiceDB(test_db)
+        player_service = PlayerServiceDB(test_db)
+        person = await person_service.create(
+            PersonSchemaCreateType(first_name="Casey", second_name="Shared")
+        )
+        player = await player_service.create(
+            PlayerSchemaCreateType(
+                sport_id=source_sport.id, person_id=person.id, player_eesl_id=9100
+            )
+        )
+
+        from src.core.models.player_team_tournament import PlayerTeamTournamentDB
+
+        async with test_db.get_session_maker()() as session:
+            session.add_all(
+                [
+                    PlayerTeamTournamentDB(
+                        player_id=player.id, tournament_id=tournament.id, team_id=None
+                    ),
+                    PlayerTeamTournamentDB(
+                        player_id=player.id, tournament_id=other_tournament.id, team_id=None
+                    ),
+                ]
+            )
+            await session.flush()
+
+        result = await tournament_service.move_tournament_to_sport(
+            tournament_id=tournament.id,
+            target_sport_id=target_sport.id,
+        )
+
+        assert result.moved is False
+        assert result.conflicts.players[0].entity_id == player.id
+        assert other_tournament.id in result.conflicts.players[0].tournament_ids
+
+        async with test_db.get_session_maker()() as session:
+            unchanged = await session.get(type(tournament), tournament.id)
+            assert unchanged is not None
+            assert unchanged.sport_id == source_sport.id
