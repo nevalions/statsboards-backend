@@ -4039,6 +4039,14 @@ Authorization: Bearer <token>
 }
 ```
 
+**Behavior Notes:**
+- The deletion will automatically clean up references to the sponsor in:
+  - Tournament records (clears main_sponsor_id)
+  - Team records (clears main_sponsor_id)
+  - Match records (clears main_sponsor_id)
+  - Sponsor line associations (deletes SponsorSponsorLineDB entries)
+
+
 **Error Responses:**
 
 | Status | Description |

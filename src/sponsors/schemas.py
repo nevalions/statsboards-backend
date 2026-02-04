@@ -14,7 +14,7 @@ class SponsorSchemaBase(BaseModel):
     scale_logo: float | None = 1.0
 
 
-SponsorSchemaUpdate = make_fields_optional(SponsorSchemaBase)
+SponsorSchemaUpdate: type[BaseModel] = make_fields_optional(SponsorSchemaBase)
 
 
 class SponsorSchemaCreate(SponsorSchemaBase):

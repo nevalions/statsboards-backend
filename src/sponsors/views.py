@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy import delete, update
 
 from src.auth.dependencies import require_roles
-from src.core import BaseRouter
+from src.core import BaseRouter, db
 from src.core.dependencies import SponsorService
-from src.core.models import SponsorDB, handle_view_exceptions
+from src.core.models import MatchDB, SponsorDB, SponsorSponsorLineDB, TeamDB, TournamentDB, handle_view_exceptions
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
@@ -161,6 +164,28 @@ class SponsorAPIRouter(
             _: Annotated[SponsorDB, Depends(require_roles("admin"))],
         ):
             self.logger.debug(f"Delete sponsor endpoint id:{model_id}")
+            async with db.get_session_maker()() as session:
+                await session.execute(
+                    update(TournamentDB)
+                    .where(TournamentDB.main_sponsor_id == model_id)
+                    .values(main_sponsor_id=None)
+                )
+                await session.execute(
+                    update(TeamDB)
+                    .where(TeamDB.main_sponsor_id == model_id)
+                    .values(main_sponsor_id=None)
+                )
+                await session.execute(
+                    update(MatchDB)
+                    .where(MatchDB.main_sponsor_id == model_id)
+                    .values(main_sponsor_id=None)
+                )
+                await session.execute(
+                    delete(SponsorSponsorLineDB)
+                    .where(SponsorSponsorLineDB.sponsor_id == model_id)
+                )
+                await session.commit()
+
             await sponsor_service.delete(model_id)
             return {"detail": f"Sponsor {model_id} deleted successfully"}
 
