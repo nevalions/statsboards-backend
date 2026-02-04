@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
-from src.core.schema_helpers import make_fields_optional
+from src.core.schema_helpers import PaginationMetadata
 
 
 class SponsorLineSchemaBase(BaseModel):
@@ -13,7 +13,9 @@ class SponsorLineSchemaBase(BaseModel):
     is_visible: bool | None = False
 
 
-SponsorLineSchemaUpdate = make_fields_optional(SponsorLineSchemaBase)
+class SponsorLineSchemaUpdate(BaseModel):
+    title: Annotated[str | None, Path(max_length=50)] = None
+    is_visible: bool | None = None
 
 
 class SponsorLineSchemaCreate(SponsorLineSchemaBase):
@@ -24,3 +26,8 @@ class SponsorLineSchema(SponsorLineSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class PaginatedSponsorLineResponse(BaseModel):
+    data: list[SponsorLineSchema]
+    metadata: PaginationMetadata

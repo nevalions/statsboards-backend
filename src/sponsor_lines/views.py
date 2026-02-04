@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Query
 
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
@@ -8,7 +8,12 @@ from src.core.dependencies import SponsorLineService
 from src.core.models import SponsorLineDB, handle_view_exceptions
 
 from ..logging_config import get_logger
-from .schemas import SponsorLineSchema, SponsorLineSchemaCreate, SponsorLineSchemaUpdate
+from .schemas import (
+    PaginatedSponsorLineResponse,
+    SponsorLineSchema,
+    SponsorLineSchemaCreate,
+    SponsorLineSchemaUpdate,
+)
 
 
 class SponsorLineAPIRouter(
@@ -114,6 +119,36 @@ class SponsorLineAPIRouter(
             self.logger.debug(f"Delete sponsor line endpoint id:{model_id}")
             await sponsor_line_service.delete(model_id)
             return {"detail": f"SponsorLine {model_id} deleted successfully"}
+
+        @router.get(
+            "/paginated",
+            response_model=PaginatedSponsorLineResponse,
+            summary="Search sponsor lines with pagination",
+            description="Search sponsor lines by title with pagination and standard query parameters",
+        )
+        async def search_sponsor_lines_paginated_endpoint(
+            sponsor_line_service: SponsorLineService,
+            page: int = Query(1, ge=1, description="Page number (1-based)"),
+            items_per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+            order_by: str = Query("title", description="First sort column"),
+            order_by_two: str = Query("id", description="Second sort column"),
+            ascending: bool = Query(True, description="Sort order (true=asc, false=desc)"),
+            search: str | None = Query(None, description="Search query for title search"),
+        ):
+            self.logger.debug(
+                f"Search sponsor lines paginated: page={page}, items_per_page={items_per_page}, "
+                f"order_by={order_by}, order_by_two={order_by_two}, ascending={ascending}, search={search}"
+            )
+            skip = (page - 1) * items_per_page
+            response = await sponsor_line_service.search_sponsor_lines_with_pagination(
+                search_query=search,
+                skip=skip,
+                limit=items_per_page,
+                order_by=order_by,
+                order_by_two=order_by_two,
+                ascending=ascending,
+            )
+            return response
 
         return router
 

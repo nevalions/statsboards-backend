@@ -91,3 +91,52 @@ class TestSponsorLineServiceDB:
         with pytest.raises(HTTPException) as exc_info:
             await test_sponsor_line_service.delete(sponsor_line.id + 1)
         assert_http_exception_on_delete(exc_info)
+
+    async def test_search_sponsor_lines_with_pagination_success(
+        self,
+        test_sponsor_line_service,
+    ):
+        """Test search sponsor lines with pagination returns correct results."""
+        for _ in range(5):
+            await test_sponsor_line_service.create(SponsorLineFactory.build())
+
+        result = await test_sponsor_line_service.search_sponsor_lines_with_pagination(
+            skip=0,
+            limit=2,
+            order_by="title",
+            order_by_two="id",
+            ascending=True,
+        )
+
+        assert result is not None
+        assert len(result.data) == 2
+        assert result.metadata.page == 1
+        assert result.metadata.items_per_page == 2
+        assert result.metadata.total_items >= 5
+        assert result.metadata.total_pages >= 3
+        assert result.metadata.has_next is True
+        assert result.metadata.has_previous is False
+
+    async def test_search_sponsor_lines_with_pagination_search_query(
+        self,
+        test_sponsor_line_service,
+    ):
+        """Test search sponsor lines with query filters correctly."""
+        await test_sponsor_line_service.create(SponsorLineFactory.build(title="Test Line Alpha"))
+        await test_sponsor_line_service.create(SponsorLineFactory.build(title="Test Line Beta"))
+        await test_sponsor_line_service.create(SponsorLineFactory.build(title="Other Line"))
+
+        result = await test_sponsor_line_service.search_sponsor_lines_with_pagination(
+            search_query="Test",
+            skip=0,
+            limit=10,
+            order_by="title",
+            order_by_two="id",
+            ascending=True,
+        )
+
+        assert result is not None
+        assert len(result.data) == 2
+        assert result.data[0].title == "Test Line Alpha"
+        assert result.data[1].title == "Test Line Beta"
+        assert result.metadata.total_items == 2
