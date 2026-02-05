@@ -68,7 +68,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-Fast tests: 1373 tests pass in ~16s (8 workers). Full suite: ~1477 tests in ~90s. Tests use:
+Fast tests: 1430 tests pass in ~16s (8 workers). Full suite: ~1523 tests in ~90s. Tests use:
 - Transactional rollback for isolation
 - 8 parallel databases (test_db, test_db2, test_db3, test_db4, test_db5, test_db6, test_db7, test_db8) distributed across 8 workers
 - Worker-specific lock files for safe table creation
@@ -107,6 +107,10 @@ Fast tests: 1373 tests pass in ~16s (8 workers). Full suite: ~1477 tests in ~90s
 - `src/playclocks/views.py` - Added 13 tests for error handling (IntegrityError, SQLAlchemyError, general exceptions) and empty result scenarios
 - `src/player_team_tournament/views.py` - Added 13 tests for exception handling, empty results, and edge cases
 - `src/player_match/views.py` - Added 3 tests for exception handling and parsing scenarios
+
+**Recently improved coverage (2026-02-05):**
+- `src/matches/stats_websocket_handler.py` - Added 11 tests for exception handling, client exclusion, WebSocket disconnect, malformed JSON, invalid timestamps, and full connection lifecycle
+- `src/pars_eesl/pars_match.py` - Added 15 tests for parsing match data, player data, edge cases, and error handling
 
 **Modules with high coverage (>90%):**
 - Most schema files have 100% coverage
