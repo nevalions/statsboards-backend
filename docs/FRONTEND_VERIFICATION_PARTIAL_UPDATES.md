@@ -278,4 +278,4 @@ alembic upgrade head
 - **Backend Issue:** [STAB-148](https://linear.app/statsboard/issue/STAB-148) - Optimized scoreboard trigger
 - **Backend Issue:** [STAB-149](https://linear.app/statsboard/issue/STAB-149) - Match data listener with full data fetch
 - **Backend Issue:** [STAB-150](https://linear.app/statsboard/issue/STAB-150) - Match data listener with smart payload selection
-- **Documentation:** [WEBSOCKET_DATA_FLOW.md](./WEBSOCKET_DATA_FLOW.md) - Complete WebSocket data flow documentation
+- **Documentation:** [docs/websockets/index.md](./websockets/index.md) - Complete WebSocket data flow documentation

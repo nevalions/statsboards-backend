@@ -2,59 +2,9 @@
 
 ## Overview
 
-The StatsBoards Backend is a FastAPI-based microservice designed for managing sports tournaments, matches, teams, and real-time game data across a variety of sports. The architecture follows a layered design with clear separation of concerns, dependency injection, and domain-driven design principles.
+This document is now an index. See the split architecture docs:
 
-Currently supports:
-- American football
-- Flag football
-- Extensible for additional sports
-
-## High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Client Layer                         │
-│  (Web Browsers, Mobile Apps, Third-party Integrations)      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ HTTP/WebSocket
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      API Layer (FastAPI)                     │
-│  - Router Registry System                                    │
-│  - Request/Response Validation (Pydantic)                    │
-│  - Global Exception Handlers                                │
-│  - WebSocket Connection Management                          │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Service Layer (Business Logic)              │
-│  - Service Registry (Dependency Injection)                   │
-│  - Domain Services (TeamService, MatchService, etc.)       │
-│  - Cross-Service Communication via Registry                  │
-│  - Business Logic & Validation                               │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Data Access Layer                          │
-│  - BaseServiceDB (CRUD Mixins)                             │
-│  - SQLAlchemy ORM                                            │
-│  - Async Database Operations                                │
-│  - Query Builders & Relationship Management                 │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Database Layer                             │
-│  - PostgreSQL (Production & Test)                            │
-│  - Connection Pooling (asyncpg)                             │
-│  - Transaction Management                                    │
-│  - Alembic Migrations                                        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Core Architectural Patterns
+- `docs/architecture/index.md`
 
 ### 1. Layered Architecture
 

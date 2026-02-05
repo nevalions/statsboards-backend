@@ -91,32 +91,33 @@ registry.register_router("src.teams", "api_team_router", priority=20)
 
 The following routers are currently registered (ordered by priority):
 
-| Priority | Module | Router | Tag |
-|----------|--------|--------|-----|
-| 10 | src.sports | api_sport_router | sports |
-| 20 | src.seasons | api_season_router | seasons |
-| 30 | src.tournaments | api_tournament_router | tournaments-api |
-| 31 | src.tournaments | template_tournament_router | tournaments-templ |
-| 40 | src.teams | api_team_router | teams |
-| 50 | src.team_tournament | api_team_tournament_router | team_tournament |
-| 60 | src.matches | api_match_crud_router | matches-api |
-| 61 | src.matches | api_match_websocket_router | matches-websocket |
-| 62 | src.matches | api_match_parser_router | matches-parser |
-| 63 | src.matches | template_match_router | matches |
-| 70 | src.matchdata | api_matchdata_router | matchdata |
-| 80 | src.playclocks | api_playclock_router | playclock |
-| 81 | src.gameclocks | api_gameclock_router | gameclock |
-| 90 | src.scoreboards | api_scoreboards_router | scoreboards |
-| 100 | src.sponsors | api_sponsor_router | sponsors |
-| 101 | src.sponsor_lines | api_sponsor_line_router | sponsor_lines |
-| 102 | src.sponsor_sponsor_line_connection | api_sponsor_sponsor_line_router | sponsor_sponsor_line |
-| 110 | src.person | api_person_router | persons |
-| 120 | src.player | api_player_router | players |
-| 130 | src.player_team_tournament | api_player_team_tournament_router | players_team_tournament |
-| 140 | src.positions | api_position_router | positions |
-| 150 | src.player_match | api_player_match_router | players_match |
-| 160 | src.football_events | api_football_event_router | football_event |
-| 200 | src.seasons | api_pars_season_router | pars |
+| Priority | Module | Router |
+|----------|--------|--------|
+| 5 | src.global_settings | api_global_setting_router |
+| 10 | src.sports | api_sport_router |
+| 20 | src.seasons | api_season_router |
+| 30 | src.tournaments | api_tournament_router |
+| 40 | src.teams | api_team_router |
+| 50 | src.team_tournament | api_team_tournament_router |
+| 60 | src.matches | api_match_crud_router |
+| 61 | src.matches | api_match_websocket_router |
+| 62 | src.matches | api_match_parser_router |
+| 70 | src.matchdata | api_matchdata_router |
+| 80 | src.playclocks | api_playclock_router |
+| 81 | src.gameclocks | api_gameclock_router |
+| 90 | src.scoreboards | api_scoreboards_router |
+| 100 | src.sponsors | api_sponsor_router |
+| 101 | src.sponsor_lines | api_sponsor_line_router |
+| 102 | src.sponsor_sponsor_line_connection | api_sponsor_sponsor_line_router |
+| 110 | src.person | api_person_router |
+| 120 | src.player | api_player_router |
+| 130 | src.player_team_tournament | api_player_team_tournament_router |
+| 140 | src.positions | api_position_router |
+| 150 | src.player_match | api_player_match_router |
+| 160 | src.football_events | api_football_event_router |
+| 190 | src.auth | api_auth_router |
+| 200 | src.users | api_user_router |
+| 201 | src.roles | api_role_router |
 
 ## Migration Notes
 

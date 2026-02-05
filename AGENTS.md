@@ -4,7 +4,7 @@ This file provides guidance for agentic coding assistants working in this reposi
 
 ## Overview
 
-For detailed development guidelines, coding standards, and best practices, see **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)**.
+For detailed development guidelines, coding standards, and best practices, see **[docs/development/index.md](docs/development/index.md)**.
 
 This document serves as a quick reference for common operations and links to the comprehensive guidelines.
 
@@ -62,7 +62,7 @@ alembic downgrade -1
 
 ### Key Documents
 
-- **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)** - Comprehensive development guide with all coding standards, patterns, and best practices
+- **[docs/development/index.md](docs/development/index.md)** - Comprehensive development guide with all coding standards, patterns, and best practices
 - **[SERVICE_LAYER_DECOUPLING.md](docs/SERVICE_LAYER_DECOUPLING.md)** - Service layer architecture and dependency injection patterns
 - **[CONFIGURATION_VALIDATION.md](docs/CONFIGURATION_VALIDATION.md)** - Configuration settings and validation details
 
@@ -123,11 +123,11 @@ Fast tests: 1430 tests pass in ~16s (8 workers). Full suite: ~1523 tests in ~90s
 
 **Important:** When writing test fixtures, use `flush()` instead of `commit()` to avoid deadlocks during parallel test execution. The outer test fixture handles rollback automatically.
 
-For detailed test information and recent fixes, see the [Test Suite Status](docs/DEVELOPMENT_GUIDELINES.md#test-suite-status) section in DEVELOPMENT_GUIDELINES.md.
+For detailed test information and recent fixes, see `docs/development/testing.md`.
 
 ### Search Testing Guidelines
 
-Search functionality has been refactored to use shared `SearchPaginationMixin` for consistency. See the [Search Testing Guidelines](docs/DEVELOPMENT_GUIDELINES.md#search-testing-guidelines) section in DEVELOPMENT_GUIDELINES.md for details.
+Search functionality has been refactored to use shared `SearchPaginationMixin` for consistency. See `docs/development/search-implementation.md#search-testing-guidelines` for details.
 
 ### Tooling and Testing
 
@@ -166,7 +166,7 @@ Search functionality has been refactored to use shared `SearchPaginationMixin` f
 
 ### Workflow References
 
-See docs/DEVELOPMENT_GUIDELINES.md for:
+See `docs/development/index.md` for:
 - Code style guidelines and naming conventions
 - Service layer and router patterns
 - Model patterns and relationship types

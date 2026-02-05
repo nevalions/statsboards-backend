@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document explains the complete data flow for WebSocket real-time updates between the backend database, WebSocket listeners, and frontend clients.
+This document is now an index. See the split WebSocket docs:
+
+- `docs/websockets/index.md`
 
 ## Architecture Diagram
 

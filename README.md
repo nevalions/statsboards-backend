@@ -230,9 +230,10 @@ AGENTS.md                       # Quick reference for AI assistants
 README.md                       # Project overview and setup
 docs/                          # Documentation
     ├── API_DOCUMENTATION.md             # API endpoints reference
-    ├── ARCHITECTURE.md                # Architecture documentation
+    ├── architecture/index.md          # Architecture documentation index
     ├── CONFIGURATION_VALIDATION.md      # Configuration settings and validation
-    ├── DEVELOPMENT_GUIDELINES.md       # Comprehensive development guide
+    ├── development/index.md            # Development guidelines index
+    ├── schema-standardization/index.md # Schema standardization plan index
     ├── PG_TRGM_SEARCH_OPTIMIZATION.md # PostgreSQL search optimization guide
     ├── ROUTER_REGISTRY.md             # Router registry system
     └── SERVICE_LAYER_DECOUPLING.md    # Service layer architecture
@@ -312,7 +313,7 @@ For endpoints that return full nested relationship data:
 
 These endpoints return nested objects (teams, tournaments, sponsors) instead of just foreign key IDs, providing richer data in a single API call.
 
-**See [COMBINED_SCHEMAS.md](docs/COMBINED_SCHEMAS.md)** for detailed guide on:
+**See [docs/schemas/index.md](docs/schemas/index.md)** for detailed guide on:
 - All available combined schemas
 - When to use basic vs. combined schemas
 - Creating new complex schemas with eager loading
@@ -338,8 +339,9 @@ For comprehensive WebSocket documentation including message formats, connection 
 
 For comprehensive development guidelines, coding standards and best practices, see:
 
-- **[DEVELOPMENT_GUIDELINES.md](docs/DEVELOPMENT_GUIDELINES.md)** - General development patterns, service layer, testing
-- **[COMBINED_SCHEMAS.md](docs/COMBINED_SCHEMAS.md)** - Using and creating combined schemas with nested relationships
+- **[docs/development/index.md](docs/development/index.md)** - General development patterns, service layer, testing
+- **[docs/schemas/index.md](docs/schemas/index.md)** - Using and creating combined schemas with nested relationships
+- **[docs/schema-standardization/index.md](docs/schema-standardization/index.md)** - Schema standardization plan and checklist
 
 These documents cover:
 - Code style and naming conventions
@@ -423,7 +425,7 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 
 1. Fork repository
 2. Create a feature branch
-3. Make your changes following the guidelines in `docs/DEVELOPMENT_GUIDELINES.md`
+3. Make your changes following the guidelines in `docs/development/index.md`
 4. Add tests for new functionality
 5. Run tests: `docker-compose -f docker-compose.test-db-only.yml up -d && pytest`
 6. Lint code: `ruff check src/ tests/` (use `--fix` to auto-fix issues)
@@ -433,7 +435,7 @@ Logging is configured via YAML files (`logging-config_dev.yaml`, `logging-config
 **Important:**
 - All commits must be by linroot with email nevalions@gmail.com
 - Follow existing code patterns and conventions
-- Read `docs/DEVELOPMENT_GUIDELINES.md` for comprehensive development guidelines
+- Read `docs/development/index.md` for comprehensive development guidelines
 
 ## Recent Improvements
 

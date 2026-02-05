@@ -1,0 +1,10 @@
+# WebSocket and Real-time
+
+- Use the existing `ws_manager` for connection management
+- Follow existing event notification patterns in domain modules
+- Test connection handling and reconnection scenarios
+- Use PostgreSQL LISTEN/NOTIFY for real-time updates (see `src/utils/websocket/websocket_manager.py`)
+- Always clean up connections on disconnect
+- WebSocket compression (permessage-deflate) is enabled and logged per connection
+
+For endpoint and message formats, see `docs/api/websockets.md`.

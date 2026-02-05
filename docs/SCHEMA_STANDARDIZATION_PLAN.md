@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document outlines a comprehensive plan for standardizing Pydantic schema patterns in the statsboards-backend project. The goal is to ensure consistency across all domains with clear naming conventions, schema hierarchies, and guidelines for when to use different schema types.
+This document is now an index. See the split schema standardization docs:
+
+- `docs/schema-standardization/index.md`
 
 ## Current State Analysis
 
@@ -565,8 +567,8 @@ The following domains need review to ensure compliance with standards:
 - [ ] Performance test search endpoints
 
 ### Phase 6: Documentation Updates (Week 8)
-- [ ] Update COMBINED_SCHEMAS.md
-- [ ] Update DEVELOPMENT_GUIDELINES.md
+- [ ] Update docs/schemas/index.md
+- [ ] Update docs/development/index.md
 - [ ] Add schema creation checklist
 - [ ] Add search implementation checklist
 - [ ] Create quick reference guide
@@ -652,8 +654,8 @@ class Paginated{Entity}WithFullDetailsResponse(BaseModel):
 ## References
 
 ### Internal Documentation
-- [COMBINED_SCHEMAS.md](COMBINED_SCHEMAS.md) - Existing combined schemas guide
-- [DEVELOPMENT_GUIDELINES.md](DEVELOPMENT_GUIDELINES.md) - Development patterns and best practices
+- [docs/schemas/index.md](schemas/index.md) - Existing combined schemas guide
+- [docs/development/index.md](development/index.md) - Development patterns and best practices
 - [SERVICE_LAYER_DECOUPLING.md](SERVICE_LAYER_DECOUPLING.md) - Service layer architecture
 
 ### External Resources
