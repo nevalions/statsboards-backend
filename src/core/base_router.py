@@ -41,6 +41,10 @@ class MinimalBaseRouter(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 pass
         return None
 
+    def clear_lazy_service_cache(self) -> None:
+        """Clear cached lazy service instance, forcing reload on next access."""
+        self._lazy_service = None
+
     @staticmethod
     def create_response(
         item: object | None, message: str, _type: ResponseType = "text"

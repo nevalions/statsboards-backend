@@ -334,6 +334,10 @@ async def test_app(session_app, test_db):
     registry = get_service_registry()
     registry.update_database(test_db)
 
+    for route in session_app.routes:
+        if hasattr(route, "app") and hasattr(route.app, "clear_lazy_service_cache"):
+            route.app.clear_lazy_service_cache()
+
     yield session_app
 
 

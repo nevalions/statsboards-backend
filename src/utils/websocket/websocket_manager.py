@@ -296,7 +296,7 @@ class MatchDataWebSocketManager:
                 if self.connection:
                     for channel, listener in self._listeners.items():
                         try:
-                            self.connection.remove_listener(channel, listener)
+                            await self.connection.remove_listener(channel, listener)
                             self.logger.debug(f"Removed listener for channel: {channel}")
                         except Exception as e:
                             self.logger.warning(f"Error removing listener for {channel}: {str(e)}")

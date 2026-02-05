@@ -198,7 +198,7 @@ def test_static_files_mount(mock_settings):
 
     static_mount_found = False
     for route in app.routes:
-        if hasattr(route, "path") and route.path == "/static/uploads":
+        if hasattr(route, "path") and getattr(route, "path", "") == "/static/uploads":
             static_mount_found = True
             break
 
@@ -207,7 +207,7 @@ def test_static_files_mount(mock_settings):
 
 @pytest.mark.asyncio
 async def test_websocket_in_lifespan(
-    mock_settings, mock_ws_manager, mock_user_service, mock_clock_orchestrator
+    mock_settings, mock_db, mock_ws_manager, mock_user_service, mock_clock_orchestrator
 ):
     """Test WebSocket startup/shutdown in lifespan."""
     from src.main import lifespan
