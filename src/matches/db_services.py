@@ -1,5 +1,5 @@
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 
 from src.core.models import (
     BaseServiceDB,
@@ -116,9 +116,9 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
                 .where(MatchDB.id == match_id)
                 .options(
                     joinedload(MatchDB.tournaments).joinedload(TournamentDB.main_sponsor),
-                    joinedload(MatchDB.tournaments).joinedload(TournamentDB.sponsor_line),
+                    joinedload(MatchDB.tournaments).joinedload(TournamentDB.sponsor_line).selectinload(SponsorLineDB.sponsors),
                     joinedload(MatchDB.main_sponsor),
-                    joinedload(MatchDB.sponsor_line),
+                    joinedload(MatchDB.sponsor_line).selectinload(SponsorLineDB.sponsors),
                 )
             )
             result = await session.execute(stmt)

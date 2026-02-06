@@ -7,7 +7,7 @@ from fastapi import status
 from sqlalchemy import select
 
 from src.core import db
-from src.core.models import TeamDB
+from src.core.models import SponsorDB, SponsorSponsorLineDB, TeamDB
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.logging_config import get_logger
@@ -21,6 +21,36 @@ from src.tournaments.db_services import TournamentServiceDB
 
 logger = get_logger("helpers")
 fetch_data_logger = get_logger("fetch_data")
+
+
+async def _fetch_sponsor_line_sponsors(sponsor_line_id: int | None, database=None) -> list[dict]:
+    """Fetch sponsors for a sponsor_line with their positions."""
+    if not sponsor_line_id:
+        return []
+
+    _db = database or db
+    async with _db.get_session_maker()() as session:
+        result = await session.execute(
+            select(SponsorDB, SponsorSponsorLineDB.position)
+            .join(
+                SponsorSponsorLineDB,
+                SponsorDB.id == SponsorSponsorLineDB.sponsor_id,
+            )
+            .where(SponsorSponsorLineDB.sponsor_line_id == sponsor_line_id)
+        )
+        sponsors = [
+            {
+                "sponsor": {
+                    "id": r[0].id,
+                    "title": r[0].title,
+                    "logo_url": r[0].logo_url,
+                    "scale_logo": r[0].scale_logo,
+                },
+                "position": r[1],
+            }
+            for r in result.all()
+        ]
+        return sorted(sponsors, key=lambda x: x["position"] or 0)
 
 
 async def fetch_list_of_matches_data(matches: list[Any]) -> list[dict[str, Any]] | None:
@@ -151,6 +181,16 @@ async def fetch_with_scoreboard_data(
         fetch_data_logger.debug(f"Fetched match for match_id: {match_id}")
         fetch_data_logger.debug(f"Fetched match_data for match_id: {match_id}")
 
+        # Fetch sponsor_line sponsors with positions (for match and tournament)
+        match_sponsor_line_id = match.sponsor_line_id if match else None
+        tournament_sponsor_line_id = (
+            match.tournaments.sponsor_line_id if match and match.tournaments else None
+        )
+        match_sponsor_line_sponsors, tournament_sponsor_line_sponsors = await asyncio.gather(
+            _fetch_sponsor_line_sponsors(match_sponsor_line_id, database=_db),
+            _fetch_sponsor_line_sponsors(tournament_sponsor_line_id, database=_db),
+        )
+
         if match:
             if match_data is None:
                 fetch_data_logger.debug(
@@ -171,6 +211,16 @@ async def fetch_with_scoreboard_data(
             match_dict = deep_dict_convert(match.__dict__)
             if match_dict and "tournaments" in match_dict:
                 match_dict["tournament"] = match_dict.pop("tournaments")
+
+            # Add sponsor_line_sponsors to sponsor_line in match dict
+            if match_dict and match_dict.get("sponsor_line"):
+                match_dict["sponsor_line"]["sponsors"] = match_sponsor_line_sponsors
+            if (
+                match_dict
+                and match_dict.get("tournament")
+                and match_dict["tournament"].get("sponsor_line")
+            ):
+                match_dict["tournament"]["sponsor_line"]["sponsors"] = tournament_sponsor_line_sponsors
 
             final_match_with_scoreboard_data_fetched = {
                 "data": {

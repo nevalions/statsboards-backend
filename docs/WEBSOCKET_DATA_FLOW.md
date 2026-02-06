@@ -77,7 +77,7 @@ This document is now an index. See the split WebSocket docs:
 **Backend flow:**
 1. WebSocket connection accepted
 2. Fetch all match-related data in parallel:
-   - `fetch_with_scoreboard_data(match_id)` → match, teams, matchdata, scoreboard, players, events
+   - `fetch_with_scoreboard_data(match_id)` → match, teams, matchdata, scoreboard, players, events, sponsor_line sponsors
    - `fetch_gameclock(match_id)` → gameclock
    - `fetch_playclock(match_id)` → playclock
    - `fetch_event(match_id)` → events (redundant with scoreboard fetch)
@@ -97,7 +97,50 @@ This document is now an index. See the split WebSocket docs:
       "team_a_id": 1,
       "team_b_id": 2,
       "tournament_id": 5,
-      "scheduled_at": "2026-01-27T10:00:00"
+      "scheduled_at": "2026-01-27T10:00:00",
+      "sponsor_line": {
+        "id": 3,
+        "title": "Match Sponsors",
+        "sponsors": [
+          {
+            "sponsor": {
+              "id": 1,
+              "title": "Acme Corp",
+              "logo_url": "/static/uploads/sponsors/logos/acme.png",
+              "scale_logo": 1.5
+            },
+            "position": 1
+          },
+          {
+            "sponsor": {
+              "id": 2,
+              "title": "Beta Industries",
+              "logo_url": "/static/uploads/sponsors/logos/beta.png",
+              "scale_logo": 1.0
+            },
+            "position": 2
+          }
+        ]
+      },
+      "tournament": {
+        "id": 5,
+        "title": "Championship Tournament",
+        "sponsor_line": {
+          "id": 4,
+          "title": "Tournament Sponsors",
+          "sponsors": [
+            {
+              "sponsor": {
+                "id": 3,
+                "title": "Global Sports",
+                "logo_url": "/static/uploads/sponsors/logos/global.png",
+                "scale_logo": 1.0
+              },
+              "position": 1
+            }
+          ]
+        }
+      }
     },
     "teams_data": {
       "team_a": {
@@ -378,7 +421,41 @@ if (hasMatchDataFields) {
       "team_a_id": 1,
       "team_b_id": 2,
       "tournament_id": 5,
-      "scheduled_at": "2026-01-27T10:00:00"
+      "scheduled_at": "2026-01-27T10:00:00",
+      "sponsor_line": {
+        "id": 3,
+        "title": "Match Sponsors",
+        "sponsors": [
+          {
+            "sponsor": {
+              "id": 1,
+              "title": "Acme Corp",
+              "logo_url": "/static/uploads/sponsors/logos/acme.png",
+              "scale_logo": 1.5
+            },
+            "position": 1
+          }
+        ]
+      },
+      "tournament": {
+        "id": 5,
+        "title": "Championship Tournament",
+        "sponsor_line": {
+          "id": 4,
+          "title": "Tournament Sponsors",
+          "sponsors": [
+            {
+              "sponsor": {
+                "id": 3,
+                "title": "Global Sports",
+                "logo_url": "/static/uploads/sponsors/logos/global.png",
+                "scale_logo": 1.0
+              },
+              "position": 1
+            }
+          ]
+        }
+      }
     },
     "teams_data": {
       "team_a": {
