@@ -220,7 +220,64 @@ async def fetch_with_scoreboard_data(
                 and match_dict.get("tournament")
                 and match_dict["tournament"].get("sponsor_line")
             ):
-                match_dict["tournament"]["sponsor_line"]["sponsors"] = tournament_sponsor_line_sponsors
+                match_dict["tournament"]["sponsor_line"]["sponsors"] = (
+                    tournament_sponsor_line_sponsors
+                )
+
+            def _sponsor_public(sponsor: Any) -> dict[str, Any] | None:
+                if not isinstance(sponsor, dict):
+                    return None
+                return {
+                    "id": sponsor.get("id"),
+                    "title": sponsor.get("title"),
+                    "logo_url": sponsor.get("logo_url"),
+                    "scale_logo": sponsor.get("scale_logo"),
+                }
+
+            def _sponsor_line_public(sponsor_line: Any) -> dict[str, Any] | None:
+                if not isinstance(sponsor_line, dict):
+                    return None
+                sponsors_raw = sponsor_line.get("sponsors") or []
+                sponsors: list[dict[str, Any]] = []
+                if isinstance(sponsors_raw, list):
+                    for item in sponsors_raw:
+                        if not isinstance(item, dict):
+                            continue
+                        sponsors.append(
+                            {
+                                "position": item.get("position"),
+                                "sponsor": _sponsor_public(item.get("sponsor")),
+                            }
+                        )
+                return {
+                    "id": sponsor_line.get("id"),
+                    "title": sponsor_line.get("title"),
+                    "is_visible": sponsor_line.get("is_visible"),
+                    "sponsors": sponsors,
+                }
+
+            tournament_dict = match_dict.get("tournament") if isinstance(match_dict, dict) else None
+            if not isinstance(tournament_dict, dict):
+                tournament_dict = None
+
+            sponsors_data = {
+                "match": {
+                    "main_sponsor": _sponsor_public(match_dict.get("main_sponsor"))
+                    if match_dict
+                    else None,
+                    "sponsor_line": _sponsor_line_public(match_dict.get("sponsor_line"))
+                    if match_dict
+                    else None,
+                },
+                "tournament": {
+                    "main_sponsor": _sponsor_public(tournament_dict.get("main_sponsor"))
+                    if tournament_dict
+                    else None,
+                    "sponsor_line": _sponsor_line_public(tournament_dict.get("sponsor_line"))
+                    if tournament_dict
+                    else None,
+                },
+            }
 
             final_match_with_scoreboard_data_fetched = {
                 "data": {
@@ -228,6 +285,7 @@ async def fetch_with_scoreboard_data(
                     "id": match_id,
                     "status_code": status.HTTP_200_OK,
                     "match": match_dict,
+                    "sponsors_data": sponsors_data,
                     "scoreboard_data": instance_to_dict(dict(scoreboard_data.__dict__)),
                     "teams_data": deep_dict_convert(match_teams_data),
                     "match_data": instance_to_dict(dict(match_data.__dict__)),

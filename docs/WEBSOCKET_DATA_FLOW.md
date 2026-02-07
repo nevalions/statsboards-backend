@@ -77,7 +77,7 @@ This document is now an index. See the split WebSocket docs:
 **Backend flow:**
 1. WebSocket connection accepted
 2. Fetch all match-related data in parallel:
-   - `fetch_with_scoreboard_data(match_id)` → match, teams, matchdata, scoreboard, players, events, sponsor_line sponsors
+    - `fetch_with_scoreboard_data(match_id)` → match, teams, matchdata, scoreboard, players, events, sponsors_data, sponsor_line sponsors
    - `fetch_gameclock(match_id)` → gameclock
    - `fetch_playclock(match_id)` → playclock
    - `fetch_event(match_id)` → events (redundant with scoreboard fetch)
@@ -174,6 +174,55 @@ This document is now an index. See the split WebSocket docs:
       "is_main_sponsor": false,
       "show_team_names": true
     },
+    "sponsors_data": {
+      "match": {
+        "main_sponsor": null,
+        "sponsor_line": {
+          "id": 3,
+          "title": "Match Sponsors",
+          "is_visible": true,
+          "sponsors": [
+            {
+              "position": 1,
+              "sponsor": {
+                "id": 1,
+                "title": "Acme Corp",
+                "logo_url": "/static/uploads/sponsors/logos/acme.png",
+                "scale_logo": 1.5
+              }
+            },
+            {
+              "position": 2,
+              "sponsor": {
+                "id": 2,
+                "title": "Beta Industries",
+                "logo_url": "/static/uploads/sponsors/logos/beta.png",
+                "scale_logo": 1.0
+              }
+            }
+          ]
+        }
+      },
+      "tournament": {
+        "main_sponsor": null,
+        "sponsor_line": {
+          "id": 4,
+          "title": "Tournament Sponsors",
+          "is_visible": true,
+          "sponsors": [
+            {
+              "position": 1,
+              "sponsor": {
+                "id": 3,
+                "title": "Global Sports",
+                "logo_url": "/static/uploads/sponsors/logos/global.png",
+                "scale_logo": 1.0
+              }
+            }
+          ]
+        }
+      }
+    },
     "players": [
       {
         "id": 100,
@@ -233,6 +282,7 @@ if (messageType === 'initial-load') {
     match: data['match'],
     teams_data: data['teams_data'],
     scoreboard_data: data['scoreboard_data'],
+    sponsors_data: data['sponsors_data'],
     players: data['players'] || [],
     events: data['events'] || [],
     gameclock: data['gameclock'],
