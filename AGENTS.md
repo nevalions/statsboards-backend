@@ -68,7 +68,7 @@ alembic downgrade -1
 
 ### Test Suite Status
 
-Fast tests: 1430 tests pass in ~16s (8 workers). Full suite: ~1523 tests in ~90s. Tests use:
+Fast tests: 1430 tests pass in ~16s (8 workers). Full suite: ~1555 tests in ~90s. Tests use:
 - Transactional rollback for isolation
 - 8 parallel databases (test_db, test_db2, test_db3, test_db4, test_db5, test_db6, test_db7, test_db8) distributed across 8 workers
 - Worker-specific lock files for safe table creation
@@ -111,6 +111,10 @@ Fast tests: 1430 tests pass in ~16s (8 workers). Full suite: ~1523 tests in ~90s
 **Recently improved coverage (2026-02-05):**
 - `src/matches/stats_websocket_handler.py` - Added 11 tests for exception handling, client exclusion, WebSocket disconnect, malformed JSON, invalid timestamps, and full connection lifecycle
 - `src/pars_eesl/pars_match.py` - Added 15 tests for parsing match data, player data, edge cases, and error handling
+
+**Recently improved coverage (2026-02-09):**
+- `tests/test_db_services/test_sport_scoreboard_preset_service.py` - Added 17 tests for preset CRUD, sport linking, preset update propagation with use_sport_preset flag, and multiple sports per preset
+- `tests/test_db_services/test_gameclock_state_machine.py` - Added 15 tests for count-up direction state machine, stop-at-max behavior, increment over time, pause/resume/stop operations, and status transitions
 
 **Modules with high coverage (>90%):**
 - Most schema files have 100% coverage
