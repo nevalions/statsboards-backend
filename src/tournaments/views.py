@@ -578,7 +578,10 @@ class TournamentAPIRouter(
                 return TournamentSchema.model_validate(created_tournament)
             else:
                 self.logger.warning(f"Failed to parse tournament eesl_id:{eesl_tournament_id}")
-                return None
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Tournament eesl_id({eesl_tournament_id}) not found or failed to parse",
+                )
 
         @router.delete(
             "/id/{model_id}",

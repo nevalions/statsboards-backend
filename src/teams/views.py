@@ -10,6 +10,7 @@ from src.core.models import TeamDB, handle_view_exceptions
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
 from ..pars_eesl.pars_tournament import (
+    parse_team_and_create_jsons,
     parse_tournament_teams_index_page_eesl,
 )
 from ..team_tournament.schemas import TeamTournamentSchemaCreate
@@ -305,6 +306,45 @@ class TeamAPIRouter(BaseRouter[TeamSchema, TeamSchemaCreate, TeamSchemaUpdate]):
             else:
                 self.logger.warning("Team list is empty")
                 return []
+
+        @router.get(
+            "/pars/team/{eesl_team_id}",
+        )
+        async def get_parsed_team_endpoint(eesl_team_id: int):
+            self.logger.debug(f"Get parsed team from eesl_id:{eesl_team_id} endpoint")
+            return await parse_team_and_create_jsons(eesl_team_id)
+
+        @router.post(
+            "/pars_and_create/team/{eesl_team_id}",
+            response_model=TeamSchema,
+        )
+        @handle_view_exceptions(
+            error_message="Internal server error parsing and creating team",
+            status_code=500,
+        )
+        async def create_parsed_single_team_endpoint(
+            team_service: TeamService,
+            eesl_team_id: int,
+            sport_id: int | None = Query(None),
+        ):
+            self.logger.debug(
+                f"Get and Save parsed team from eesl_id:{eesl_team_id} sport_id:{sport_id} endpoint"
+            )
+            team_data = await parse_team_and_create_jsons(eesl_team_id)
+
+            if team_data:
+                if sport_id is not None:
+                    team_data["sport_id"] = sport_id
+                team = TeamSchemaCreate(**team_data)
+                created_team = await team_service.create_or_update_team(team)
+                self.logger.info(f"Created team after parsing: {created_team}")
+                return TeamSchema.model_validate(created_team)
+            else:
+                self.logger.warning(f"Failed to parse team eesl_id:{eesl_team_id}")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Team eesl_id({eesl_team_id}) not found or failed to parse",
+                )
 
         @router.get(
             "/paginated",

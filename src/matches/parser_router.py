@@ -38,7 +38,7 @@ class MatchParserRouter(
         async def get_parse_tournament_matches(eesl_tournament_id: int):
             return await match_parser.get_parse_tournament_matches(eesl_tournament_id)
 
-        @router.get("/pars_and_create/tournament/{eesl_tournament_id}")
+        @router.post("/pars_and_create/tournament/{eesl_tournament_id}")
         async def create_parsed_matches_endpoint(
             eesl_tournament_id: int,
         ):
@@ -46,5 +46,18 @@ class MatchParserRouter(
                 f"Get and Save parsed matches from tournament eesl_id:{eesl_tournament_id} endpoint"
             )
             return await match_parser.create_parsed_matches(eesl_tournament_id, self.loaded_service)
+
+        @router.get(
+            "/pars/match/{eesl_match_id}",
+        )
+        async def get_parse_match(eesl_match_id: int):
+            return await match_parser.get_parse_match(eesl_match_id)
+
+        @router.post("/pars_and_create/match/{eesl_match_id}")
+        async def create_parsed_single_match_endpoint(
+            eesl_match_id: int,
+        ):
+            self.logger.debug(f"Get and Save parsed match from eesl_id:{eesl_match_id} endpoint")
+            return await match_parser.create_parsed_single_match(eesl_match_id, self.loaded_service)
 
         return router

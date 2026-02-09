@@ -8,7 +8,7 @@ from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import months, safe_int_conversion
 from src.logging_config import get_logger
-from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL, SEASON_ID
+from src.pars_eesl.pars_settings import BASE_TEAM_URL, BASE_TOURNAMENT_URL, SEASON_ID
 
 logger = get_logger("parser_eesl")
 ITEM_PARSED = "TOURNAMENT"
@@ -39,6 +39,18 @@ class ParsedMatchData(TypedDict):
 
 
 class ParsedTeamData(TypedDict):
+    team_eesl_id: int
+    title: str
+    description: str
+    team_logo_url: str
+    team_logo_icon_url: str
+    team_logo_web_url: str
+    city: str
+    team_color: str
+    sport_id: int
+
+
+class ParsedTeamBasicData(TypedDict):
     team_eesl_id: int
     title: str
     description: str
@@ -135,6 +147,107 @@ async def parse_tournament_basic_data_eesl(
     except Exception as ex:
         logger.error(
             f"Problem parsing {ITEM_PARSED} basic data for id:{_id}, {ex}",
+            exc_info=True,
+        )
+        return None
+
+
+async def parse_team_basic_data_eesl(
+    _id: int,
+    base_url: str = BASE_TEAM_URL,
+    sport_id: int | None = None,
+) -> ParsedTeamBasicData | None:
+    logger.debug(f"Starting parse for eesl {ITEM_GOT} basic data id:{_id} url:{base_url}{_id}")
+
+    url = f"{base_url}{str(_id)}"
+    req = await get_url(url)
+    if req is None:
+        logger.warning(f"Failed to fetch team page for id:{_id}")
+        return None
+
+    soup = BeautifulSoup(req.content, "lxml")
+
+    try:
+        team_title_tag = soup.find("h1", class_="team__title")
+        if team_title_tag:
+            team_title = team_title_tag.text.strip().lower()
+            logger.debug(f"{ITEM_GOT} title: {team_title}")
+        else:
+            logger.warning(f"No title found for {ITEM_GOT} id:{_id}")
+            return None
+
+        og_image_tag = soup.find("meta", property="og:image") or soup.find(
+            "meta", attrs={"name": "og:image"}
+        )
+        if og_image_tag:
+            team_logo_url = og_image_tag.get("content", "")
+            logger.debug(f"{ITEM_GOT} logo url: {team_logo_url}")
+        else:
+            logger.warning(f"No logo found for {ITEM_GOT} id:{_id}, using empty string")
+            team_logo_url = ""
+
+        icon_image_height = 100
+        web_view_image_height = 400
+
+        if team_logo_url:
+            image_info = await file_service.download_and_process_image(
+                img_url=team_logo_url,
+                image_type_prefix="teams/logos/",
+                image_title=team_title,
+                icon_height=icon_image_height,
+                web_view_height=web_view_image_height,
+            )
+        else:
+            image_info = {
+                "image_url": "",
+                "image_icon_url": "",
+                "image_webview_url": "",
+            }
+
+        team_color = "#c01c28"
+        try:
+            if image_info.get("image_path"):
+                team_color = (
+                    await file_service.get_most_common_color(image_info["image_path"]) or team_color
+                )
+        except Exception as ex:
+            logger.warning(
+                f"Failed to get color for {team_logo_url}. "
+                f"Using default color {team_color}. Error: {ex}",
+                exc_info=True,
+            )
+
+        final_team: ParsedTeamBasicData = {
+            "team_eesl_id": _id,
+            "title": team_title,
+            "description": "",
+            "team_logo_url": image_info["image_url"],
+            "team_logo_icon_url": image_info["image_icon_url"],
+            "team_logo_web_url": image_info["image_webview_url"],
+            "city": "",
+            "team_color": team_color,
+            "sport_id": sport_id if sport_id is not None else 1,
+        }
+        logger.info(f"Final {ITEM_GOT} data: {final_team}")
+        return final_team.copy()
+
+    except Exception as ex:
+        logger.error(
+            f"Problem parsing {ITEM_GOT} basic data for id:{_id}, {ex}",
+            exc_info=True,
+        )
+        return None
+
+
+async def parse_team_and_create_jsons(_id: int, sport_id: int | None = None):
+    logger.debug(f"Starting create parsed json for {ITEM_GOT} id:{_id}")
+    try:
+        data = await parse_team_basic_data_eesl(_id, sport_id=sport_id)
+        logger.debug(f"Parsed json for {ITEM_GOT} id:{_id} data: {data}")
+        return data
+    except Exception as ex:
+        logger.error(
+            f"Something goes wrong with creating parsed json for {ITEM_GOT} id:{_id}, {ex}",
             exc_info=True,
         )
         return None

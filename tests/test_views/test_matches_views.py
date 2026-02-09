@@ -519,3 +519,72 @@ class TestMatchViews:
         assert len(data["data"]) == 2
         assert all(m["tournament_id"] == tournament_a.id for m in data["data"])
         assert data["metadata"]["total_items"] == 2
+
+    async def test_get_parse_match_endpoint_not_found(self, client):
+        from unittest.mock import AsyncMock, patch
+
+        with patch("src.pars_eesl.pars_match.get_url", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+
+            response = await client.get("/api/matches/pars/match/99999")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["team_a"] == ""
+            assert data["team_b"] == ""
+            assert data["score_a"] == ""
+            assert data["score_b"] == ""
+            assert data["roster_a"] == []
+            assert data["roster_b"] == []
+
+    async def test_create_parsed_single_match_endpoint_teams_not_found(self, client, test_db):
+        from unittest.mock import AsyncMock, patch
+        from src.sports.db_services import SportServiceDB
+        from src.teams.db_services import TeamServiceDB
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create_or_update_team(
+            TeamFactory.build(sport_id=sport.id, team_eesl_id=100)
+        )
+        team_b = await team_service.create_or_update_team(
+            TeamFactory.build(sport_id=sport.id, team_eesl_id=200)
+        )
+
+        mock_match_data = {
+            "team_a": "Team A",
+            "team_b": "Team B",
+            "team_a_eesl_id": 300,
+            "team_b_eesl_id": 400,
+            "team_logo_url_a": "http://example.com/a.png",
+            "team_logo_url_b": "http://example.com/b.png",
+            "score_a": "1",
+            "score_b": "0",
+            "roster_a": [],
+            "roster_b": [],
+        }
+
+        with patch("src.pars_eesl.pars_match.get_url", new_callable=AsyncMock) as mock_get:
+            with patch("src.pars_eesl.pars_match.BeautifulSoup") as mock_soup:
+                mock_response = type("obj", (object,), {"content": b""})()
+                mock_get.return_value = mock_response
+
+                from bs4 import BeautifulSoup
+
+                mock_soup.return_value = BeautifulSoup(
+                    """
+                    <div class="match-promo__score-main">1:0</div>
+                    <a class="match-protocol__team-name match-protocol__team-name--left" href="/team/?team_id=300">Team A</a>
+                    <a class="match-protocol__team-name match-protocol__team-name--right" href="/team/?team_id=400">Team B</a>
+                    <img class="match-promo__team-img" src="http://example.com/a.png">
+                    <img class="match-promo__team-img" src="http://example.com/b.png">
+                    """,
+                    "lxml",
+                )
+
+                response = await client.post("/api/matches/pars_and_create/match/99999")
+
+                assert response.status_code == 200
+                assert response.json() == []

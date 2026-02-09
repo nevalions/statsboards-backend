@@ -117,6 +117,57 @@ Minimal response shape:
 
 ## Teams
 
+### GET /api/teams/pars/team/{eesl_team_id}
+
+Parse a single team's basic data from EESL (no DB writes).
+
+Auth: none.
+
+Minimal response shape:
+
+```json
+{
+  "team_eesl_id": 123,
+  "title": "string",
+  "description": "",
+  "team_logo_url": "string",
+  "team_logo_icon_url": "string",
+  "team_logo_web_url": "string",
+  "city": "",
+  "team_color": "#c01c28",
+  "sport_id": 1
+}
+```
+
+### POST /api/teams/pars_and_create/team/{eesl_team_id}
+
+Parse a single team's basic data and create/update it in DB.
+
+Auth: none.
+
+Query params:
+
+- `sport_id` (optional)
+
+Minimal response shape:
+
+```json
+{
+  "id": 1,
+  "team_eesl_id": 123,
+  "title": "string",
+  "sport_id": 1
+}
+```
+
+Error response (404 when team not found):
+
+```json
+{
+  "detail": "Team eesl_id(123) not found or failed to parse"
+}
+```
+
 ### GET /api/teams/pars/tournament/{eesl_tournament_id}
 
 Parse teams for a tournament (no DB writes).

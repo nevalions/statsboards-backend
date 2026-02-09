@@ -8,7 +8,7 @@ from .pars_settings import (
     BASE_TOURNAMENT_URL,
     BASE_URL,
 )
-from .pars_tournament import parse_tournament_and_create_jsons
+from .pars_tournament import parse_team_and_create_jsons, parse_tournament_and_create_jsons
 
 __all__ = [
     "BASE_ALL_PLAYERS_URL",
@@ -20,4 +20,5 @@ __all__ = [
     "BASE_TOURNAMENT_URL",
     "BASE_URL",
     "parse_tournament_and_create_jsons",
+    "parse_team_and_create_jsons",
 ]

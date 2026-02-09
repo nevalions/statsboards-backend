@@ -219,3 +219,25 @@ class TestTeamViews:
 
         assert response.status_code == 200
         assert response.json()["title"] == "New Team"
+
+    async def test_get_parsed_team_endpoint_not_found(self, client):
+        from unittest.mock import AsyncMock, patch
+
+        with patch("src.pars_eesl.pars_tournament.get_url", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+
+            response = await client.get("/api/teams/pars/team/99999")
+
+            assert response.status_code == 200
+            assert response.json() is None
+
+    async def test_create_parsed_single_team_endpoint_not_found(self, client):
+        from unittest.mock import AsyncMock, patch
+
+        with patch("src.pars_eesl.pars_tournament.get_url", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+
+            response = await client.post("/api/teams/pars_and_create/team/99999")
+
+            assert response.status_code == 404
+            assert "not found or failed to parse" in response.json()["detail"]
