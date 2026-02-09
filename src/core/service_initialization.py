@@ -159,6 +159,12 @@ def _role_factory(database: Database) -> BaseServiceDB:
     return RoleServiceDB(database)
 
 
+def _sport_scoreboard_preset_factory(database: Database) -> BaseServiceDB:
+    from src.sport_scoreboard_preset.db_services import SportScoreboardPresetServiceDB
+
+    return SportScoreboardPresetServiceDB(database)
+
+
 def register_all_services(database: Database) -> ServiceRegistry:
     """Register all service factories with the global registry.
 
@@ -198,6 +204,7 @@ def register_all_services(database: Database) -> ServiceRegistry:
         ("user", _user_factory, False),
         ("global_setting", _global_setting_factory, False),
         ("role", _role_factory, False),
+        ("sport_scoreboard_preset", _sport_scoreboard_preset_factory, False),
     )
 
     for service_name, factory, singleton in services:

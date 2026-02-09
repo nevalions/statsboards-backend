@@ -34,6 +34,7 @@ This document is now an index. Each API area is split into smaller files under `
 - [Player Match API](api/player-match-api.md)
 - [Team Rosters API](api/team-rosters-api.md)
 - [Sports API](api/sports-api.md)
+- [Sport Scoreboard Presets API](api/sport-scoreboard-presets-api.md)
 - [Positions API](api/positions-api.md)
 - [Scoreboards API](api/scoreboards-api.md)
 - [Playclocks API](api/playclocks-api.md)

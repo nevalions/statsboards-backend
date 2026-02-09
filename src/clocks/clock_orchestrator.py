@@ -2,11 +2,14 @@ import asyncio
 import time
 from typing import Awaitable, Callable, Protocol
 
+from src.core.enums import ClockDirection
 from src.logging_config import get_logger
 
 
 class ClockStateMachineProtocol(Protocol):
     started_at_ms: int | None
+    direction: ClockDirection
+    max_value: int
 
     def get_current_value(self) -> int: ...
 
@@ -116,8 +119,20 @@ class ClockOrchestrator:
         if self._is_stopping or not self._is_running:
             return
         current_value = state_machine.get_current_value()
-        if current_value == 0:
-            self.logger.info("Gameclock %s reached 0; stopping", clock_id)
+
+        should_stop = False
+        if state_machine.direction == ClockDirection.DOWN:
+            if current_value == 0:
+                should_stop = True
+                self.logger.info("Gameclock %s (DOWN) reached 0; stopping", clock_id)
+        else:
+            if current_value >= state_machine.max_value:
+                should_stop = True
+                self.logger.info(
+                    "Gameclock %s (UP) reached max %s; stopping", clock_id, state_machine.max_value
+                )
+
+        if should_stop:
             if self._gameclock_stop_callback:
                 self.logger.debug("Invoking gameclock stop callback for %s", clock_id)
                 await self._gameclock_stop_callback(clock_id)

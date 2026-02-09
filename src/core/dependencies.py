@@ -131,6 +131,11 @@ def get_role_service():
     return registry.get("role")
 
 
+def get_sport_scoreboard_preset_service():
+    registry = get_service_registry()
+    return registry.get("sport_scoreboard_preset")
+
+
 SportService = Annotated[Any, Depends(get_sport_service)]
 SeasonService = Annotated[Any, Depends(get_season_service)]
 TournamentService = Annotated[Any, Depends(get_tournament_service)]
@@ -155,3 +160,4 @@ MatchDataCacheService = Annotated[Any, Depends(get_match_data_cache_service)]
 UserService = Annotated[Any, Depends(get_user_service)]
 GlobalSettingService = Annotated[Any, Depends(get_global_setting_service)]
 RoleService = Annotated[Any, Depends(get_role_service)]
+SportScoreboardPresetService = Annotated[Any, Depends(get_sport_scoreboard_preset_service)]

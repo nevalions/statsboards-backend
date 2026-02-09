@@ -7,7 +7,8 @@ from fastapi import status
 from sqlalchemy import select
 
 from src.core import db
-from src.core.models import SponsorDB, SponsorSponsorLineDB, TeamDB
+from src.core.enums import ClockDirection, ClockOnStopBehavior
+from src.core.models import SponsorDB, SponsorSponsorLineDB, SportScoreboardPresetDB, TeamDB
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.logging_config import get_logger
@@ -23,7 +24,49 @@ logger = get_logger("helpers")
 fetch_data_logger = get_logger("fetch_data")
 
 
-async def _fetch_sponsor_line_sponsors(sponsor_line_id: int | None, database=None) -> list[dict]:
+def _get_preset_values_for_gameclock(preset: SportScoreboardPresetDB) -> dict[str, Any]:
+    """Extract preset values for gameclock creation."""
+    return {
+        "gameclock_max": preset.gameclock_max,
+        "direction": preset.direction,
+        "on_stop_behavior": preset.on_stop_behavior,
+        "use_sport_preset": True,
+    }
+
+
+def _get_preset_values_for_scoreboard(preset: SportScoreboardPresetDB) -> dict[str, Any]:
+    """Extract preset values for scoreboard creation."""
+    return {
+        "is_qtr": preset.is_qtr,
+        "is_time": preset.is_time,
+        "is_playclock": preset.is_playclock,
+        "is_downdistance": preset.is_downdistance,
+        "use_sport_preset": True,
+    }
+
+
+def _get_default_gameclock_values() -> dict[str, Any]:
+    """Get default gameclock values when no sport preset is available."""
+    return {
+        "gameclock_max": 720,
+        "direction": ClockDirection.DOWN,
+        "on_stop_behavior": ClockOnStopBehavior.HOLD,
+        "use_sport_preset": True,
+    }
+
+
+def _get_default_scoreboard_values() -> dict[str, Any]:
+    """Get default scoreboard values when no sport preset is available."""
+    return {
+        "is_qtr": True,
+        "is_time": True,
+        "is_playclock": True,
+        "is_downdistance": True,
+        "use_sport_preset": True,
+    }
+
+
+async def _fetch_sponsor_line_sponsors(sponsor_line_id: int | None, database=None) -> list:
     """Fetch sponsors for a sponsor_line with their positions."""
     if not sponsor_line_id:
         return []
@@ -335,20 +378,35 @@ async def fetch_gameclock(
 
     from src.matches.db_services import MatchServiceDB
 
-    fetch_data_logger.debug(f"Starting fetching gemeclock with match_id:{match_id}")
+    fetch_data_logger.debug(f"Starting fetching gameclock with match_id:{match_id}")
     _db = database or db
     gameclock_service = GameClockServiceDB(_db)
     match_service_db = MatchServiceDB(_db)
 
     try:
-        match, gameclock = await asyncio.gather(
+        match, gameclock, sport = await asyncio.gather(
             match_service_db.get_by_id(match_id),
             gameclock_service.get_gameclock_by_match_id(match_id),
+            match_service_db.get_sport_by_match_id(match_id),
         )
 
         if match:
             if gameclock is None:
                 gameclock_schema = GameClockSchemaCreate(match_id=match_id)
+
+                if sport and sport.scoreboard_preset:
+                    preset_values = _get_preset_values_for_gameclock(sport.scoreboard_preset)
+                    fetch_data_logger.debug(
+                        f"Using sport preset {sport.scoreboard_preset.id} for gameclock"
+                    )
+                    for key, value in preset_values.items():
+                        setattr(gameclock_schema, key, value)
+                else:
+                    default_values = _get_default_gameclock_values()
+                    fetch_data_logger.debug("Using default gameclock values")
+                    for key, value in default_values.items():
+                        setattr(gameclock_schema, key, value)
+
                 gameclock = await gameclock_service.create(gameclock_schema)
             return {
                 "match_id": match_id,

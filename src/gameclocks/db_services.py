@@ -21,12 +21,23 @@ class ClockManager:
         self.logger = get_logger("ClockManager", self)
         self.logger.debug("Initialized ClockManager")
 
-    async def start_clock(self, gameclock_id: int, initial_value: int = 0) -> None:
+    async def start_clock(
+        self,
+        gameclock_id: int,
+        initial_value: int = 0,
+        direction: str = "down",
+        max_value: int = 720,
+    ) -> None:
         self.logger.debug("Start clock in clock manager")
         if gameclock_id not in self.active_gameclock_matches:
             self.active_gameclock_matches[gameclock_id] = asyncio.Queue()
         if gameclock_id not in self.clock_state_machines:
-            self.clock_state_machines[gameclock_id] = ClockStateMachine(gameclock_id, initial_value)
+            from src.core.enums import ClockDirection
+
+            direction_enum = ClockDirection(direction) if isinstance(direction, str) else direction
+            self.clock_state_machines[gameclock_id] = ClockStateMachine(
+                gameclock_id, initial_value, direction_enum, max_value
+            )
 
     async def end_clock(self, gameclock_id: int) -> None:
         self.logger.debug("Stop clock in clock manager")
@@ -123,7 +134,9 @@ class GameClockServiceDB(BaseServiceDB):
         if item_id not in active_clock_matches:
             self.logger.debug(f"Gameclock not in active gameclock matches: {item_id}")
             initial_value = gameclock.gameclock if gameclock and gameclock.gameclock else 0
-            await self.clock_manager.start_clock(item_id, initial_value)
+            direction = getattr(gameclock, "direction", "down")
+            max_value = getattr(gameclock, "gameclock_max", 720)
+            await self.clock_manager.start_clock(item_id, initial_value, direction, max_value)
 
             state_machine = self.clock_manager.get_clock_state_machine(item_id)
             if state_machine and gameclock and gameclock.gameclock_status == ClockStatus.RUNNING:
@@ -176,7 +189,9 @@ class GameClockServiceDB(BaseServiceDB):
         state_machine = self.clock_manager.get_clock_state_machine(gameclock.id)
         if not state_machine:
             initial_value = gameclock.gameclock if gameclock.gameclock is not None else 0
-            await self.clock_manager.start_clock(gameclock.id, initial_value)
+            direction = getattr(gameclock, "direction", "down")
+            max_value = getattr(gameclock, "gameclock_max", 720)
+            await self.clock_manager.start_clock(gameclock.id, initial_value, direction, max_value)
             state_machine = self.clock_manager.get_clock_state_machine(gameclock.id)
         if not state_machine:
             return

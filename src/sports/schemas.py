@@ -11,6 +11,7 @@ from src.core.schema_helpers import make_fields_optional
 class SportSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=255)]
     description: str | None = None
+    scoreboard_preset_id: int | None = None
 
 
 SportSchemaUpdate = make_fields_optional(SportSchemaBase)

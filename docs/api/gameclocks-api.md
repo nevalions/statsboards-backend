@@ -1,6 +1,6 @@
 # Gameclocks API
 
-Manage game clocks for matches. The game clock counts down the total game time for quarters and halves in American football.
+Manage game clocks for matches. The game clock counts total game time for quarters and halves in American football. It supports both countdown (down) and count-up (up) directions.
 
 ### Response Schemas
 
@@ -9,31 +9,40 @@ interface GameClockSchema {
   id: number;
   gameclock: number; // Total time in seconds (max 10000), default 720 (12 minutes)
   gameclock_max: number | null; // Maximum time in seconds, default 720
+  direction: string; // Clock direction: "down" or "up" (default: "down")
+  on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
   gameclock_status: string; // Status: "stopped", "running", "paused" (max 50 chars)
   gameclock_time_remaining: number | null; // Remaining time during countdown
   match_id: number | null; // Associated match ID
   version: number; // Version number, starts at 1, increments on each update
   started_at_ms: number | null; // Unix timestamp (ms) when clock started, null if paused/stopped
   server_time_ms: number | null; // Server time (ms) when response generated
+  use_sport_preset: boolean; // Whether to use sport preset values (default: true)
 }
 
 interface GameClockSchemaCreate {
   gameclock: number; // Total time in seconds (max 10000), default 720
   gameclock_max: number | null; // Optional max time
+  direction: string; // Clock direction: "down" or "up" (default: "down")
+  on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
   gameclock_status: string; // Status, defaults to "stopped" (max 50 chars)
   gameclock_time_remaining: number | null; // Optional remaining time
   match_id: number | null; // Optional match ID
   version?: number; // Version number, defaults to 1
   started_at_ms?: number | null; // Optional start timestamp (ms)
+  use_sport_preset?: boolean; // Use sport preset values (default: true)
 }
 
 interface GameClockSchemaUpdate {
   gameclock: number | null; // Optional time in seconds
   gameclock_max: number | null; // Optional max time
+  direction: string | null; // Clock direction: "down" or "up"
+  on_stop_behavior: string | null; // Behavior when stopped: "hold" or "reset"
   gameclock_status: string | null; // Optional status
   gameclock_time_remaining: number | null; // Optional remaining time
   match_id: number | null; // Optional match ID
   started_at_ms?: number | null; // Optional start timestamp (ms)
+  use_sport_preset?: boolean; // Use sport preset values
 }
 ```
 
@@ -53,8 +62,11 @@ POST /api/gameclock/
 {
   "gameclock": 720,
   "gameclock_max": 720,
+  "direction": "down",
+  "on_stop_behavior": "hold",
   "gameclock_status": "stopped",
-  "match_id": 123
+  "match_id": 123,
+  "use_sport_preset": true
 }
 ```
 
@@ -76,10 +88,13 @@ interface GameClockSchemaCreate {
   "id": 1,
   "gameclock": 720,
   "gameclock_max": 720,
+  "direction": "down",
+  "on_stop_behavior": "hold",
   "gameclock_status": "stopped",
   "gameclock_time_remaining": null,
   "match_id": 123,
-  "version": 1
+  "version": 1,
+  "use_sport_preset": true
 }
 ```
 
@@ -110,7 +125,8 @@ PUT /api/gameclock/{item_id}/
 **Request Body:**
 ```json
 {
-  "gameclock_status": "running"
+  "gameclock_status": "running",
+  "direction": "down"
 }
 ```
 
@@ -131,10 +147,13 @@ interface GameClockSchemaUpdate {
   "id": 1,
   "gameclock": 720,
   "gameclock_max": 720,
+  "direction": "down",
+  "on_stop_behavior": "hold",
   "gameclock_status": "running",
   "gameclock_time_remaining": 720,
   "match_id": 123,
-  "version": 2
+  "version": 2,
+  "use_sport_preset": true
 }
 ```
 
@@ -210,12 +229,15 @@ PUT /api/gameclock/id/{gameclock_id}/running/
     "id": 1,
     "gameclock": 720,
     "gameclock_max": 720,
+    "direction": "down",
+    "on_stop_behavior": "hold",
     "gameclock_status": "running",
     "gameclock_time_remaining": 720,
     "match_id": 123,
     "version": 1,
     "started_at_ms": 1737648000000,
-    "server_time_ms": 1737648000050
+    "server_time_ms": 1737648000050,
+    "use_sport_preset": true
   },
   "status_code": 200,
   "success": true,
@@ -273,12 +295,15 @@ PUT /api/gameclock/id/{item_id}/paused/
     "id": 1,
     "gameclock": 650,
     "gameclock_max": 720,
+    "direction": "down",
+    "on_stop_behavior": "hold",
     "gameclock_status": "paused",
     "gameclock_time_remaining": 650,
     "match_id": 123,
     "version": 2,
     "started_at_ms": null,
-    "server_time_ms": 1737648070000
+    "server_time_ms": 1737648070000,
+    "use_sport_preset": true
   },
   "status_code": 200,
   "success": true,
@@ -349,9 +374,12 @@ PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/
     "id": 1,
     "gameclock": 900,
     "gameclock_max": 720,
+    "direction": "down",
+    "on_stop_behavior": "hold",
     "gameclock_status": "stopped",
     "gameclock_time_remaining": null,
-    "match_id": 123
+    "match_id": 123,
+    "use_sport_preset": true
   },
   "status_code": 200,
   "success": true

@@ -35,9 +35,17 @@ Both clocks use the same state machine pattern:
 
 ```python
 class ClockStateMachine:
-    def __init__(self, clock_id: int, initial_value: int) -> None:
+    def __init__(
+        self,
+        clock_id: int,
+        initial_value: int,
+        direction: ClockDirection = ClockDirection.DOWN,
+        max_value: int = 720,
+    ) -> None:
         self.clock_id = clock_id
         self.value = initial_value
+        self.direction = direction
+        self.max_value = max_value
         self.status = ClockStatus.STOPPED
         self.started_at_ms: int | None = None
 
@@ -46,7 +54,11 @@ class ClockStateMachine:
             return self.value
         elapsed_ms = int(time.time() * 1000) - self.started_at_ms
         elapsed_sec = elapsed_ms // 1000
-        return max(0, self.value - elapsed_sec)
+
+        if self.direction == ClockDirection.DOWN:
+            return max(0, self.value - elapsed_sec)
+        else:
+            return min(self.max_value, self.value + elapsed_sec)
 ```
 
 State transitions:

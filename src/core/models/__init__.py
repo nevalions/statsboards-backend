@@ -5,6 +5,7 @@ __all__ = (
     "handle_service_exceptions",
     "handle_view_exceptions",
     "SportDB",
+    "SportScoreboardPresetDB",
     "SeasonDB",
     "SeasonSportRelationMixin",
     "TournamentDB",
@@ -54,6 +55,7 @@ from .sponsor import SponsorDB
 from .sponsor_line import SponsorLineDB
 from .sponsor_sponsor_line_connection import SponsorSponsorLineDB
 from .sport import SportDB
+from .sport_scoreboard_preset import SportScoreboardPresetDB
 from .team import TeamDB
 from .team_tournament import TeamTournamentDB
 from .tournament import TournamentDB

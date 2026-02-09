@@ -10,6 +10,20 @@ class ClockStatus(StrEnum):
     STOPPING = "stopping"
 
 
+class ClockDirection(StrEnum):
+    """Direction the gameclock progresses."""
+
+    DOWN = "down"
+    UP = "up"
+
+
+class ClockOnStopBehavior(StrEnum):
+    """How the clock behaves when it is stopped."""
+
+    HOLD = "hold"
+    RESET = "reset"
+
+
 class GameStatus(StrEnum):
     """Status values for match game state."""
 

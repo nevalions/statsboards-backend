@@ -11,6 +11,8 @@ ScoreboardLanguageCode: TypeAlias = Literal["en", "ru"]
 
 
 class ScoreboardSchemaBase(BaseModel):
+    use_sport_preset: bool = True
+
     is_qtr: bool = True
     is_time: bool = True
     is_playclock: bool = True

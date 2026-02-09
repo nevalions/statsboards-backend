@@ -14,6 +14,12 @@ class ScoreboardDB(Base):
     __tablename__ = "scoreboard"
     __table_args__ = {"extend_existing": True}
 
+    use_sport_preset: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+
     is_qtr: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.models import Base
@@ -8,6 +8,7 @@ from src.core.models import Base
 if TYPE_CHECKING:
     from .player import PlayerDB
     from .position import PositionDB
+    from .sport_scoreboard_preset import SportScoreboardPresetDB
     from .team import TeamDB
     from .tournament import TournamentDB
 
@@ -25,6 +26,21 @@ class SportDB(Base):
         nullable=True,
         default="",
         server_default="",
+    )
+
+    scoreboard_preset_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey(
+            "sport_scoreboard_preset.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        default=None,
+    )
+
+    scoreboard_preset: Mapped["SportScoreboardPresetDB | None"] = relationship(
+        "SportScoreboardPresetDB",
+        back_populates="sports",
     )
 
     tournaments: Mapped[list["TournamentDB"]] = relationship(
