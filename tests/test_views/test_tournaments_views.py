@@ -2,6 +2,7 @@ from io import BytesIO
 
 import pytest
 from PIL import Image
+from unittest.mock import Mock, patch
 
 from src.person.db_services import PersonServiceDB
 from src.person.schemas import PersonSchemaCreate as PersonSchemaCreateType
@@ -909,3 +910,98 @@ class TestTournamentViews:
         response_data = response.json()
         assert response_data["moved"] is True
         assert response_data["updated_counts"]["tournament"] == 1
+
+    @pytest.mark.asyncio
+    @patch("src.pars_eesl.pars_tournament.get_url")
+    @patch("src.pars_eesl.pars_tournament.file_service")
+    async def test_get_parsed_tournament_basic_data_endpoint(
+        self, mock_file_service, mock_get_url, client, test_db
+    ):
+        """Test GET endpoint for parsing tournament basic data without DB write."""
+        from unittest.mock import AsyncMock
+
+        mock_response = Mock()
+        mock_response.content = """
+        <html>
+            <head>
+                <meta property="og:image" content="https://example.com/tournaments/champ2024.png" />
+            </head>
+            <body>
+                <section class="tournament">
+                    <div class="tournament-wrapper">
+                        <h2 class="tournament__title">Tournament Championship 2024</h2>
+                    </div>
+                </section>
+            </body>
+        </html>
+        """
+        mock_get_url.return_value = mock_response
+
+        mock_file_service.download_and_process_image = AsyncMock(
+            return_value={
+                "image_url": "https://example.com/tournaments/champ2024.png",
+                "image_icon_url": "https://example.com/tournaments/champ2024_icon.png",
+                "image_webview_url": "https://example.com/tournaments/champ2024_web.png",
+                "image_path": "/path/to/image",
+            }
+        )
+
+        response = await client.get("/api/tournaments/pars/tournament/123")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["tournament_eesl_id"] == 123
+        assert data["title"] == "tournament championship 2024"
+        assert data["tournament_logo_url"] == "https://example.com/tournaments/champ2024.png"
+
+    @pytest.mark.asyncio
+    @patch("src.pars_eesl.pars_tournament.get_url")
+    @patch("src.pars_eesl.pars_tournament.file_service")
+    async def test_create_parsed_single_tournament_endpoint(
+        self, mock_file_service, mock_get_url, client, test_db
+    ):
+        """Test POST endpoint for parsing and creating tournament with DB write."""
+        from unittest.mock import AsyncMock
+
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        mock_response = Mock()
+        mock_response.content = """
+        <html>
+            <head>
+                <meta property="og:image" content="https://example.com/tournaments/champ2024.png" />
+            </head>
+            <body>
+                <section class="tournament">
+                    <div class="tournament-wrapper">
+                        <h2 class="tournament__title">Tournament Championship 2024</h2>
+                    </div>
+                </section>
+            </body>
+        </html>
+        """
+        mock_get_url.return_value = mock_response
+
+        mock_file_service.download_and_process_image = AsyncMock(
+            return_value={
+                "image_url": "https://example.com/tournaments/champ2024.png",
+                "image_icon_url": "https://example.com/tournaments/champ2024_icon.png",
+                "image_webview_url": "https://example.com/tournaments/champ2024_web.png",
+                "image_path": "/path/to/image",
+            }
+        )
+
+        response = await client.post(
+            f"/api/tournaments/pars_and_create/tournament/123?season_id={season.id}&sport_id={sport.id}"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["tournament_eesl_id"] == 123
+        assert data["title"] == "tournament championship 2024"
+        assert data["season_id"] == season.id
+        assert data["sport_id"] == sport.id

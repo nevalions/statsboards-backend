@@ -4,6 +4,50 @@ Endpoints for parsing and importing data from the EESL system.
 
 ## Tournaments
 
+### GET /api/tournaments/pars/tournament/{eesl_tournament_id}
+
+Parse a single tournament's basic data from EESL (no DB writes).
+
+Auth: none.
+
+Minimal response shape:
+
+```json
+{
+  "tournament_eesl_id": 123,
+  "title": "string",
+  "description": "",
+  "tournament_logo_url": "string",
+  "tournament_logo_icon_url": "string",
+  "tournament_logo_web_url": "string",
+  "season_id": 1,
+  "sport_id": 1
+}
+```
+
+### POST /api/tournaments/pars_and_create/tournament/{eesl_tournament_id}
+
+Parse a single tournament's basic data and create/update it in DB.
+
+Auth: none.
+
+Query params:
+
+- `season_id` (optional)
+- `sport_id` (optional)
+
+Minimal response shape:
+
+```json
+{
+  "id": 1,
+  "tournament_eesl_id": 123,
+  "title": "string",
+  "season_id": 1,
+  "sport_id": 1
+}
+```
+
 ### GET /api/tournaments/pars/season/{eesl_season_id}
 
 Parse tournaments for a season (no DB writes).
@@ -16,9 +60,33 @@ Minimal response shape:
 [
   {
     "title": "string",
-    "season_id": 1,
-    "sport_id": 1,
+    "season_id":1,
+    "sport_id":1,
     "tournament_eesl_id": 12345
+  }
+]
+```
+
+### POST /api/tournaments/pars_and_create/season/{eesl_season_id}
+
+Parse tournaments and create/update them in DB.
+
+Auth: none.
+
+Query params:
+
+- `season_id` (optional)
+- `sport_id` (optional)
+
+Minimal response shape:
+
+```json
+[
+  {
+    "id":1,
+    "title": "string",
+    "season_id":1,
+    "sport_id":1
   }
 ]
 ```

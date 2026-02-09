@@ -8,12 +8,23 @@ from src.helpers import get_url
 from src.helpers.file_service import file_service
 from src.helpers.text_helpers import months, safe_int_conversion
 from src.logging_config import get_logger
-from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL
+from src.pars_eesl.pars_settings import BASE_TOURNAMENT_URL, SEASON_ID
 
 logger = get_logger("parser_eesl")
 ITEM_PARSED = "TOURNAMENT"
 ITEM_GOT = "TEAM"
 ITEM_GOT_MATCH = "MATCH"
+
+
+class ParsedTournamentData(TypedDict):
+    tournament_eesl_id: int
+    title: str
+    description: str
+    tournament_logo_url: str
+    tournament_logo_icon_url: str
+    tournament_logo_web_url: str
+    season_id: int
+    sport_id: int
 
 
 class ParsedMatchData(TypedDict):
@@ -37,6 +48,96 @@ class ParsedTeamData(TypedDict):
     city: str
     team_color: str
     sport_id: int
+
+
+async def parse_tournament_and_create_jsons(
+    _id: int, season_id: int | None = None, sport_id: int | None = None
+):
+    logger.debug(f"Starting create parsed json for {ITEM_PARSED} id:{_id}")
+    try:
+        data = await parse_tournament_basic_data_eesl(_id, season_id=season_id, sport_id=sport_id)
+        logger.debug(f"Parsed json for {ITEM_PARSED} id:{_id} data: {data}")
+        return data
+    except Exception as ex:
+        logger.error(
+            f"Something goes wrong with creating parsed json for {ITEM_PARSED} id:{_id}, {ex}",
+            exc_info=True,
+        )
+        return None
+
+
+async def parse_tournament_basic_data_eesl(
+    _id: int,
+    base_url: str = BASE_TOURNAMENT_URL,
+    season_id: int | None = None,
+    sport_id: int | None = None,
+) -> ParsedTournamentData | None:
+    logger.debug(f"Starting parse for eesl {ITEM_PARSED} basic data id:{_id} url:{base_url}{_id}")
+
+    url = f"{base_url}{str(_id)}"
+    req = await get_url(url)
+    if req is None:
+        logger.warning(f"Failed to fetch tournament page for id:{_id}")
+        return None
+
+    soup = BeautifulSoup(req.content, "lxml")
+
+    try:
+        tournament_title_tag = soup.find("h2", class_="tournament__title")
+        if tournament_title_tag:
+            tournament_title = tournament_title_tag.text.strip().lower()
+            logger.debug(f"{ITEM_PARSED} title: {tournament_title}")
+        else:
+            logger.warning(f"No title found for {ITEM_PARSED} id:{_id}")
+            return None
+
+        og_image_tag = soup.find("meta", property="og:image") or soup.find(
+            "meta", attrs={"name": "og:image"}
+        )
+        if og_image_tag:
+            tournament_logo_url = og_image_tag.get("content", "")
+            logger.debug(f"{ITEM_PARSED} logo url: {tournament_logo_url}")
+        else:
+            logger.warning(f"No logo found for {ITEM_PARSED} id:{_id}, using empty string")
+            tournament_logo_url = ""
+
+        icon_image_height = 100
+        web_view_image_height = 400
+
+        if tournament_logo_url:
+            image_info = await file_service.download_and_process_image(
+                img_url=tournament_logo_url,
+                image_type_prefix="tournaments/logos/",
+                image_title=tournament_title,
+                icon_height=icon_image_height,
+                web_view_height=web_view_image_height,
+            )
+        else:
+            image_info = {
+                "image_url": "",
+                "image_icon_url": "",
+                "image_webview_url": "",
+            }
+
+        final_tournament: ParsedTournamentData = {
+            "tournament_eesl_id": _id,
+            "title": tournament_title,
+            "description": "",
+            "tournament_logo_url": image_info["image_url"],
+            "tournament_logo_icon_url": image_info["image_icon_url"],
+            "tournament_logo_web_url": image_info["image_webview_url"],
+            "season_id": season_id if season_id is not None else SEASON_ID,
+            "sport_id": sport_id if sport_id is not None else 1,
+        }
+        logger.info(f"Final {ITEM_PARSED} data: {final_tournament}")
+        return final_tournament.copy()
+
+    except Exception as ex:
+        logger.error(
+            f"Problem parsing {ITEM_PARSED} basic data for id:{_id}, {ex}",
+            exc_info=True,
+        )
+        return None
 
 
 async def parse_tournament_matches_and_create_jsons(_id: int):

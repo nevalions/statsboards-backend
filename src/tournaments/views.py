@@ -8,6 +8,7 @@ from src.core import BaseRouter, db
 from src.core.dependencies import TournamentService
 from src.core.models import TournamentDB, handle_view_exceptions
 from src.pars_eesl.pars_season import parse_season_and_create_jsons
+from src.pars_eesl.pars_tournament import parse_tournament_and_create_jsons
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger
@@ -530,6 +531,54 @@ class TournamentAPIRouter(
             else:
                 self.logger.warning("Teams list is empty")
                 return []
+
+        @router.get(
+            "/pars/tournament/{eesl_tournament_id}",
+            response_model=TournamentSchemaCreate,
+        )
+        @handle_view_exceptions(
+            error_message="Internal server error parsing tournament basic data",
+            status_code=500,
+        )
+        async def get_parsed_tournament_basic_data_endpoint(eesl_tournament_id: int):
+            self.logger.debug(
+                f"Get parsed tournament basic data from eesl_id:{eesl_tournament_id} endpoint"
+            )
+            return await parse_tournament_and_create_jsons(eesl_tournament_id)
+
+        @router.post(
+            "/pars_and_create/tournament/{eesl_tournament_id}",
+            response_model=TournamentSchema,
+        )
+        @handle_view_exceptions(
+            error_message="Internal server error parsing and creating tournament",
+            status_code=500,
+        )
+        async def create_parsed_single_tournament_endpoint(
+            tournament_service: TournamentService,
+            eesl_tournament_id: int,
+            season_id: int | None = Query(None),
+            sport_id: int | None = Query(None),
+        ):
+            self.logger.debug(
+                f"Get and Save parsed tournament from eesl_id:{eesl_tournament_id} season_id:{season_id} sport_id:{sport_id} endpoint"
+            )
+            tournament_data = await parse_tournament_and_create_jsons(eesl_tournament_id)
+
+            if tournament_data:
+                if season_id is not None:
+                    tournament_data["season_id"] = season_id
+                if sport_id is not None:
+                    tournament_data["sport_id"] = sport_id
+                tournament = TournamentSchemaCreate(**tournament_data)
+                created_tournament = await tournament_service.create_or_update_tournament(
+                    tournament
+                )
+                self.logger.info(f"Created tournament after parsing: {created_tournament}")
+                return TournamentSchema.model_validate(created_tournament)
+            else:
+                self.logger.warning(f"Failed to parse tournament eesl_id:{eesl_tournament_id}")
+                return None
 
         @router.delete(
             "/id/{model_id}",

@@ -495,3 +495,151 @@ class TestParsTournament:
         assert result is not None
         assert len(result) == 1
         assert "team_eesl_id" in result[0]
+
+    @pytest.mark.asyncio
+    @patch("src.pars_eesl.pars_tournament.get_url")
+    @patch("src.pars_eesl.pars_tournament.file_service")
+    async def test_parse_tournament_basic_data_eesl_success(self, mock_file_service, mock_get_url):
+        """Test successful parsing of tournament basic data."""
+        mock_response = Mock()
+        mock_response.content = """
+        <html>
+            <head>
+                <meta property="og:image" content="https://example.com/tournaments/champ2024.png" />
+            </head>
+            <body>
+                <section class="tournament">
+                    <div class="tournament-wrapper">
+                        <h2 class="tournament__title">Tournament Championship 2024</h2>
+                    </div>
+                </section>
+            </body>
+        </html>
+        """
+        mock_get_url.return_value = mock_response
+
+        mock_file_service.download_and_process_image = AsyncMock(
+            return_value={
+                "image_url": "https://example.com/tournaments/champ2024.png",
+                "image_icon_url": "https://example.com/tournaments/champ2024_icon.png",
+                "image_webview_url": "https://example.com/tournaments/champ2024_web.png",
+                "image_path": "/path/to/image",
+            }
+        )
+
+        result = await pars_tournament.parse_tournament_basic_data_eesl(123)
+
+        assert result is not None
+        assert result["tournament_eesl_id"] == 123
+        assert result["title"] == "tournament championship 2024"
+        assert result["description"] == ""
+        assert result["tournament_logo_url"] == "https://example.com/tournaments/champ2024.png"
+        assert (
+            result["tournament_logo_icon_url"]
+            == "https://example.com/tournaments/champ2024_icon.png"
+        )
+        assert (
+            result["tournament_logo_web_url"] == "https://example.com/tournaments/champ2024_web.png"
+        )
+        assert "season_id" in result
+        assert "sport_id" in result
+
+    @pytest.mark.asyncio
+    @patch("src.pars_eesl.pars_tournament.get_url")
+    async def test_parse_tournament_basic_data_eesl_no_title(self, mock_get_url):
+        """Test parsing when no title is found."""
+        mock_response = Mock()
+        mock_response.content = """
+        <html>
+            <body>
+                <section class="tournament">
+                    <div class="tournament-wrapper">
+                    </div>
+                </section>
+            </body>
+        </html>
+        """
+        mock_get_url.return_value = mock_response
+
+        result = await pars_tournament.parse_tournament_basic_data_eesl(123)
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    @patch("src.pars_eesl.pars_tournament.get_url")
+    @patch("src.pars_eesl.pars_tournament.file_service")
+    async def test_parse_tournament_basic_data_eesl_no_logo(self, mock_file_service, mock_get_url):
+        """Test parsing when no logo is found."""
+        mock_response = Mock()
+        mock_response.content = """
+        <html>
+            <body>
+                <section class="tournament">
+                    <div class="tournament-wrapper">
+                        <h2 class="tournament__title">Tournament Championship 2024</h2>
+                    </div>
+                </section>
+            </body>
+        </html>
+        """
+        mock_get_url.return_value = mock_response
+
+        result = await pars_tournament.parse_tournament_basic_data_eesl(123)
+
+        assert result is not None
+        assert result["tournament_eesl_id"] == 123
+        assert result["title"] == "tournament championship 2024"
+        assert result["tournament_logo_url"] == ""
+        assert result["tournament_logo_icon_url"] == ""
+        assert result["tournament_logo_web_url"] == ""
+        assert "season_id" in result
+        assert "sport_id" in result
+
+    @pytest.mark.asyncio
+    @patch("src.pars_eesl.pars_tournament.get_url")
+    async def test_parse_tournament_basic_data_eesl_fetch_error(self, mock_get_url):
+        """Test parsing when URL fetch fails."""
+        mock_get_url.return_value = None
+
+        result = await pars_tournament.parse_tournament_basic_data_eesl(123)
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    @patch("src.pars_eesl.pars_tournament.get_url")
+    @patch("src.pars_eesl.pars_tournament.file_service")
+    async def test_parse_tournament_and_create_jsons_success(self, mock_file_service, mock_get_url):
+        """Test successful parsing of tournament basic data through create_jsons wrapper."""
+        mock_response = Mock()
+        mock_response.content = """
+        <html>
+            <head>
+                <meta property="og:image" content="https://example.com/tournaments/champ2024.png" />
+            </head>
+            <body>
+                <section class="tournament">
+                    <div class="tournament-wrapper">
+                        <h2 class="tournament__title">Tournament Championship 2024</h2>
+                    </div>
+                </section>
+            </body>
+        </html>
+        """
+        mock_get_url.return_value = mock_response
+
+        mock_file_service.download_and_process_image = AsyncMock(
+            return_value={
+                "image_url": "https://example.com/tournaments/champ2024.png",
+                "image_icon_url": "https://example.com/tournaments/champ2024_icon.png",
+                "image_webview_url": "https://example.com/tournaments/champ2024_web.png",
+                "image_path": "/path/to/image",
+            }
+        )
+
+        result = await pars_tournament.parse_tournament_and_create_jsons(123)
+
+        assert result is not None
+        assert result["tournament_eesl_id"] == 123
+        assert result["title"] == "tournament championship 2024"
+        assert "season_id" in result
+        assert "sport_id" in result
