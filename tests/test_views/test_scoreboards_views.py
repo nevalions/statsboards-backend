@@ -41,16 +41,13 @@ class TestScoreboardViews:
             )
         )
 
-        scoreboard_data = ScoreboardSchemaCreate(
-            match_id=match.id, is_qtr=True, is_time=True
-        )
+        scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True)
 
-        response = await client_match.post(
-            "/api/scoreboards/", json=scoreboard_data.model_dump()
-        )
+        response = await client_match.post("/api/scoreboards/", json=scoreboard_data.model_dump())
 
         assert response.status_code == 200
         assert response.json()["id"] > 0
+        assert response.json()["language_code"] == "en"
 
     async def test_update_scoreboard_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)
@@ -76,25 +73,52 @@ class TestScoreboardViews:
         )
 
         scoreboard_service = ScoreboardServiceDB(test_db)
-        scoreboard_data = ScoreboardSchemaCreate(
-            match_id=match.id, is_qtr=True, is_time=True
-        )
+        scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True)
         created = await scoreboard_service.create(scoreboard_data)
 
-        update_data = ScoreboardSchemaUpdate(is_qtr=False)
+        update_data = ScoreboardSchemaUpdate(is_qtr=False, language_code="ru")
 
         response = await client_match.put(
             f"/api/scoreboards/{created.id}/", json=update_data.model_dump()
         )
 
         assert response.status_code == 200
+        assert response.json()["language_code"] == "ru"
+
+    async def test_create_scoreboard_endpoint_invalid_language_code(self, client_match, test_db):
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        payload = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True).model_dump()
+        payload["language_code"] = "de"
+
+        response = await client_match.post("/api/scoreboards/", json=payload)
+
+        assert response.status_code == 422
 
     async def test_update_scoreboard_not_found(self, client_match):
         update_data = ScoreboardSchemaUpdate(is_qtr=False)
 
-        response = await client_match.put(
-            "/api/scoreboards/99999/", json=update_data.model_dump()
-        )
+        response = await client_match.put("/api/scoreboards/99999/", json=update_data.model_dump())
 
         assert response.status_code == 404
 
@@ -122,9 +146,7 @@ class TestScoreboardViews:
         )
 
         scoreboard_service = ScoreboardServiceDB(test_db)
-        scoreboard_data = ScoreboardSchemaCreate(
-            match_id=match.id, is_qtr=True, is_time=True
-        )
+        scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True)
         created = await scoreboard_service.create(scoreboard_data)
 
         response = await client_match.get(f"/api/scoreboards/match/id/{match.id}")
@@ -202,9 +224,7 @@ class TestScoreboardViews:
         )
 
         scoreboard_service = ScoreboardServiceDB(test_db)
-        scoreboard_data = ScoreboardSchemaCreate(
-            match_id=match.id, is_qtr=True, is_time=True
-        )
+        scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=True)
         created = await scoreboard_service.create(scoreboard_data)
 
         response = await client_match.get(f"/api/scoreboards/id/{created.id}/")

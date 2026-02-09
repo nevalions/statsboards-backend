@@ -109,6 +109,13 @@ class ScoreboardDB(Base):
         default=True,
     )
 
+    language_code: Mapped[str | None] = mapped_column(
+        String(5),
+        nullable=True,
+        default="en",
+        server_default="en",
+    )
+
     team_a_game_color: Mapped[str] = mapped_column(
         String(10),
         nullable=False,
@@ -277,10 +284,8 @@ class ScoreboardDB(Base):
         back_populates="match_player_lower",
     )
 
-    match_football_qb_full_stats_match_lower_rel: Mapped["PlayerMatchDB"] = (
-        relationship(
-            "PlayerMatchDB",
-            primaryjoin="ScoreboardDB.football_qb_full_stats_match_lower_id == PlayerMatchDB.id",
-            back_populates="football_qb_full_stats_match_player_lower",
-        )
+    match_football_qb_full_stats_match_lower_rel: Mapped["PlayerMatchDB"] = relationship(
+        "PlayerMatchDB",
+        primaryjoin="ScoreboardDB.football_qb_full_stats_match_lower_id == PlayerMatchDB.id",
+        back_populates="football_qb_full_stats_match_player_lower",
     )

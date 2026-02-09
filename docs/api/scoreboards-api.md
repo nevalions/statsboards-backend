@@ -55,6 +55,8 @@ interface ScoreboardSchema {
   is_timeout_team_a: boolean | null; // Team A timeout indicator
   is_timeout_team_b: boolean | null; // Team B timeout indicator
 
+  language_code: 'en' | 'ru' | null; // Scoreboard language code (default: 'en')
+
   match_id: number | null; // Associated match ID
 }
 ```
@@ -80,6 +82,7 @@ POST /api/scoreboards/
   "is_tournament_logo": true,
   "is_main_sponsor": true,
   "is_sponsor_line": true,
+  "language_code": "en",
   "team_a_game_color": "#c01c28",
   "team_b_game_color": "#1c71d8",
   "match_id": 123
@@ -105,6 +108,7 @@ interface ScoreboardSchemaCreate extends ScoreboardSchema {
   "is_main_sponsor": true,
   "is_sponsor_line": true,
   "is_match_sponsor_line": false,
+  "language_code": "en",
   "team_a_game_color": "#c01c28",
   "team_b_game_color": "#1c71d8",
   "use_team_a_game_color": false,

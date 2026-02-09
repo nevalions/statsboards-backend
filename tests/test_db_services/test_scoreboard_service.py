@@ -1,8 +1,15 @@
+from typing import cast
+
 import pytest
+from pydantic import ValidationError
 
 from src.matches.db_services import MatchServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
-from src.scoreboards.schemas import ScoreboardSchemaCreate, ScoreboardSchemaUpdate
+from src.scoreboards.schemas import (
+    ScoreboardLanguageCode,
+    ScoreboardSchemaCreate,
+    ScoreboardSchemaUpdate,
+)
 from src.seasons.db_services import SeasonServiceDB
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
@@ -51,6 +58,7 @@ class TestScoreboardServiceDB:
         assert result is not None
         assert result.id is not None
         assert result.match_id == match.id
+        assert result.language_code == "en"
 
     async def test_create_scoreboard_duplicate(self, test_db):
         sport_service = SportServiceDB(test_db)
@@ -108,17 +116,24 @@ class TestScoreboardServiceDB:
         )
 
         scoreboard_service = ScoreboardServiceDB(test_db)
-        scoreboard_data = ScoreboardSchemaCreate(
-            match_id=match.id, is_qtr=True, is_time=False
-        )
+        scoreboard_data = ScoreboardSchemaCreate(match_id=match.id, is_qtr=True, is_time=False)
 
         created = await scoreboard_service.create(scoreboard_data)
-        update_data = ScoreboardSchemaUpdate(is_time=True, is_playclock=True)
+        update_data = ScoreboardSchemaUpdate(
+            is_time=True,
+            is_playclock=True,
+            language_code="ru",
+        )
 
         updated = await scoreboard_service.update(created.id, update_data)
 
         assert updated.is_time
         assert updated.is_playclock
+        assert updated.language_code == "ru"
+
+    async def test_scoreboard_language_code_validation(self):
+        with pytest.raises(ValidationError):
+            ScoreboardSchemaCreate(language_code=cast(ScoreboardLanguageCode, "de"))
 
     async def test_get_scoreboard_by_match_id(self, test_db):
         sport_service = SportServiceDB(test_db)

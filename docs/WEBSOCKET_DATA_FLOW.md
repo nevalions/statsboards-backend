@@ -390,6 +390,7 @@ When the `scoreboard` table changes (display settings, team settings, scale sett
        "scoreboard_data": {
          "id": 67,
          "match_id": 67,
+         "language_code": "en",
          "is_qtr": true,
          "is_time": true,
          "is_playclock": true,

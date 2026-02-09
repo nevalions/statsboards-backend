@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal, TypeAlias
 
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
 from src.core.schema_helpers import make_fields_optional
+
+ScoreboardLanguageCode: TypeAlias = Literal["en", "ru"]
 
 
 class ScoreboardSchemaBase(BaseModel):
@@ -56,6 +58,8 @@ class ScoreboardSchemaBase(BaseModel):
     is_goal_team_b: bool | None = False
     is_timeout_team_a: bool | None = False
     is_timeout_team_b: bool | None = False
+
+    language_code: ScoreboardLanguageCode | None = "en"
 
     match_id: int | None = None
 
