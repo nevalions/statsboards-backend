@@ -5,7 +5,7 @@ Run with:
 """
 
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState

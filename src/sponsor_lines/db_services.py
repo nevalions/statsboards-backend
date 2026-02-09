@@ -1,15 +1,20 @@
 from __future__ import annotations
 
-from src.core.decorators import handle_service_exceptions
 from sqlalchemy import func, select
 
+from src.core.decorators import handle_service_exceptions
 from src.core.models import BaseServiceDB, SponsorLineDB
 from src.core.models.base import Database
 from src.core.models.mixins.search_pagination_mixin import SearchPaginationMixin
 from src.core.schema_helpers import PaginationMetadata
 
 from ..logging_config import get_logger
-from .schemas import PaginatedSponsorLineResponse, SponsorLineSchema, SponsorLineSchemaCreate, SponsorLineSchemaUpdate
+from .schemas import (
+    PaginatedSponsorLineResponse,
+    SponsorLineSchema,
+    SponsorLineSchemaCreate,
+    SponsorLineSchemaUpdate,
+)
 
 ITEM = "SPONSOR_LINE"
 

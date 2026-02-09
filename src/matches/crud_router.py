@@ -48,8 +48,8 @@ class MatchCRUDRouter(
 
     def get_match_stats_service(self):
         """Get match stats service using this router's database."""
-        from src.matches.stats_service import MatchStatsServiceDB
         from src.core.service_registry import get_service_registry
+        from src.matches.stats_service import MatchStatsServiceDB
 
         registry = get_service_registry()
         return MatchStatsServiceDB(registry.database)

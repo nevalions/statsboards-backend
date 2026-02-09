@@ -8,7 +8,14 @@ from sqlalchemy import delete, update
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter, db
 from src.core.dependencies import SponsorService
-from src.core.models import MatchDB, SponsorDB, SponsorSponsorLineDB, TeamDB, TournamentDB, handle_view_exceptions
+from src.core.models import (
+    MatchDB,
+    SponsorDB,
+    SponsorSponsorLineDB,
+    TeamDB,
+    TournamentDB,
+    handle_view_exceptions,
+)
 
 from ..helpers.file_service import file_service
 from ..logging_config import get_logger

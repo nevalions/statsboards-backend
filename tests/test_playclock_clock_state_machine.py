@@ -1,9 +1,8 @@
 import time
 
-from src.playclocks.clock_state_machine import ClockStateMachine
-
-
 import pytest
+
+from src.playclocks.clock_state_machine import ClockStateMachine
 
 
 @pytest.mark.slow
