@@ -116,7 +116,9 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
                 .where(MatchDB.id == match_id)
                 .options(
                     joinedload(MatchDB.tournaments).joinedload(TournamentDB.main_sponsor),
-                    joinedload(MatchDB.tournaments).joinedload(TournamentDB.sponsor_line).selectinload(SponsorLineDB.sponsors),
+                    joinedload(MatchDB.tournaments)
+                    .joinedload(TournamentDB.sponsor_line)
+                    .selectinload(SponsorLineDB.sponsors),
                     joinedload(MatchDB.main_sponsor),
                     joinedload(MatchDB.sponsor_line).selectinload(SponsorLineDB.sponsors),
                 )
@@ -132,12 +134,20 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
     async def get_sport_by_match_id(self, match_id: int) -> SportDB | None:
         self.logger.debug(f"Get sport by {ITEM} id:{match_id}")
         tournament_service = self.service_registry.get("tournament")
-        sport_service = self.service_registry.get("sport")
         match = await self.get_by_id(match_id)
         if match:
             tournament = await tournament_service.get_by_id(match.tournament_id)
             if tournament:
-                return await sport_service.get_by_id(tournament.sport_id)
+                async with self.db.get_session_maker()() as session:
+                    stmt = (
+                        select(SportDB)
+                        .where(SportDB.id == tournament.sport_id)
+                        .options(joinedload(SportDB.scoreboard_preset))
+                    )
+                    result = await session.execute(stmt)
+                    sport = result.scalar_one_or_none()
+                    self.logger.debug(f"Get sport by {ITEM} id:{match_id} returned sport:{sport}")
+                    return sport
         return None
 
     @handle_service_exceptions(
@@ -150,17 +160,16 @@ class MatchServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB):
         match_id: int,
     ) -> dict | None:
         self.logger.debug(f"Get teams by {ITEM} id:{match_id}")
-        async with self.db.get_session_maker()() as session:
-            team_service = self.service_registry.get("team")
-            match = await self.get_by_id(match_id)
-            if match:
-                home_team = await team_service.get_by_id(match.team_a_id)
-                away_team = await team_service.get_by_id(match.team_b_id)
-                return {
-                    "home_team": home_team,
-                    "away_team": away_team,
-                }
-            return None
+        team_service = self.service_registry.get("team")
+        match = await self.get_by_id(match_id)
+        if match:
+            home_team = await team_service.get_by_id(match.team_a_id)
+            away_team = await team_service.get_by_id(match.team_b_id)
+            return {
+                "home_team": home_team,
+                "away_team": away_team,
+            }
+        return None
 
     async def get_match_sponsor_line(self, match_id: int) -> SponsorLineDB | None:
         self.logger.debug(f"Get sponsor_line by {ITEM} id:{match_id}")

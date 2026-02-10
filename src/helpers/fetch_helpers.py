@@ -247,6 +247,21 @@ async def fetch_with_scoreboard_data(
                     f"Scoreboard Data not found for match_id:{match_id}, creating new..."
                 )
                 scoreboard_data_schema = ScoreboardSchemaCreate(match_id=match_id)
+
+                sport = await match_service_db.get_sport_by_match_id(match_id)
+                if sport and sport.scoreboard_preset:
+                    preset_values = _get_preset_values_for_scoreboard(sport.scoreboard_preset)
+                    fetch_data_logger.debug(
+                        f"Using sport preset {sport.scoreboard_preset.id} for scoreboard"
+                    )
+                    for key, value in preset_values.items():
+                        setattr(scoreboard_data_schema, key, value)
+                else:
+                    default_values = _get_default_scoreboard_values()
+                    fetch_data_logger.debug("Using default scoreboard values")
+                    for key, value in default_values.items():
+                        setattr(scoreboard_data_schema, key, value)
+
                 fetch_data_logger.debug(f"Schema for scoreboard data {scoreboard_data_schema}")
                 scoreboard_data = await scoreboard_data_service.create(scoreboard_data_schema)
 

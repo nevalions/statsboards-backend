@@ -125,12 +125,6 @@ class TestSportScoreboardPresetServiceDB:
         sport2 = await sport_service.create(
             SportFactoryAny.build(scoreboard_preset_id=preset.id, title="Tennis 2")
         )
-        sport1 = await sport_service.create(
-            SportFactoryAny.build(scoreboard_preset_id=preset.id, title="Tennis 1")
-        )
-        sport2 = await sport_service.create(
-            SportFactoryAny.build(scoreboard_preset_id=preset.id, title="Tennis 2")
-        )
         _ = await sport_service.create(
             SportFactoryAny.build(scoreboard_preset_id=None, title="Other Sport")
         )
