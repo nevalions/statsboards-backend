@@ -360,12 +360,17 @@ class Settings(BaseSettings):
         """
         Validate that SSL files are both provided or both absent.
 
+        SSL is optional for Kubernetes deployments where TLS is handled by Ingress.
+        For Docker Compose/local deployments, SSL can be enabled via environment variables.
+
         Returns:
             Self: Validated settings instance.
 
         Raises:
             ConfigurationError: If only one SSL file is provided.
         """
+        # Allow SSL to be optional - both set or neither set is valid
+        # This enables running behind Ingress (Kubernetes) or with SSL (Docker Compose)
         if bool(self.ssl_keyfile) != bool(self.ssl_certfile):
             raise ConfigurationError(
                 "Both SSL_KEYFILE and SSL_CERTFILE must be provided or neither",

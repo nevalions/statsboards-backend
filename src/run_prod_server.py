@@ -2,7 +2,6 @@
 from gunicorn.app.base import BaseApplication
 from uvicorn.workers import UvicornWorker
 
-from src.core.config import settings
 from src.logging_config import get_logger, setup_logging
 
 logger = get_logger("server")
@@ -38,6 +37,8 @@ if __name__ == "__main__":
     setup_logging()
     logger.info("Production Server Started!")
 
+    # Note: SSL/TLS is handled by Ingress in Kubernetes deployments
+    # For Docker Compose/local deployments with SSL, set SSL_KEYFILE and SSL_CERTFILE env vars
     options = {
         "bind": "0.0.0.0:9000",
         "workers": 4,
@@ -46,10 +47,6 @@ if __name__ == "__main__":
         "loglevel": "info",
         "errorlog": "-",
         "accesslog": "-",
-        # Add SSL configuration
-        "keyfile": settings.ssl_keyfile,
-        "certfile": settings.ssl_certfile,
-        "ssl": True,
     }
 
     try:
