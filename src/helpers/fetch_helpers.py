@@ -7,7 +7,7 @@ from fastapi import status
 from sqlalchemy import select
 
 from src.core import db
-from src.core.enums import ClockDirection, ClockOnStopBehavior
+from src.core.enums import ClockDirection, ClockOnStopBehavior, InitialTimeMode
 from src.core.models import SponsorDB, SponsorSponsorLineDB, SportScoreboardPresetDB, TeamDB
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
@@ -26,7 +26,14 @@ fetch_data_logger = get_logger("fetch_data")
 
 def _get_preset_values_for_gameclock(preset: SportScoreboardPresetDB) -> dict[str, Any]:
     """Extract preset values for gameclock creation."""
+    initial_gameclock_seconds = _calculate_initial_gameclock_seconds(
+        gameclock_max=preset.gameclock_max,
+        initial_time_mode=preset.initial_time_mode,
+        initial_time_min_seconds=preset.initial_time_min_seconds,
+    )
     return {
+        "gameclock": initial_gameclock_seconds,
+        "gameclock_time_remaining": initial_gameclock_seconds,
         "gameclock_max": preset.gameclock_max,
         "direction": preset.direction,
         "on_stop_behavior": preset.on_stop_behavior,
@@ -47,7 +54,14 @@ def _get_preset_values_for_scoreboard(preset: SportScoreboardPresetDB) -> dict[s
 
 def _get_default_gameclock_values() -> dict[str, Any]:
     """Get default gameclock values when no sport preset is available."""
+    initial_gameclock_seconds = _calculate_initial_gameclock_seconds(
+        gameclock_max=720,
+        initial_time_mode=InitialTimeMode.MAX,
+        initial_time_min_seconds=None,
+    )
     return {
+        "gameclock": initial_gameclock_seconds,
+        "gameclock_time_remaining": initial_gameclock_seconds,
         "gameclock_max": 720,
         "direction": ClockDirection.DOWN,
         "on_stop_behavior": ClockOnStopBehavior.HOLD,
@@ -64,6 +78,20 @@ def _get_default_scoreboard_values() -> dict[str, Any]:
         "is_downdistance": True,
         "use_sport_preset": True,
     }
+
+
+def _calculate_initial_gameclock_seconds(
+    gameclock_max: int | None,
+    initial_time_mode: InitialTimeMode,
+    initial_time_min_seconds: int | None,
+) -> int:
+    if initial_time_mode == InitialTimeMode.ZERO:
+        return 0
+
+    if initial_time_mode == InitialTimeMode.MIN:
+        return initial_time_min_seconds or 0
+
+    return gameclock_max or 0
 
 
 async def _fetch_sponsor_line_sponsors(sponsor_line_id: int | None, database=None) -> list:

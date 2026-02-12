@@ -8,6 +8,60 @@ Run with:
 import datetime
 from unittest.mock import Mock
 
+from src.core.enums import InitialTimeMode
+
+
+class TestInitialGameclockHelpers:
+    def test_calculate_initial_gameclock_seconds_for_max_mode(self):
+        from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
+
+        result = _calculate_initial_gameclock_seconds(
+            gameclock_max=720,
+            initial_time_mode=InitialTimeMode.MAX,
+            initial_time_min_seconds=None,
+        )
+
+        assert result == 720
+
+    def test_calculate_initial_gameclock_seconds_for_zero_mode(self):
+        from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
+
+        result = _calculate_initial_gameclock_seconds(
+            gameclock_max=720,
+            initial_time_mode=InitialTimeMode.ZERO,
+            initial_time_min_seconds=None,
+        )
+
+        assert result == 0
+
+    def test_calculate_initial_gameclock_seconds_for_min_mode(self):
+        from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
+
+        result = _calculate_initial_gameclock_seconds(
+            gameclock_max=720,
+            initial_time_mode=InitialTimeMode.MIN,
+            initial_time_min_seconds=120,
+        )
+
+        assert result == 120
+
+    def test_get_preset_values_for_gameclock_uses_initial_time_mode(self):
+        from src.helpers.fetch_helpers import _get_preset_values_for_gameclock
+
+        preset = Mock(
+            gameclock_max=900,
+            initial_time_mode=InitialTimeMode.MIN,
+            initial_time_min_seconds=45,
+            direction="down",
+            on_stop_behavior="hold",
+        )
+
+        result = _get_preset_values_for_gameclock(preset)
+
+        assert result["gameclock"] == 45
+        assert result["gameclock_time_remaining"] == 45
+        assert result["gameclock_max"] == 900
+
 
 class TestInstanceToDict:
     """Tests for instance_to_dict function."""

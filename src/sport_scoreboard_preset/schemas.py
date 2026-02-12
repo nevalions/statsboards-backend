@@ -6,7 +6,12 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from src.core.enums import ClockDirection, ClockOnStopBehavior, SportPeriodMode
+from src.core.enums import (
+    ClockDirection,
+    ClockOnStopBehavior,
+    InitialTimeMode,
+    SportPeriodMode,
+)
 from src.core.schema_helpers import make_fields_optional
 
 MACHINE_LABEL_KEY_PATTERN = re.compile(r"^[a-z0-9]+(?:[._-][a-z0-9]+)*$")
@@ -15,6 +20,8 @@ MACHINE_LABEL_KEY_PATTERN = re.compile(r"^[a-z0-9]+(?:[._-][a-z0-9]+)*$")
 class SportScoreboardPresetSchemaBase(BaseModel):
     title: Annotated[str, Path(max_length=255)]
     gameclock_max: int | None = 720
+    initial_time_mode: Annotated[InitialTimeMode, Path(max_length=10)] = InitialTimeMode.MAX
+    initial_time_min_seconds: int | None = None
     direction: Annotated[ClockDirection, Path(max_length=10)] = ClockDirection.DOWN
     on_stop_behavior: Annotated[ClockOnStopBehavior, Path(max_length=10)] = ClockOnStopBehavior.HOLD
     is_qtr: bool = True
@@ -29,6 +36,9 @@ class SportScoreboardPresetSchemaBase(BaseModel):
 
     @model_validator(mode="after")
     def validate_period_labels(self) -> SportScoreboardPresetSchemaBase:
+        if self.initial_time_mode == InitialTimeMode.MIN and self.initial_time_min_seconds is None:
+            raise ValueError("initial_time_min_seconds is required when initial_time_mode='min'")
+
         if self.period_labels_json is None:
             return self
 

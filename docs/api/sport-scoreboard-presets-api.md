@@ -9,6 +9,8 @@ interface SportScoreboardPresetSchema {
   id: number;
   title: string; // Max 255 characters
   gameclock_max: number | null; // Maximum gameclock time in seconds, default 720
+  initial_time_mode: "max" | "zero" | "min"; // Initial gameclock strategy, default "max"
+  initial_time_min_seconds: number | null; // Required when initial_time_mode="min"
   direction: string; // Clock direction: "down" or "up" (default: "down")
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
   is_qtr: boolean; // Show quarter indicator (default: true)
@@ -25,6 +27,8 @@ interface SportScoreboardPresetSchema {
 interface SportScoreboardPresetSchemaCreate {
   title: string; // Max 255 characters
   gameclock_max: number | null; // Optional max time in seconds, default 720
+  initial_time_mode: "max" | "zero" | "min"; // Optional initial gameclock strategy, default "max"
+  initial_time_min_seconds: number | null; // Optional, required when initial_time_mode="min"
   direction: string; // Clock direction: "down" or "up" (default: "down")
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
   is_qtr: boolean; // Show quarter indicator, defaults to true
@@ -41,6 +45,8 @@ interface SportScoreboardPresetSchemaCreate {
 interface SportScoreboardPresetSchemaUpdate {
   title: string | null; // Optional - Max 255 characters
   gameclock_max: number | null; // Optional max time in seconds
+  initial_time_mode: "max" | "zero" | "min" | null; // Optional initial gameclock strategy
+  initial_time_min_seconds: number | null; // Optional, required when initial_time_mode="min"
   direction: string | null; // Optional clock direction: "down" or "up"
   on_stop_behavior: string | null; // Optional behavior when stopped: "hold" or "reset"
   is_qtr: boolean | null; // Optional quarter indicator
@@ -71,6 +77,8 @@ POST /api/sport-scoreboard-presets/
 {
   "title": "American Football Preset",
   "gameclock_max": 720,
+  "initial_time_mode": "max",
+  "initial_time_min_seconds": null,
   "direction": "down",
   "on_stop_behavior": "hold",
   "is_qtr": true,
@@ -90,6 +98,8 @@ POST /api/sport-scoreboard-presets/
 interface SportScoreboardPresetSchemaCreate {
   title: string; // Max 255 characters
   gameclock_max: number | null; // Optional max time in seconds
+  initial_time_mode: "max" | "zero" | "min";
+  initial_time_min_seconds: number | null;
   direction: string; // Clock direction: "down" or "up"
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset"
   is_qtr: boolean; // Show quarter indicator
@@ -110,6 +120,8 @@ interface SportScoreboardPresetSchemaCreate {
   "id": 1,
   "title": "American Football Preset",
   "gameclock_max": 720,
+  "initial_time_mode": "max",
+  "initial_time_min_seconds": null,
   "direction": "down",
   "on_stop_behavior": "hold",
   "is_qtr": true,
@@ -165,6 +177,8 @@ PUT /api/sport-scoreboard-presets/{item_id}/
 interface SportScoreboardPresetSchemaUpdate {
   title: string | null; // Optional - Max 255 characters
   gameclock_max: number | null; // Optional max time in seconds
+  initial_time_mode: "max" | "zero" | "min" | null;
+  initial_time_min_seconds: number | null;
   direction: string | null; // Optional clock direction: "down" or "up"
   on_stop_behavior: string | null; // Optional behavior when stopped: "hold" or "reset"
   is_qtr: boolean | null; // Optional quarter indicator
@@ -185,6 +199,8 @@ interface SportScoreboardPresetSchemaUpdate {
   "id": 1,
   "title": "American Football Preset - Updated",
   "gameclock_max": 720,
+  "initial_time_mode": "max",
+  "initial_time_min_seconds": null,
   "direction": "up",
   "on_stop_behavior": "reset",
   "is_qtr": true,
@@ -229,6 +245,8 @@ GET /api/sport-scoreboard-presets/id/{item_id}/
   "id": 1,
   "title": "American Football Preset",
   "gameclock_max": 720,
+  "initial_time_mode": "max",
+  "initial_time_min_seconds": null,
   "direction": "down",
   "on_stop_behavior": "hold",
   "is_qtr": true,
@@ -268,6 +286,8 @@ GET /api/sport-scoreboard-presets/
     "id": 1,
     "title": "American Football Preset",
     "gameclock_max": 720,
+    "initial_time_mode": "max",
+    "initial_time_min_seconds": null,
     "direction": "down",
     "on_stop_behavior": "hold",
     "is_qtr": true,
@@ -284,6 +304,8 @@ GET /api/sport-scoreboard-presets/
     "id": 2,
     "title": "Basketball Preset",
     "gameclock_max": 600,
+    "initial_time_mode": "max",
+    "initial_time_min_seconds": null,
     "direction": "down",
     "on_stop_behavior": "hold",
     "is_qtr": false,
@@ -406,6 +428,7 @@ PUT /api/sports/1/
 ```
 
 When creating a gameclock for a match in this sport, the following preset values will be applied automatically:
+- `gameclock`: chosen by `initial_time_mode` (`max`, `zero`, `min`)
 - `gameclock_max`: 720
 - `direction`: "down"
 - `on_stop_behavior`: "hold"

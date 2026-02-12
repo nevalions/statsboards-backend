@@ -35,6 +35,14 @@ class SportPeriodMode(StrEnum):
     CUSTOM = "custom"
 
 
+class InitialTimeMode(StrEnum):
+    """Initial gameclock value strategy for new matches."""
+
+    MAX = "max"
+    ZERO = "zero"
+    MIN = "min"
+
+
 class GameStatus(StrEnum):
     """Status values for match game state."""
 
