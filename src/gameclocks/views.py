@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from src.auth.dependencies import require_roles
 from src.core import BaseRouter
 from src.core.dependencies import GameClockService
-from src.core.enums import ClockStatus
+from src.core.enums import ClockDirection, ClockStatus
 from src.core.models import GameClockDB
 
 from ..logging_config import get_logger
@@ -231,11 +231,16 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                             current_time_ms = int(time.time() * 1000)
                             elapsed_ms = current_time_ms - current_gameclock.started_at_ms
                             elapsed_seconds = elapsed_ms / 1000
-                            current_value = max(0, int(current_gameclock.gameclock - elapsed_seconds))
+                            if current_gameclock.direction == ClockDirection.UP:
+                                max_val = current_gameclock.gameclock_max or 0
+                                current_value = min(max_val, int(current_gameclock.gameclock + elapsed_seconds))
+                            else:
+                                current_value = max(0, int(current_gameclock.gameclock - elapsed_seconds))
                             self.logger.debug(
                                 f"Calculated elapsed time: started_at_ms={current_gameclock.started_at_ms}, "
                                 f"current_time_ms={current_time_ms}, elapsed_seconds={elapsed_seconds}, "
-                                f"original_value={current_gameclock.gameclock}, current_value={current_value}"
+                                f"original_value={current_gameclock.gameclock}, direction={current_gameclock.direction}, "
+                                f"current_value={current_value}"
                             )
                         else:
                             current_value = current_gameclock.gameclock
