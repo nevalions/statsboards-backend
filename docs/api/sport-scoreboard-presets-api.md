@@ -61,6 +61,48 @@ interface SportScoreboardPresetSchemaUpdate {
 }
 ```
 
+### Initial Gameclock Strategy (seconds)
+
+- All time values are in seconds.
+- `gameclock_max` is the configured upper bound.
+- `initial_time_mode` determines the initial `gameclock` value for newly created match gameclocks:
+  - `max`: start at `gameclock_max`
+  - `zero`: start at `0`
+  - `min`: start at `initial_time_min_seconds`
+- `initial_time_min_seconds` is required when `initial_time_mode="min"`.
+- Final initial value is clamped to a non-negative range:
+  - when `gameclock_max` is set: `0 <= gameclock <= gameclock_max`
+  - when `gameclock_max` is `null`: `gameclock >= 0`
+
+Example payloads:
+
+```json
+{
+  "title": "Football (max)",
+  "gameclock_max": 900,
+  "initial_time_mode": "max",
+  "initial_time_min_seconds": null
+}
+```
+
+```json
+{
+  "title": "Countdown from zero",
+  "gameclock_max": 900,
+  "initial_time_mode": "zero",
+  "initial_time_min_seconds": null
+}
+```
+
+```json
+{
+  "title": "Soccer half",
+  "gameclock_max": 3600,
+  "initial_time_mode": "min",
+  "initial_time_min_seconds": 2700
+}
+```
+
 ---
 
 ### POST /api/sport-scoreboard-presets/

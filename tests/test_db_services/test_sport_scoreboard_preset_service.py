@@ -143,6 +143,26 @@ class TestSportScoreboardPresetServiceDB:
                 initial_time_mode=InitialTimeMode.MIN,
             )
 
+    async def test_create_preset_allows_zero_initial_time_mode_without_seconds(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        schema = SportScoreboardPresetSchemaCreate(
+            title="Zero Mode",
+            initial_time_mode=InitialTimeMode.ZERO,
+            initial_time_min_seconds=None,
+        )
+
+        assert schema.initial_time_mode == InitialTimeMode.ZERO
+        assert schema.initial_time_min_seconds is None
+
+    async def test_update_preset_rejects_min_initial_time_mode_without_seconds(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaUpdate(
+                initial_time_mode=InitialTimeMode.MIN,
+            )
+
     async def test_create_preset_rejects_period_labels_outside_custom_mode(self, test_db):
         _ = SportScoreboardPresetServiceDB(test_db)
 

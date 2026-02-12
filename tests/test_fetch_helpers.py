@@ -23,6 +23,17 @@ class TestInitialGameclockHelpers:
 
         assert result == 720
 
+    def test_calculate_initial_gameclock_seconds_for_max_mode_non_default_regression(self):
+        from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
+
+        result = _calculate_initial_gameclock_seconds(
+            gameclock_max=900,
+            initial_time_mode=InitialTimeMode.MAX,
+            initial_time_min_seconds=None,
+        )
+
+        assert result == 900
+
     def test_calculate_initial_gameclock_seconds_for_zero_mode(self):
         from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
 
@@ -45,6 +56,39 @@ class TestInitialGameclockHelpers:
 
         assert result == 120
 
+    def test_calculate_initial_gameclock_seconds_for_min_mode_45_minutes(self):
+        from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
+
+        result = _calculate_initial_gameclock_seconds(
+            gameclock_max=3600,
+            initial_time_mode=InitialTimeMode.MIN,
+            initial_time_min_seconds=2700,
+        )
+
+        assert result == 2700
+
+    def test_calculate_initial_gameclock_seconds_clamps_to_gameclock_max(self):
+        from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
+
+        result = _calculate_initial_gameclock_seconds(
+            gameclock_max=1800,
+            initial_time_mode=InitialTimeMode.MIN,
+            initial_time_min_seconds=2700,
+        )
+
+        assert result == 1800
+
+    def test_calculate_initial_gameclock_seconds_clamps_negative_to_zero_without_max(self):
+        from src.helpers.fetch_helpers import _calculate_initial_gameclock_seconds
+
+        result = _calculate_initial_gameclock_seconds(
+            gameclock_max=None,
+            initial_time_mode=InitialTimeMode.MIN,
+            initial_time_min_seconds=-10,
+        )
+
+        assert result == 0
+
     def test_get_preset_values_for_gameclock_uses_initial_time_mode(self):
         from src.helpers.fetch_helpers import _get_preset_values_for_gameclock
 
@@ -60,6 +104,39 @@ class TestInitialGameclockHelpers:
 
         assert result["gameclock"] == 45
         assert result["gameclock_time_remaining"] == 45
+        assert result["gameclock_max"] == 900
+
+    def test_get_preset_values_for_gameclock_zero_mode(self):
+        from src.helpers.fetch_helpers import _get_preset_values_for_gameclock
+
+        preset = Mock(
+            gameclock_max=900,
+            initial_time_mode=InitialTimeMode.ZERO,
+            initial_time_min_seconds=None,
+            direction="down",
+            on_stop_behavior="hold",
+        )
+
+        result = _get_preset_values_for_gameclock(preset)
+
+        assert result["gameclock"] == 0
+        assert result["gameclock_time_remaining"] == 0
+
+    def test_get_preset_values_for_gameclock_max_mode_non_default_regression(self):
+        from src.helpers.fetch_helpers import _get_preset_values_for_gameclock
+
+        preset = Mock(
+            gameclock_max=900,
+            initial_time_mode=InitialTimeMode.MAX,
+            initial_time_min_seconds=None,
+            direction="down",
+            on_stop_behavior="hold",
+        )
+
+        result = _get_preset_values_for_gameclock(preset)
+
+        assert result["gameclock"] == 900
+        assert result["gameclock_time_remaining"] == 900
         assert result["gameclock_max"] == 900
 
 

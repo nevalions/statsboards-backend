@@ -85,13 +85,19 @@ def _calculate_initial_gameclock_seconds(
     initial_time_mode: InitialTimeMode,
     initial_time_min_seconds: int | None,
 ) -> int:
+    initial_seconds: int
+
     if initial_time_mode == InitialTimeMode.ZERO:
-        return 0
+        initial_seconds = 0
+    elif initial_time_mode == InitialTimeMode.MIN:
+        initial_seconds = initial_time_min_seconds or 0
+    else:
+        initial_seconds = gameclock_max or 0
 
-    if initial_time_mode == InitialTimeMode.MIN:
-        return initial_time_min_seconds or 0
+    if gameclock_max is not None:
+        return max(0, min(initial_seconds, gameclock_max))
 
-    return gameclock_max or 0
+    return max(0, initial_seconds)
 
 
 async def _fetch_sponsor_line_sponsors(sponsor_line_id: int | None, database=None) -> list:
