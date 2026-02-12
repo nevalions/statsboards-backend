@@ -498,6 +498,13 @@ Capability flags are enforced server-side:
 - `has_playclock=false` prevents playclock auto-creation/fetch bootstrap for the match.
 - `has_timeouts=false` forces timeout indicators on scoreboards to stay `false`.
 
+Preset updates are also propagated to opted-in match resources (`use_sport_preset=true`):
+- Scoreboards receive updated preset display fields and capability reconciliation.
+- Gameclocks receive updated period config defaults (`gameclock_max`, `direction`, `on_stop_behavior`).
+- If `has_playclock` flips from `true` to `false`, existing playclock rows for opted-in matches are safely deactivated (`playclock=null`, `playclock_status="stopped"`, `started_at_ms=null`).
+- If `has_timeouts` flips from `true` to `false`, timeout indicators are deterministically set to `false`.
+- Opt-out matches (`use_sport_preset=false`) are not modified by preset propagation.
+
 **Example: Assign preset to sport**
 
 ```json

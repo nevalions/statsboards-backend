@@ -1,9 +1,17 @@
 import pytest
 from pydantic import ValidationError
 
-from src.core.enums import ClockDirection, ClockOnStopBehavior, InitialTimeMode, SportPeriodMode
+from src.core.enums import (
+    ClockDirection,
+    ClockOnStopBehavior,
+    ClockStatus,
+    InitialTimeMode,
+    SportPeriodMode,
+)
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.matches.db_services import MatchServiceDB
+from src.playclocks.db_services import PlayClockServiceDB
+from src.playclocks.schemas import PlayClockSchemaCreate
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import ScoreboardSchemaCreate
 from src.seasons.db_services import SeasonServiceDB
@@ -385,6 +393,149 @@ class TestSportScoreboardPresetServiceDB:
         assert updated_with_preset.is_qtr is False
         assert updated_with_preset.period_mode == "half"
         assert updated_with_preset.period_count == 2
+
+    async def test_preset_update_reconciles_playclock_downgrade_for_opted_in_matches(self, test_db):
+        preset_service = SportScoreboardPresetServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        match_service = MatchServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        scoreboard_service = ScoreboardServiceDB(test_db)
+        playclock_service = PlayClockServiceDB(test_db)
+
+        preset = await preset_service.create(
+            SportScoreboardPresetSchemaCreate(
+                title="Football Preset",
+                has_playclock=True,
+                is_playclock=True,
+            )
+        )
+
+        sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        scoreboard = await scoreboard_service.create(
+            ScoreboardSchemaCreate(
+                match_id=match.id,
+                use_sport_preset=True,
+                is_playclock=True,
+            )
+        )
+
+        playclock = await playclock_service.create(
+            PlayClockSchemaCreate(
+                match_id=match.id,
+                playclock=25,
+                playclock_status=ClockStatus.RUNNING,
+                started_at_ms=123456,
+            )
+        )
+
+        await preset_service.update(
+            preset.id,
+            SportScoreboardPresetSchemaUpdate(
+                has_playclock=False,
+                is_playclock=True,
+            ),
+        )
+
+        updated_scoreboard = await scoreboard_service.get_by_id(scoreboard.id)
+        updated_playclock = await playclock_service.get_by_id(playclock.id)
+
+        assert updated_scoreboard.is_playclock is False
+        assert updated_playclock.playclock is None
+        assert updated_playclock.playclock_status == ClockStatus.STOPPED
+        assert updated_playclock.started_at_ms is None
+        assert updated_playclock.version == playclock.version + 1
+
+    async def test_preset_update_reconciles_timeouts_only_for_opted_in_matches(self, test_db):
+        preset_service = SportScoreboardPresetServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        match_service = MatchServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        scoreboard_service = ScoreboardServiceDB(test_db)
+
+        preset = await preset_service.create(
+            SportScoreboardPresetSchemaCreate(
+                title="Timeout Preset",
+                has_timeouts=True,
+            )
+        )
+
+        sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_c = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_d = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        opted_in_match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+            )
+        )
+        opted_out_match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id,
+                team_a_id=team_c.id,
+                team_b_id=team_d.id,
+            )
+        )
+
+        opted_in_scoreboard = await scoreboard_service.create(
+            ScoreboardSchemaCreate(
+                match_id=opted_in_match.id,
+                use_sport_preset=True,
+                is_timeout_team_a=True,
+                is_timeout_team_b=True,
+            )
+        )
+        opted_out_scoreboard = await scoreboard_service.create(
+            ScoreboardSchemaCreate(
+                match_id=opted_out_match.id,
+                use_sport_preset=False,
+                is_timeout_team_a=True,
+                is_timeout_team_b=True,
+            )
+        )
+
+        await preset_service.update(
+            preset.id,
+            SportScoreboardPresetSchemaUpdate(has_timeouts=False),
+        )
+
+        updated_opted_in = await scoreboard_service.get_by_id(opted_in_scoreboard.id)
+        updated_opted_out = await scoreboard_service.get_by_id(opted_out_scoreboard.id)
+
+        assert updated_opted_in.is_timeout_team_a is False
+        assert updated_opted_in.is_timeout_team_b is False
+        assert updated_opted_out.is_timeout_team_a is True
+        assert updated_opted_out.is_timeout_team_b is True
 
     async def test_preset_update_does_not_affect_opted_out_matches(self, test_db):
         preset_service = SportScoreboardPresetServiceDB(test_db)
