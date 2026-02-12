@@ -43,7 +43,7 @@ def _get_preset_values_for_gameclock(preset: SportScoreboardPresetDB) -> dict[st
 
 def _get_preset_values_for_scoreboard(preset: SportScoreboardPresetDB) -> dict[str, Any]:
     """Extract preset values for scoreboard creation."""
-    return {
+    values: dict[str, Any] = {
         "is_qtr": preset.is_qtr,
         "period_mode": preset.period_mode,
         "period_count": preset.period_count,
@@ -51,8 +51,11 @@ def _get_preset_values_for_scoreboard(preset: SportScoreboardPresetDB) -> dict[s
         "is_time": preset.is_time,
         "is_playclock": preset.is_playclock,
         "is_downdistance": preset.is_downdistance,
+        "is_timeout_team_a": False,
+        "is_timeout_team_b": False,
         "use_sport_preset": True,
     }
+    return _enforce_scoreboard_capabilities(values, preset)
 
 
 def _get_default_gameclock_values() -> dict[str, Any]:
@@ -82,8 +85,31 @@ def _get_default_scoreboard_values() -> dict[str, Any]:
         "is_time": True,
         "is_playclock": True,
         "is_downdistance": True,
+        "is_timeout_team_a": False,
+        "is_timeout_team_b": False,
         "use_sport_preset": True,
     }
+
+
+def _preset_supports_playclock(preset: SportScoreboardPresetDB) -> bool:
+    return bool(getattr(preset, "has_playclock", True))
+
+
+def _preset_supports_timeouts(preset: SportScoreboardPresetDB) -> bool:
+    return bool(getattr(preset, "has_timeouts", True))
+
+
+def _enforce_scoreboard_capabilities(
+    values: dict[str, Any], preset: SportScoreboardPresetDB
+) -> dict[str, Any]:
+    if not _preset_supports_playclock(preset):
+        values["is_playclock"] = False
+
+    if not _preset_supports_timeouts(preset):
+        values["is_timeout_team_a"] = False
+        values["is_timeout_team_b"] = False
+
+    return values
 
 
 def _calculate_initial_gameclock_seconds(
@@ -495,18 +521,33 @@ async def fetch_playclock(
     playclock_service = PlayClockServiceDB(_db)
     match_service_db = MatchServiceDB(_db)
     try:
-        match, playclock = await asyncio.gather(
+        match, playclock, sport = await asyncio.gather(
             match_service_db.get_by_id(match_id),
             playclock_service.get_playclock_by_match_id(match_id),
+            match_service_db.get_sport_by_match_id(match_id),
         )
 
         if match:
+            preset = sport.scoreboard_preset if sport else None
+            supports_playclock = True
+            if preset is not None:
+                supports_playclock = _preset_supports_playclock(preset)
+
+            if not supports_playclock:
+                return {
+                    "match_id": match_id,
+                    "playclock": None,
+                    "is_supported": False,
+                    "server_time_ms": int(time.time() * 1000),
+                }
+
             if playclock is None:
                 playclock_schema = PlayClockSchemaCreate(match_id=match_id)
                 playclock = await playclock_service.create(playclock_schema)
             return {
                 "match_id": match_id,
                 "playclock": instance_to_dict(dict(playclock.__dict__)),
+                "is_supported": True,
                 "server_time_ms": int(time.time() * 1000),
             }
         else:

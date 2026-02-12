@@ -13,6 +13,8 @@ interface SportScoreboardPresetSchema {
   initial_time_min_seconds: number | null; // Required when initial_time_mode="min"
   direction: string; // Clock direction: "down" or "up" (default: "down")
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
+  has_playclock: boolean; // Sport supports playclock entities (default: true)
+  has_timeouts: boolean; // Sport supports timeout indicators (default: true)
   is_qtr: boolean; // Show quarter indicator (default: true)
   is_time: boolean; // Show time display (default: true)
   is_playclock: boolean; // Show playclock (default: true)
@@ -32,6 +34,8 @@ interface SportScoreboardPresetSchemaCreate {
   initial_time_min_seconds: number | null; // Optional, required when initial_time_mode="min"
   direction: string; // Clock direction: "down" or "up" (default: "down")
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
+  has_playclock: boolean; // Optional, defaults to true
+  has_timeouts: boolean; // Optional, defaults to true
   is_qtr: boolean; // Show quarter indicator, defaults to true
   is_time: boolean; // Show time display, defaults to true
   is_playclock: boolean; // Show playclock, defaults to true
@@ -51,6 +55,8 @@ interface SportScoreboardPresetSchemaUpdate {
   initial_time_min_seconds: number | null; // Optional, required when initial_time_mode="min"
   direction: string | null; // Optional clock direction: "down" or "up"
   on_stop_behavior: string | null; // Optional behavior when stopped: "hold" or "reset"
+  has_playclock: boolean | null; // Optional capability flag
+  has_timeouts: boolean | null; // Optional capability flag
   is_qtr: boolean | null; // Optional quarter indicator
   is_time: boolean | null; // Optional time display
   is_playclock: boolean | null; // Optional playclock
@@ -128,6 +134,8 @@ POST /api/sport-scoreboard-presets/
   "initial_time_min_seconds": null,
   "direction": "down",
   "on_stop_behavior": "hold",
+  "has_playclock": true,
+  "has_timeouts": true,
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
@@ -150,6 +158,8 @@ interface SportScoreboardPresetSchemaCreate {
   initial_time_min_seconds: number | null;
   direction: string; // Clock direction: "down" or "up"
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset"
+  has_playclock: boolean; // Sport supports playclock entities
+  has_timeouts: boolean; // Sport supports timeout indicators
   is_qtr: boolean; // Show quarter indicator
   is_time: boolean; // Show time display
   is_playclock: boolean; // Show playclock
@@ -173,6 +183,8 @@ interface SportScoreboardPresetSchemaCreate {
   "initial_time_min_seconds": null,
   "direction": "down",
   "on_stop_behavior": "hold",
+  "has_playclock": true,
+  "has_timeouts": true,
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
@@ -232,6 +244,8 @@ interface SportScoreboardPresetSchemaUpdate {
   initial_time_min_seconds: number | null;
   direction: string | null; // Optional clock direction: "down" or "up"
   on_stop_behavior: string | null; // Optional behavior when stopped: "hold" or "reset"
+  has_playclock: boolean | null; // Optional capability flag
+  has_timeouts: boolean | null; // Optional capability flag
   is_qtr: boolean | null; // Optional quarter indicator
   is_time: boolean | null; // Optional time display
   is_playclock: boolean | null; // Optional playclock
@@ -255,6 +269,8 @@ interface SportScoreboardPresetSchemaUpdate {
   "initial_time_min_seconds": null,
   "direction": "up",
   "on_stop_behavior": "reset",
+  "has_playclock": true,
+  "has_timeouts": true,
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
@@ -302,6 +318,8 @@ GET /api/sport-scoreboard-presets/id/{item_id}/
   "initial_time_min_seconds": null,
   "direction": "down",
   "on_stop_behavior": "hold",
+  "has_playclock": true,
+  "has_timeouts": true,
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
@@ -344,6 +362,8 @@ GET /api/sport-scoreboard-presets/
     "initial_time_min_seconds": null,
     "direction": "down",
     "on_stop_behavior": "hold",
+    "has_playclock": true,
+    "has_timeouts": true,
     "is_qtr": true,
     "is_time": true,
     "is_playclock": true,
@@ -363,6 +383,8 @@ GET /api/sport-scoreboard-presets/
     "initial_time_min_seconds": null,
     "direction": "down",
     "on_stop_behavior": "hold",
+    "has_playclock": false,
+    "has_timeouts": true,
     "is_qtr": false,
     "is_time": true,
     "is_playclock": false,
@@ -471,6 +493,10 @@ Authorization: Bearer <token>
 ## Usage with Sports
 
 Sport scoreboard presets can be assigned to sports via the `scoreboard_preset_id` field in the Sport schema. When a match is created for a sport with a preset, the gameclock and scoreboard will automatically use the preset's default values.
+
+Capability flags are enforced server-side:
+- `has_playclock=false` prevents playclock auto-creation/fetch bootstrap for the match.
+- `has_timeouts=false` forces timeout indicators on scoreboards to stay `false`.
 
 **Example: Assign preset to sport**
 

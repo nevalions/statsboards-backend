@@ -57,6 +57,9 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
         preset: SportScoreboardPresetDB,
     ) -> None:
         self.logger.debug(f"Propagating preset {preset.id} to opted-in matches")
+        supports_playclock = bool(preset.has_playclock)
+        supports_timeouts = bool(preset.has_timeouts)
+
         async with self.db.get_session_maker()() as session:
             try:
                 match_ids_subquery = (
@@ -66,19 +69,24 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
                     .where(SportDB.scoreboard_preset_id == preset.id)
                 )
 
+                scoreboard_values = {
+                    "is_qtr": preset.is_qtr,
+                    "period_mode": preset.period_mode,
+                    "period_count": preset.period_count,
+                    "period_labels_json": preset.period_labels_json,
+                    "is_time": preset.is_time,
+                    "is_playclock": preset.is_playclock if supports_playclock else False,
+                    "is_downdistance": preset.is_downdistance,
+                }
+                if not supports_timeouts:
+                    scoreboard_values["is_timeout_team_a"] = False
+                    scoreboard_values["is_timeout_team_b"] = False
+
                 await session.execute(
                     update(ScoreboardDB)
                     .where(ScoreboardDB.match_id.in_(match_ids_subquery))
                     .where(ScoreboardDB.use_sport_preset.is_(True))
-                    .values(
-                        is_qtr=preset.is_qtr,
-                        period_mode=preset.period_mode,
-                        period_count=preset.period_count,
-                        period_labels_json=preset.period_labels_json,
-                        is_time=preset.is_time,
-                        is_playclock=preset.is_playclock,
-                        is_downdistance=preset.is_downdistance,
-                    )
+                    .values(**scoreboard_values)
                 )
 
                 await session.execute(

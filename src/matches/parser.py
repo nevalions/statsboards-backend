@@ -2,9 +2,9 @@ from sqlalchemy import select
 
 from src.core import db
 from src.core.models import TeamDB
-from src.helpers.text_helpers import safe_int_conversion
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
+from src.helpers.text_helpers import safe_int_conversion
 from src.logging_config import get_logger
 from src.matchdata.db_services import MatchDataServiceDB
 from src.matchdata.schemas import MatchDataSchemaCreate, MatchDataSchemaUpdate
@@ -36,6 +36,13 @@ class MatchParser:
     async def get_parse_match(self, eesl_match_id: int):
         self.logger.debug(f"Get parsed match from eesl_id:{eesl_match_id}")
         return await parse_match_and_create_jsons(eesl_match_id)
+
+    @staticmethod
+    def _sport_supports_playclock(sport) -> bool:
+        preset = sport.scoreboard_preset if sport else None
+        if preset is None:
+            return True
+        return bool(getattr(preset, "has_playclock", True))
 
     async def create_parsed_matches(
         self, eesl_tournament_id: int, match_service
@@ -111,8 +118,10 @@ class MatchParser:
                         match_schema = MatchSchemaCreate(**match)
                         created_match = await match_service.create_or_update_match(match_schema)
 
-                        playclock_schema = PlayClockSchemaCreate(match_id=created_match.id)
-                        await playclock_service.create(playclock_schema)
+                        sport = await match_service.get_sport_by_match_id(created_match.id)
+                        if self._sport_supports_playclock(sport):
+                            playclock_schema = PlayClockSchemaCreate(match_id=created_match.id)
+                            await playclock_service.create(playclock_schema)
 
                         gameclock_schema = GameClockSchemaCreate(match_id=created_match.id)
                         await gameclock_service.create(gameclock_schema)
@@ -248,8 +257,10 @@ class MatchParser:
             match_schema = MatchSchemaCreate(**match)
             created_match = await match_service.create_or_update_match(match_schema)
 
-            playclock_schema = PlayClockSchemaCreate(match_id=created_match.id)
-            await playclock_service.create(playclock_schema)
+            sport = await match_service.get_sport_by_match_id(created_match.id)
+            if self._sport_supports_playclock(sport):
+                playclock_schema = PlayClockSchemaCreate(match_id=created_match.id)
+                await playclock_service.create(playclock_schema)
 
             gameclock_schema = GameClockSchemaCreate(match_id=created_match.id)
             await gameclock_service.create(gameclock_schema)

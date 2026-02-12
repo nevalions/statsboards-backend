@@ -24,6 +24,8 @@ class SportScoreboardPresetSchemaBase(BaseModel):
     initial_time_min_seconds: int | None = None
     direction: Annotated[ClockDirection, Path(max_length=10)] = ClockDirection.DOWN
     on_stop_behavior: Annotated[ClockOnStopBehavior, Path(max_length=10)] = ClockOnStopBehavior.HOLD
+    has_playclock: bool = True
+    has_timeouts: bool = True
     is_qtr: bool = True
     is_time: bool = True
     is_playclock: bool = True

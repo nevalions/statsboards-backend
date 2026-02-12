@@ -47,6 +47,8 @@ class SportScoreboardPresetDB(Base):
     )
 
     # Scoreboard defaults
+    has_playclock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    has_timeouts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_qtr: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_time: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_playclock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
