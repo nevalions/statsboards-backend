@@ -3,7 +3,16 @@ import asyncio
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from src.core.models import BaseServiceDB, MatchDataDB, ScoreboardDB, handle_service_exceptions
+from src.core.models import (
+    BaseServiceDB,
+    MatchDataDB,
+    MatchDB,
+    ScoreboardDB,
+    SportDB,
+    SportScoreboardPresetDB,
+    TournamentDB,
+    handle_service_exceptions,
+)
 from src.core.models.base import Database
 
 from ..logging_config import get_logger
@@ -44,6 +53,16 @@ class ScoreboardServiceDB(BaseServiceDB):
     async def create(self, item: ScoreboardSchemaCreate) -> ScoreboardDB:
         self.logger.debug(f"Create scoreboard: {item}")
         if item.match_id is not None:
+            supports_playclock, supports_timeouts = await self._get_match_feature_capabilities(
+                item.match_id
+            )
+            item = self._apply_capability_guards_on_create(
+                item,
+                supports_playclock=supports_playclock,
+                supports_timeouts=supports_timeouts,
+            )
+
+        if item.match_id is not None:
             is_exist = await self.get_scoreboard_by_match_id(item.match_id)
             if is_exist:
                 self.logger.info(f"Scoreboard already exists: {is_exist}")
@@ -71,6 +90,22 @@ class ScoreboardServiceDB(BaseServiceDB):
         **kwargs,
     ) -> ScoreboardDB:
         self.logger.debug(f"Update scoreboard id:{item_id} data: {item}")
+        match_id = item.match_id
+        if match_id is None:
+            existing_scoreboard = await self.get_by_id(item_id)
+            if existing_scoreboard is not None:
+                match_id = existing_scoreboard.match_id
+
+        if match_id is not None:
+            supports_playclock, supports_timeouts = await self._get_match_feature_capabilities(
+                match_id
+            )
+            item = self._apply_capability_guards_on_update(
+                item,
+                supports_playclock=supports_playclock,
+                supports_timeouts=supports_timeouts,
+            )
+
         updated_ = await super().update(
             item_id,
             item,
@@ -117,7 +152,71 @@ class ScoreboardServiceDB(BaseServiceDB):
             else:
                 self.logger.warning("Wrong Schema for creating scoreboard")
                 raise ValueError("Must use ScoreboardSchemaCreate for creating.")
-            return new_scoreboard
+        return new_scoreboard
+
+    async def _get_match_feature_capabilities(self, match_id: int) -> tuple[bool, bool]:
+        """Return (supports_playclock, supports_timeouts) for match's sport preset."""
+        async with self.db.get_session_maker()() as session:
+            stmt = (
+                select(
+                    SportScoreboardPresetDB.has_playclock,
+                    SportScoreboardPresetDB.has_timeouts,
+                )
+                .select_from(MatchDB)
+                .join(TournamentDB, MatchDB.tournament_id == TournamentDB.id)
+                .join(SportDB, TournamentDB.sport_id == SportDB.id)
+                .join(
+                    SportScoreboardPresetDB,
+                    SportDB.scoreboard_preset_id == SportScoreboardPresetDB.id,
+                    isouter=True,
+                )
+                .where(MatchDB.id == match_id)
+            )
+            row = (await session.execute(stmt)).one_or_none()
+
+        if row is None:
+            return True, True
+
+        has_playclock, has_timeouts = row
+        supports_playclock = True if has_playclock is None else bool(has_playclock)
+        supports_timeouts = True if has_timeouts is None else bool(has_timeouts)
+        return supports_playclock, supports_timeouts
+
+    def _apply_capability_guards_on_create(
+        self,
+        item: ScoreboardSchemaCreate,
+        *,
+        supports_playclock: bool,
+        supports_timeouts: bool,
+    ) -> ScoreboardSchemaCreate:
+        payload = item.model_dump()
+
+        if not supports_playclock:
+            payload["is_playclock"] = False
+
+        if not supports_timeouts:
+            payload["is_timeout_team_a"] = False
+            payload["is_timeout_team_b"] = False
+
+        return ScoreboardSchemaCreate(**payload)
+
+    def _apply_capability_guards_on_update(
+        self,
+        item: ScoreboardSchemaUpdate,
+        *,
+        supports_playclock: bool,
+        supports_timeouts: bool,
+    ) -> ScoreboardSchemaUpdate:
+        payload = item.model_dump(exclude_unset=True)
+
+        if not supports_playclock:
+            payload["is_playclock"] = False
+
+        if not supports_timeouts:
+            payload["is_timeout_team_a"] = False
+            payload["is_timeout_team_b"] = False
+
+        return ScoreboardSchemaUpdate(**payload)
 
     @handle_service_exceptions(
         item_name=ITEM, operation="fetching by matchdata ID", reraise_not_found=True

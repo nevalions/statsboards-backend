@@ -70,6 +70,10 @@ interface ScoreboardSchema {
 
 Create a new scoreboard configuration.
 
+Capability enforcement note:
+- If the match sport preset has `has_playclock=false`, backend forces `is_playclock=false`.
+- If the match sport preset has `has_timeouts=false`, backend forces `is_timeout_team_a=false` and `is_timeout_team_b=false`.
+
 **Endpoint:**
 ```
 POST /api/scoreboards/
@@ -138,6 +142,9 @@ interface ScoreboardSchemaCreate extends ScoreboardSchema {
 ### PUT /api/scoreboards/{item_id}/
 
 Update a scoreboard by ID.
+
+Capability enforcement note:
+- Backend applies the same capability guards during update, so unsupported features cannot be effectively enabled.
 
 **Endpoint:**
 ```

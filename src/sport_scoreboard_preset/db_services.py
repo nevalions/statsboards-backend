@@ -1,10 +1,14 @@
+from typing import Any, cast
+
 from sqlalchemy import select, update
 
 from src.core.decorators import handle_service_exceptions
+from src.core.enums import ClockStatus
 from src.core.models import (
     BaseServiceDB,
     GameClockDB,
     MatchDB,
+    PlayClockDB,
     ScoreboardDB,
     SportDB,
     SportScoreboardPresetDB,
@@ -14,7 +18,7 @@ from src.core.models.base import Database
 from src.core.service_registry import ServiceRegistryAccessorMixin
 
 from ..logging_config import get_logger
-from .schemas import SportScoreboardPresetSchemaCreate, SportScoreboardPresetSchemaUpdate
+from .schemas import SportScoreboardPresetSchemaCreate
 
 ITEM = "SPORT_SCOREBOARD_PRESET"
 
@@ -37,15 +41,18 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
     async def update(
         self,
         item_id: int,
-        item: SportScoreboardPresetSchemaUpdate,
+        item: Any,
         **kwargs,
     ) -> SportScoreboardPresetDB:
         self.logger.debug(f"Update {ITEM} with id:{item_id}")
 
-        updated_preset = await super().update(
-            item_id,
-            item,
-            **kwargs,
+        updated_preset = cast(
+            SportScoreboardPresetDB,
+            await super().update(
+                item_id,
+                item,
+                **kwargs,
+            ),
         )
 
         await self._propagate_preset_to_matches(updated_preset)
@@ -57,6 +64,9 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
         preset: SportScoreboardPresetDB,
     ) -> None:
         self.logger.debug(f"Propagating preset {preset.id} to opted-in matches")
+        supports_playclock = True if preset.has_playclock is None else bool(preset.has_playclock)
+        supports_timeouts = True if preset.has_timeouts is None else bool(preset.has_timeouts)
+
         async with self.db.get_session_maker()() as session:
             try:
                 match_ids_subquery = (
@@ -66,19 +76,24 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
                     .where(SportDB.scoreboard_preset_id == preset.id)
                 )
 
+                scoreboard_values = {
+                    "is_qtr": preset.is_qtr,
+                    "period_mode": preset.period_mode,
+                    "period_count": preset.period_count,
+                    "period_labels_json": preset.period_labels_json,
+                    "is_time": preset.is_time,
+                    "is_playclock": preset.is_playclock if supports_playclock else False,
+                    "is_downdistance": preset.is_downdistance,
+                }
+                if not supports_timeouts:
+                    scoreboard_values["is_timeout_team_a"] = False
+                    scoreboard_values["is_timeout_team_b"] = False
+
                 await session.execute(
                     update(ScoreboardDB)
                     .where(ScoreboardDB.match_id.in_(match_ids_subquery))
                     .where(ScoreboardDB.use_sport_preset.is_(True))
-                    .values(
-                        is_qtr=preset.is_qtr,
-                        period_mode=preset.period_mode,
-                        period_count=preset.period_count,
-                        period_labels_json=preset.period_labels_json,
-                        is_time=preset.is_time,
-                        is_playclock=preset.is_playclock,
-                        is_downdistance=preset.is_downdistance,
-                    )
+                    .values(**scoreboard_values)
                 )
 
                 await session.execute(
@@ -91,6 +106,23 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
                         on_stop_behavior=preset.on_stop_behavior,
                     )
                 )
+
+                if not supports_playclock:
+                    opted_in_scoreboard_match_ids_subquery = (
+                        select(ScoreboardDB.match_id)
+                        .where(ScoreboardDB.match_id.in_(match_ids_subquery))
+                        .where(ScoreboardDB.use_sport_preset.is_(True))
+                    )
+                    await session.execute(
+                        update(PlayClockDB)
+                        .where(PlayClockDB.match_id.in_(opted_in_scoreboard_match_ids_subquery))
+                        .values(
+                            playclock=None,
+                            playclock_status=ClockStatus.STOPPED,
+                            started_at_ms=None,
+                            version=PlayClockDB.version + 1,
+                        )
+                    )
 
                 await session.flush()
                 is_test_mode = hasattr(self.db, "test_mode") and self.db.test_mode

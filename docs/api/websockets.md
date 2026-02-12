@@ -243,7 +243,7 @@ interface InitialLoadMessage {
       playclock: number;
       playclock_status: string;  // "stopped", "running", "paused"
       started_at_ms?: number | null;
-    };
+    } | null;
     events: FootballEvent[];
     players: PlayerMatchData[];
     statistics: {
@@ -258,6 +258,14 @@ interface InitialLoadMessage {
     };
     server_time_ms: number;
   };
+}
+```
+
+When a sport preset disables playclock support (`has_playclock=false`), initial payload uses:
+
+```json
+{
+  "playclock": null
 }
 ```
 
@@ -347,7 +355,8 @@ interface PlayclockUpdateMessage {
     playclock?: number;
     playclock_status: string;  // "stopped", "running", "paused", "stopping"
     started_at_ms?: number | null;
-  };
+  } | null;
+  is_supported?: boolean; // false when sport preset has_playclock=false
   server_time_ms?: number;
 }
 ```
