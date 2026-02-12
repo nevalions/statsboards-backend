@@ -19,16 +19,54 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "sport_scoreboard_preset",
-        sa.Column("has_playclock", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-    )
-    op.add_column(
-        "sport_scoreboard_preset",
-        sa.Column("has_timeouts", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-    )
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'sport_scoreboard_preset'
+                AND column_name = 'has_playclock'
+            ) THEN
+                ALTER TABLE sport_scoreboard_preset ADD COLUMN has_playclock BOOLEAN DEFAULT true NOT NULL;
+            END IF;
+        END $$;
+    """)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'sport_scoreboard_preset'
+                AND column_name = 'has_timeouts'
+            ) THEN
+                ALTER TABLE sport_scoreboard_preset ADD COLUMN has_timeouts BOOLEAN DEFAULT true NOT NULL;
+            END IF;
+        END $$;
+    """)
 
 
 def downgrade() -> None:
-    op.drop_column("sport_scoreboard_preset", "has_timeouts")
-    op.drop_column("sport_scoreboard_preset", "has_playclock")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'sport_scoreboard_preset'
+                AND column_name = 'has_timeouts'
+            ) THEN
+                ALTER TABLE sport_scoreboard_preset DROP COLUMN has_timeouts;
+            END IF;
+        END $$;
+    """)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'sport_scoreboard_preset'
+                AND column_name = 'has_playclock'
+            ) THEN
+                ALTER TABLE sport_scoreboard_preset DROP COLUMN has_playclock;
+            END IF;
+        END $$;
+    """)
