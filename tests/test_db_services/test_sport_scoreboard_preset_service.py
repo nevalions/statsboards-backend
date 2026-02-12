@@ -1,6 +1,7 @@
 import pytest
+from pydantic import ValidationError
 
-from src.core.enums import ClockDirection, ClockOnStopBehavior
+from src.core.enums import ClockDirection, ClockOnStopBehavior, SportPeriodMode
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.matches.db_services import MatchServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
@@ -36,6 +37,11 @@ class TestSportScoreboardPresetServiceDB:
             is_time=True,
             is_playclock=True,
             is_downdistance=False,
+            has_timeouts=True,
+            has_playclock=True,
+            period_mode=SportPeriodMode.QTR,
+            period_labels_json=None,
+            default_playclock_seconds=30,
         )
 
         result = await service.create(preset_data)
@@ -50,6 +56,11 @@ class TestSportScoreboardPresetServiceDB:
         assert result.is_time is True
         assert result.is_playclock is True
         assert result.is_downdistance is False
+        assert result.has_timeouts is True
+        assert result.has_playclock is True
+        assert result.period_mode == "qtr"
+        assert result.period_labels_json is None
+        assert result.default_playclock_seconds == 30
 
     async def test_get_preset_by_id(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -61,6 +72,11 @@ class TestSportScoreboardPresetServiceDB:
         assert result is not None
         assert result.id == created.id
         assert result.title == "Football Preset"
+        assert result.has_timeouts is True
+        assert result.has_playclock is True
+        assert result.period_mode == "qtr"
+        assert result.period_labels_json is None
+        assert result.default_playclock_seconds is None
 
     async def test_update_preset(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -71,6 +87,11 @@ class TestSportScoreboardPresetServiceDB:
             title="Soccer Preset Updated",
             gameclock_max=900,
             direction=ClockDirection.UP,
+            has_timeouts=False,
+            has_playclock=False,
+            period_mode=SportPeriodMode.CUSTOM,
+            period_labels_json=["period.leg_1", "period.leg_2"],
+            default_playclock_seconds=25,
         )
 
         updated = await service.update(created.id, update_data)
@@ -78,6 +99,31 @@ class TestSportScoreboardPresetServiceDB:
         assert updated.title == "Soccer Preset Updated"
         assert updated.gameclock_max == 900
         assert updated.direction == ClockDirection.UP
+        assert updated.has_timeouts is False
+        assert updated.has_playclock is False
+        assert updated.period_mode == "custom"
+        assert updated.period_labels_json == ["period.leg_1", "period.leg_2"]
+        assert updated.default_playclock_seconds == 25
+
+    async def test_create_preset_rejects_non_machine_period_labels(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Invalid Labels",
+                period_mode=SportPeriodMode.CUSTOM,
+                period_labels_json=["Leg 1", "тайм 2"],
+            )
+
+    async def test_create_preset_rejects_period_labels_outside_custom_mode(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Invalid Mode Labels",
+                period_mode=SportPeriodMode.QTR,
+                period_labels_json=["period.q1", "period.q2"],
+            )
 
     async def test_delete_preset(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -471,6 +517,11 @@ class TestSportScoreboardPresetServiceDB:
             is_time=True,
             is_playclock=True,
             is_downdistance=True,
+            has_timeouts=False,
+            has_playclock=False,
+            period_mode=SportPeriodMode.CUSTOM,
+            period_labels_json=["period.q1", "period.q2"],
+            default_playclock_seconds=40,
         )
 
         created = await service.create(preset_data)
@@ -486,6 +537,11 @@ class TestSportScoreboardPresetServiceDB:
         assert updated.is_time is True
         assert updated.is_playclock is True
         assert updated.is_downdistance is True
+        assert updated.has_timeouts is False
+        assert updated.has_playclock is False
+        assert updated.period_mode == "custom"
+        assert updated.period_labels_json == ["period.q1", "period.q2"]
+        assert updated.default_playclock_seconds == 40
 
     async def test_delete_preset_unlinks_from_sports(self, test_db):
         preset_service = SportScoreboardPresetServiceDB(test_db)

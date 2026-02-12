@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import JSON, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.core.enums import ClockDirection, ClockOnStopBehavior
+from src.core.enums import ClockDirection, ClockOnStopBehavior, SportPeriodMode
 from src.core.models import Base
 
 if TYPE_CHECKING:
@@ -41,6 +41,15 @@ class SportScoreboardPresetDB(Base):
     is_time: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_playclock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_downdistance: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    has_timeouts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    has_playclock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    period_mode: Mapped[SportPeriodMode] = mapped_column(
+        String(10),
+        nullable=False,
+        default=SportPeriodMode.QTR,
+    )
+    period_labels_json: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    default_playclock_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     sports: Mapped[list["SportDB"]] = relationship(
         back_populates="scoreboard_preset",

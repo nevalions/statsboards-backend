@@ -15,6 +15,11 @@ interface SportScoreboardPresetSchema {
   is_time: boolean; // Show time display (default: true)
   is_playclock: boolean; // Show playclock (default: true)
   is_downdistance: boolean; // Show down and distance (default: true)
+  has_timeouts: boolean; // Sport supports timeouts (default: true)
+  has_playclock: boolean; // Sport uses playclock rules (default: true)
+  period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom"; // Label mode (default: "qtr")
+  period_labels_json: string[] | null; // Optional custom semantic keys, used with period_mode="custom" (example: "period.q1")
+  default_playclock_seconds: number | null; // Optional playclock default for the sport
 }
 
 interface SportScoreboardPresetSchemaCreate {
@@ -26,6 +31,11 @@ interface SportScoreboardPresetSchemaCreate {
   is_time: boolean; // Show time display, defaults to true
   is_playclock: boolean; // Show playclock, defaults to true
   is_downdistance: boolean; // Show down and distance, defaults to true
+  has_timeouts: boolean; // Sport supports timeouts, defaults to true
+  has_playclock: boolean; // Sport uses playclock rules, defaults to true
+  period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom"; // Defaults to "qtr"
+  period_labels_json: string[] | null; // Optional custom semantic keys (not translated display text)
+  default_playclock_seconds: number | null; // Optional playclock default
 }
 
 interface SportScoreboardPresetSchemaUpdate {
@@ -37,6 +47,11 @@ interface SportScoreboardPresetSchemaUpdate {
   is_time: boolean | null; // Optional time display
   is_playclock: boolean | null; // Optional playclock
   is_downdistance: boolean | null; // Optional down and distance
+  has_timeouts: boolean | null; // Optional sport timeout capability
+  has_playclock: boolean | null; // Optional sport playclock capability
+  period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom" | null; // Optional period mode
+  period_labels_json: string[] | null; // Optional semantic keys (or null)
+  default_playclock_seconds: number | null; // Optional playclock default (or null)
 }
 ```
 
@@ -61,7 +76,12 @@ POST /api/sport-scoreboard-presets/
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
-  "is_downdistance": true
+  "is_downdistance": true,
+  "has_timeouts": true,
+  "has_playclock": true,
+  "period_mode": "qtr",
+  "period_labels_json": null,
+  "default_playclock_seconds": 40
 }
 ```
 
@@ -76,6 +96,11 @@ interface SportScoreboardPresetSchemaCreate {
   is_time: boolean; // Show time display
   is_playclock: boolean; // Show playclock
   is_downdistance: boolean; // Show down and distance
+  has_timeouts: boolean; // Sport supports timeouts
+  has_playclock: boolean; // Sport uses playclock rules
+  period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom";
+  period_labels_json: string[] | null;
+  default_playclock_seconds: number | null;
 }
 ```
 
@@ -90,7 +115,12 @@ interface SportScoreboardPresetSchemaCreate {
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
-  "is_downdistance": true
+  "is_downdistance": true,
+  "has_timeouts": true,
+  "has_playclock": true,
+  "period_mode": "qtr",
+  "period_labels_json": null,
+  "default_playclock_seconds": 40
 }
 ```
 
@@ -123,7 +153,10 @@ PUT /api/sport-scoreboard-presets/{item_id}/
 {
   "title": "American Football Preset - Updated",
   "direction": "up",
-  "on_stop_behavior": "reset"
+  "on_stop_behavior": "reset",
+  "period_mode": "custom",
+  "period_labels_json": ["period.leg_1", "period.leg_2"],
+  "default_playclock_seconds": 30
 }
 ```
 
@@ -138,6 +171,11 @@ interface SportScoreboardPresetSchemaUpdate {
   is_time: boolean | null; // Optional time display
   is_playclock: boolean | null; // Optional playclock
   is_downdistance: boolean | null; // Optional down and distance
+  has_timeouts: boolean | null; // Optional sport timeout capability
+  has_playclock: boolean | null; // Optional sport playclock capability
+  period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom" | null;
+  period_labels_json: string[] | null;
+  default_playclock_seconds: number | null;
 }
 ```
 
@@ -152,7 +190,12 @@ interface SportScoreboardPresetSchemaUpdate {
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
-  "is_downdistance": true
+  "is_downdistance": true,
+  "has_timeouts": true,
+  "has_playclock": true,
+  "period_mode": "custom",
+  "period_labels_json": ["period.leg_1", "period.leg_2"],
+  "default_playclock_seconds": 30
 }
 ```
 
@@ -191,7 +234,12 @@ GET /api/sport-scoreboard-presets/id/{item_id}/
   "is_qtr": true,
   "is_time": true,
   "is_playclock": true,
-  "is_downdistance": true
+  "is_downdistance": true,
+  "has_timeouts": true,
+  "has_playclock": true,
+  "period_mode": "qtr",
+  "period_labels_json": null,
+  "default_playclock_seconds": 40
 }
 ```
 
@@ -225,7 +273,12 @@ GET /api/sport-scoreboard-presets/
     "is_qtr": true,
     "is_time": true,
     "is_playclock": true,
-    "is_downdistance": true
+    "is_downdistance": true,
+    "has_timeouts": true,
+    "has_playclock": true,
+    "period_mode": "qtr",
+    "period_labels_json": null,
+    "default_playclock_seconds": 40
   },
   {
     "id": 2,
@@ -236,7 +289,12 @@ GET /api/sport-scoreboard-presets/
     "is_qtr": false,
     "is_time": true,
     "is_playclock": false,
-    "is_downdistance": false
+    "is_downdistance": false,
+    "has_timeouts": true,
+    "has_playclock": true,
+    "period_mode": "half",
+    "period_labels_json": null,
+    "default_playclock_seconds": 24
   }
 ]
 ```
@@ -354,3 +412,9 @@ When creating a gameclock for a match in this sport, the following preset values
 - `use_sport_preset`: true
 
 Similarly, scoreboards will use the display configuration from the preset.
+
+## I18n Boundary
+
+- Backend responses return machine-friendly keys/codes (for example `period_mode` and `period_labels_json`).
+- Frontend is responsible for mapping those keys to localized scoreboard display labels.
+- Do not store or return translated scoreboard display strings from backend preset payloads.

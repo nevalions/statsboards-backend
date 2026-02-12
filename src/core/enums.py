@@ -24,6 +24,17 @@ class ClockOnStopBehavior(StrEnum):
     RESET = "reset"
 
 
+class SportPeriodMode(StrEnum):
+    """Period label mode used in sport scoreboard presets."""
+
+    QTR = "qtr"
+    PERIOD = "period"
+    HALF = "half"
+    SET = "set"
+    INNING = "inning"
+    CUSTOM = "custom"
+
+
 class GameStatus(StrEnum):
     """Status values for match game state."""
 
