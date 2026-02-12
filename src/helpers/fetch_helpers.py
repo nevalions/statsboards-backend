@@ -45,6 +45,9 @@ def _get_preset_values_for_scoreboard(preset: SportScoreboardPresetDB) -> dict[s
     """Extract preset values for scoreboard creation."""
     return {
         "is_qtr": preset.is_qtr,
+        "period_mode": preset.period_mode,
+        "period_count": preset.period_count,
+        "period_labels_json": preset.period_labels_json,
         "is_time": preset.is_time,
         "is_playclock": preset.is_playclock,
         "is_downdistance": preset.is_downdistance,
@@ -73,6 +76,9 @@ def _get_default_scoreboard_values() -> dict[str, Any]:
     """Get default scoreboard values when no sport preset is available."""
     return {
         "is_qtr": True,
+        "period_mode": "qtr",
+        "period_count": 4,
+        "period_labels_json": None,
         "is_time": True,
         "is_playclock": True,
         "is_downdistance": True,

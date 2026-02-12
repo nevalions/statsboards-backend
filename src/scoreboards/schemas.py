@@ -5,6 +5,7 @@ from typing import Annotated, Literal, TypeAlias
 from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
+from src.core.enums import SportPeriodMode
 from src.core.schema_helpers import make_fields_optional
 
 ScoreboardLanguageCode: TypeAlias = Literal["en", "ru"]
@@ -14,6 +15,9 @@ class ScoreboardSchemaBase(BaseModel):
     use_sport_preset: bool = True
 
     is_qtr: bool = True
+    period_mode: Annotated[SportPeriodMode, Path(max_length=10)] = SportPeriodMode.QTR
+    period_count: Annotated[int, Path(ge=1, le=99)] = 4
+    period_labels_json: list[str] | None = None
     is_time: bool = True
     is_playclock: bool = True
     is_downdistance: bool = True

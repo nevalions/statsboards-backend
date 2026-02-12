@@ -49,6 +49,7 @@ class TestMatchDataServiceDB:
             score_team_a=0,
             score_team_b=0,
             qtr="1st",
+            period_key="period.1",
         )
 
         result = await matchdata_service.create(matchdata)
@@ -57,6 +58,7 @@ class TestMatchDataServiceDB:
         assert result.id is not None
         assert result.match_id == match.id
         assert result.game_status == "in-progress"
+        assert result.period_key == "period.1"
 
     async def test_update_matchdata(self, test_db):
         sport_service = SportServiceDB(test_db)
@@ -82,18 +84,22 @@ class TestMatchDataServiceDB:
         )
 
         matchdata_service = MatchDataServiceDB(test_db)
-        matchdata = MatchDataSchemaCreate(
-            match_id=match.id, score_team_a=0, score_team_b=0
-        )
+        matchdata = MatchDataSchemaCreate(match_id=match.id, score_team_a=0, score_team_b=0)
 
         created = await matchdata_service.create(matchdata)
-        update_data = MatchDataSchemaUpdate(score_team_a=7, score_team_b=3, qtr="2nd")
+        update_data = MatchDataSchemaUpdate(
+            score_team_a=7,
+            score_team_b=3,
+            qtr="2nd",
+            period_key="period.2",
+        )
 
         updated = await matchdata_service.update(created.id, update_data)
 
         assert updated.score_team_a == 7
         assert updated.score_team_b == 3
         assert updated.qtr == "2nd"
+        assert updated.period_key == "period.2"
 
     async def test_get_match_data_by_match_id(self, test_db):
         sport_service = SportServiceDB(test_db)
@@ -119,9 +125,7 @@ class TestMatchDataServiceDB:
         )
 
         matchdata_service = MatchDataServiceDB(test_db)
-        matchdata = MatchDataSchemaCreate(
-            match_id=match.id, score_team_a=0, score_team_b=0
-        )
+        matchdata = MatchDataSchemaCreate(match_id=match.id, score_team_a=0, score_team_b=0)
 
         created = await matchdata_service.create(matchdata)
         result = await matchdata_service.get_match_data_by_match_id(match.id)

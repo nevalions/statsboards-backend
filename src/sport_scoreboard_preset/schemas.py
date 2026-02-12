@@ -31,6 +31,7 @@ class SportScoreboardPresetSchemaBase(BaseModel):
     has_timeouts: bool = True
     has_playclock: bool = True
     period_mode: Annotated[SportPeriodMode, Path(max_length=10)] = SportPeriodMode.QTR
+    period_count: Annotated[int, Path(ge=1, le=99)] = 4
     period_labels_json: list[str] | None = None
     default_playclock_seconds: int | None = None
 
@@ -54,6 +55,11 @@ class SportScoreboardPresetSchemaBase(BaseModel):
             raise ValueError(
                 "period_labels_json must contain stable machine-friendly keys "
                 "(lowercase letters/numbers with '.', '_' or '-')"
+            )
+
+        if self.period_count != len(self.period_labels_json):
+            raise ValueError(
+                "period_count must match period_labels_json length when period_mode='custom'"
             )
 
         return self

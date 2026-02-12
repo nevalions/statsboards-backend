@@ -58,6 +58,7 @@ class SportScoreboardPresetDB(Base):
         nullable=False,
         default=SportPeriodMode.QTR,
     )
+    period_count: Mapped[int] = mapped_column(Integer, nullable=False, default=4)
     period_labels_json: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     default_playclock_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

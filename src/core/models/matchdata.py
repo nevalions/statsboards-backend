@@ -55,6 +55,13 @@ class MatchDataDB(Base):
         default="1st",
     )
 
+    period_key: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="period.1",
+        server_default="period.1",
+    )
+
     ball_on: Mapped[int] = mapped_column(
         Integer,
         nullable=True,

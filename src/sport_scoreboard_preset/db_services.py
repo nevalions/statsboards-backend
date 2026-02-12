@@ -72,6 +72,9 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
                     .where(ScoreboardDB.use_sport_preset.is_(True))
                     .values(
                         is_qtr=preset.is_qtr,
+                        period_mode=preset.period_mode,
+                        period_count=preset.period_count,
+                        period_labels_json=preset.period_labels_json,
                         is_time=preset.is_time,
                         is_playclock=preset.is_playclock,
                         is_downdistance=preset.is_downdistance,

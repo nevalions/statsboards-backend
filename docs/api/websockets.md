@@ -86,6 +86,7 @@ Upon successful connection, server sends one combined initial message with all m
       "timeout_team_a": "●●",
       "timeout_team_b": "●●",
       "qtr": "1st",
+      "period_key": "period.1",
       "ball_on": 20,
       "down": "1st",
       "distance": "10"
@@ -94,6 +95,9 @@ Upon successful connection, server sends one combined initial message with all m
       "id": 789,
       "match_id": 123,
       "is_qtr": true,
+      "period_mode": "qtr",
+      "period_count": 4,
+      "period_labels_json": null,
       "is_time": true,
       "is_playclock": true,
       "is_downdistance": true,
@@ -218,6 +222,7 @@ interface InitialLoadMessage {
       timeout_team_a?: string;
       timeout_team_b?: string;
       qtr?: string;
+      period_key?: string;
       ball_on?: number;
       down?: string;
       distance?: string;
@@ -277,6 +282,7 @@ interface MatchUpdateMessage {
     timeout_team_a?: string;
     timeout_team_b?: string;
     qtr?: string;
+    period_key?: string;
     ball_on?: number;
     down?: string;
     distance?: string;
@@ -295,6 +301,9 @@ interface ScoreboardData {
   id: number;
   match_id: number;
   is_qtr: boolean;
+  period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom";
+  period_count: number;
+  period_labels_json?: string[] | null;
   is_time: boolean;
   is_playclock: boolean;
   is_downdistance: boolean;

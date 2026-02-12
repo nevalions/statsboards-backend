@@ -48,6 +48,8 @@ class TestScoreboardViews:
         assert response.status_code == 200
         assert response.json()["id"] > 0
         assert response.json()["language_code"] == "en"
+        assert response.json()["period_mode"] == "qtr"
+        assert response.json()["period_count"] == 4
 
     async def test_update_scoreboard_endpoint(self, client_match, test_db):
         sport_service = SportServiceDB(test_db)

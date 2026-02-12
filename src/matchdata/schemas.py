@@ -17,6 +17,7 @@ class MatchDataSchemaBase(BaseModel):
     timeout_team_a: Annotated[str, Path(max_length=4)] = "●●●"
     timeout_team_b: Annotated[str, Path(max_length=4)] = "●●●"
     qtr: Annotated[str, Path(max_length=10)] = "1st"
+    period_key: Annotated[str, Path(max_length=50)] = "period.1"
     ball_on: Annotated[int, Path(max=200)] = 20
     down: Annotated[str, Path(max_length=10)] = "1st"
     distance: Annotated[str, Path(max_length=20)] = "10"

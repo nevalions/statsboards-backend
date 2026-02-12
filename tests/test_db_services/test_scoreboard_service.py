@@ -3,6 +3,7 @@ from typing import cast
 import pytest
 from pydantic import ValidationError
 
+from src.core.enums import SportPeriodMode
 from src.matches.db_services import MatchServiceDB
 from src.scoreboards.db_services import ScoreboardServiceDB
 from src.scoreboards.schemas import (
@@ -59,6 +60,9 @@ class TestScoreboardServiceDB:
         assert result.id is not None
         assert result.match_id == match.id
         assert result.language_code == "en"
+        assert result.period_mode == "qtr"
+        assert result.period_count == 4
+        assert result.period_labels_json is None
 
     async def test_create_scoreboard_duplicate(self, test_db):
         sport_service = SportServiceDB(test_db)
@@ -122,6 +126,8 @@ class TestScoreboardServiceDB:
         update_data = ScoreboardSchemaUpdate(
             is_time=True,
             is_playclock=True,
+            period_mode=SportPeriodMode.HALF,
+            period_count=2,
             language_code="ru",
         )
 
@@ -129,6 +135,8 @@ class TestScoreboardServiceDB:
 
         assert updated.is_time
         assert updated.is_playclock
+        assert updated.period_mode == "half"
+        assert updated.period_count == 2
         assert updated.language_code == "ru"
 
     async def test_scoreboard_language_code_validation(self):

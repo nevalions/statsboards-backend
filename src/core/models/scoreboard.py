@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.enums import SportPeriodMode
 from src.core.models import Base
 
 if TYPE_CHECKING:
@@ -24,6 +25,25 @@ class ScoreboardDB(Base):
         Boolean,
         nullable=False,
         default=True,
+    )
+
+    period_mode: Mapped[SportPeriodMode] = mapped_column(
+        String(10),
+        nullable=False,
+        default=SportPeriodMode.QTR,
+        server_default="qtr",
+    )
+
+    period_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=4,
+        server_default="4",
+    )
+
+    period_labels_json: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
     )
 
     is_time: Mapped[bool] = mapped_column(

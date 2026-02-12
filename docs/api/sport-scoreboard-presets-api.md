@@ -20,6 +20,7 @@ interface SportScoreboardPresetSchema {
   has_timeouts: boolean; // Sport supports timeouts (default: true)
   has_playclock: boolean; // Sport uses playclock rules (default: true)
   period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom"; // Label mode (default: "qtr")
+  period_count: number; // Canonical number of periods (default: 4)
   period_labels_json: string[] | null; // Optional custom semantic keys, used with period_mode="custom" (example: "period.q1")
   default_playclock_seconds: number | null; // Optional playclock default for the sport
 }
@@ -38,6 +39,7 @@ interface SportScoreboardPresetSchemaCreate {
   has_timeouts: boolean; // Sport supports timeouts, defaults to true
   has_playclock: boolean; // Sport uses playclock rules, defaults to true
   period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom"; // Defaults to "qtr"
+  period_count: number; // Canonical number of periods, defaults to 4
   period_labels_json: string[] | null; // Optional custom semantic keys (not translated display text)
   default_playclock_seconds: number | null; // Optional playclock default
 }
@@ -56,6 +58,7 @@ interface SportScoreboardPresetSchemaUpdate {
   has_timeouts: boolean | null; // Optional sport timeout capability
   has_playclock: boolean | null; // Optional sport playclock capability
   period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom" | null; // Optional period mode
+  period_count: number | null; // Optional period count
   period_labels_json: string[] | null; // Optional semantic keys (or null)
   default_playclock_seconds: number | null; // Optional playclock default (or null)
 }
@@ -70,6 +73,8 @@ interface SportScoreboardPresetSchemaUpdate {
   - `zero`: start at `0`
   - `min`: start at `initial_time_min_seconds`
 - `initial_time_min_seconds` is required when `initial_time_mode="min"`.
+- `period_count` is required and must be >= 1.
+- when `period_mode="custom"`, `period_count` must equal `period_labels_json.length`.
 - Final initial value is clamped to a non-negative range:
   - when `gameclock_max` is set: `0 <= gameclock <= gameclock_max`
   - when `gameclock_max` is `null`: `gameclock >= 0`
@@ -130,6 +135,7 @@ POST /api/sport-scoreboard-presets/
   "has_timeouts": true,
   "has_playclock": true,
   "period_mode": "qtr",
+  "period_count": 4,
   "period_labels_json": null,
   "default_playclock_seconds": 40
 }
@@ -151,6 +157,7 @@ interface SportScoreboardPresetSchemaCreate {
   has_timeouts: boolean; // Sport supports timeouts
   has_playclock: boolean; // Sport uses playclock rules
   period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom";
+  period_count: number;
   period_labels_json: string[] | null;
   default_playclock_seconds: number | null;
 }
@@ -173,6 +180,7 @@ interface SportScoreboardPresetSchemaCreate {
   "has_timeouts": true,
   "has_playclock": true,
   "period_mode": "qtr",
+  "period_count": 4,
   "period_labels_json": null,
   "default_playclock_seconds": 40
 }
@@ -209,6 +217,7 @@ PUT /api/sport-scoreboard-presets/{item_id}/
   "direction": "up",
   "on_stop_behavior": "reset",
   "period_mode": "custom",
+  "period_count": 2,
   "period_labels_json": ["period.leg_1", "period.leg_2"],
   "default_playclock_seconds": 30
 }
@@ -230,6 +239,7 @@ interface SportScoreboardPresetSchemaUpdate {
   has_timeouts: boolean | null; // Optional sport timeout capability
   has_playclock: boolean | null; // Optional sport playclock capability
   period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom" | null;
+  period_count: number | null;
   period_labels_json: string[] | null;
   default_playclock_seconds: number | null;
 }
@@ -252,6 +262,7 @@ interface SportScoreboardPresetSchemaUpdate {
   "has_timeouts": true,
   "has_playclock": true,
   "period_mode": "custom",
+  "period_count": 2,
   "period_labels_json": ["period.leg_1", "period.leg_2"],
   "default_playclock_seconds": 30
 }
@@ -298,6 +309,7 @@ GET /api/sport-scoreboard-presets/id/{item_id}/
   "has_timeouts": true,
   "has_playclock": true,
   "period_mode": "qtr",
+  "period_count": 4,
   "period_labels_json": null,
   "default_playclock_seconds": 40
 }
@@ -339,6 +351,7 @@ GET /api/sport-scoreboard-presets/
     "has_timeouts": true,
     "has_playclock": true,
     "period_mode": "qtr",
+    "period_count": 4,
     "period_labels_json": null,
     "default_playclock_seconds": 40
   },
@@ -357,6 +370,7 @@ GET /api/sport-scoreboard-presets/
     "has_timeouts": true,
     "has_playclock": true,
     "period_mode": "half",
+    "period_count": 2,
     "period_labels_json": null,
     "default_playclock_seconds": 24
   }

@@ -40,6 +40,7 @@ class TestSportScoreboardPresetServiceDB:
             has_timeouts=True,
             has_playclock=True,
             period_mode=SportPeriodMode.QTR,
+            period_count=4,
             period_labels_json=None,
             default_playclock_seconds=30,
         )
@@ -61,6 +62,7 @@ class TestSportScoreboardPresetServiceDB:
         assert result.has_timeouts is True
         assert result.has_playclock is True
         assert result.period_mode == "qtr"
+        assert result.period_count == 4
         assert result.period_labels_json is None
         assert result.default_playclock_seconds == 30
 
@@ -91,6 +93,7 @@ class TestSportScoreboardPresetServiceDB:
         assert result.has_timeouts is True
         assert result.has_playclock is True
         assert result.period_mode == "qtr"
+        assert result.period_count == 4
         assert result.period_labels_json is None
         assert result.default_playclock_seconds is None
         assert result.initial_time_mode == InitialTimeMode.MAX
@@ -108,6 +111,7 @@ class TestSportScoreboardPresetServiceDB:
             has_timeouts=False,
             has_playclock=False,
             period_mode=SportPeriodMode.CUSTOM,
+            period_count=2,
             period_labels_json=["period.leg_1", "period.leg_2"],
             default_playclock_seconds=25,
         )
@@ -121,6 +125,7 @@ class TestSportScoreboardPresetServiceDB:
         assert updated.has_timeouts is False
         assert updated.has_playclock is False
         assert updated.period_mode == "custom"
+        assert updated.period_count == 2
         assert updated.period_labels_json == ["period.leg_1", "period.leg_2"]
         assert updated.default_playclock_seconds == 25
 
@@ -131,7 +136,19 @@ class TestSportScoreboardPresetServiceDB:
             SportScoreboardPresetSchemaCreate(
                 title="Invalid Labels",
                 period_mode=SportPeriodMode.CUSTOM,
+                period_count=2,
                 period_labels_json=["Leg 1", "тайм 2"],
+            )
+
+    async def test_create_preset_rejects_custom_count_labels_mismatch(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Invalid Custom Count",
+                period_mode=SportPeriodMode.CUSTOM,
+                period_count=3,
+                period_labels_json=["period.leg_1", "period.leg_2"],
             )
 
     async def test_create_preset_rejects_min_initial_time_mode_without_seconds(self, test_db):
@@ -242,6 +259,8 @@ class TestSportScoreboardPresetServiceDB:
             SportScoreboardPresetSchemaCreate(
                 title="Rugby Preset",
                 is_qtr=True,
+                period_mode=SportPeriodMode.QTR,
+                period_count=4,
                 is_time=True,
                 is_playclock=True,
                 is_downdistance=True,
@@ -271,6 +290,9 @@ class TestSportScoreboardPresetServiceDB:
                 match_id=match.id,
                 use_sport_preset=True,
                 is_qtr=False,
+                period_mode=SportPeriodMode.PERIOD,
+                period_count=3,
+                period_labels_json=["period.1", "period.2", "period.3"],
                 is_time=False,
                 is_playclock=False,
                 is_downdistance=False,
@@ -284,6 +306,9 @@ class TestSportScoreboardPresetServiceDB:
             preset.id,
             SportScoreboardPresetSchemaUpdate(
                 is_qtr=False,
+                period_mode=SportPeriodMode.HALF,
+                period_count=2,
+                period_labels_json=None,
                 is_time=False,
                 is_playclock=False,
                 is_downdistance=False,
@@ -292,6 +317,9 @@ class TestSportScoreboardPresetServiceDB:
 
         updated_scoreboard = await scoreboard_service.get_by_id(scoreboard.id)
         assert updated_scoreboard.is_qtr is False
+        assert updated_scoreboard.period_mode == "half"
+        assert updated_scoreboard.period_count == 2
+        assert updated_scoreboard.period_labels_json is None
         assert updated_scoreboard.is_time is False
         assert updated_scoreboard.is_playclock is False
         assert updated_scoreboard.is_downdistance is False
@@ -308,6 +336,8 @@ class TestSportScoreboardPresetServiceDB:
             SportScoreboardPresetSchemaCreate(
                 title="Cricket Preset",
                 is_qtr=True,
+                period_mode=SportPeriodMode.QTR,
+                period_count=4,
                 is_time=True,
             )
         )
@@ -331,15 +361,30 @@ class TestSportScoreboardPresetServiceDB:
         )
 
         scoreboard_with_preset = await scoreboard_service.create(
-            ScoreboardSchemaCreate(match_id=match.id, use_sport_preset=True, is_qtr=False)
+            ScoreboardSchemaCreate(
+                match_id=match.id,
+                use_sport_preset=True,
+                is_qtr=False,
+                period_mode=SportPeriodMode.PERIOD,
+                period_count=5,
+            )
         )
 
         assert scoreboard_with_preset.use_sport_preset is True
 
-        await preset_service.update(preset.id, SportScoreboardPresetSchemaUpdate(is_qtr=False))
+        await preset_service.update(
+            preset.id,
+            SportScoreboardPresetSchemaUpdate(
+                is_qtr=False,
+                period_mode=SportPeriodMode.HALF,
+                period_count=2,
+            ),
+        )
 
         updated_with_preset = await scoreboard_service.get_by_id(scoreboard_with_preset.id)
         assert updated_with_preset.is_qtr is False
+        assert updated_with_preset.period_mode == "half"
+        assert updated_with_preset.period_count == 2
 
     async def test_preset_update_does_not_affect_opted_out_matches(self, test_db):
         preset_service = SportScoreboardPresetServiceDB(test_db)
@@ -353,6 +398,8 @@ class TestSportScoreboardPresetServiceDB:
             SportScoreboardPresetSchemaCreate(
                 title="Baseball Preset",
                 is_qtr=True,
+                period_mode=SportPeriodMode.INNING,
+                period_count=9,
                 is_time=True,
             )
         )
@@ -380,18 +427,33 @@ class TestSportScoreboardPresetServiceDB:
                 match_id=match.id,
                 use_sport_preset=False,
                 is_qtr=False,
+                period_mode=SportPeriodMode.CUSTOM,
+                period_count=2,
+                period_labels_json=["period.top", "period.bottom"],
                 is_time=True,
             )
         )
 
         assert scoreboard_opted_out.use_sport_preset is False
         assert scoreboard_opted_out.is_qtr is False
+        assert scoreboard_opted_out.period_mode == "custom"
+        assert scoreboard_opted_out.period_count == 2
         assert scoreboard_opted_out.is_time is True
 
-        await preset_service.update(preset.id, SportScoreboardPresetSchemaUpdate(is_qtr=False))
+        await preset_service.update(
+            preset.id,
+            SportScoreboardPresetSchemaUpdate(
+                is_qtr=False,
+                period_mode=SportPeriodMode.HALF,
+                period_count=2,
+            ),
+        )
 
         updated_opted_out = await scoreboard_service.get_by_id(scoreboard_opted_out.id)
         assert updated_opted_out.is_qtr is False
+        assert updated_opted_out.period_mode == "custom"
+        assert updated_opted_out.period_count == 2
+        assert updated_opted_out.period_labels_json == ["period.top", "period.bottom"]
         assert updated_opted_out.is_time is True
 
     async def test_preset_update_propagates_to_gameclock(self, test_db):
@@ -568,6 +630,7 @@ class TestSportScoreboardPresetServiceDB:
             has_timeouts=False,
             has_playclock=False,
             period_mode=SportPeriodMode.CUSTOM,
+            period_count=2,
             period_labels_json=["period.q1", "period.q2"],
             default_playclock_seconds=40,
         )
@@ -588,6 +651,7 @@ class TestSportScoreboardPresetServiceDB:
         assert updated.has_timeouts is False
         assert updated.has_playclock is False
         assert updated.period_mode == "custom"
+        assert updated.period_count == 2
         assert updated.period_labels_json == ["period.q1", "period.q2"]
         assert updated.default_playclock_seconds == 40
 

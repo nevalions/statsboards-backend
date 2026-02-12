@@ -8,6 +8,9 @@ Manage scoreboard display settings for matches. Scoreboards control what element
 interface ScoreboardSchema {
   id: number;
   is_qtr: boolean; // Show quarter display
+  period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom"; // Canonical period label mode
+  period_count: number; // Canonical number of periods (default: 4)
+  period_labels_json: string[] | null; // Optional semantic labels for custom mode
   is_time: boolean; // Show game time display
   is_playclock: boolean; // Show play clock display
   is_downdistance: boolean; // Show down & distance display
@@ -76,6 +79,9 @@ POST /api/scoreboards/
 ```json
 {
   "is_qtr": true,
+  "period_mode": "qtr",
+  "period_count": 4,
+  "period_labels_json": null,
   "is_time": true,
   "is_playclock": true,
   "is_downdistance": true,
@@ -101,6 +107,9 @@ interface ScoreboardSchemaCreate extends ScoreboardSchema {
 {
   "id": 1,
   "is_qtr": true,
+  "period_mode": "qtr",
+  "period_count": 4,
+  "period_labels_json": null,
   "is_time": true,
   "is_playclock": true,
   "is_downdistance": true,
@@ -145,6 +154,8 @@ PUT /api/scoreboards/{item_id}/
 ```json
 {
   "is_qtr": false,
+  "period_mode": "half",
+  "period_count": 2,
   "use_team_a_game_color": true
 }
 ```
@@ -161,6 +172,9 @@ interface ScoreboardSchemaUpdate {
 {
   "id": 1,
   "is_qtr": false,
+  "period_mode": "half",
+  "period_count": 2,
+  "period_labels_json": null,
   "is_time": true,
   "use_team_a_game_color": true,
   "team_a_game_color": "#c01c28"
@@ -197,6 +211,9 @@ PUT /api/scoreboards/id/{item_id}/
   "content": {
     "id": 1,
     "is_qtr": true,
+    "period_mode": "qtr",
+    "period_count": 4,
+    "period_labels_json": null,
     "is_time": true
   },
   "status_code": 200,
@@ -233,6 +250,9 @@ GET /api/scoreboards/match/id/{match_id}
 {
   "id": 1,
   "is_qtr": true,
+  "period_mode": "qtr",
+  "period_count": 4,
+  "period_labels_json": null,
   "is_time": true,
   "match_id": 123
 }
@@ -267,6 +287,9 @@ GET /api/scoreboards/id/{item_id}/
 {
   "id": 1,
   "is_qtr": true,
+  "period_mode": "qtr",
+  "period_count": 4,
+  "period_labels_json": null,
   "is_time": true,
   "match_id": 123
 }
@@ -301,6 +324,9 @@ GET /api/scoreboards/matchdata/id/{matchdata_id}
 {
   "id": 1,
   "is_qtr": true,
+  "period_mode": "qtr",
+  "period_count": 4,
+  "period_labels_json": null,
   "is_time": true,
   "match_id": 123
 }

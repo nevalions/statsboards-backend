@@ -130,7 +130,18 @@ class TestMatchDataListener:
         manager._cache_service.invalidate_match_data = MagicMock()
         manager.logger = MagicMock()
 
-        payload = json.dumps({"match_id": 67, "data": {"is_qtr": True, "is_time": False}})
+        payload = json.dumps(
+            {
+                "match_id": 67,
+                "data": {
+                    "is_qtr": True,
+                    "is_time": False,
+                    "period_mode": "half",
+                    "period_count": 2,
+                    "period_labels_json": None,
+                },
+            }
+        )
 
         mock_connection = MagicMock()
 
@@ -148,5 +159,8 @@ class TestMatchDataListener:
             assert "scoreboard_data" in message_sent["data"]
             assert message_sent["data"]["scoreboard_data"]["is_qtr"] is True
             assert message_sent["data"]["scoreboard_data"]["is_time"] is False
+            assert message_sent["data"]["scoreboard_data"]["period_mode"] == "half"
+            assert message_sent["data"]["scoreboard_data"]["period_count"] == 2
+            assert message_sent["data"]["scoreboard_data"]["period_labels_json"] is None
 
             manager._cache_service.invalidate_match_data.assert_called_once_with(67)
