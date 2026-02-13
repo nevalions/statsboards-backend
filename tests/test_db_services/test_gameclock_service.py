@@ -1,6 +1,6 @@
 import pytest
 
-from src.core.enums import ClockDirection
+from src.core.enums import ClockDirection, ClockStatus
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate, GameClockSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -411,6 +411,50 @@ class TestGameClockServiceDB:
         stopped = await gameclock_service.get_by_id(created.id)
         assert stopped is not None
         assert stopped.gameclock == 10
+        assert stopped.gameclock_time_remaining == 0
+        assert stopped.gameclock_status == "stopped"
+        assert stopped.started_at_ms is None
+
+    async def test_stop_gameclock_internal_uses_max_when_state_machine_missing(self, test_db):
+        """Test up-direction terminal stop persists max even without local state machine (STAB-227)."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        gameclock_service = GameClockServiceDB(test_db)
+        gameclock_data = GameClockSchemaCreate(
+            match_id=match.id,
+            gameclock=2698,
+            gameclock_max=2700,
+            direction=ClockDirection.UP,
+            gameclock_status=ClockStatus.RUNNING,
+        )
+
+        created = await gameclock_service.create(gameclock_data)
+
+        await gameclock_service._stop_gameclock_internal(created.id)
+
+        stopped = await gameclock_service.get_by_id(created.id)
+        assert stopped is not None
+        assert stopped.gameclock == 2700
         assert stopped.gameclock_time_remaining == 0
         assert stopped.gameclock_status == "stopped"
         assert stopped.started_at_ms is None

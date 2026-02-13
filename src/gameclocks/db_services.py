@@ -99,16 +99,14 @@ class GameClockServiceDB(BaseServiceDB):
                 state_machine.value,
                 state_machine.started_at_ms,
             )
-            current_value = state_machine.get_current_value()
             if state_machine.direction == ClockDirection.UP:
-                terminal_gameclock_value = min(state_machine.max_value, max(0, current_value))
+                terminal_gameclock_value = max(0, state_machine.max_value)
             state_machine.stop()
         else:
             gameclock = await self.get_by_id(gameclock_id)
             if gameclock and gameclock.direction == ClockDirection.UP:
                 max_value = gameclock.gameclock_max if gameclock.gameclock_max is not None else 0
-                current_value = gameclock.gameclock if gameclock.gameclock is not None else 0
-                terminal_gameclock_value = min(max_value, max(0, current_value))
+                terminal_gameclock_value = max(0, max_value)
 
         await self.update(
             gameclock_id,

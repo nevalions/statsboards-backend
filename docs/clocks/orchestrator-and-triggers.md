@@ -46,7 +46,7 @@ Callbacks are set by services:
 Gameclock stop persistence semantics:
 
 - `direction=down`: terminal value is persisted as `0`
-- `direction=up`: terminal value is persisted as clamped max (`<= gameclock_max`)
+- `direction=up`: terminal value is persisted as `gameclock_max` (stable max, no rewind)
 - In both directions, service persists `gameclock_status='stopped'` and clears `started_at_ms`
 
 ## Database Triggers
