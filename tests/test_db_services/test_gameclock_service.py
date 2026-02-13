@@ -1,5 +1,6 @@
 import pytest
 
+from src.core.enums import ClockDirection
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate, GameClockSchemaUpdate
 from src.matches.db_services import MatchServiceDB
@@ -363,3 +364,103 @@ class TestGameClockServiceDB:
 
         assert created.id not in clock_orchestrator.running_gameclocks
         assert created.id not in gameclock_service.clock_manager.clock_state_machines
+
+    async def test_stop_gameclock_internal_persists_up_direction_terminal_max(self, test_db):
+        """Test up-direction stop callback persists max value instead of resetting to 0 (STAB-226)."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        gameclock_service = GameClockServiceDB(test_db)
+        gameclock_data = GameClockSchemaCreate(
+            match_id=match.id,
+            gameclock=10,
+            gameclock_max=10,
+            direction=ClockDirection.UP,
+            gameclock_status="running",
+        )
+
+        created = await gameclock_service.create(gameclock_data)
+        await gameclock_service.enable_match_data_gameclock_queues(created.id)
+
+        state_machine = gameclock_service.clock_manager.get_clock_state_machine(created.id)
+        assert state_machine is not None
+        state_machine.value = 10
+        state_machine.started_at_ms = None
+
+        await gameclock_service._stop_gameclock_internal(created.id)
+
+        stopped = await gameclock_service.get_by_id(created.id)
+        assert stopped is not None
+        assert stopped.gameclock == 10
+        assert stopped.gameclock_time_remaining == 0
+        assert stopped.gameclock_status == "stopped"
+        assert stopped.started_at_ms is None
+
+    async def test_stop_gameclock_internal_persists_down_direction_zero(self, test_db):
+        """Test down-direction stop callback keeps existing terminal value semantics (0)."""
+        sport_service = SportServiceDB(test_db)
+        sport = await sport_service.create(SportFactorySample.build())
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament_service = TournamentServiceDB(test_db)
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_service = TeamServiceDB(test_db)
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match_service = MatchServiceDB(test_db)
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        gameclock_service = GameClockServiceDB(test_db)
+        gameclock_data = GameClockSchemaCreate(
+            match_id=match.id,
+            gameclock=1,
+            gameclock_max=10,
+            direction=ClockDirection.DOWN,
+            gameclock_status="running",
+        )
+
+        created = await gameclock_service.create(gameclock_data)
+        await gameclock_service.enable_match_data_gameclock_queues(created.id)
+
+        state_machine = gameclock_service.clock_manager.get_clock_state_machine(created.id)
+        assert state_machine is not None
+        state_machine.value = 0
+        state_machine.started_at_ms = None
+
+        await gameclock_service._stop_gameclock_internal(created.id)
+
+        stopped = await gameclock_service.get_by_id(created.id)
+        assert stopped is not None
+        assert stopped.gameclock == 0
+        assert stopped.gameclock_time_remaining == 0
+        assert stopped.gameclock_status == "stopped"
+        assert stopped.started_at_ms is None

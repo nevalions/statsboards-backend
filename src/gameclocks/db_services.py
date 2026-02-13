@@ -1,10 +1,11 @@
 import asyncio
 import time
 
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from src.core.decorators import handle_service_exceptions
-from src.core.enums import ClockStatus
+from src.core.enums import ClockDirection, ClockStatus
 from src.core.models import BaseServiceDB, GameClockDB
 from src.core.models.base import Database
 
@@ -86,9 +87,10 @@ class GameClockServiceDB(BaseServiceDB):
         return await super().create(item)
 
     async def _stop_gameclock_internal(self, gameclock_id: int) -> None:
-        """Handle gameclock stop when it reaches 0"""
-        self.logger.info("Stopping gameclock %s (reached 0)", gameclock_id)
+        """Persist terminal gameclock state and clean up runtime clock resources."""
+        self.logger.info("Stopping gameclock %s at terminal value", gameclock_id)
         state_machine = self.clock_manager.get_clock_state_machine(gameclock_id)
+        terminal_gameclock_value = 0
         if state_machine:
             self.logger.debug(
                 "Gameclock %s state before stop: status=%s value=%s started_at_ms=%s",
@@ -97,11 +99,21 @@ class GameClockServiceDB(BaseServiceDB):
                 state_machine.value,
                 state_machine.started_at_ms,
             )
+            current_value = state_machine.get_current_value()
+            if state_machine.direction == ClockDirection.UP:
+                terminal_gameclock_value = min(state_machine.max_value, max(0, current_value))
             state_machine.stop()
+        else:
+            gameclock = await self.get_by_id(gameclock_id)
+            if gameclock and gameclock.direction == ClockDirection.UP:
+                max_value = gameclock.gameclock_max if gameclock.gameclock_max is not None else 0
+                current_value = gameclock.gameclock if gameclock.gameclock is not None else 0
+                terminal_gameclock_value = min(max_value, max(0, current_value))
+
         await self.update(
             gameclock_id,
             GameClockSchemaUpdate(
-                gameclock=0,
+                gameclock=terminal_gameclock_value,
                 gameclock_time_remaining=0,
                 gameclock_status="stopped",
                 started_at_ms=None,
@@ -155,7 +167,7 @@ class GameClockServiceDB(BaseServiceDB):
     async def update(
         self,
         item_id: int,
-        item: GameClockSchemaUpdate,
+        item: BaseModel,
         **kwargs,
     ) -> GameClockDB | None:
         self.logger.debug(f"Update gameclock endpoint id:{item_id} data: {item}")
@@ -209,7 +221,7 @@ class GameClockServiceDB(BaseServiceDB):
         item_id: int,
     ) -> str | None:
         self.logger.debug(f"Get gameclock status for item id:{item_id}")
-        gameclock: GameClockSchemaBase = await self.get_by_id(item_id)
+        gameclock: GameClockSchemaBase | None = await self.get_by_id(item_id)
         if gameclock:
             self.logger.debug(f"Gameclock status: {gameclock}")
             return gameclock.gameclock_status

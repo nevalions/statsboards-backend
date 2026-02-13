@@ -43,6 +43,12 @@ Callbacks are set by services:
 - PlayClock: `trigger_update_playclock`, `_stop_playclock_internal`
 - GameClock: `trigger_update_gameclock`, `_stop_gameclock_internal`
 
+Gameclock stop persistence semantics:
+
+- `direction=down`: terminal value is persisted as `0`
+- `direction=up`: terminal value is persisted as clamped max (`<= gameclock_max`)
+- In both directions, service persists `gameclock_status='stopped'` and clears `started_at_ms`
+
 ## Database Triggers
 
 Triggers fire only on state/value changes, not every second.
