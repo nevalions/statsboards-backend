@@ -81,3 +81,5 @@ class ScoreboardSchema(ScoreboardSchemaCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    has_timeouts: bool = True
+    has_playclock: bool = True

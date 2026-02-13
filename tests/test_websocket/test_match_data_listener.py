@@ -124,43 +124,102 @@ class TestMatchDataListener:
                 # When fetch fails and no trigger data, send empty dict
                 assert message_sent["data"] == {}
 
-    async def test_match_data_listener_wraps_scoreboard_data(self):
+    async def test_match_data_listener_fetches_enriched_scoreboard_data(self):
         manager = MatchDataWebSocketManager(db_url="postgresql://test")
         manager._cache_service = MagicMock()
         manager._cache_service.invalidate_match_data = MagicMock()
         manager.logger = MagicMock()
 
-        payload = json.dumps(
-            {
+        payload = json.dumps({"match_id": 67, "data": {"is_qtr": True}})
+
+        mock_full_data = {
+            "data": {
                 "match_id": 67,
-                "data": {
+                "id": 67,
+                "match": {"id": 67, "team_a_id": 1, "team_b_id": 2},
+                "teams_data": {
+                    "team_a": {"id": 1, "title": "Team A"},
+                    "team_b": {"id": 2, "title": "Team B"},
+                },
+                "match_data": {"score_team_a": 22, "score_team_b": 40},
+                "scoreboard_data": {
                     "is_qtr": True,
                     "is_time": False,
                     "period_mode": "half",
                     "period_count": 2,
                     "period_labels_json": None,
+                    "has_timeouts": True,
+                    "has_playclock": True,
                 },
+                "players": [],
+                "events": [],
             }
-        )
+        }
 
         mock_connection = MagicMock()
 
         with patch("src.utils.websocket.websocket_manager.connection_manager") as mock_conn_mgr:
-            mock_conn_mgr.send_to_all = AsyncMock()
+            with patch(
+                "src.helpers.fetch_helpers.fetch_with_scoreboard_data",
+                new_callable=AsyncMock,
+            ) as mock_fetch:
+                mock_fetch.return_value = mock_full_data
+                mock_conn_mgr.send_to_all = AsyncMock()
 
-            await manager.match_data_listener(mock_connection, None, "scoreboard_change", payload)
+                await manager.match_data_listener(
+                    mock_connection, None, "scoreboard_change", payload
+                )
 
-            mock_conn_mgr.send_to_all.assert_called_once()
-            call_args = mock_conn_mgr.send_to_all.call_args
-            message_sent = call_args[0][0]
+                mock_conn_mgr.send_to_all.assert_called_once()
+                mock_fetch.assert_called_once_with(67, cache_service=manager._cache_service)
 
-            assert message_sent["type"] == "match-update"
-            assert "data" in message_sent
-            assert "scoreboard_data" in message_sent["data"]
-            assert message_sent["data"]["scoreboard_data"]["is_qtr"] is True
-            assert message_sent["data"]["scoreboard_data"]["is_time"] is False
-            assert message_sent["data"]["scoreboard_data"]["period_mode"] == "half"
-            assert message_sent["data"]["scoreboard_data"]["period_count"] == 2
-            assert message_sent["data"]["scoreboard_data"]["period_labels_json"] is None
+                call_args = mock_conn_mgr.send_to_all.call_args
+                message_sent = call_args[0][0]
 
-            manager._cache_service.invalidate_match_data.assert_called_once_with(67)
+                assert message_sent["type"] == "match-update"
+                assert "data" in message_sent
+                assert "scoreboard_data" in message_sent["data"]
+                assert message_sent["data"]["scoreboard_data"]["is_qtr"] is True
+                assert message_sent["data"]["scoreboard_data"]["is_time"] is False
+                assert message_sent["data"]["scoreboard_data"]["period_mode"] == "half"
+                assert message_sent["data"]["scoreboard_data"]["period_count"] == 2
+                assert message_sent["data"]["scoreboard_data"]["period_labels_json"] is None
+                assert message_sent["data"]["scoreboard_data"]["has_timeouts"] is True
+                assert message_sent["data"]["scoreboard_data"]["has_playclock"] is True
+
+                manager._cache_service.invalidate_match_data.assert_called_once_with(67)
+
+    async def test_match_data_listener_handles_scoreboard_change_fetch_failure(self):
+        manager = MatchDataWebSocketManager(db_url="postgresql://test")
+        manager._cache_service = MagicMock()
+        manager._cache_service.invalidate_match_data = MagicMock()
+        manager.logger = MagicMock()
+
+        payload = json.dumps({"match_id": 67, "data": {"is_qtr": True}})
+
+        mock_connection = MagicMock()
+
+        with patch("src.utils.websocket.websocket_manager.connection_manager") as mock_conn_mgr:
+            with patch(
+                "src.helpers.fetch_helpers.fetch_with_scoreboard_data",
+                new_callable=AsyncMock,
+            ) as mock_fetch:
+                mock_fetch.return_value = None
+                mock_conn_mgr.send_to_all = AsyncMock()
+
+                await manager.match_data_listener(
+                    mock_connection, None, "scoreboard_change", payload
+                )
+
+                mock_conn_mgr.send_to_all.assert_called_once()
+                mock_fetch.assert_called_once_with(67, cache_service=manager._cache_service)
+
+                call_args = mock_conn_mgr.send_to_all.call_args
+                message_sent = call_args[0][0]
+
+                assert message_sent["type"] == "match-update"
+                assert "data" in message_sent
+                # When fetch fails, fallback to raw trigger data
+                assert message_sent["data"] == {"is_qtr": True}
+
+                manager._cache_service.invalidate_match_data.assert_called_once_with(67)

@@ -171,12 +171,24 @@ class MatchDataWebSocketManager:
             if self._cache_service:
                 self._cache_service.invalidate_match_data(match_id)
 
-            if "data" in trigger_data:
+            if channel == "scoreboard_change":
+                full_data = await fetch_with_scoreboard_data(
+                    match_id, cache_service=self._cache_service
+                )
+                if full_data and "data" in full_data:
+                    message = {"type": "match-update", "data": full_data["data"]}
+                    await connection_manager.send_to_all(message, match_id=match_id)
+                    self.logger.debug(f"Sent enriched scoreboard data for match {match_id}")
+                else:
+                    self.logger.warning(
+                        f"Failed to fetch full match data for match {match_id}, sending partial data"
+                    )
+                    message = {"type": "match-update", "data": trigger_data.get("data", {})}
+                    await connection_manager.send_to_all(message, match_id=match_id)
+            elif "data" in trigger_data:
                 raw_data = trigger_data["data"]
 
-                if channel == "scoreboard_change":
-                    wrapped_data = {"scoreboard_data": raw_data}
-                elif channel == "matchdata_change":
+                if channel == "matchdata_change":
                     wrapped_data = raw_data
                 else:
                     wrapped_data = raw_data

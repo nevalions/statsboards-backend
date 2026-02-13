@@ -278,6 +278,7 @@ async def fetch_with_scoreboard_data(
             match_data,
             players,
             events,
+            sport,
         ) = await asyncio.gather(
             match_service_db.get_scoreboard_by_match(match_id),
             match_service_db.get_match_with_tournament_sponsor(match_id),
@@ -285,6 +286,7 @@ async def fetch_with_scoreboard_data(
             match_service_db.get_matchdata_by_match(match_id),
             match_service_db.get_players_with_full_data_optimized(match_id),
             _fetch_events_by_match(match_id, database=_db),
+            match_service_db.get_sport_by_match_id(match_id),
         )
         fetch_data_logger.debug(f"Fetched scoreboard for match_id: {match_id}")
         fetch_data_logger.debug(f"Fetched match for match_id: {match_id}")
@@ -403,6 +405,7 @@ async def fetch_with_scoreboard_data(
                 },
             }
 
+            preset = sport.scoreboard_preset if sport else None
             final_match_with_scoreboard_data_fetched = {
                 "data": {
                     "match_id": match_id,
@@ -410,7 +413,11 @@ async def fetch_with_scoreboard_data(
                     "status_code": status.HTTP_200_OK,
                     "match": match_dict,
                     "sponsors_data": sponsors_data,
-                    "scoreboard_data": instance_to_dict(dict(scoreboard_data.__dict__)),
+                    "scoreboard_data": {
+                        **instance_to_dict(dict(scoreboard_data.__dict__)),
+                        "has_timeouts": bool(preset.has_timeouts) if preset is not None else True,
+                        "has_playclock": bool(preset.has_playclock) if preset is not None else True,
+                    },
                     "teams_data": deep_dict_convert(match_teams_data),
                     "match_data": instance_to_dict(dict(match_data.__dict__)),
                     "players": [deep_dict_convert(player) for player in players] if players else [],

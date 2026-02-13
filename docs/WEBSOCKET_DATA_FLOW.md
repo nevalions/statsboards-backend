@@ -375,37 +375,41 @@ if (messageType === 'initial-load') {
 
 #### Scoreboard Update (`scoreboard_change` channel)
 
-When the `scoreboard` table changes (display settings, team settings, scale settings), the backend wraps the data differently:
+When the `scoreboard` table changes (display settings, team settings, scale settings), the backend fetches enriched data:
 
 **Backend flow:**
 1. Database trigger fires: `notify_scoreboard_change()`
 2. Sends pg_notify with payload containing `row_to_json(NEW)` scoreboard data
 3. `match_data_listener()` receives notification with channel `scoreboard_change`
-4. **Wraps data:** Backend wraps scoreboard data under `scoreboard_data` key
+4. **Fetches enriched data:** Backend calls `fetch_with_scoreboard_data(match_id)` to get full data including sport preset capabilities
 5. **Sends:**
-   ```json
-   {
-     "type": "match-update",
-     "data": {
-       "scoreboard_data": {
-         "id": 67,
-         "match_id": 67,
-         "language_code": "en",
-         "is_qtr": true,
-         "is_time": true,
-         "is_playclock": true,
-         "is_downdistance": true,
-         "is_tournament_logo": true,
-         "is_main_sponsor": true,
-         "use_team_a_game_color": false,
-         "use_team_b_game_color": false,
-         "team_a_game_color": "#FF0000",
-         "team_b_game_color": "#0000FF",
-         // ... other scoreboard fields
-       }
-     }
-   }
-   ```
+    ```json
+    {
+      "type": "match-update",
+      "data": {
+        "scoreboard_data": {
+          "id": 67,
+          "match_id": 67,
+          "language_code": "en",
+          "is_qtr": true,
+          "is_time": true,
+          "is_playclock": true,
+          "is_downdistance": true,
+          "is_tournament_logo": true,
+          "is_main_sponsor": true,
+          "use_team_a_game_color": false,
+          "use_team_b_game_color": false,
+          "team_a_game_color": "#FF0000",
+          "team_b_game_color": "#0000FF",
+          "has_timeouts": true,
+          "has_playclock": true,
+          // ... other scoreboard fields
+        }
+      }
+    }
+    ```
+
+**Important:** The `has_timeouts` and `has_playclock` capability flags are now included in the scoreboard_data, sourced from the sport's scoreboard preset. This ensures timeout controls and playclock sections remain visible throughout the admin session.
 
 **Frontend handling:**
 ```typescript

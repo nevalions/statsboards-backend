@@ -96,6 +96,8 @@ class ScoreboardServiceDB(BaseServiceDB):
             if existing_scoreboard is not None:
                 match_id = existing_scoreboard.match_id
 
+        supports_playclock = True
+        supports_timeouts = True
         if match_id is not None:
             supports_playclock, supports_timeouts = await self._get_match_feature_capabilities(
                 match_id
@@ -111,7 +113,10 @@ class ScoreboardServiceDB(BaseServiceDB):
             item,
             **kwargs,
         )
-        self.logger.debug(f"Updated scoreboard: {updated_}")
+        if updated_ is not None:
+            self.logger.debug(f"Updated scoreboard: {updated_}")
+            updated_.has_timeouts = supports_timeouts
+            updated_.has_playclock = supports_playclock
         # await self.trigger_update_scoreboard(item_id)
         return updated_  # type: ignore
 

@@ -12,12 +12,15 @@ from src.scoreboards.schemas import (
     ScoreboardSchemaUpdate,
 )
 from src.seasons.db_services import SeasonServiceDB
+from src.sport_scoreboard_preset.db_services import SportScoreboardPresetServiceDB
+from src.sport_scoreboard_preset.schemas import SportScoreboardPresetSchemaCreate
 from src.sports.db_services import SportServiceDB
 from src.teams.db_services import TeamServiceDB
 from src.tournaments.db_services import TournamentServiceDB
 from tests.factories import (
     MatchFactory,
     SeasonFactorySample,
+    SportFactoryAny,
     SportFactorySample,
     TeamFactory,
     TournamentFactory,
@@ -238,3 +241,118 @@ class TestScoreboardServiceDB:
 
         assert updated.id == created.id
         assert updated.is_time
+
+    async def test_update_includes_capability_flags_with_preset(self, test_db):
+        preset_service = SportScoreboardPresetServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        match_service = MatchServiceDB(test_db)
+        scoreboard_service = ScoreboardServiceDB(test_db)
+
+        preset = await preset_service.create(
+            SportScoreboardPresetSchemaCreate(
+                title="Test Preset",
+                has_playclock=True,
+                has_timeouts=True,
+            )
+        )
+        sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
+        season = await season_service.create(SeasonFactorySample.build())
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        created = await scoreboard_service.create(
+            ScoreboardSchemaCreate(match_id=match.id, is_qtr=True)
+        )
+        updated = await scoreboard_service.update(created.id, ScoreboardSchemaUpdate(is_time=True))
+
+        assert updated.has_timeouts is True
+        assert updated.has_playclock is True
+
+    async def test_update_includes_capability_flags_when_preset_disables(self, test_db):
+        preset_service = SportScoreboardPresetServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        match_service = MatchServiceDB(test_db)
+        scoreboard_service = ScoreboardServiceDB(test_db)
+
+        preset = await preset_service.create(
+            SportScoreboardPresetSchemaCreate(
+                title="Test Preset",
+                has_playclock=False,
+                has_timeouts=False,
+            )
+        )
+        sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
+        season = await season_service.create(SeasonFactorySample.build())
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        created = await scoreboard_service.create(
+            ScoreboardSchemaCreate(match_id=match.id, is_qtr=True)
+        )
+        updated = await scoreboard_service.update(created.id, ScoreboardSchemaUpdate(is_time=True))
+
+        assert updated.has_timeouts is False
+        assert updated.has_playclock is False
+
+    async def test_schema_serialization_includes_capability_flags(self, test_db):
+        preset_service = SportScoreboardPresetServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        season_service = SeasonServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        match_service = MatchServiceDB(test_db)
+        scoreboard_service = ScoreboardServiceDB(test_db)
+
+        preset = await preset_service.create(
+            SportScoreboardPresetSchemaCreate(
+                title="Test Preset",
+                has_playclock=True,
+                has_timeouts=True,
+            )
+        )
+        sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
+        season = await season_service.create(SeasonFactorySample.build())
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id, team_a_id=team_a.id, team_b_id=team_b.id
+            )
+        )
+
+        created = await scoreboard_service.create(
+            ScoreboardSchemaCreate(match_id=match.id, is_qtr=True)
+        )
+        updated = await scoreboard_service.update(created.id, ScoreboardSchemaUpdate(is_time=True))
+
+        from src.scoreboards.schemas import ScoreboardSchema
+
+        schema = ScoreboardSchema.model_validate(updated)
+
+        assert schema.has_timeouts is True
+        assert schema.has_playclock is True

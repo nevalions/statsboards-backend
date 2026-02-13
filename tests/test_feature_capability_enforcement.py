@@ -135,3 +135,35 @@ class TestCapabilityEnforcement:
         scoreboard = full_payload["data"]["scoreboard_data"]
         assert scoreboard["is_timeout_team_a"] is False
         assert scoreboard["is_timeout_team_b"] is False
+
+    async def test_scoreboard_data_includes_has_timeouts_and_has_playclock_flags(self, test_db):
+        match_id = await _create_match_with_preset(
+            test_db,
+            has_playclock=True,
+            has_timeouts=True,
+        )
+
+        full_payload = await fetch_with_scoreboard_data(match_id, database=test_db)
+        assert full_payload is not None
+
+        scoreboard = full_payload["data"]["scoreboard_data"]
+        assert "has_timeouts" in scoreboard
+        assert "has_playclock" in scoreboard
+        assert scoreboard["has_timeouts"] is True
+        assert scoreboard["has_playclock"] is True
+
+    async def test_scoreboard_data_flags_false_when_preset_disables(self, test_db):
+        match_id = await _create_match_with_preset(
+            test_db,
+            has_playclock=False,
+            has_timeouts=False,
+        )
+
+        full_payload = await fetch_with_scoreboard_data(match_id, database=test_db)
+        assert full_payload is not None
+
+        scoreboard = full_payload["data"]["scoreboard_data"]
+        assert "has_timeouts" in scoreboard
+        assert "has_playclock" in scoreboard
+        assert scoreboard["has_timeouts"] is False
+        assert scoreboard["has_playclock"] is False
