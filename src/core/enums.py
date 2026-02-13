@@ -43,6 +43,13 @@ class InitialTimeMode(StrEnum):
     MIN = "min"
 
 
+class PeriodClockVariant(StrEnum):
+    """How gameclock max behaves when period changes."""
+
+    PER_PERIOD = "per_period"
+    CUMULATIVE = "cumulative"
+
+
 class GameStatus(StrEnum):
     """Status values for match game state."""
 

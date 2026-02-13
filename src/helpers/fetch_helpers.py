@@ -7,8 +7,9 @@ from fastapi import status
 from sqlalchemy import select
 
 from src.core import db
-from src.core.enums import ClockDirection, ClockOnStopBehavior, InitialTimeMode
+from src.core.enums import ClockDirection, ClockOnStopBehavior, InitialTimeMode, PeriodClockVariant
 from src.core.models import SponsorDB, SponsorSponsorLineDB, SportScoreboardPresetDB, TeamDB
+from src.core.period_clock import calculate_effective_gameclock_max, extract_period_index
 from src.gameclocks.db_services import GameClockServiceDB
 from src.gameclocks.schemas import GameClockSchemaCreate
 from src.logging_config import get_logger
@@ -24,17 +25,29 @@ logger = get_logger("helpers")
 fetch_data_logger = get_logger("fetch_data")
 
 
-def _get_preset_values_for_gameclock(preset: SportScoreboardPresetDB) -> dict[str, Any]:
+def _get_preset_values_for_gameclock(
+    preset: SportScoreboardPresetDB,
+    period_index: int = 1,
+) -> dict[str, Any]:
     """Extract preset values for gameclock creation."""
+    effective_max = calculate_effective_gameclock_max(
+        base_max=preset.gameclock_max,
+        variant=getattr(
+            preset,
+            "period_clock_variant",
+            PeriodClockVariant.PER_PERIOD,
+        ),
+        period_index=period_index,
+    )
     initial_gameclock_seconds = _calculate_initial_gameclock_seconds(
-        gameclock_max=preset.gameclock_max,
+        gameclock_max=effective_max,
         initial_time_mode=preset.initial_time_mode,
         initial_time_min_seconds=preset.initial_time_min_seconds,
     )
     return {
         "gameclock": initial_gameclock_seconds,
         "gameclock_time_remaining": initial_gameclock_seconds,
-        "gameclock_max": preset.gameclock_max,
+        "gameclock_max": effective_max,
         "direction": preset.direction,
         "on_stop_behavior": preset.on_stop_behavior,
         "use_sport_preset": True,
@@ -414,7 +427,7 @@ async def fetch_with_scoreboard_data(
                     "match": match_dict,
                     "sponsors_data": sponsors_data,
                     "scoreboard_data": {
-                        **instance_to_dict(dict(scoreboard_data.__dict__)),
+                        **(instance_to_dict(dict(scoreboard_data.__dict__)) or {}),
                         "has_timeouts": bool(preset.has_timeouts) if preset is not None else True,
                         "has_playclock": bool(preset.has_playclock) if preset is not None else True,
                     },
@@ -472,10 +485,11 @@ async def fetch_gameclock(
     match_service_db = MatchServiceDB(_db)
 
     try:
-        match, gameclock, sport = await asyncio.gather(
+        match, gameclock, sport, match_data = await asyncio.gather(
             match_service_db.get_by_id(match_id),
             gameclock_service.get_gameclock_by_match_id(match_id),
             match_service_db.get_sport_by_match_id(match_id),
+            MatchDataServiceDB(_db).get_match_data_by_match_id(match_id),
         )
 
         if match:
@@ -483,7 +497,14 @@ async def fetch_gameclock(
                 gameclock_schema = GameClockSchemaCreate(match_id=match_id)
 
                 if sport and sport.scoreboard_preset:
-                    preset_values = _get_preset_values_for_gameclock(sport.scoreboard_preset)
+                    period_index = extract_period_index(
+                        period_key=match_data.period_key if match_data is not None else None,
+                        qtr=match_data.qtr if match_data is not None else None,
+                    )
+                    preset_values = _get_preset_values_for_gameclock(
+                        sport.scoreboard_preset,
+                        period_index=period_index,
+                    )
                     fetch_data_logger.debug(
                         f"Using sport preset {sport.scoreboard_preset.id} for gameclock"
                     )

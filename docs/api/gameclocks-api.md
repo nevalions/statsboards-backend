@@ -2,6 +2,14 @@
 
 Manage game clocks for matches. The game clock counts total game time for quarters and halves in American football. It supports both countdown (down) and count-up (up) directions.
 
+When `use_sport_preset=true`, gameclock max can be period-aware based on the sport preset's `period_clock_variant`:
+- `per_period` (default): effective max remains base `gameclock_max`
+- `cumulative`: effective max is `base gameclock_max * current_period_index`
+
+Soccer example (`base gameclock_max=2700`, two halves):
+- `period.1` => effective max `2700` (45:00)
+- `period.2` => effective max `5400` (90:00)
+
 ### Response Schemas
 
 ```typescript
@@ -389,6 +397,7 @@ PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/
 **Behavior:**
 - Updates gameclock to specified time and status
 - Commonly used to reset quarter/half times (900s = 15 min, 1800s = 30 min)
+- For preset-managed matches (`use_sport_preset=true`), period transitions may recalculate `gameclock_max` automatically from preset variant and current period.
 - Invalidates gameclock cache to trigger immediate WebSocket updates to all connected clients
 
 **Error Responses:**

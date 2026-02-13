@@ -3,7 +3,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import JSON, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.core.enums import ClockDirection, ClockOnStopBehavior, InitialTimeMode, SportPeriodMode
+from src.core.enums import (
+    ClockDirection,
+    ClockOnStopBehavior,
+    InitialTimeMode,
+    PeriodClockVariant,
+    SportPeriodMode,
+)
 from src.core.models import Base
 
 if TYPE_CHECKING:
@@ -34,6 +40,11 @@ class SportScoreboardPresetDB(Base):
         Integer,
         nullable=True,
         default=None,
+    )
+    period_clock_variant: Mapped[PeriodClockVariant] = mapped_column(
+        String(10),
+        nullable=False,
+        default=PeriodClockVariant.PER_PERIOD,
     )
     direction: Mapped[ClockDirection] = mapped_column(
         String(10),

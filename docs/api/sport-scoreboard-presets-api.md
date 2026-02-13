@@ -11,6 +11,7 @@ interface SportScoreboardPresetSchema {
   gameclock_max: number | null; // Maximum gameclock time in seconds, default 720
   initial_time_mode: "max" | "zero" | "min"; // Initial gameclock strategy, default "max"
   initial_time_min_seconds: number | null; // Required when initial_time_mode="min"
+  period_clock_variant: "per_period" | "cumulative"; // Period transition clock strategy, default "per_period"
   direction: string; // Clock direction: "down" or "up" (default: "down")
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
   has_playclock: boolean; // Sport supports playclock entities (default: true)
@@ -32,6 +33,7 @@ interface SportScoreboardPresetSchemaCreate {
   gameclock_max: number | null; // Optional max time in seconds, default 720
   initial_time_mode: "max" | "zero" | "min"; // Optional initial gameclock strategy, default "max"
   initial_time_min_seconds: number | null; // Optional, required when initial_time_mode="min"
+  period_clock_variant: "per_period" | "cumulative"; // Optional, defaults to "per_period"
   direction: string; // Clock direction: "down" or "up" (default: "down")
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset" (default: "hold")
   has_playclock: boolean; // Optional, defaults to true
@@ -53,6 +55,7 @@ interface SportScoreboardPresetSchemaUpdate {
   gameclock_max: number | null; // Optional max time in seconds
   initial_time_mode: "max" | "zero" | "min" | null; // Optional initial gameclock strategy
   initial_time_min_seconds: number | null; // Optional, required when initial_time_mode="min"
+  period_clock_variant: "per_period" | "cumulative" | null; // Optional period transition clock strategy
   direction: string | null; // Optional clock direction: "down" or "up"
   on_stop_behavior: string | null; // Optional behavior when stopped: "hold" or "reset"
   has_playclock: boolean | null; // Optional capability flag
@@ -79,11 +82,19 @@ interface SportScoreboardPresetSchemaUpdate {
   - `zero`: start at `0`
   - `min`: start at `initial_time_min_seconds`
 - `initial_time_min_seconds` is required when `initial_time_mode="min"`.
+- `period_clock_variant` controls max-time handling when period changes:
+  - `per_period` (default): effective max remains `gameclock_max`
+  - `cumulative`: effective max becomes `gameclock_max * current_period_index`
 - `period_count` is required and must be >= 1.
 - when `period_mode="custom"`, `period_count` must equal `period_labels_json.length`.
 - Final initial value is clamped to a non-negative range:
   - when `gameclock_max` is set: `0 <= gameclock <= gameclock_max`
   - when `gameclock_max` is `null`: `gameclock >= 0`
+
+Soccer example (`period_clock_variant="cumulative"`, 45-minute halves):
+- Base `gameclock_max = 2700`
+- Half 1 (`period.1`) effective max: `2700` (45:00)
+- Half 2 (`period.2`) effective max: `5400` (90:00)
 
 Example payloads:
 
@@ -132,6 +143,7 @@ POST /api/sport-scoreboard-presets/
   "gameclock_max": 720,
   "initial_time_mode": "max",
   "initial_time_min_seconds": null,
+  "period_clock_variant": "per_period",
   "direction": "down",
   "on_stop_behavior": "hold",
   "has_playclock": true,
@@ -156,6 +168,7 @@ interface SportScoreboardPresetSchemaCreate {
   gameclock_max: number | null; // Optional max time in seconds
   initial_time_mode: "max" | "zero" | "min";
   initial_time_min_seconds: number | null;
+  period_clock_variant: "per_period" | "cumulative";
   direction: string; // Clock direction: "down" or "up"
   on_stop_behavior: string; // Behavior when stopped: "hold" or "reset"
   has_playclock: boolean; // Sport supports playclock entities
@@ -181,6 +194,7 @@ interface SportScoreboardPresetSchemaCreate {
   "gameclock_max": 720,
   "initial_time_mode": "max",
   "initial_time_min_seconds": null,
+  "period_clock_variant": "per_period",
   "direction": "down",
   "on_stop_behavior": "hold",
   "has_playclock": true,
@@ -226,6 +240,7 @@ PUT /api/sport-scoreboard-presets/{item_id}/
 ```json
 {
   "title": "American Football Preset - Updated",
+  "period_clock_variant": "cumulative",
   "direction": "up",
   "on_stop_behavior": "reset",
   "period_mode": "custom",
@@ -242,6 +257,7 @@ interface SportScoreboardPresetSchemaUpdate {
   gameclock_max: number | null; // Optional max time in seconds
   initial_time_mode: "max" | "zero" | "min" | null;
   initial_time_min_seconds: number | null;
+  period_clock_variant: "per_period" | "cumulative" | null;
   direction: string | null; // Optional clock direction: "down" or "up"
   on_stop_behavior: string | null; // Optional behavior when stopped: "hold" or "reset"
   has_playclock: boolean | null; // Optional capability flag
@@ -267,6 +283,7 @@ interface SportScoreboardPresetSchemaUpdate {
   "gameclock_max": 720,
   "initial_time_mode": "max",
   "initial_time_min_seconds": null,
+  "period_clock_variant": "cumulative",
   "direction": "up",
   "on_stop_behavior": "reset",
   "has_playclock": true,
@@ -316,6 +333,7 @@ GET /api/sport-scoreboard-presets/id/{item_id}/
   "gameclock_max": 720,
   "initial_time_mode": "max",
   "initial_time_min_seconds": null,
+  "period_clock_variant": "per_period",
   "direction": "down",
   "on_stop_behavior": "hold",
   "has_playclock": true,
@@ -360,6 +378,7 @@ GET /api/sport-scoreboard-presets/
     "gameclock_max": 720,
     "initial_time_mode": "max",
     "initial_time_min_seconds": null,
+    "period_clock_variant": "per_period",
     "direction": "down",
     "on_stop_behavior": "hold",
     "has_playclock": true,
@@ -381,6 +400,7 @@ GET /api/sport-scoreboard-presets/
     "gameclock_max": 600,
     "initial_time_mode": "max",
     "initial_time_min_seconds": null,
+    "period_clock_variant": "per_period",
     "direction": "down",
     "on_stop_behavior": "hold",
     "has_playclock": false,
@@ -501,6 +521,7 @@ Capability flags are enforced server-side:
 Preset updates are also propagated to opted-in match resources (`use_sport_preset=true`):
 - Scoreboards receive updated preset display fields and capability reconciliation.
 - Gameclocks receive updated period config defaults (`gameclock_max`, `direction`, `on_stop_behavior`).
+- For `period_clock_variant="cumulative"`, propagated gameclocks use period-aware effective max based on current match period (`period_key` / `qtr`).
 - If `has_playclock` flips from `true` to `false`, existing playclock rows for opted-in matches are safely deactivated (`playclock=null`, `playclock_status="stopped"`, `started_at_ms=null`).
 - If `has_timeouts` flips from `true` to `false`, timeout indicators are deterministically set to `false`.
 - Opt-out matches (`use_sport_preset=false`) are not modified by preset propagation.

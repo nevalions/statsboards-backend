@@ -6,9 +6,12 @@ from src.core.enums import (
     ClockOnStopBehavior,
     ClockStatus,
     InitialTimeMode,
+    PeriodClockVariant,
     SportPeriodMode,
 )
 from src.gameclocks.schemas import GameClockSchemaCreate
+from src.matchdata.db_services import MatchDataServiceDB
+from src.matchdata.schemas import MatchDataSchemaCreate
 from src.matches.db_services import MatchServiceDB
 from src.playclocks.db_services import PlayClockServiceDB
 from src.playclocks.schemas import PlayClockSchemaCreate
@@ -61,6 +64,7 @@ class TestSportScoreboardPresetServiceDB:
         assert result.gameclock_max == 720
         assert result.initial_time_mode == InitialTimeMode.MAX
         assert result.initial_time_min_seconds is None
+        assert result.period_clock_variant == PeriodClockVariant.PER_PERIOD
         assert result.direction == ClockDirection.DOWN
         assert result.on_stop_behavior == ClockOnStopBehavior.HOLD
         assert result.is_qtr is True
@@ -106,6 +110,7 @@ class TestSportScoreboardPresetServiceDB:
         assert result.default_playclock_seconds is None
         assert result.initial_time_mode == InitialTimeMode.MAX
         assert result.initial_time_min_seconds is None
+        assert result.period_clock_variant == PeriodClockVariant.PER_PERIOD
 
     async def test_update_preset(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -115,6 +120,7 @@ class TestSportScoreboardPresetServiceDB:
         update_data = SportScoreboardPresetSchemaUpdate(
             title="Soccer Preset Updated",
             gameclock_max=900,
+            period_clock_variant=PeriodClockVariant.CUMULATIVE,
             direction=ClockDirection.UP,
             has_timeouts=False,
             has_playclock=False,
@@ -128,6 +134,7 @@ class TestSportScoreboardPresetServiceDB:
 
         assert updated.title == "Soccer Preset Updated"
         assert updated.gameclock_max == 900
+        assert updated.period_clock_variant == PeriodClockVariant.CUMULATIVE
         assert updated.direction == ClockDirection.UP
         assert updated.initial_time_mode == InitialTimeMode.MAX
         assert updated.has_timeouts is False
@@ -721,6 +728,75 @@ class TestSportScoreboardPresetServiceDB:
         updated_opted_out = await gameclock_service.get_by_id(gameclock_opted_out.id)
         assert updated_opted_out.gameclock_max == 600
 
+    async def test_preset_update_propagates_cumulative_effective_max_by_period(self, test_db):
+        preset_service = SportScoreboardPresetServiceDB(test_db)
+        sport_service = SportServiceDB(test_db)
+        tournament_service = TournamentServiceDB(test_db)
+        match_service = MatchServiceDB(test_db)
+        team_service = TeamServiceDB(test_db)
+        from src.gameclocks.db_services import GameClockServiceDB
+
+        gameclock_service = GameClockServiceDB(test_db)
+        matchdata_service = MatchDataServiceDB(test_db)
+
+        preset = await preset_service.create(
+            SportScoreboardPresetSchemaCreate(
+                title="Soccer Preset",
+                gameclock_max=900,
+                period_clock_variant=PeriodClockVariant.PER_PERIOD,
+            )
+        )
+
+        sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
+
+        season_service = SeasonServiceDB(test_db)
+        season = await season_service.create(SeasonFactorySample.build())
+
+        tournament = await tournament_service.create(
+            TournamentFactory.build(sport_id=sport.id, season_id=season.id)
+        )
+
+        team_a = await team_service.create(TeamFactory.build(sport_id=sport.id))
+        team_b = await team_service.create(TeamFactory.build(sport_id=sport.id))
+
+        match = await match_service.create(
+            MatchFactory.build(
+                tournament_id=tournament.id,
+                team_a_id=team_a.id,
+                team_b_id=team_b.id,
+            )
+        )
+
+        gameclock = await gameclock_service.create(
+            GameClockSchemaCreate(
+                match_id=match.id,
+                gameclock=1200,
+                gameclock_time_remaining=1200,
+                gameclock_max=900,
+                use_sport_preset=True,
+            )
+        )
+
+        await matchdata_service.create(
+            MatchDataSchemaCreate(
+                match_id=match.id,
+                qtr="2nd",
+                period_key="period.2",
+            )
+        )
+
+        await preset_service.update(
+            preset.id,
+            SportScoreboardPresetSchemaUpdate(
+                period_clock_variant=PeriodClockVariant.CUMULATIVE,
+            ),
+        )
+
+        updated_gameclock = await gameclock_service.get_by_id(gameclock.id)
+        assert updated_gameclock is not None
+        assert updated_gameclock.gameclock_max == 1800
+        assert updated_gameclock.gameclock == 1200
+
     async def test_preset_with_multiple_sports(self, test_db):
         preset_service = SportScoreboardPresetServiceDB(test_db)
         sport_service = SportServiceDB(test_db)
@@ -772,6 +848,7 @@ class TestSportScoreboardPresetServiceDB:
         preset_data = SportScoreboardPresetSchemaCreate(
             title="Full Preset",
             gameclock_max=720,
+            period_clock_variant=PeriodClockVariant.PER_PERIOD,
             direction=ClockDirection.DOWN,
             on_stop_behavior=ClockOnStopBehavior.HOLD,
             is_qtr=True,
@@ -793,6 +870,7 @@ class TestSportScoreboardPresetServiceDB:
 
         assert updated.title == "Full Preset"
         assert updated.gameclock_max == 900
+        assert updated.period_clock_variant == PeriodClockVariant.PER_PERIOD
         assert updated.direction == ClockDirection.DOWN
         assert updated.on_stop_behavior == ClockOnStopBehavior.HOLD
         assert updated.is_qtr is True
@@ -820,6 +898,21 @@ class TestSportScoreboardPresetServiceDB:
 
         assert updated.initial_time_mode == InitialTimeMode.MIN
         assert updated.initial_time_min_seconds == 90
+
+    async def test_update_preset_period_clock_variant(self, test_db):
+        service = SportScoreboardPresetServiceDB(test_db)
+        created = await service.create(
+            SportScoreboardPresetSchemaCreate(title="Soccer Variant Preset")
+        )
+
+        updated = await service.update(
+            created.id,
+            SportScoreboardPresetSchemaUpdate(
+                period_clock_variant=PeriodClockVariant.CUMULATIVE,
+            ),
+        )
+
+        assert updated.period_clock_variant == PeriodClockVariant.CUMULATIVE
 
     async def test_delete_preset_unlinks_from_sports(self, test_db):
         preset_service = SportScoreboardPresetServiceDB(test_db)

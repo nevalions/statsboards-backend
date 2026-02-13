@@ -10,6 +10,7 @@ from src.core.enums import (
     ClockDirection,
     ClockOnStopBehavior,
     InitialTimeMode,
+    PeriodClockVariant,
     SportPeriodMode,
 )
 from src.core.schema_helpers import make_fields_optional
@@ -22,6 +23,9 @@ class SportScoreboardPresetSchemaBase(BaseModel):
     gameclock_max: int | None = 720
     initial_time_mode: Annotated[InitialTimeMode, Path(max_length=10)] = InitialTimeMode.MAX
     initial_time_min_seconds: int | None = None
+    period_clock_variant: Annotated[PeriodClockVariant, Path(max_length=10)] = (
+        PeriodClockVariant.PER_PERIOD
+    )
     direction: Annotated[ClockDirection, Path(max_length=10)] = ClockDirection.DOWN
     on_stop_behavior: Annotated[ClockOnStopBehavior, Path(max_length=10)] = ClockOnStopBehavior.HOLD
     has_playclock: bool = True

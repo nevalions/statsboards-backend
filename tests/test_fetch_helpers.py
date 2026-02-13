@@ -8,7 +8,7 @@ Run with:
 import datetime
 from unittest.mock import Mock
 
-from src.core.enums import InitialTimeMode
+from src.core.enums import InitialTimeMode, PeriodClockVariant
 
 
 class TestInitialGameclockHelpers:
@@ -134,6 +134,42 @@ class TestInitialGameclockHelpers:
         )
 
         result = _get_preset_values_for_gameclock(preset)
+
+        assert result["gameclock"] == 900
+        assert result["gameclock_time_remaining"] == 900
+        assert result["gameclock_max"] == 900
+
+    def test_get_preset_values_for_gameclock_cumulative_uses_period_index(self):
+        from src.helpers.fetch_helpers import _get_preset_values_for_gameclock
+
+        preset = Mock(
+            gameclock_max=900,
+            initial_time_mode=InitialTimeMode.MAX,
+            initial_time_min_seconds=None,
+            period_clock_variant=PeriodClockVariant.CUMULATIVE,
+            direction="down",
+            on_stop_behavior="hold",
+        )
+
+        result = _get_preset_values_for_gameclock(preset, period_index=2)
+
+        assert result["gameclock"] == 1800
+        assert result["gameclock_time_remaining"] == 1800
+        assert result["gameclock_max"] == 1800
+
+    def test_get_preset_values_for_gameclock_per_period_ignores_period_index(self):
+        from src.helpers.fetch_helpers import _get_preset_values_for_gameclock
+
+        preset = Mock(
+            gameclock_max=900,
+            initial_time_mode=InitialTimeMode.MAX,
+            initial_time_min_seconds=None,
+            period_clock_variant=PeriodClockVariant.PER_PERIOD,
+            direction="down",
+            on_stop_behavior="hold",
+        )
+
+        result = _get_preset_values_for_gameclock(preset, period_index=2)
 
         assert result["gameclock"] == 900
         assert result["gameclock_time_remaining"] == 900

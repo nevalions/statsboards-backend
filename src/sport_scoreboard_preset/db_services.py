@@ -3,10 +3,11 @@ from typing import Any, cast
 from sqlalchemy import select, update
 
 from src.core.decorators import handle_service_exceptions
-from src.core.enums import ClockStatus
+from src.core.enums import ClockStatus, PeriodClockVariant
 from src.core.models import (
     BaseServiceDB,
     GameClockDB,
+    MatchDataDB,
     MatchDB,
     PlayClockDB,
     ScoreboardDB,
@@ -15,6 +16,7 @@ from src.core.models import (
     TournamentDB,
 )
 from src.core.models.base import Database
+from src.core.period_clock import calculate_effective_gameclock_max, extract_period_index
 from src.core.service_registry import ServiceRegistryAccessorMixin
 
 from ..logging_config import get_logger
@@ -106,6 +108,57 @@ class SportScoreboardPresetServiceDB(ServiceRegistryAccessorMixin, BaseServiceDB
                         on_stop_behavior=preset.on_stop_behavior,
                     )
                 )
+
+                if (
+                    preset.period_clock_variant == PeriodClockVariant.CUMULATIVE
+                    and preset.gameclock_max is not None
+                ):
+                    gameclock_rows = await session.execute(
+                        select(
+                            GameClockDB.id,
+                            GameClockDB.gameclock,
+                            GameClockDB.gameclock_time_remaining,
+                            MatchDataDB.period_key,
+                            MatchDataDB.qtr,
+                        )
+                        .select_from(GameClockDB)
+                        .outerjoin(MatchDataDB, MatchDataDB.match_id == GameClockDB.match_id)
+                        .where(GameClockDB.match_id.in_(match_ids_subquery))
+                        .where(GameClockDB.use_sport_preset.is_(True))
+                    )
+
+                    for row in gameclock_rows:
+                        period_index = extract_period_index(
+                            period_key=row.period_key,
+                            qtr=row.qtr,
+                        )
+                        effective_max = calculate_effective_gameclock_max(
+                            base_max=preset.gameclock_max,
+                            variant=preset.period_clock_variant,
+                            period_index=period_index,
+                        )
+
+                        clamped_gameclock = (
+                            max(0, min(row.gameclock, effective_max))
+                            if row.gameclock is not None and effective_max is not None
+                            else row.gameclock
+                        )
+                        clamped_remaining = (
+                            max(0, min(row.gameclock_time_remaining, effective_max))
+                            if row.gameclock_time_remaining is not None
+                            and effective_max is not None
+                            else row.gameclock_time_remaining
+                        )
+
+                        await session.execute(
+                            update(GameClockDB)
+                            .where(GameClockDB.id == row.id)
+                            .values(
+                                gameclock_max=effective_max,
+                                gameclock=clamped_gameclock,
+                                gameclock_time_remaining=clamped_remaining,
+                            )
+                        )
 
                 if not supports_playclock:
                     opted_in_scoreboard_match_ids_subquery = (
