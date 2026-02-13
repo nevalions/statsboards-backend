@@ -5,9 +5,18 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from src.core.decorators import handle_service_exceptions
-from src.core.enums import ClockDirection, ClockStatus
-from src.core.models import BaseServiceDB, GameClockDB
+from src.core.enums import ClockDirection, ClockStatus, PeriodClockVariant
+from src.core.models import (
+    BaseServiceDB,
+    GameClockDB,
+    MatchDataDB,
+    MatchDB,
+    SportDB,
+    SportScoreboardPresetDB,
+    TournamentDB,
+)
 from src.core.models.base import Database
+from src.core.period_clock import extract_period_index
 
 from ..clocks import clock_orchestrator
 from ..logging_config import get_logger
@@ -264,3 +273,71 @@ class GameClockServiceDB(BaseServiceDB):
             await matchdata_clock_queue.put(gameclock)
         else:
             self.logger.warning(f"No active gameclock found with id:{gameclock_id}")
+
+    async def compute_reset_value(self, gameclock_id: int) -> int | None:
+        """
+        Compute the reset value for a gameclock based on sport preset and period.
+
+        Reset rules:
+        - direction=up + period_clock_variant=cumulative => reset to period start (base_max * (period_index - 1))
+        - direction=up + non-cumulative => reset to 0
+        - direction=down => reset to gameclock_max
+        """
+        gameclock = await self.get_by_id(gameclock_id)
+        if gameclock is None:
+            self.logger.warning(f"Gameclock not found: {gameclock_id}")
+            return None
+
+        if gameclock.direction == ClockDirection.DOWN:
+            return gameclock.gameclock_max
+
+        preset_config = await self._get_period_clock_preset_config(gameclock.match_id)
+        if preset_config is None:
+            self.logger.debug("No preset config found, defaulting to 0")
+            return 0
+
+        base_max, variant = preset_config
+
+        if variant != PeriodClockVariant.CUMULATIVE:
+            return 0
+
+        period_index = await self._get_current_period_index(gameclock.match_id)
+        reset_value = base_max * (period_index - 1) if base_max else 0
+        return max(0, reset_value)
+
+    async def _get_period_clock_preset_config(
+        self, match_id: int
+    ) -> tuple[int | None, PeriodClockVariant] | None:
+        """Get base_max and period_clock_variant from sport preset for a match."""
+        async with self.db.get_session_maker()() as session:
+            result = await session.execute(
+                select(
+                    SportScoreboardPresetDB.gameclock_max,
+                    SportScoreboardPresetDB.period_clock_variant,
+                )
+                .select_from(MatchDB)
+                .join(TournamentDB, MatchDB.tournament_id == TournamentDB.id)
+                .join(SportDB, TournamentDB.sport_id == SportDB.id)
+                .join(
+                    SportScoreboardPresetDB,
+                    SportDB.scoreboard_preset_id == SportScoreboardPresetDB.id,
+                )
+                .where(MatchDB.id == match_id)
+            )
+            row = result.one_or_none()
+            if row is None:
+                return None
+            return row[0], PeriodClockVariant(row[1])
+
+    async def _get_current_period_index(self, match_id: int) -> int:
+        """Get current period index from matchdata."""
+        async with self.db.get_session_maker()() as session:
+            result = await session.execute(
+                select(MatchDataDB.period_key, MatchDataDB.qtr).where(
+                    MatchDataDB.match_id == match_id
+                )
+            )
+            row = result.one_or_none()
+            if row is None:
+                return 1
+            return extract_period_index(period_key=row[0], qtr=row[1])

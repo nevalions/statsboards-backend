@@ -40,6 +40,20 @@ Uses DB value for `gameclock` rather than a URL parameter.
 
 `item_status` must map to a `ClockStatus` value (`stopped`, `running`, `paused`, `stopping`).
 
+### Period-Aware Reset
+
+`PUT /api/gameclock/id/{gameclock_id}/reset/`
+
+Computes reset value server-side based on sport preset and current period:
+
+- `direction=down` → resets to `gameclock_max`
+- `direction=up` + `per_period` → resets to `0`
+- `direction=up` + `cumulative` → resets to `base_max * (period_index - 1)`
+
+Example (soccer, base_max=2700):
+- Period 1 reset → `0`
+- Period 2 reset → `2700`
+
 ## Client-Side Calculation
 
 Clients calculate current values using `started_at_ms`:

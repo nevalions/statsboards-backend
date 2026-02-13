@@ -429,6 +429,75 @@ PUT /api/gameclock/id/{item_id}/{item_status}/{sec}/
 
 ---
 
+### PUT /api/gameclock/id/{gameclock_id}/reset/
+
+Period-aware game clock reset. Computes the reset value server-side based on sport preset and current period context.
+
+**Endpoint:**
+```
+PUT /api/gameclock/id/{gameclock_id}/reset/
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gameclock_id` | integer | Yes | GameClock ID |
+
+**Reset Rules:**
+- `direction=down` → resets to current `gameclock_max`
+- `direction=up` + `period_clock_variant=per_period` → resets to `0`
+- `direction=up` + `period_clock_variant=cumulative` → resets to period start (`base_max * (period_index - 1)`)
+
+**Response (200 OK):**
+```json
+{
+  "content": {
+    "id": 1,
+    "gameclock": 2700,
+    "gameclock_max": 5400,
+    "direction": "up",
+    "on_stop_behavior": "hold",
+    "gameclock_status": "stopped",
+    "gameclock_time_remaining": 2700,
+    "match_id": 123,
+    "version": 3,
+    "started_at_ms": null,
+    "server_time_ms": 1737648070000,
+    "use_sport_preset": true
+  },
+  "status_code": 200,
+  "success": true,
+  "message": "Game clock reset to 2700"
+}
+```
+
+**Behavior:**
+- Computes reset value based on direction, preset variant, and current period
+- For cumulative clocks in period 2, resets to `base_max` (e.g., 2700 for soccer 2nd half)
+- For cumulative clocks in period 3, resets to `2 * base_max`
+- Updates `gameclock_status` to "stopped"
+- Invalidates gameclock cache to trigger WebSocket updates
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 404 | Game clock not found |
+| 500 | Internal server error |
+
+**Error Response (404):**
+```json
+{
+  "content": null,
+  "status_code": 404,
+  "success": false,
+  "message": "Game clock ID:{id} not found"
+}
+```
+
+---
+
 ### DELETE /api/gameclock/id/{model_id}
 
 Delete a game clock by ID. Requires admin role.

@@ -233,9 +233,13 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
                             elapsed_seconds = elapsed_ms / 1000
                             if current_gameclock.direction == ClockDirection.UP:
                                 max_val = current_gameclock.gameclock_max or 0
-                                current_value = min(max_val, int(current_gameclock.gameclock + elapsed_seconds))
+                                current_value = min(
+                                    max_val, int(current_gameclock.gameclock + elapsed_seconds)
+                                )
                             else:
-                                current_value = max(0, int(current_gameclock.gameclock - elapsed_seconds))
+                                current_value = max(
+                                    0, int(current_gameclock.gameclock - elapsed_seconds)
+                                )
                             self.logger.debug(
                                 f"Calculated elapsed time: started_at_ms={current_gameclock.started_at_ms}, "
                                 f"current_time_ms={current_time_ms}, elapsed_seconds={elapsed_seconds}, "
@@ -324,6 +328,56 @@ class GameClockAPIRouter(BaseRouter[GameClockSchema, GameClockSchemaCreate, Game
             except Exception as ex:
                 self.logger.error(
                     f"Error on resetting gameclock with id:{item_id} {ex}",
+                    exc_info=True,
+                )
+                return self.create_error_response(
+                    f"Error resetting gameclock: {str(ex)}",
+                    status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+        @router.put(
+            "/id/{gameclock_id}/reset/",
+            response_class=JSONResponse,
+            summary="Period-aware game clock reset",
+            description="Reset game clock value based on sport preset and current period context.",
+        )
+        async def reset_gameclock_period_aware_endpoint(
+            game_clock_service: GameClockService,
+            gameclock_id: int,
+        ):
+            self.logger.debug(f"Period-aware reset for gameclock id: {gameclock_id}")
+            try:
+                reset_value = await game_clock_service.compute_reset_value(gameclock_id)
+                if reset_value is None:
+                    return self.create_error_response(
+                        f"Game clock ID:{gameclock_id} not found",
+                        status.HTTP_404_NOT_FOUND,
+                    )
+
+                updated = await game_clock_service.update(
+                    gameclock_id,
+                    GameClockSchemaUpdate(
+                        gameclock=reset_value,
+                        gameclock_status=ClockStatus.STOPPED,
+                    ),
+                )
+
+                if not updated:
+                    return self.create_error_response(
+                        f"Game clock ID:{gameclock_id} not found",
+                        status.HTTP_404_NOT_FOUND,
+                    )
+
+                if hasattr(self.service, "cache_service") and game_clock_service.cache_service:
+                    game_clock_service.cache_service.invalidate_gameclock(gameclock_id)
+
+                return self.create_response_with_server_time(
+                    updated,
+                    f"Game clock reset to {reset_value}",
+                )
+            except Exception as ex:
+                self.logger.error(
+                    f"Error on period-aware reset for gameclock id:{gameclock_id} {ex}",
                     exc_info=True,
                 )
                 return self.create_error_response(
