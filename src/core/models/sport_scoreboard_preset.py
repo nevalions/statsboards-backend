@@ -79,6 +79,21 @@ class SportScoreboardPresetDB(Base):
         nullable=False,
         default=lambda: [6, 3, 2, 1, -1],
     )
+    score_form_goal_label: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="TD",
+    )
+    score_form_goal_emoji: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="🏈",
+    )
+    scoreboard_goal_text: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="TOUCHDOWN",
+    )
 
     sports: Mapped[list["SportDB"]] = relationship(
         back_populates="scoreboard_preset",

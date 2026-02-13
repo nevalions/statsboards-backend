@@ -20,6 +20,9 @@ DEFAULT_QUICK_SCORE_DELTAS: list[int] = [6, 3, 2, 1, -1]
 MAX_QUICK_SCORE_DELTAS = 10
 MIN_QUICK_SCORE_DELTA_VALUE = -100
 MAX_QUICK_SCORE_DELTA_VALUE = 100
+DEFAULT_SCORE_FORM_GOAL_LABEL = "TD"
+DEFAULT_SCORE_FORM_GOAL_EMOJI = "🏈"
+DEFAULT_SCOREBOARD_GOAL_TEXT = "TOUCHDOWN"
 
 
 class SportScoreboardPresetSchemaBase(BaseModel):
@@ -45,6 +48,9 @@ class SportScoreboardPresetSchemaBase(BaseModel):
     period_labels_json: list[str] | None = None
     default_playclock_seconds: int | None = None
     quick_score_deltas: list[int] = DEFAULT_QUICK_SCORE_DELTAS.copy()
+    score_form_goal_label: Annotated[str, Path(max_length=32)] = DEFAULT_SCORE_FORM_GOAL_LABEL
+    score_form_goal_emoji: Annotated[str, Path(max_length=32)] = DEFAULT_SCORE_FORM_GOAL_EMOJI
+    scoreboard_goal_text: Annotated[str, Path(max_length=64)] = DEFAULT_SCOREBOARD_GOAL_TEXT
 
     @model_validator(mode="after")
     def validate_period_labels(self) -> SportScoreboardPresetSchemaBase:
@@ -101,6 +107,19 @@ class SportScoreboardPresetSchemaBase(BaseModel):
                 "quick_score_deltas values must stay within "
                 f"{MIN_QUICK_SCORE_DELTA_VALUE}..{MAX_QUICK_SCORE_DELTA_VALUE}"
             )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_goal_metadata(self) -> SportScoreboardPresetSchemaBase:
+        if self.score_form_goal_label is not None and not self.score_form_goal_label.strip():
+            raise ValueError("score_form_goal_label cannot be blank")
+
+        if self.score_form_goal_emoji is not None and not self.score_form_goal_emoji.strip():
+            raise ValueError("score_form_goal_emoji cannot be blank")
+
+        if self.scoreboard_goal_text is not None and not self.scoreboard_goal_text.strip():
+            raise ValueError("scoreboard_goal_text cannot be blank")
 
         return self
 

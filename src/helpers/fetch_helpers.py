@@ -25,6 +25,9 @@ logger = get_logger("helpers")
 fetch_data_logger = get_logger("fetch_data")
 
 DEFAULT_QUICK_SCORE_DELTAS: list[int] = [6, 3, 2, 1, -1]
+DEFAULT_SCORE_FORM_GOAL_LABEL = "TD"
+DEFAULT_SCORE_FORM_GOAL_EMOJI = "🏈"
+DEFAULT_SCOREBOARD_GOAL_TEXT = "TOUCHDOWN"
 
 
 def _get_preset_values_for_gameclock(
@@ -139,6 +142,29 @@ def _preset_quick_score_deltas(preset: SportScoreboardPresetDB | None) -> list[i
         return DEFAULT_QUICK_SCORE_DELTAS.copy()
 
     return raw_deltas.copy()
+
+
+def _preset_goal_metadata(preset: SportScoreboardPresetDB | None) -> dict[str, str]:
+    if preset is None:
+        return {
+            "score_form_goal_label": DEFAULT_SCORE_FORM_GOAL_LABEL,
+            "score_form_goal_emoji": DEFAULT_SCORE_FORM_GOAL_EMOJI,
+            "scoreboard_goal_text": DEFAULT_SCOREBOARD_GOAL_TEXT,
+        }
+
+    raw_label = getattr(preset, "score_form_goal_label", None)
+    raw_emoji = getattr(preset, "score_form_goal_emoji", None)
+    raw_text = getattr(preset, "scoreboard_goal_text", None)
+
+    label = raw_label.strip() if isinstance(raw_label, str) and raw_label.strip() else None
+    emoji = raw_emoji.strip() if isinstance(raw_emoji, str) and raw_emoji.strip() else None
+    text = raw_text.strip() if isinstance(raw_text, str) and raw_text.strip() else None
+
+    return {
+        "score_form_goal_label": label or DEFAULT_SCORE_FORM_GOAL_LABEL,
+        "score_form_goal_emoji": emoji or DEFAULT_SCORE_FORM_GOAL_EMOJI,
+        "scoreboard_goal_text": text or DEFAULT_SCOREBOARD_GOAL_TEXT,
+    }
 
 
 def _calculate_initial_gameclock_seconds(
@@ -435,6 +461,7 @@ async def fetch_with_scoreboard_data(
             }
 
             preset = sport.scoreboard_preset if sport else None
+            goal_metadata = _preset_goal_metadata(preset)
             final_match_with_scoreboard_data_fetched = {
                 "data": {
                     "match_id": match_id,
@@ -447,6 +474,7 @@ async def fetch_with_scoreboard_data(
                         "has_timeouts": bool(preset.has_timeouts) if preset is not None else True,
                         "has_playclock": bool(preset.has_playclock) if preset is not None else True,
                         "quick_score_deltas": _preset_quick_score_deltas(preset),
+                        **goal_metadata,
                     },
                     "teams_data": deep_dict_convert(match_teams_data),
                     "match_data": instance_to_dict(dict(match_data.__dict__)),

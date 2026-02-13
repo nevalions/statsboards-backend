@@ -25,6 +25,9 @@ async def _create_match_with_preset(
     has_playclock: bool,
     has_timeouts: bool,
     quick_score_deltas: list[int] | None = None,
+    score_form_goal_label: str = "TD",
+    score_form_goal_emoji: str = "🏈",
+    scoreboard_goal_text: str = "TOUCHDOWN",
 ) -> int:
     preset_service = SportScoreboardPresetServiceDB(test_db)
     sport_service = SportServiceDB(test_db)
@@ -40,6 +43,9 @@ async def _create_match_with_preset(
             has_timeouts=has_timeouts,
             is_playclock=True,
             quick_score_deltas=quick_score_deltas or [6, 3, 2, 1, -1],
+            score_form_goal_label=score_form_goal_label,
+            score_form_goal_emoji=score_form_goal_emoji,
+            scoreboard_goal_text=scoreboard_goal_text,
         )
     )
     sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
@@ -198,3 +204,36 @@ class TestCapabilityEnforcement:
         scoreboard = full_payload["data"]["scoreboard_data"]
         assert "quick_score_deltas" in scoreboard
         assert scoreboard["quick_score_deltas"] == [6, 3, 2, 1, -1]
+
+    async def test_scoreboard_data_includes_goal_metadata_defaults(self, test_db):
+        match_id = await _create_match_with_preset(
+            test_db,
+            has_playclock=True,
+            has_timeouts=True,
+        )
+
+        full_payload = await fetch_with_scoreboard_data(match_id, database=test_db)
+        assert full_payload is not None
+
+        scoreboard = full_payload["data"]["scoreboard_data"]
+        assert scoreboard["score_form_goal_label"] == "TD"
+        assert scoreboard["score_form_goal_emoji"] == "🏈"
+        assert scoreboard["scoreboard_goal_text"] == "TOUCHDOWN"
+
+    async def test_scoreboard_data_includes_custom_goal_metadata(self, test_db):
+        match_id = await _create_match_with_preset(
+            test_db,
+            has_playclock=True,
+            has_timeouts=True,
+            score_form_goal_label="GOAL",
+            score_form_goal_emoji="⚽",
+            scoreboard_goal_text="GOAL",
+        )
+
+        full_payload = await fetch_with_scoreboard_data(match_id, database=test_db)
+        assert full_payload is not None
+
+        scoreboard = full_payload["data"]["scoreboard_data"]
+        assert scoreboard["score_form_goal_label"] == "GOAL"
+        assert scoreboard["score_form_goal_emoji"] == "⚽"
+        assert scoreboard["scoreboard_goal_text"] == "GOAL"

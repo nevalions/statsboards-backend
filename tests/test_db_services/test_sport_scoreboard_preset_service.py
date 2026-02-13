@@ -79,6 +79,9 @@ class TestSportScoreboardPresetServiceDB:
         assert result.period_labels_json is None
         assert result.default_playclock_seconds == 30
         assert result.quick_score_deltas == [3, 2, 1, -1]
+        assert result.score_form_goal_label == "TD"
+        assert result.score_form_goal_emoji == "🏈"
+        assert result.scoreboard_goal_text == "TOUCHDOWN"
 
     async def test_create_preset_with_min_initial_time_mode(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -114,6 +117,9 @@ class TestSportScoreboardPresetServiceDB:
         assert result.initial_time_min_seconds is None
         assert result.period_clock_variant == PeriodClockVariant.PER_PERIOD
         assert result.quick_score_deltas == [6, 3, 2, 1, -1]
+        assert result.score_form_goal_label == "TD"
+        assert result.score_form_goal_emoji == "🏈"
+        assert result.scoreboard_goal_text == "TOUCHDOWN"
 
     async def test_update_preset(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -132,6 +138,9 @@ class TestSportScoreboardPresetServiceDB:
             period_labels_json=["period.leg_1", "period.leg_2"],
             default_playclock_seconds=25,
             quick_score_deltas=[1, -1],
+            score_form_goal_label="GOAL",
+            score_form_goal_emoji="⚽",
+            scoreboard_goal_text="GOAL",
         )
 
         updated = await service.update(created.id, update_data)
@@ -148,6 +157,9 @@ class TestSportScoreboardPresetServiceDB:
         assert updated.period_labels_json == ["period.leg_1", "period.leg_2"]
         assert updated.default_playclock_seconds == 25
         assert updated.quick_score_deltas == [1, -1]
+        assert updated.score_form_goal_label == "GOAL"
+        assert updated.score_form_goal_emoji == "⚽"
+        assert updated.scoreboard_goal_text == "GOAL"
 
     async def test_create_preset_rejects_empty_quick_score_deltas(self, test_db):
         _ = SportScoreboardPresetServiceDB(test_db)
@@ -206,6 +218,27 @@ class TestSportScoreboardPresetServiceDB:
                 period_mode=SportPeriodMode.CUSTOM,
                 period_count=2,
                 period_labels_json=["Leg 1", "тайм 2"],
+            )
+
+    async def test_create_preset_rejects_blank_goal_metadata(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Blank Goal Label",
+                score_form_goal_label="   ",
+            )
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Blank Goal Emoji",
+                score_form_goal_emoji="   ",
+            )
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Blank Goal Text",
+                scoreboard_goal_text="   ",
             )
 
     async def test_create_preset_rejects_custom_count_labels_mismatch(self, test_db):

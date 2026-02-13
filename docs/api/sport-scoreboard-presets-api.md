@@ -27,6 +27,9 @@ interface SportScoreboardPresetSchema {
   period_labels_json: string[] | null; // Optional custom semantic keys, used with period_mode="custom" (example: "period.q1")
   default_playclock_seconds: number | null; // Optional playclock default for the sport
   quick_score_deltas: number[]; // Ordered score button values (default: [6,3,2,1,-1])
+  score_form_goal_label: string; // Score form button label (default: "TD")
+  score_form_goal_emoji: string; // Score form button emoji (default: "🏈")
+  scoreboard_goal_text: string; // Goal/touchdown banner text (default: "TOUCHDOWN")
 }
 
 interface SportScoreboardPresetSchemaCreate {
@@ -50,6 +53,9 @@ interface SportScoreboardPresetSchemaCreate {
   period_labels_json: string[] | null; // Optional custom semantic keys (not translated display text)
   default_playclock_seconds: number | null; // Optional playclock default
   quick_score_deltas: number[]; // Optional; defaults to [6,3,2,1,-1]
+  score_form_goal_label: string; // Optional; defaults to "TD"
+  score_form_goal_emoji: string; // Optional; defaults to "🏈"
+  scoreboard_goal_text: string; // Optional; defaults to "TOUCHDOWN"
 }
 
 interface SportScoreboardPresetSchemaUpdate {
@@ -73,6 +79,9 @@ interface SportScoreboardPresetSchemaUpdate {
   period_labels_json: string[] | null; // Optional semantic keys (or null)
   default_playclock_seconds: number | null; // Optional playclock default (or null)
   quick_score_deltas: number[] | null; // Optional ordered score values (or null in partial update payload)
+  score_form_goal_label: string | null; // Optional score-form button label
+  score_form_goal_emoji: string | null; // Optional score-form button emoji
+  scoreboard_goal_text: string | null; // Optional scoreboard goal text
 }
 ```
 
@@ -93,6 +102,7 @@ interface SportScoreboardPresetSchemaUpdate {
 - `quick_score_deltas` must be a non-empty ordered list of integers.
 - `quick_score_deltas` cannot contain `0`.
 - `quick_score_deltas` has max length `10` and allowed range `-100..100`.
+- `score_form_goal_label`, `score_form_goal_emoji`, and `scoreboard_goal_text` cannot be blank.
 - Final initial value is clamped to a non-negative range:
   - when `gameclock_max` is set: `0 <= gameclock <= gameclock_max`
   - when `gameclock_max` is `null`: `gameclock >= 0`
@@ -164,7 +174,10 @@ POST /api/sport-scoreboard-presets/
   "period_count": 4,
   "period_labels_json": null,
   "default_playclock_seconds": 40,
-  "quick_score_deltas": [6, 3, 2, 1, -1]
+  "quick_score_deltas": [6, 3, 2, 1, -1],
+  "score_form_goal_label": "TD",
+  "score_form_goal_emoji": "🏈",
+  "scoreboard_goal_text": "TOUCHDOWN"
 }
 ```
 
@@ -191,6 +204,9 @@ interface SportScoreboardPresetSchemaCreate {
   period_labels_json: string[] | null;
   default_playclock_seconds: number | null;
   quick_score_deltas: number[];
+  score_form_goal_label: string;
+  score_form_goal_emoji: string;
+  scoreboard_goal_text: string;
 }
 ```
 
@@ -217,7 +233,10 @@ interface SportScoreboardPresetSchemaCreate {
   "period_count": 4,
   "period_labels_json": null,
   "default_playclock_seconds": 40,
-  "quick_score_deltas": [6, 3, 2, 1, -1]
+  "quick_score_deltas": [6, 3, 2, 1, -1],
+  "score_form_goal_label": "TD",
+  "score_form_goal_emoji": "🏈",
+  "scoreboard_goal_text": "TOUCHDOWN"
 }
 ```
 
@@ -256,7 +275,10 @@ PUT /api/sport-scoreboard-presets/{item_id}/
   "period_count": 2,
   "period_labels_json": ["period.leg_1", "period.leg_2"],
   "default_playclock_seconds": 30,
-  "quick_score_deltas": [1, -1]
+  "quick_score_deltas": [1, -1],
+  "score_form_goal_label": "GOAL",
+  "score_form_goal_emoji": "⚽",
+  "scoreboard_goal_text": "GOAL"
 }
 ```
 
@@ -283,6 +305,9 @@ interface SportScoreboardPresetSchemaUpdate {
   period_labels_json: string[] | null;
   default_playclock_seconds: number | null;
   quick_score_deltas: number[] | null;
+  score_form_goal_label: string | null;
+  score_form_goal_emoji: string | null;
+  scoreboard_goal_text: string | null;
 }
 ```
 
@@ -309,7 +334,10 @@ interface SportScoreboardPresetSchemaUpdate {
   "period_count": 2,
   "period_labels_json": ["period.leg_1", "period.leg_2"],
   "default_playclock_seconds": 30,
-  "quick_score_deltas": [1, -1]
+  "quick_score_deltas": [1, -1],
+  "score_form_goal_label": "GOAL",
+  "score_form_goal_emoji": "⚽",
+  "scoreboard_goal_text": "GOAL"
 }
 ```
 
@@ -360,7 +388,10 @@ GET /api/sport-scoreboard-presets/id/{item_id}/
   "period_count": 4,
   "period_labels_json": null,
   "default_playclock_seconds": 40,
-  "quick_score_deltas": [6, 3, 2, 1, -1]
+  "quick_score_deltas": [6, 3, 2, 1, -1],
+  "score_form_goal_label": "TD",
+  "score_form_goal_emoji": "🏈",
+  "scoreboard_goal_text": "TOUCHDOWN"
 }
 ```
 
@@ -406,7 +437,10 @@ GET /api/sport-scoreboard-presets/
     "period_count": 4,
     "period_labels_json": null,
     "default_playclock_seconds": 40,
-    "quick_score_deltas": [6, 3, 2, 1, -1]
+    "quick_score_deltas": [6, 3, 2, 1, -1],
+    "score_form_goal_label": "TD",
+    "score_form_goal_emoji": "🏈",
+    "scoreboard_goal_text": "TOUCHDOWN"
   },
   {
     "id": 2,
@@ -429,7 +463,10 @@ GET /api/sport-scoreboard-presets/
     "period_count": 2,
     "period_labels_json": null,
     "default_playclock_seconds": 24,
-    "quick_score_deltas": [2, 1, -1]
+    "quick_score_deltas": [2, 1, -1],
+    "score_form_goal_label": "GOAL",
+    "score_form_goal_emoji": "⚽",
+    "scoreboard_goal_text": "GOAL"
   }
 ]
 ```
@@ -563,6 +600,6 @@ Similarly, scoreboards will use the display configuration from the preset.
 
 ## I18n Boundary
 
-- Backend responses return machine-friendly keys/codes (for example `period_mode` and `period_labels_json`).
-- Frontend is responsible for mapping those keys to localized scoreboard display labels.
-- Do not store or return translated scoreboard display strings from backend preset payloads.
+- Backend responses return machine-friendly keys/codes for period config (for example `period_mode` and `period_labels_json`).
+- Frontend is responsible for localizing those period keys/codes.
+- `scoreboard_goal_text` is an explicit preset-authored display string (single string, not per-language).

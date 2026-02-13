@@ -151,6 +151,9 @@ class TestMatchDataListener:
                     "has_timeouts": True,
                     "has_playclock": True,
                     "quick_score_deltas": [6, 3, 2, 1, -1],
+                    "score_form_goal_label": "TD",
+                    "score_form_goal_emoji": "🏈",
+                    "scoreboard_goal_text": "TOUCHDOWN",
                 },
                 "players": [],
                 "events": [],
@@ -194,6 +197,11 @@ class TestMatchDataListener:
                     1,
                     -1,
                 ]
+                assert message_sent["data"]["scoreboard_data"]["score_form_goal_label"] == "TD"
+                assert message_sent["data"]["scoreboard_data"]["score_form_goal_emoji"] == "🏈"
+                assert (
+                    message_sent["data"]["scoreboard_data"]["scoreboard_goal_text"] == "TOUCHDOWN"
+                )
 
                 manager._cache_service.invalidate_match_data.assert_called_once_with(67)
 
