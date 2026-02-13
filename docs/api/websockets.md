@@ -98,6 +98,7 @@ Upon successful connection, server sends one combined initial message with all m
       "period_mode": "qtr",
       "period_count": 4,
       "period_labels_json": null,
+      "quick_score_deltas": [6, 3, 2, 1, -1],
       "is_time": true,
       "is_playclock": true,
       "is_downdistance": true,
@@ -312,6 +313,7 @@ interface ScoreboardData {
   period_mode: "qtr" | "period" | "half" | "set" | "inning" | "custom";
   period_count: number;
   period_labels_json?: string[] | null;
+  quick_score_deltas?: number[];
   is_time: boolean;
   is_playclock: boolean;
   is_downdistance: boolean;
@@ -323,6 +325,8 @@ interface ScoreboardData {
   // ... additional scoreboard fields
 }
 ```
+
+`scoreboard_data.quick_score_deltas` is sourced from the sport preset and always has a stable fallback of `[6, 3, 2, 1, -1]` when preset data is missing, empty, or invalid.
 
 ##### Gameclock Update Message
 

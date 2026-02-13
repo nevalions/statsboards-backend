@@ -26,6 +26,7 @@ interface SportScoreboardPresetSchema {
   period_count: number; // Canonical number of periods (default: 4)
   period_labels_json: string[] | null; // Optional custom semantic keys, used with period_mode="custom" (example: "period.q1")
   default_playclock_seconds: number | null; // Optional playclock default for the sport
+  quick_score_deltas: number[]; // Ordered score button values (default: [6,3,2,1,-1])
 }
 
 interface SportScoreboardPresetSchemaCreate {
@@ -48,6 +49,7 @@ interface SportScoreboardPresetSchemaCreate {
   period_count: number; // Canonical number of periods, defaults to 4
   period_labels_json: string[] | null; // Optional custom semantic keys (not translated display text)
   default_playclock_seconds: number | null; // Optional playclock default
+  quick_score_deltas: number[]; // Optional; defaults to [6,3,2,1,-1]
 }
 
 interface SportScoreboardPresetSchemaUpdate {
@@ -70,6 +72,7 @@ interface SportScoreboardPresetSchemaUpdate {
   period_count: number | null; // Optional period count
   period_labels_json: string[] | null; // Optional semantic keys (or null)
   default_playclock_seconds: number | null; // Optional playclock default (or null)
+  quick_score_deltas: number[] | null; // Optional ordered score values (or null in partial update payload)
 }
 ```
 
@@ -87,6 +90,9 @@ interface SportScoreboardPresetSchemaUpdate {
   - `cumulative`: effective max becomes `gameclock_max * current_period_index`
 - `period_count` is required and must be >= 1.
 - when `period_mode="custom"`, `period_count` must equal `period_labels_json.length`.
+- `quick_score_deltas` must be a non-empty ordered list of integers.
+- `quick_score_deltas` cannot contain `0`.
+- `quick_score_deltas` has max length `10` and allowed range `-100..100`.
 - Final initial value is clamped to a non-negative range:
   - when `gameclock_max` is set: `0 <= gameclock <= gameclock_max`
   - when `gameclock_max` is `null`: `gameclock >= 0`
@@ -157,7 +163,8 @@ POST /api/sport-scoreboard-presets/
   "period_mode": "qtr",
   "period_count": 4,
   "period_labels_json": null,
-  "default_playclock_seconds": 40
+  "default_playclock_seconds": 40,
+  "quick_score_deltas": [6, 3, 2, 1, -1]
 }
 ```
 
@@ -183,6 +190,7 @@ interface SportScoreboardPresetSchemaCreate {
   period_count: number;
   period_labels_json: string[] | null;
   default_playclock_seconds: number | null;
+  quick_score_deltas: number[];
 }
 ```
 
@@ -208,7 +216,8 @@ interface SportScoreboardPresetSchemaCreate {
   "period_mode": "qtr",
   "period_count": 4,
   "period_labels_json": null,
-  "default_playclock_seconds": 40
+  "default_playclock_seconds": 40,
+  "quick_score_deltas": [6, 3, 2, 1, -1]
 }
 ```
 
@@ -246,7 +255,8 @@ PUT /api/sport-scoreboard-presets/{item_id}/
   "period_mode": "custom",
   "period_count": 2,
   "period_labels_json": ["period.leg_1", "period.leg_2"],
-  "default_playclock_seconds": 30
+  "default_playclock_seconds": 30,
+  "quick_score_deltas": [1, -1]
 }
 ```
 
@@ -272,6 +282,7 @@ interface SportScoreboardPresetSchemaUpdate {
   period_count: number | null;
   period_labels_json: string[] | null;
   default_playclock_seconds: number | null;
+  quick_score_deltas: number[] | null;
 }
 ```
 
@@ -297,7 +308,8 @@ interface SportScoreboardPresetSchemaUpdate {
   "period_mode": "custom",
   "period_count": 2,
   "period_labels_json": ["period.leg_1", "period.leg_2"],
-  "default_playclock_seconds": 30
+  "default_playclock_seconds": 30,
+  "quick_score_deltas": [1, -1]
 }
 ```
 
@@ -347,7 +359,8 @@ GET /api/sport-scoreboard-presets/id/{item_id}/
   "period_mode": "qtr",
   "period_count": 4,
   "period_labels_json": null,
-  "default_playclock_seconds": 40
+  "default_playclock_seconds": 40,
+  "quick_score_deltas": [6, 3, 2, 1, -1]
 }
 ```
 
@@ -392,7 +405,8 @@ GET /api/sport-scoreboard-presets/
     "period_mode": "qtr",
     "period_count": 4,
     "period_labels_json": null,
-    "default_playclock_seconds": 40
+    "default_playclock_seconds": 40,
+    "quick_score_deltas": [6, 3, 2, 1, -1]
   },
   {
     "id": 2,
@@ -414,7 +428,8 @@ GET /api/sport-scoreboard-presets/
     "period_mode": "half",
     "period_count": 2,
     "period_labels_json": null,
-    "default_playclock_seconds": 24
+    "default_playclock_seconds": 24,
+    "quick_score_deltas": [2, 1, -1]
   }
 ]
 ```

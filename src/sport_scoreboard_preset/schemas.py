@@ -16,6 +16,10 @@ from src.core.enums import (
 from src.core.schema_helpers import make_fields_optional
 
 MACHINE_LABEL_KEY_PATTERN = re.compile(r"^[a-z0-9]+(?:[._-][a-z0-9]+)*$")
+DEFAULT_QUICK_SCORE_DELTAS: list[int] = [6, 3, 2, 1, -1]
+MAX_QUICK_SCORE_DELTAS = 10
+MIN_QUICK_SCORE_DELTA_VALUE = -100
+MAX_QUICK_SCORE_DELTA_VALUE = 100
 
 
 class SportScoreboardPresetSchemaBase(BaseModel):
@@ -40,6 +44,7 @@ class SportScoreboardPresetSchemaBase(BaseModel):
     period_count: Annotated[int, Path(ge=1, le=99)] = 4
     period_labels_json: list[str] | None = None
     default_playclock_seconds: int | None = None
+    quick_score_deltas: list[int] = DEFAULT_QUICK_SCORE_DELTAS.copy()
 
     @model_validator(mode="after")
     def validate_period_labels(self) -> SportScoreboardPresetSchemaBase:
@@ -66,6 +71,35 @@ class SportScoreboardPresetSchemaBase(BaseModel):
         if self.period_count != len(self.period_labels_json):
             raise ValueError(
                 "period_count must match period_labels_json length when period_mode='custom'"
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_quick_score_deltas(self) -> SportScoreboardPresetSchemaBase:
+        if self.quick_score_deltas is None:
+            return self
+
+        if len(self.quick_score_deltas) == 0:
+            raise ValueError("quick_score_deltas must be a non-empty list of integers")
+
+        if len(self.quick_score_deltas) > MAX_QUICK_SCORE_DELTAS:
+            raise ValueError(
+                f"quick_score_deltas cannot contain more than {MAX_QUICK_SCORE_DELTAS} values"
+            )
+
+        if any(delta == 0 for delta in self.quick_score_deltas):
+            raise ValueError("quick_score_deltas values cannot include 0")
+
+        out_of_range_values = [
+            delta
+            for delta in self.quick_score_deltas
+            if delta < MIN_QUICK_SCORE_DELTA_VALUE or delta > MAX_QUICK_SCORE_DELTA_VALUE
+        ]
+        if out_of_range_values:
+            raise ValueError(
+                "quick_score_deltas values must stay within "
+                f"{MIN_QUICK_SCORE_DELTA_VALUE}..{MAX_QUICK_SCORE_DELTA_VALUE}"
             )
 
         return self

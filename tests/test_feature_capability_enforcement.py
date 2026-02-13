@@ -24,6 +24,7 @@ async def _create_match_with_preset(
     *,
     has_playclock: bool,
     has_timeouts: bool,
+    quick_score_deltas: list[int] | None = None,
 ) -> int:
     preset_service = SportScoreboardPresetServiceDB(test_db)
     sport_service = SportServiceDB(test_db)
@@ -38,6 +39,7 @@ async def _create_match_with_preset(
             has_playclock=has_playclock,
             has_timeouts=has_timeouts,
             is_playclock=True,
+            quick_score_deltas=quick_score_deltas or [6, 3, 2, 1, -1],
         )
     )
     sport = await sport_service.create(SportFactoryAny.build(scoreboard_preset_id=preset.id))
@@ -167,3 +169,32 @@ class TestCapabilityEnforcement:
         assert "has_playclock" in scoreboard
         assert scoreboard["has_timeouts"] is False
         assert scoreboard["has_playclock"] is False
+
+    async def test_scoreboard_data_includes_custom_quick_score_deltas(self, test_db):
+        match_id = await _create_match_with_preset(
+            test_db,
+            has_playclock=True,
+            has_timeouts=True,
+            quick_score_deltas=[1, -1],
+        )
+
+        full_payload = await fetch_with_scoreboard_data(match_id, database=test_db)
+        assert full_payload is not None
+
+        scoreboard = full_payload["data"]["scoreboard_data"]
+        assert "quick_score_deltas" in scoreboard
+        assert scoreboard["quick_score_deltas"] == [1, -1]
+
+    async def test_scoreboard_data_falls_back_to_default_quick_score_deltas(self, test_db):
+        match_id = await _create_match_with_preset(
+            test_db,
+            has_playclock=True,
+            has_timeouts=True,
+        )
+
+        full_payload = await fetch_with_scoreboard_data(match_id, database=test_db)
+        assert full_payload is not None
+
+        scoreboard = full_payload["data"]["scoreboard_data"]
+        assert "quick_score_deltas" in scoreboard
+        assert scoreboard["quick_score_deltas"] == [6, 3, 2, 1, -1]

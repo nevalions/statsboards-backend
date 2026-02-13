@@ -150,6 +150,7 @@ class TestMatchDataListener:
                     "period_labels_json": None,
                     "has_timeouts": True,
                     "has_playclock": True,
+                    "quick_score_deltas": [6, 3, 2, 1, -1],
                 },
                 "players": [],
                 "events": [],
@@ -186,6 +187,13 @@ class TestMatchDataListener:
                 assert message_sent["data"]["scoreboard_data"]["period_labels_json"] is None
                 assert message_sent["data"]["scoreboard_data"]["has_timeouts"] is True
                 assert message_sent["data"]["scoreboard_data"]["has_playclock"] is True
+                assert message_sent["data"]["scoreboard_data"]["quick_score_deltas"] == [
+                    6,
+                    3,
+                    2,
+                    1,
+                    -1,
+                ]
 
                 manager._cache_service.invalidate_match_data.assert_called_once_with(67)
 

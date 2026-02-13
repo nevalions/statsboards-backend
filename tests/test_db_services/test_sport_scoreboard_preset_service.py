@@ -54,6 +54,7 @@ class TestSportScoreboardPresetServiceDB:
             period_count=4,
             period_labels_json=None,
             default_playclock_seconds=30,
+            quick_score_deltas=[3, 2, 1, -1],
         )
 
         result = await service.create(preset_data)
@@ -77,6 +78,7 @@ class TestSportScoreboardPresetServiceDB:
         assert result.period_count == 4
         assert result.period_labels_json is None
         assert result.default_playclock_seconds == 30
+        assert result.quick_score_deltas == [3, 2, 1, -1]
 
     async def test_create_preset_with_min_initial_time_mode(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -111,6 +113,7 @@ class TestSportScoreboardPresetServiceDB:
         assert result.initial_time_mode == InitialTimeMode.MAX
         assert result.initial_time_min_seconds is None
         assert result.period_clock_variant == PeriodClockVariant.PER_PERIOD
+        assert result.quick_score_deltas == [6, 3, 2, 1, -1]
 
     async def test_update_preset(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)
@@ -128,6 +131,7 @@ class TestSportScoreboardPresetServiceDB:
             period_count=2,
             period_labels_json=["period.leg_1", "period.leg_2"],
             default_playclock_seconds=25,
+            quick_score_deltas=[1, -1],
         )
 
         updated = await service.update(created.id, update_data)
@@ -143,6 +147,55 @@ class TestSportScoreboardPresetServiceDB:
         assert updated.period_count == 2
         assert updated.period_labels_json == ["period.leg_1", "period.leg_2"]
         assert updated.default_playclock_seconds == 25
+        assert updated.quick_score_deltas == [1, -1]
+
+    async def test_create_preset_rejects_empty_quick_score_deltas(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Invalid Empty Deltas",
+                quick_score_deltas=[],
+            )
+
+    async def test_create_preset_rejects_zero_quick_score_delta(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Invalid Zero Delta",
+                quick_score_deltas=[3, 0, -1],
+            )
+
+    async def test_create_preset_rejects_too_many_quick_score_deltas(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Invalid Too Many Deltas",
+                quick_score_deltas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            )
+
+    async def test_create_preset_rejects_out_of_range_quick_score_delta(self, test_db):
+        _ = SportScoreboardPresetServiceDB(test_db)
+
+        with pytest.raises(ValidationError):
+            SportScoreboardPresetSchemaCreate(
+                title="Invalid Out Of Range Delta",
+                quick_score_deltas=[101],
+            )
+
+    async def test_create_preset_preserves_quick_score_deltas_order(self, test_db):
+        service = SportScoreboardPresetServiceDB(test_db)
+
+        preset = await service.create(
+            SportScoreboardPresetSchemaCreate(
+                title="Ordered Deltas",
+                quick_score_deltas=[5, -2, 1, -1],
+            )
+        )
+
+        assert preset.quick_score_deltas == [5, -2, 1, -1]
 
     async def test_create_preset_rejects_non_machine_period_labels(self, test_db):
         _ = SportScoreboardPresetServiceDB(test_db)
@@ -883,6 +936,7 @@ class TestSportScoreboardPresetServiceDB:
         assert updated.period_count == 2
         assert updated.period_labels_json == ["period.q1", "period.q2"]
         assert updated.default_playclock_seconds == 40
+        assert updated.quick_score_deltas == [6, 3, 2, 1, -1]
 
     async def test_update_preset_with_min_initial_time_mode(self, test_db):
         service = SportScoreboardPresetServiceDB(test_db)

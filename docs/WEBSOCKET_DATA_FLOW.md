@@ -403,13 +403,14 @@ When the `scoreboard` table changes (display settings, team settings, scale sett
           "team_b_game_color": "#0000FF",
           "has_timeouts": true,
           "has_playclock": true,
+          "quick_score_deltas": [6, 3, 2, 1, -1],
           // ... other scoreboard fields
         }
       }
     }
     ```
 
-**Important:** The `has_timeouts` and `has_playclock` capability flags are now included in the scoreboard_data, sourced from the sport's scoreboard preset. This ensures timeout controls and playclock sections remain visible throughout the admin session.
+**Important:** The `has_timeouts`, `has_playclock`, and `quick_score_deltas` preset-driven fields are included in `scoreboard_data`. `quick_score_deltas` keeps value order and falls back to `[6, 3, 2, 1, -1]` when preset values are missing/empty/invalid.
 
 **Frontend handling:**
 ```typescript

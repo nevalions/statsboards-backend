@@ -74,6 +74,11 @@ class SportScoreboardPresetDB(Base):
     period_count: Mapped[int] = mapped_column(Integer, nullable=False, default=4)
     period_labels_json: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     default_playclock_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quick_score_deltas: Mapped[list[int]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=lambda: [6, 3, 2, 1, -1],
+    )
 
     sports: Mapped[list["SportDB"]] = relationship(
         back_populates="scoreboard_preset",

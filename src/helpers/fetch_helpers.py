@@ -24,6 +24,8 @@ from src.tournaments.db_services import TournamentServiceDB
 logger = get_logger("helpers")
 fetch_data_logger = get_logger("fetch_data")
 
+DEFAULT_QUICK_SCORE_DELTAS: list[int] = [6, 3, 2, 1, -1]
+
 
 def _get_preset_values_for_gameclock(
     preset: SportScoreboardPresetDB,
@@ -123,6 +125,20 @@ def _enforce_scoreboard_capabilities(
         values["is_timeout_team_b"] = False
 
     return values
+
+
+def _preset_quick_score_deltas(preset: SportScoreboardPresetDB | None) -> list[int]:
+    if preset is None:
+        return DEFAULT_QUICK_SCORE_DELTAS.copy()
+
+    raw_deltas = getattr(preset, "quick_score_deltas", None)
+    if not isinstance(raw_deltas, list) or len(raw_deltas) == 0:
+        return DEFAULT_QUICK_SCORE_DELTAS.copy()
+
+    if not all(isinstance(value, int) and value != 0 for value in raw_deltas):
+        return DEFAULT_QUICK_SCORE_DELTAS.copy()
+
+    return raw_deltas.copy()
 
 
 def _calculate_initial_gameclock_seconds(
@@ -430,6 +446,7 @@ async def fetch_with_scoreboard_data(
                         **(instance_to_dict(dict(scoreboard_data.__dict__)) or {}),
                         "has_timeouts": bool(preset.has_timeouts) if preset is not None else True,
                         "has_playclock": bool(preset.has_playclock) if preset is not None else True,
+                        "quick_score_deltas": _preset_quick_score_deltas(preset),
                     },
                     "teams_data": deep_dict_convert(match_teams_data),
                     "match_data": instance_to_dict(dict(match_data.__dict__)),
