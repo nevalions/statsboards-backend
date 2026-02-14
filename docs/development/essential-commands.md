@@ -66,8 +66,8 @@ alembic downgrade -1
 ## Running the Application
 
 ```bash
-python src/runserver.py
-python src/run_prod_server.py
+python -m src.runserver
+python -m src.run_prod_server
 ```
 
 ## Configuration Validation

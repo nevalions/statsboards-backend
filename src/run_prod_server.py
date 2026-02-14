@@ -42,7 +42,7 @@ if __name__ == "__main__":
     options = {
         "bind": "0.0.0.0:9000",
         "workers": 4,
-        "worker_class": "run_prod_server.StatsboardUvicornWorker",
+        "worker_class": "src.run_prod_server.StatsboardUvicornWorker",
         "timeout": 120,
         "loglevel": "info",
         "errorlog": "-",

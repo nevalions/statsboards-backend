@@ -1146,7 +1146,7 @@ GET /api/matches/id/{match_id}/stats/
 curl http://localhost:9000/health
 
 # Start backend if not running
-python src/runserver.py
+python -m src.runserver
 
 # Check firewall settings
 # Ensure WebSocket connections are allowed on port 9000

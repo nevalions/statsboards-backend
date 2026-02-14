@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir poetry
 RUN poetry config virtualenvs.create false
 
 # Install all dependencies (including dev)
-RUN poetry install --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi --no-root
 
 # Production stage
 FROM python:3.12.3-slim
@@ -38,7 +38,7 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=appuser:appuser src /app/src
 
-WORKDIR /app/src
+WORKDIR /app
 
 # Expose port
 EXPOSE 9000
@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:9000/health || exit 1
 
 # Run the application
-CMD ["python", "runserver.py"]
+CMD ["python", "-m", "src.run_prod_server"]

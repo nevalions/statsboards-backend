@@ -38,7 +38,7 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=appuser:appuser src /app/src
 
-WORKDIR /app/src
+WORKDIR /app
 
 # Expose port
 EXPOSE 9000
@@ -54,5 +54,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:9000/health || exit 1
 
 # Default command: Production mode with 4 workers
-# For dev mode, override with: python runserver.py
-CMD ["python", "run_prod_server.py"]
+# For dev mode, override with: python -m src.runserver
+CMD ["python", "-m", "src.run_prod_server"]

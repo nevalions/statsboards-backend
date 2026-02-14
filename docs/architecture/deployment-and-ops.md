@@ -26,8 +26,8 @@
 
 ## Deployment
 
-- Dev: `python src/runserver.py`
-- Prod: `python src/run_prod_server.py`
+- Dev: `python -m src.runserver`
+- Prod: `python -m src.run_prod_server`
 - Docker compose for DB and app services
 
 ## Security Considerations

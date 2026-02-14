@@ -76,7 +76,7 @@ Currently implements:
 
 6. **Run development server**
    ```bash
-   python src/runserver.py
+   python -m src.runserver
    ```
 
 The API will be available at `http://localhost:9000`
