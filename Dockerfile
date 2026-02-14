@@ -36,6 +36,8 @@ RUN mkdir -p /app && chown -R appuser:appuser /app
 # Copy dependencies and application from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --chown=appuser:appuser alembic.ini /app/alembic.ini
+COPY --chown=appuser:appuser alembic /app/alembic
 COPY --chown=appuser:appuser src /app/src
 
 WORKDIR /app

@@ -19,6 +19,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS match_stats_throttle (
+            match_id INTEGER PRIMARY KEY NOT NULL,
+            last_notified_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+        );
+        """
+    )
+
     op.execute("DROP TRIGGER IF EXISTS football_event_change ON football_event CASCADE")
 
     op.execute("""
