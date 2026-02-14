@@ -385,15 +385,31 @@ class Settings(BaseSettings):
         """Validate that all required paths exist and are accessible."""
         validation_errors = []
 
+        # Create runtime directories if they are missing.
+        # In containerized deployments, /app/static may not exist in the image by default.
+        for path_name, path_value in (
+            ("static_main_path", self.static_main_path),
+            ("uploads_path", self.uploads_path),
+        ):
+            if not path_value.exists():
+                try:
+                    path_value.mkdir(parents=True, exist_ok=True)
+                except Exception as ex:
+                    validation_errors.append(
+                        f"Failed to create directory '{path_name}' at {path_value}: {ex}"
+                    )
+
         paths_to_validate = [
             ("static_main_path", str(self.static_main_path), "required"),
             ("uploads_path", str(self.uploads_path), "required"),
         ]
 
+        # SSL termination is typically handled by Ingress in Kubernetes.
+        # Keep SSL file checks non-blocking so stale env values do not crash startup.
         if self.ssl_keyfile:
-            paths_to_validate.append(("ssl_keyfile", self.ssl_keyfile, "required"))
+            paths_to_validate.append(("ssl_keyfile", self.ssl_keyfile, "optional"))
         if self.ssl_certfile:
-            paths_to_validate.append(("ssl_certfile", self.ssl_certfile, "required"))
+            paths_to_validate.append(("ssl_certfile", self.ssl_certfile, "optional"))
 
         for path_name, path_value, requirement in paths_to_validate:
             if path_value and not Path(path_value).exists():
@@ -404,7 +420,10 @@ class Settings(BaseSettings):
                 else:
                     logger.warning(f"Optional path '{path_name}' does not exist: {path_value}")
             elif path_value and not os.access(path_value, os.R_OK):
-                validation_errors.append(f"Path '{path_name}' is not readable: {path_value}")
+                if requirement == "required":
+                    validation_errors.append(f"Path '{path_name}' is not readable: {path_value}")
+                else:
+                    logger.warning(f"Optional path '{path_name}' is not readable: {path_value}")
 
         if validation_errors:
             raise ConfigurationError(
@@ -432,7 +451,10 @@ class Settings(BaseSettings):
             self.validate_paths_exist()
             self.logger.info("Path validation successful")
         except ConfigurationError as ex:
-            self.logger.error(f"Path validation failed: {ex.message}", exc_info=True)
+            self.logger.error(
+                f"Path validation failed: {ex.message}; details: {ex.details}",
+                exc_info=True,
+            )
             raise
 
         try:

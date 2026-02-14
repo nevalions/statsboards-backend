@@ -32,7 +32,7 @@ class Application(BaseApplication):
 
 
 if __name__ == "__main__":
-    import main
+    from src import main
 
     setup_logging()
     logger.info("Production Server Started!")
